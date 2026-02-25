@@ -35,10 +35,10 @@ const Team = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <FloatingNav />
 
-      <main className="max-w-6xl mx-auto px-6 pt-24 pb-16">
+      <main className="max-w-6xl mx-auto px-6 pt-24 pb-16 flex-1">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

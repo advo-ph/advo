@@ -110,9 +110,9 @@ const Start = () => {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background flex flex-col">
         <FloatingNav />
-        <div className="flex items-center justify-center min-h-[80vh] p-6">
+        <div className="flex items-center justify-center flex-1 p-6">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -137,10 +137,10 @@ const Start = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <FloatingNav />
       
-      <main className="pt-32 pb-24 px-6">
+      <main className="pt-32 pb-24 px-6 flex-1">
         <div className="max-w-6xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
