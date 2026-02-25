@@ -47,7 +47,7 @@ const FloatingNav = () => {
   const navLinks = [
     { label: "About", href: "/", onClick: handleAboutClick },
     { label: "Team", href: "/team" },
-    { label: "Client Hub", href: "/hub" },
+    { label: "Client Hub", href: "/login" },
   ];
 
   // Use isScrolled directly since we initialize correctly
