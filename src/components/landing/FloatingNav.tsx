@@ -62,7 +62,7 @@ const FloatingNav = () => {
           transition-all duration-500 ease-out
           ${showScrolledStyle 
             ? "pt-3 px-4" 
-            : "bg-background/80 backdrop-blur-lg"
+            : "bg-background backdrop-blur-lg border-b border-border/50"
           }
         `}
         style={{ 
@@ -75,7 +75,7 @@ const FloatingNav = () => {
             mx-auto flex items-center justify-between
             transition-all duration-500 ease-out
             ${showScrolledStyle 
-              ? "max-w-xl h-14 rounded-full border border-border shadow-lg px-3 bg-background/80 backdrop-blur-lg" 
+              ? "max-w-xl h-14 rounded-full border border-border shadow-lg px-3 bg-background backdrop-blur-lg" 
               : "max-w-6xl h-16 px-6"
             }
           `}
