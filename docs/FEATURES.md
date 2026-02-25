@@ -1,126 +1,153 @@
 # Features Documentation
 
-## Smart Dashboard Features
+## Client Portal (`/hub`)
 
-### 1. Progress Updates from Admin
+### Engineering Feed
 
-Admins can post manual updates that appear alongside GitHub commits in the client's Engineering Feed.
+Live GitHub commits merged with admin-posted progress updates. Supports branch switching.
 
-**How it works:**
+**Files**: `ProjectDashboard.tsx`, `useGitHub.ts`, `lib/github.ts`
 
-1. Navigate to `/admin`
-2. Click "Post Update" on any project
-3. Enter title, body, and optional commit reference
-4. Update appears in client's dashboard
+### Invoice Tracker
 
-**Database:** `progress_update` table
+View issued invoices with amount, status (unpaid/paid/overdue), due dates. RLS ensures clients only see their own.
 
-```sql
-- update_id (PK)
-- project_id (FK)
-- update_title
-- update_body
-- commit_sha_reference
-- created_at
-```
+**Files**: `ProjectDashboard.tsx`, `useClientData.ts`
 
----
+### Contract Section
 
-### 2. Client Onboarding Flow
+"View Contract" button linking to contract PDF, or "Contract pending" if not yet set.
 
-Self-service inquiry form at `/start` for potential clients.
+**Files**: `ProjectDashboard.tsx` → reads `project.contract_url`
 
-**Form Fields:**
+### Progress Photos
 
-- Name, Email (required)
-- Company (optional)
-- Project Type (dropdown)
-- Budget Range (dropdown)
-- Project Description (required)
+Grid of admin-uploaded progress photos with captions and upload dates. Clickable to view full image.
 
-**Implementation:**
+**Files**: `ProjectDashboard.tsx` → reads `project_asset` table (filtered by `progress_photo` type)
 
-- Leads stored in `localStorage` (key: `advo_leads`)
-- Admin panel shows Leads tab with submissions
-- Future: Edge function to create client records
+### Team Contacts
+
+Displays assigned team members with avatar, name, role, email, and LinkedIn link.
+
+**Files**: `ProjectDashboard.tsx` → reads `project_access` → `team_member` join
+
+### Notification Bell
+
+Unread count badge on bell icon. Dropdown shows last 10 notifications with mark-as-read.
+
+**Files**: `Hub.tsx`, `useNotifications.ts` (`useClientNotifications`)
 
 ---
 
-### 3. Cloudflare Pages Deployment Status
+## Admin Panel (`/admin`)
 
-Shows live deployment status badge next to the Live Preview button.
+### Dashboard
 
-**States:**
+KPI cards: total projects, active clients, total revenue, active leads.
 
-- 🟢 Ready - Deployment successful
-- 🟡 Building - Deployment in progress
-- 🔴 Error - Deployment failed
+**Files**: `AdminDashboard.tsx`, `useAdminData.ts`
 
-**Setup:**
+### Projects
 
-```bash
-# Add to .env
-VITE_CLOUDFLARE_TOKEN=your_cloudflare_api_token
-VITE_CLOUDFLARE_ACCOUNT_ID=your_account_id
-```
+Full CRUD. Form includes: client, title, description, GitHub repo, preview URL, **contract URL**, status, value/paid, tech stack. Edit mode shows **asset upload** (URL + caption + type selector).
 
-**Implementation:**
+**Files**: `AdminProjects.tsx`, `useOrgProjects.ts`, `db.ts`
 
-- `src/lib/cloudflare.ts` - API service
-- Fetches from `api.cloudflare.com/client/v4`
-- Extracts project name from \*.pages.dev URLs
+### Clients
+
+Client management with company name, contact email, GitHub org, brand color.
+
+**Files**: `AdminClients.tsx`, `useAdminData.ts`
+
+### Team
+
+Team member profiles with name, role, email, avatar, bio, LinkedIn, permission role toggling.
+
+**Files**: `AdminTeam.tsx`, `useAdminData.ts`
+
+### Deliverables (Schedule)
+
+List of deliverables per project with status badges, priority, due dates, assignee.
+
+**Files**: `AdminSchedule.tsx`, `useOrgProjects.ts`
+
+### Finance
+
+Invoice management with create/edit/delete. Status toggle (unpaid → paid → overdue). Auto-triggers email notification on create.
+
+**Files**: `AdminFinance.tsx`, `useInvoices.ts`
+
+### Notifications
+
+Compose notifications to single client or all clients. Auto-notification toggles stored in `site_content.client_dashboard`:
+
+- On progress update
+- On invoice issued
+- On deliverable completed
+
+Sent notifications grouped by client with type badges and time-ago.
+
+**Files**: `AdminNotifications.tsx`, `useNotifications.ts` (`useAdminNotifications`), `useSiteContent.ts`
+
+### Content Studio
+
+CMS for landing page sections. Toggle visibility (public/client portal). Edit JSONB content.
+
+**Files**: `AdminContentStudio.tsx`, `useSiteContent.ts`
+
+### Portfolio
+
+Manage public portfolio projects. Drag to reorder, toggle featured, full CRUD.
+
+**Files**: `AdminPortfolio.tsx`, `db.ts`
+
+### Leads
+
+Pipeline view of inquiries from `/start`. Status tracking: new → contacted → qualified → proposal → won/lost.
+
+**Files**: `AdminLeads.tsx`, `useLeads.ts`
+
+### Settings
+
+System configuration panel.
+
+**Files**: `AdminSettings.tsx`
 
 ---
 
-### 4. Branch Support for GitHub
+## Email Notifications (Edge Function)
 
-View commits from different branches in the Engineering Feed.
+**Function**: `supabase/functions/send-notification/index.ts`
 
-**Features:**
+1. Receives `{ client_id, project_id?, title, body, type }`
+2. Inserts `notification` row in DB
+3. Checks auto-toggle config from `site_content.client_dashboard`
+4. If enabled, sends branded ADVO email via Resend API
+5. Email from: `ADVO <hello@advo.ph>`
 
-- Branch selector dropdown
-- Defaults to `main`
-- Shows protected branch indicator 🔒
-- Commits refresh when branch changes
+**Auto-Triggers**:
 
-**Implementation:**
+| Event                  | Where                                         | Type              |
+| ---------------------- | --------------------------------------------- | ----------------- |
+| Progress update posted | `db.ts` → `createProgressUpdate()`            | `progress_update` |
+| Invoice created        | `useInvoices.ts` → `createMutation.onSuccess` | `invoice_issued`  |
 
-- `src/lib/github.ts` - `getBranches()`, updated `getCommits()`
-- `src/hooks/useGitHub.ts` - Branch state management
-- `src/components/hub/ProjectDashboard.tsx` - Branch selector UI
-
----
-
-## Admin Panel Features
-
-### Projects Tab
-
-- View all projects with status, client, and value
-- Create/Edit projects with full form
-- Delete projects with confirmation
-- Post updates to any project
-
-### Leads Tab
-
-- View inquiries from `/start` form
-- Shows name, email, company, project type, budget
-- Time since submission
-- Clear/archive leads
-
-### Stats Dashboard
-
-- Total projects count
-- Total clients count
-- Active leads count
-- Total revenue (from paid invoices)
+**Helper**: `lib/notifications.ts` — fire-and-forget `triggerNotification()`
 
 ---
 
-## File Reference
+## Hooks Reference
 
-| Feature           | Files                                                   |
-| ----------------- | ------------------------------------------------------- |
-| Progress Updates  | `Admin.tsx`, `progress_update` table                    |
-| Client Onboarding | `Start.tsx`, `ContactCTA.tsx`                           |
-| Cloudflare Status | `lib/cloudflare.ts`, `ProjectDashboard.tsx`             |
-| Branch Support    | `lib/github.ts`, `useGitHub.ts`, `ProjectDashboard.tsx` |
+| Hook               | Purpose                                                         |
+| ------------------ | --------------------------------------------------------------- |
+| `useAuth`          | Supabase auth state, sign in/out, role detection                |
+| `useAdminData`     | Fetch admin dashboard data (projects, clients, team, stats)     |
+| `useOrgProjects`   | Fetch projects with deliverables, progress updates              |
+| `useClientData`    | Client-side: projects, deliverables, invoices, assets, contacts |
+| `useInvoices`      | Invoice CRUD with optimistic updates                            |
+| `useNotifications` | Admin: fetch all + send. Client: fetch 10 + mark-read           |
+| `useLeads`         | Lead management with status updates                             |
+| `useSiteContent`   | CMS sections: toggle visibility, update content                 |
+| `useRoles`         | Permission role management                                      |
+| `useGitHub`        | GitHub commits and branches                                     |

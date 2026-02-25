@@ -1,80 +1,101 @@
-# Local Development Setup
+# Development & Deployment Setup
 
 ## Prerequisites
 
 - Node.js 18+
-- OrbStack (for local Supabase)
-- npm or bun
+- npm
+- Supabase CLI (`npm install -g supabase`)
 
-## 1. Clone and Install
+## Local Development
 
 ```bash
 cd /path/to/Antigravity/advo
 npm install
+npm run dev            # Starts on port 6900
 ```
 
-## 2. Start Local Supabase (OrbStack)
+Open http://localhost:6900
 
-If you haven't already set up a local Supabase instance:
+## Environment
 
-```bash
-# Install Supabase CLI
-npm install -g supabase
+The Supabase credentials are configured in `src/integrations/supabase/client.ts` (hardcoded for the ADVO project). No `.env` setup needed for the base app.
 
-# Start local Supabase (runs on port 54321)
-supabase start
-```
-
-This will output your local credentials:
-
-```
-API URL: http://localhost:54321
-anon key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-service_role key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-DB URL: postgresql://postgres:postgres@localhost:54322/postgres
-Studio URL: http://localhost:54323
-```
-
-## 3. Configure Environment
-
-Update `.env` with your local Supabase credentials:
+Optional env vars for integrations:
 
 ```env
-VITE_SUPABASE_URL=http://localhost:54321
-VITE_SUPABASE_ANON_KEY=<your-local-anon-key>
+VITE_GITHUB_TOKEN=ghp_...          # GitHub PAT for commit history
+VITE_VERCEL_TOKEN=...              # Vercel deploy status
+VITE_CLOUDFLARE_TOKEN=...         # Cloudflare deploy status
+VITE_CLOUDFLARE_ACCOUNT_ID=...    # Cloudflare account
 ```
 
-## 4. Apply Migrations
+## Database Migrations
 
 ```bash
-# Apply the ADVO schema migrations
-supabase db push
+# Push pending migrations to remote Supabase
+npx supabase db push -p '<db_password>'
+
+# Check migration status
+npx supabase migration list
 ```
 
-Or manually via Studio at `http://localhost:54323`:
+Migrations are in `supabase/migrations/` and numbered chronologically.
 
-1. Go to SQL Editor
-2. Run the contents of `supabase/migrations/*.sql`
-
-## 5. Start Development Server
+## Edge Functions
 
 ```bash
-npm run dev
+# Deploy the notification function
+npx supabase functions deploy send-notification
+
+# Set secrets
+npx supabase secrets set RESEND_API_KEY=re_xxxxx
 ```
 
-Open http://localhost:6900 in your browser.
+## Deploy to Production
+
+The project auto-deploys to Vercel when you push to `main`:
+
+```bash
+git add -A
+git commit -m "feat: description"
+git push origin main
+```
+
+**Manual deploy** (if needed):
+
+```bash
+npx vercel --prod --yes
+```
+
+## Infrastructure
+
+| Service                | URL                                                                         |
+| ---------------------- | --------------------------------------------------------------------------- |
+| **Production**         | [advo.ph](https://advo.ph)                                                  |
+| **Vercel Dashboard**   | [vercel.com](https://vercel.com/gelos-projects-0b0c312c/advo)               |
+| **Supabase Dashboard** | [supabase.com](https://supabase.com/dashboard/project/cxtreuwqrnrfpwvunjqm) |
+| **GitHub Repo**        | [github.com/advo-ph/advo](https://github.com/advo-ph/advo)                  |
+| **DNS**                | Cloudflare                                                                  |
 
 ## Troubleshooting
 
-### Port 6900 Already in Use
+### Port 6900 in use
 
 ```bash
-# Find and kill process on port 6900
 lsof -ti :6900 | xargs kill -9
 ```
 
-### Supabase Connection Issues
+### Migration errors
 
-1. Verify OrbStack Supabase is running: `supabase status`
-2. Check `.env` has correct URL and key
-3. Ensure no firewall blocking localhost:54321
+```bash
+# Check remote migration status
+npx supabase migration list
+# Repair if needed
+npx supabase migration repair --status applied <version>
+```
+
+### Edge function logs
+
+```bash
+npx supabase functions logs send-notification
+```
