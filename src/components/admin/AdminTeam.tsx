@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Plus,
@@ -7,6 +7,7 @@ import {
   X,
   Loader2,
   Linkedin,
+  Camera,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,8 @@ const AdminTeam = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -82,6 +85,44 @@ const AdminTeam = () => {
       linkedin_url: member.linkedin_url || "",
     });
     setIsDialogOpen(true);
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Error", description: "Please select an image file", variant: "destructive" });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Error", description: "Image must be under 5MB", variant: "destructive" });
+      return;
+    }
+
+    setIsUploading(true);
+
+    const ext = file.name.split(".").pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(fileName, file, { cacheControl: "3600", upsert: false });
+
+    if (uploadError) {
+      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
+      setIsUploading(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(fileName);
+
+    setFormData({ ...formData, avatar_url: urlData.publicUrl });
+    setIsUploading(false);
+    toast({ title: "Uploaded", description: "Photo uploaded successfully" });
   };
 
   const handleSave = async () => {
@@ -230,6 +271,39 @@ const AdminTeam = () => {
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
+            {/* Avatar Upload */}
+            <div className="flex items-center gap-4">
+              <div
+                className="relative group cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src={formData.avatar_url || undefined} />
+                  <AvatarFallback className="bg-accent/10 text-accent text-lg font-bold">
+                    {formData.name ? getInitials(formData.name) : "?"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  {isUploading ? (
+                    <Loader2 className="h-5 w-5 text-white animate-spin" />
+                  ) : (
+                    <Camera className="h-5 w-5 text-white" />
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarUpload}
+                />
+              </div>
+              <div className="text-sm text-muted-foreground">
+                <p className="font-medium text-foreground">Profile picture</p>
+                <p className="text-xs">Click to upload (max 5MB)</p>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Name</label>
@@ -249,23 +323,13 @@ const AdminTeam = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Email</label>
-                <Input
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="email@example.com"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Avatar URL</label>
-                <Input
-                  value={formData.avatar_url}
-                  onChange={(e) => setFormData({ ...formData, avatar_url: e.target.value })}
-                  placeholder="https://..."
-                />
-              </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Email</label>
+              <Input
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="email@example.com"
+              />
             </div>
 
             <div className="space-y-2">

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Plus,
@@ -9,6 +9,9 @@ import {
   Loader2,
   Star,
   ExternalLink,
+  Upload,
+  GripVertical,
+  ImagePlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,11 +43,128 @@ interface PortfolioProject {
   description: string | null;
   preview_url: string | null;
   image_url: string | null;
+  image_urls: string[] | null;
   tech_stack: string[] | null;
   is_featured: boolean;
   display_order: number;
   created_at: string;
 }
+
+/* ─── Drag-and-drop image list ──────────────────── */
+
+const ImageList = ({
+  images,
+  onChange,
+  onUpload,
+  isUploading,
+}: {
+  images: string[];
+  onChange: (imgs: string[]) => void;
+  onUpload: (file: File) => void;
+  isUploading: boolean;
+}) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dragIdx, setDragIdx] = useState<number | null>(null);
+
+  const handleDragStart = (idx: number) => {
+    setDragIdx(idx);
+  };
+
+  const handleDragOver = (e: React.DragEvent, idx: number) => {
+    e.preventDefault();
+    if (dragIdx === null || dragIdx === idx) return;
+    const next = [...images];
+    const [moved] = next.splice(dragIdx, 1);
+    next.splice(idx, 0, moved);
+    onChange(next);
+    setDragIdx(idx);
+  };
+
+  const handleDragEnd = () => {
+    setDragIdx(null);
+  };
+
+  const removeImage = (idx: number) => {
+    onChange(images.filter((_, i) => i !== idx));
+  };
+
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-medium">Images</label>
+      <p className="text-xs text-muted-foreground">
+        First image is the main thumbnail. Drag to reorder.
+      </p>
+
+      <div className="grid grid-cols-3 gap-2">
+        {images.map((url, idx) => (
+          <div
+            key={`${url}-${idx}`}
+            draggable
+            onDragStart={() => handleDragStart(idx)}
+            onDragOver={(e) => handleDragOver(e, idx)}
+            onDragEnd={handleDragEnd}
+            className={`relative group rounded-lg overflow-hidden border-2 aspect-video cursor-grab active:cursor-grabbing ${
+              idx === 0
+                ? "border-accent ring-1 ring-accent/30"
+                : "border-border"
+            } ${dragIdx === idx ? "opacity-50" : ""}`}
+          >
+            <img
+              src={url}
+              alt={`Image ${idx + 1}`}
+              className="w-full h-full object-cover"
+              draggable={false}
+            />
+            {idx === 0 && (
+              <Badge className="absolute top-1 left-1 text-[9px] bg-accent text-white px-1.5 py-0">
+                ★ Main
+              </Badge>
+            )}
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+              <GripVertical className="h-4 w-4 text-white" />
+              <button
+                onClick={() => removeImage(idx)}
+                className="p-1 rounded-full bg-destructive/80 hover:bg-destructive"
+              >
+                <X className="h-3 w-3 text-white" />
+              </button>
+            </div>
+          </div>
+        ))}
+
+        {/* Add image button */}
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isUploading}
+          className="flex flex-col items-center justify-center aspect-video rounded-lg border-2 border-dashed border-border hover:border-accent/50 hover:bg-accent/5 transition-colors"
+        >
+          {isUploading ? (
+            <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
+          ) : (
+            <>
+              <ImagePlus className="h-5 w-5 text-muted-foreground mb-1" />
+              <span className="text-[10px] text-muted-foreground">Add image</span>
+            </>
+          )}
+        </button>
+      </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onUpload(file);
+          e.target.value = "";
+        }}
+      />
+    </div>
+  );
+};
+
+/* ─── Main Component ─────────────────────────────── */
 
 const AdminPortfolio = () => {
   const { toast } = useToast();
@@ -55,12 +175,13 @@ const AdminPortfolio = () => {
   const [editingProject, setEditingProject] = useState<PortfolioProject | null>(null);
   const [deletingProject, setDeletingProject] = useState<PortfolioProject | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     preview_url: "",
-    image_url: "",
+    image_urls: [] as string[],
     tech_stack: "",
     is_featured: false,
     display_order: 0,
@@ -86,7 +207,7 @@ const AdminPortfolio = () => {
       title: "",
       description: "",
       preview_url: "",
-      image_url: "",
+      image_urls: [],
       tech_stack: "",
       is_featured: false,
       display_order: projects.length,
@@ -96,16 +217,59 @@ const AdminPortfolio = () => {
 
   const openEditDialog = (project: PortfolioProject) => {
     setEditingProject(project);
+
+    // Merge image_urls and fallback to image_url
+    let imgs = project.image_urls || [];
+    if (imgs.length === 0 && project.image_url) {
+      imgs = [project.image_url];
+    }
+
     setFormData({
       title: project.title,
       description: project.description || "",
       preview_url: project.preview_url || "",
-      image_url: project.image_url || "",
+      image_urls: imgs,
       tech_stack: (project.tech_stack || []).join(", "),
       is_featured: project.is_featured,
       display_order: project.display_order,
     });
     setIsDialogOpen(true);
+  };
+
+  const handleImageUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Error", description: "Please select an image file", variant: "destructive" });
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: "Error", description: "Image must be under 10MB", variant: "destructive" });
+      return;
+    }
+
+    setIsUploading(true);
+    const ext = file.name.split(".").pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("portfolio")
+      .upload(fileName, file, { cacheControl: "3600", upsert: false });
+
+    if (uploadError) {
+      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
+      setIsUploading(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from("portfolio")
+      .getPublicUrl(fileName);
+
+    setFormData((prev) => ({
+      ...prev,
+      image_urls: [...prev.image_urls, urlData.publicUrl],
+    }));
+    setIsUploading(false);
+    toast({ title: "Uploaded", description: "Image added" });
   };
 
   const handleSave = async () => {
@@ -120,7 +284,8 @@ const AdminPortfolio = () => {
       title: formData.title,
       description: formData.description || null,
       preview_url: formData.preview_url || null,
-      image_url: formData.image_url || null,
+      image_url: formData.image_urls[0] || null,
+      image_urls: formData.image_urls,
       tech_stack: formData.tech_stack
         .split(",")
         .map((s) => s.trim())
@@ -130,7 +295,6 @@ const AdminPortfolio = () => {
     };
 
     if (editingProject) {
-      // Optimistic update
       const prev = [...projects];
       setProjects((p) =>
         p.map((proj) =>
@@ -228,9 +392,9 @@ const AdminPortfolio = () => {
               <div className="flex items-center gap-4">
                 {/* Thumbnail */}
                 <div className="w-16 h-12 rounded-lg bg-secondary overflow-hidden flex-shrink-0">
-                  {project.image_url ? (
+                  {(project.image_urls?.[0] || project.image_url) ? (
                     <img
-                      src={project.image_url}
+                      src={project.image_urls?.[0] || project.image_url || ""}
                       alt={project.title}
                       className="w-full h-full object-cover"
                     />
@@ -253,6 +417,11 @@ const AdminPortfolio = () => {
                     <span className="text-[10px] text-muted-foreground font-mono">
                       #{project.display_order}
                     </span>
+                    {(project.image_urls?.length || 0) > 1 && (
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                        {project.image_urls!.length} images
+                      </Badge>
+                    )}
                   </div>
                   {project.description && (
                     <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1 max-w-md">
@@ -306,7 +475,7 @@ const AdminPortfolio = () => {
 
       {/* Create / Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-card border-border max-w-lg rounded-xl">
+        <DialogContent className="bg-card border-border max-w-xl rounded-xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingProject ? "Edit Portfolio Project" : "Add Portfolio Project"}
@@ -335,27 +504,23 @@ const AdminPortfolio = () => {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Preview URL</label>
-                <Input
-                  value={formData.preview_url}
-                  onChange={(e) =>
-                    setFormData({ ...formData, preview_url: e.target.value })
-                  }
-                  placeholder="https://..."
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Image URL</label>
-                <Input
-                  value={formData.image_url}
-                  onChange={(e) =>
-                    setFormData({ ...formData, image_url: e.target.value })
-                  }
-                  placeholder="https://..."
-                />
-              </div>
+            {/* Multi-image upload */}
+            <ImageList
+              images={formData.image_urls}
+              onChange={(imgs) => setFormData({ ...formData, image_urls: imgs })}
+              onUpload={handleImageUpload}
+              isUploading={isUploading}
+            />
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Preview URL</label>
+              <Input
+                value={formData.preview_url}
+                onChange={(e) =>
+                  setFormData({ ...formData, preview_url: e.target.value })
+                }
+                placeholder="https://..."
+              />
             </div>
 
             <div className="space-y-2">

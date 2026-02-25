@@ -530,7 +530,7 @@ const AdminContentStudio = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 ml-auto">
                   {/* Public site toggle */}
                   <button
                     onClick={() =>
@@ -598,7 +598,7 @@ const AdminContentStudio = () => {
                   </button>
 
                   {/* Status badges */}
-                  <div className="flex items-center gap-1.5 min-w-[120px] justify-end">
+                  <div className="flex items-center gap-1.5 w-[100px] justify-end">
                     {section.visible_public ? (
                       <Badge
                         variant="outline"

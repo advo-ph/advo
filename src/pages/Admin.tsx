@@ -101,7 +101,7 @@ const Admin = () => {
         className="pt-24 pb-16 px-6 transition-all duration-200"
         style={{ marginLeft: sidebarWidth }}
       >
-        <div className="max-w-6xl">
+        <div className="max-w-6xl mx-auto">
           {activeSection === "dashboard" && (
             <AdminDashboard
               projectCount={projects.length}
