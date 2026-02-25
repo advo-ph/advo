@@ -1,0 +1,305 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ADVO.ph Pinterest-Inspired Design System
+   Light mode default with dark mode support
+   All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* Pinterest-Inspired Light Mode */
+    --background: 60 9% 98%; /* #F9F9F8 Off-white */
+    --foreground: 0 0% 4%; /* #0A0A0A Near-black */
+
+    --card: 0 0% 100%; /* #FFFFFF Pure white */
+    --card-foreground: 0 0% 4%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 4%;
+
+    --primary: 0 0% 4%; /* Black primary buttons */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 96%; /* #F5F5F5 Light gray */
+    --secondary-foreground: 0 0% 4%;
+
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 45%; /* #717171 Mid-gray */
+
+    --accent: 21 90% 48%; /* #EA580C Deep orange */
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 90%; /* #E5E5E5 Subtle border */
+    --input: 0 0% 90%;
+    --ring: 0 0% 4%;
+
+    --radius: 0.75rem; /* 12px - more rounded */
+
+    /* Gradient colors */
+    --gradient-start: 21 90% 48%; /* Orange */
+    --gradient-end: 15 80% 40%; /* Deeper orange-red */
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 4%;
+    --sidebar-primary: 0 0% 4%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 96%;
+    --sidebar-accent-foreground: 0 0% 4%;
+    --sidebar-border: 0 0% 90%;
+    --sidebar-ring: 0 0% 4%;
+  }
+
+  .dark {
+    /* Preserved Dark Mode */
+    --background: 0 0% 2%; /* #050505 Deep Carbon */
+    --foreground: 0 0% 100%;
+
+    --card: 0 0% 4%; /* #0A0A0A Card Surface */
+    --card-foreground: 0 0% 100%;
+
+    --popover: 0 0% 4%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 2%;
+
+    --secondary: 0 0% 10%; /* #1A1A1A Borders */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 63%; /* #A1A1AA Secondary text */
+
+    --accent: 21 90% 48%; /* Same orange accent */
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 10%; /* #1A1A1A */
+    --input: 0 0% 10%;
+    --ring: 0 0% 83%;
+
+    /* Gradient colors - slightly brighter for dark mode */
+    --gradient-start: 21 90% 55%;
+    --gradient-end: 15 80% 45%;
+
+    --sidebar-background: 0 0% 2%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 0 0% 2%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 10%;
+    --sidebar-ring: 0 0% 100%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: "Inter", system-ui, sans-serif;
+  }
+
+  /* Geist Mono for technical data */
+  .font-mono {
+    font-family:
+      "Geist Mono", "SF Mono", "Monaco", "Inconsolata", "Fira Mono",
+      "Droid Sans Mono", "Source Code Pro", monospace;
+  }
+}
+
+@layer utilities {
+  /* Pinterest-style hover states - enhanced */
+  .hover-lift {
+    @apply transition-all duration-300 ease-out;
+  }
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 
+      0 10px 40px rgba(0, 0, 0, 0.08),
+      0 4px 12px rgba(0, 0, 0, 0.04);
+  }
+
+  /* Subtle shadow for cards */
+  .shadow-card {
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.04),
+      0 1px 2px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Glow for accent states */
+  .glow-accent {
+    box-shadow: 0 0 20px hsl(var(--accent) / 0.15);
+  }
+
+  /* 1px border utility */
+  .border-subtle {
+    @apply border border-border;
+  }
+
+  /* Glassmorphism effect */
+  .glass {
+    background: hsl(var(--card) / 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+
+  .glass-strong {
+    background: hsl(var(--card) / 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid hsl(var(--border) / 0.6);
+  }
+
+  /* Gradient accent background */
+  .gradient-accent {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--gradient-start)),
+      hsl(var(--gradient-end))
+    );
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    background: linear-gradient(
+      135deg,
+      hsl(var(--gradient-start)),
+      hsl(var(--gradient-end))
+    );
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Gradient border effect */
+  .gradient-border {
+    position: relative;
+  }
+  .gradient-border::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: linear-gradient(
+      135deg,
+      hsl(var(--gradient-start)),
+      hsl(var(--gradient-end))
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Button press effect */
+  .btn-press {
+    @apply transition-transform active:scale-[0.97];
+  }
+
+  /* Card hover glow */
+  .card-glow {
+    @apply transition-all duration-300;
+  }
+  .card-glow:hover {
+    box-shadow: 
+      0 0 0 1px hsl(var(--accent) / 0.3),
+      0 10px 40px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Icon bounce on hover */
+  .icon-bounce {
+    @apply transition-transform duration-300;
+  }
+  .group:hover .icon-bounce {
+    transform: translateY(-2px);
+  }
+
+  /* Stagger children animation helper */
+  .stagger-children > * {
+    opacity: 0;
+    animation: fadeInUp 0.5s ease forwards;
+  }
+  .stagger-children > *:nth-child(1) { animation-delay: 0.1s; }
+  .stagger-children > *:nth-child(2) { animation-delay: 0.2s; }
+  .stagger-children > *:nth-child(3) { animation-delay: 0.3s; }
+  .stagger-children > *:nth-child(4) { animation-delay: 0.4s; }
+}
+
+/* Scroll Progress Bar */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    hsl(var(--gradient-start)),
+    hsl(var(--gradient-end))
+  );
+  z-index: 9999;
+  transition: width 0.1s ease-out;
+}
+
+/* Custom Cursor */
+.custom-cursor {
+  position: fixed;
+  width: 20px;
+  height: 20px;
+  border: 2px solid hsl(var(--foreground) / 0.5);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9998;
+  transition: 
+    width 0.2s ease,
+    height 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+  transform: translate(-50%, -50%);
+}
+
+.custom-cursor.hovering {
+  width: 40px;
+  height: 40px;
+  border-color: hsl(var(--accent));
+  background-color: hsl(var(--accent) / 0.1);
+}
+
+.custom-cursor.clicking {
+  width: 16px;
+  height: 16px;
+  background-color: hsl(var(--accent) / 0.3);
+}
+
+/* Hide default cursor when custom cursor is active */
+.cursor-custom {
+  cursor: none;
+}
+.cursor-custom * {
+  cursor: none;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+

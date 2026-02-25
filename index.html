@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ADVO - We Digitalize It For You</title>
+    <meta
+      name="description"
+      content="Digital product studio specializing in web applications, mobile apps, and custom software solutions."
+    />
+    <meta name="author" content="ADVO" />
+
+    <!-- Prevent FOUC -->
+    <style>
+      html {
+        visibility: hidden;
+      }
+      html.loaded {
+        visibility: visible;
+      }
+    </style>
+    <script>
+      document.documentElement.classList.add("loaded");
+    </script>
+
+    <!-- Preload fonts to prevent layout shift -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/advo-logo-black.png" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="ADVO - We Digitalize It For You" />
+    <meta
+      property="og:description"
+      content="Digital product studio specializing in web applications, mobile apps, and custom software solutions."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:url" content="https://advo-alpha.vercel.app" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@advo_ph" />
+    <meta name="twitter:image" content="/og-image.png" />
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
