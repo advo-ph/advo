@@ -1,30 +1,37 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 import PortfolioCard from "./PortfolioCard";
+import { supabase } from "@/integrations/supabase/client";
 
-// Sample portfolio data
-const portfolioProjects = [
-  {
-    title: "VBE Eye Center",
-    description: "EMR app for an ophthalmology clinic streamlining workflow between OPD, nurses, and doctors. Transitioned from paper to digital with improved queuing and patient tracking.",
-    techStack: ["React", "Supabase", "PostgreSQL", "TypeScript"],
-    previewUrl: "#",
-    imageUrl: "/portfolio-vbe.png",
-  },
-  {
-    title: "Sisia",
-    description: "AI-powered content generation tool for marketing teams. Generates copy, images, and campaign strategies.",
-    techStack: ["Next.js", "OpenAI", "Stripe", "Vercel"],
-    previewUrl: "#",
-  },
-  {
-    title: "Hiramin",
-    description: "Enterprise workforce management solution. Handles scheduling, payroll integration, and compliance tracking.",
-    techStack: ["React", "GraphQL", "AWS", "Docker"],
-    previewUrl: "#",
-  },
-];
+interface PortfolioProject {
+  portfolio_project_id: number;
+  title: string;
+  description: string | null;
+  preview_url: string | null;
+  image_url: string | null;
+  tech_stack: string[];
+}
 
 const PortfolioGrid = () => {
+  const [projects, setProjects] = useState<PortfolioProject[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPortfolio = async () => {
+      const { data } = await supabase
+        .from("portfolio_project")
+        .select("portfolio_project_id, title, description, preview_url, image_url, tech_stack")
+        .eq("is_featured", true)
+        .order("display_order", { ascending: true });
+
+      setProjects(data || []);
+      setLoading(false);
+    };
+
+    fetchPortfolio();
+  }, []);
+
   return (
     <section id="portfolio" className="py-24 px-6">
       <div className="max-w-6xl mx-auto">
@@ -42,15 +49,25 @@ const PortfolioGrid = () => {
         </motion.div>
 
         {/* Bento Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {portfolioProjects.map((project, index) => (
-            <PortfolioCard
-              key={project.title}
-              {...project}
-              index={index}
-            />
-          ))}
-        </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="h-8 w-8 animate-spin text-accent" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {projects.map((project, index) => (
+              <PortfolioCard
+                key={project.portfolio_project_id}
+                title={project.title}
+                description={project.description || ""}
+                techStack={project.tech_stack || []}
+                previewUrl={project.preview_url || "#"}
+                imageUrl={project.image_url || undefined}
+                index={index}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
