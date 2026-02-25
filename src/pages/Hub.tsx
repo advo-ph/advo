@@ -38,10 +38,10 @@ const Hub = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <FloatingNav />
 
-      <main className="pt-24 pb-16 px-6">
+      <main className="pt-24 pb-16 px-6 flex-1">
         <div className="max-w-7xl mx-auto">
           {isLoading ? (
             <div className="space-y-6">
