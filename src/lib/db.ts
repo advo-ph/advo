@@ -13,6 +13,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import type { Project, Client, Lead, ProjectStatus, RecentActivity, UpcomingDeadline } from "@/types/admin";
+import { triggerNotification } from "@/lib/notifications";
 import { formatDistanceToNow } from "date-fns";
 
 // ─── Generic Query Result ──────────────────────────────────────────
@@ -64,6 +65,7 @@ export async function updateProject(
     description: string | null;
     repository_name: string | null;
     preview_url: string | null;
+    contract_url: string | null;
     project_status: ProjectStatus;
     total_value_cents: number;
     amount_paid_cents: number;
@@ -94,7 +96,26 @@ export async function createProgressUpdate(update: {
   commit_sha_reference?: string | null;
 }): Promise<DbResult<null>> {
   const { error } = await supabase.from("progress_update").insert(update);
-  return { data: null, error: error?.message || null };
+  if (error) return { data: null, error: error.message };
+
+  // Fire-and-forget: notify client about the progress update
+  const { data: project } = await supabase
+    .from("project")
+    .select("client_id, title")
+    .eq("project_id", update.project_id)
+    .single();
+
+  if (project?.client_id) {
+    triggerNotification({
+      client_id: project.client_id,
+      project_id: update.project_id,
+      title: update.update_title,
+      body: update.update_body || `New update posted for ${project.title}`,
+      type: "progress_update",
+    });
+  }
+
+  return { data: null, error: null };
 }
 
 export async function getRecentProgressUpdates(limit = 5): Promise<DbResult<RecentActivity[]>> {
@@ -243,6 +264,18 @@ export async function getDeliverables() {
 
   if (error) return { data: null, error: error.message };
   return { data: data || [], error: null };
+}
+
+// ─── Project Assets ────────────────────────────────────────────────
+
+export async function addProjectAsset(asset: {
+  project_id: number;
+  asset_type: "progress_photo" | "completion_photo" | "document";
+  url: string;
+  caption?: string | null;
+}): Promise<DbResult<null>> {
+  const { error } = await supabase.from("project_asset").insert(asset);
+  return { data: null, error: error?.message || null };
 }
 
 // ─── Social Posts ──────────────────────────────────────────────────

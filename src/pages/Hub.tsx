@@ -1,85 +1,28 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut, Briefcase, ChevronRight, User } from "lucide-react";
+import { LogOut, Briefcase, ChevronRight, User, Bell, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
-import * as db from "@/lib/db";
+import { useClientData, type ClientProject } from "@/hooks/useClientData";
+import { useClientNotifications } from "@/hooks/useNotifications";
 import ProjectDashboard from "@/components/hub/ProjectDashboard";
 import FloatingNav from "@/components/landing/FloatingNav";
 import Footer from "@/components/landing/Footer";
 
-type ProjectStatus = "discovery" | "architecture" | "development" | "testing" | "shipped";
-
-interface Project {
-  project_id: number;
-  title: string;
-  description?: string;
-  repository_name?: string;
-  preview_url?: string;
-  project_status: ProjectStatus;
-  total_value_cents: number;
-  amount_paid_cents: number;
-  tech_stack: string[];
-  progress_update: Array<{
-    progress_update_id: number;
-    update_title: string;
-    update_body?: string;
-    commit_sha_reference?: string;
-    created_at: string;
-  }>;
-}
-
 const Hub = () => {
   const { user, isLoading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { projects, isLoading } = useClientData();
+  const { notifications, unreadCount, markRead } = useClientNotifications();
+  const [selectedProject, setSelectedProject] = useState<ClientProject | null>(null);
+  const [bellOpen, setBellOpen] = useState(false);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/login");
-    }
-  }, [user, authLoading, navigate]);
-
-  useEffect(() => {
-    const fetchProjects = async () => {
-      if (!user) return;
-
-      const { data, error } = await db.getClientProjects();
-
-      if (error) {
-        console.error("Error fetching projects:", error);
-      } else if (data) {
-        const typedProjects = data.map((p) => ({
-          ...p,
-          project_status: p.project_status as ProjectStatus,
-          tech_stack: (p.tech_stack || []) as string[],
-          progress_update: (p.progress_update || []).map((u: {
-            progress_update_id: number;
-            update_title: string;
-            update_body?: string;
-            commit_sha_reference?: string;
-            created_at: string;
-          }) => ({
-            progress_update_id: u.progress_update_id,
-            update_title: u.update_title,
-            update_body: u.update_body,
-            commit_sha_reference: u.commit_sha_reference,
-            created_at: u.created_at,
-          })),
-        }));
-        setProjects(typedProjects);
-        if (typedProjects.length > 0 && !selectedProject) {
-          setSelectedProject(typedProjects[0]);
-        }
-      }
-      setIsLoading(false);
-    };
-
-    fetchProjects();
-  }, [user, selectedProject]);
+  // Auto-select first project once loaded
+  if (!selectedProject && projects.length > 0) {
+    setSelectedProject(projects[0]);
+  }
 
   const handleSignOut = async () => {
     await signOut();
@@ -137,8 +80,81 @@ const Hub = () => {
                         <p className="text-sm font-medium truncate">{user?.email}</p>
                         <p className="text-xs text-muted-foreground">Client</p>
                       </div>
+                      {/* Notification Bell */}
+                      <div className="relative">
+                        <button
+                          onClick={() => setBellOpen(!bellOpen)}
+                          className="relative p-2 rounded-lg hover:bg-secondary/50 transition-colors"
+                        >
+                          <Bell className="h-4 w-4 text-muted-foreground" />
+                          {unreadCount > 0 && (
+                            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-accent text-white text-[10px] flex items-center justify-center font-bold">
+                              {unreadCount}
+                            </span>
+                          )}
+                        </button>
+
+                        {/* Notification Dropdown */}
+                        {bellOpen && (
+                          <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden">
+                            <div className="p-3 border-b border-border flex items-center justify-between">
+                              <span className="text-xs font-semibold uppercase tracking-wider">Notifications</span>
+                              {unreadCount > 0 && (
+                                <Badge className="text-[10px] bg-accent text-white">
+                                  {unreadCount} new
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="max-h-64 overflow-y-auto">
+                              {notifications.length === 0 ? (
+                                <p className="p-4 text-sm text-muted-foreground text-center">
+                                  No notifications yet
+                                </p>
+                              ) : (
+                                notifications.map((n) => (
+                                  <div
+                                    key={n.notification_id}
+                                    className={`p-3 border-b border-border last:border-0 ${!n.is_read ? "bg-accent/5" : ""}`}
+                                  >
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex-1 min-w-0">
+                                        <p className={`text-sm font-medium ${n.is_read ? "text-muted-foreground" : ""}`}>
+                                          {n.title}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                                          {n.body}
+                                        </p>
+                                        <p className="text-[10px] text-muted-foreground mt-1">
+                                          {new Date(n.sent_at).toLocaleDateString("en-US", {
+                                            month: "short",
+                                            day: "numeric",
+                                            hour: "numeric",
+                                            minute: "2-digit",
+                                          })}
+                                        </p>
+                                      </div>
+                                      {!n.is_read && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            markRead(n.notification_id);
+                                          }}
+                                          className="p-1 rounded hover:bg-secondary transition-colors flex-shrink-0"
+                                          title="Mark as read"
+                                        >
+                                          <Check className="h-3 w-3 text-accent" />
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <button 
+                    <button
                       onClick={handleSignOut}
                       className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-lg transition-colors"
                     >
@@ -159,9 +175,10 @@ const Hub = () => {
                           onClick={() => setSelectedProject(project)}
                           className={`
                             w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between card-glow
-                            ${selectedProject?.project_id === project.project_id
-                              ? "bg-card border-accent shadow-card"
-                              : "border-border hover:bg-card hover:shadow-card hover:border-border"
+                            ${
+                              selectedProject?.project_id === project.project_id
+                                ? "bg-card border-accent shadow-card"
+                                : "border-border hover:bg-card hover:shadow-card hover:border-border"
                             }
                           `}
                         >

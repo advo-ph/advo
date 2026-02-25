@@ -40,7 +40,7 @@ import type { Client } from "@/types/admin";
 interface AdminClientsProps {
   clients: Client[];
   isLoading: boolean;
-  onRefresh: () => Promise<void>;
+  onRefresh: () => void | Promise<unknown>;
 }
 
 const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {

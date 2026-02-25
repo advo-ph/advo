@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_user: {
+        Row: {
+          admin_user_id: number
+          user_id: string
+          created_at: string
+        }
+        Insert: {
+          admin_user_id?: never
+          user_id: string
+          created_at?: string
+        }
+        Update: {
+          admin_user_id?: never
+          user_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
       client: {
         Row: {
           brand_color_hex: string | null
@@ -114,6 +132,9 @@ export type Database = {
           budget: string | null
           description: string | null
           submitted_at: string
+          status: Database["public"]["Enums"]["lead_status"]
+          assigned_to: number | null
+          notes: string | null
         }
         Insert: {
           lead_id?: never
@@ -124,6 +145,9 @@ export type Database = {
           budget?: string | null
           description?: string | null
           submitted_at?: string
+          status?: Database["public"]["Enums"]["lead_status"]
+          assigned_to?: number | null
+          notes?: string | null
         }
         Update: {
           lead_id?: never
@@ -134,8 +158,111 @@ export type Database = {
           budget?: string | null
           description?: string | null
           submitted_at?: string
+          status?: Database["public"]["Enums"]["lead_status"]
+          assigned_to?: number | null
+          notes?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "lead_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "team_member"
+            referencedColumns: ["team_member_id"]
+          },
+        ]
+      }
+      notification: {
+        Row: {
+          notification_id: number
+          client_id: number
+          project_id: number | null
+          type: Database["public"]["Enums"]["notification_type"]
+          title: string
+          body: string
+          is_read: boolean
+          sent_at: string
+        }
+        Insert: {
+          notification_id?: never
+          client_id: number
+          project_id?: number | null
+          type: Database["public"]["Enums"]["notification_type"]
+          title: string
+          body: string
+          is_read?: boolean
+          sent_at?: string
+        }
+        Update: {
+          notification_id?: never
+          client_id?: number
+          project_id?: number | null
+          type?: Database["public"]["Enums"]["notification_type"]
+          title?: string
+          body?: string
+          is_read?: boolean
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "notification_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
+      invoice: {
+        Row: {
+          invoice_id: number
+          project_id: number
+          amount_cents: number
+          label: string
+          status: Database["public"]["Enums"]["invoice_status"]
+          due_date: string | null
+          paid_at: string | null
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          invoice_id?: never
+          project_id: number
+          amount_cents: number
+          label: string
+          status?: Database["public"]["Enums"]["invoice_status"]
+          due_date?: string | null
+          paid_at?: string | null
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          invoice_id?: never
+          project_id?: number
+          amount_cents?: number
+          label?: string
+          status?: Database["public"]["Enums"]["invoice_status"]
+          due_date?: string | null
+          paid_at?: string | null
+          notes?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project"
+            referencedColumns: ["project_id"]
+          },
+        ]
       }
       portfolio_project: {
         Row: {
@@ -241,6 +368,72 @@ export type Database = {
         }
         Relationships: []
       }
+      site_content: {
+        Row: {
+          section_id: string
+          label: string
+          visible_public: boolean
+          visible_client_portal: boolean
+          content: Json | null
+          updated_at: string
+        }
+        Insert: {
+          section_id: string
+          label: string
+          visible_public?: boolean
+          visible_client_portal?: boolean
+          content?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          section_id?: string
+          label?: string
+          visible_public?: boolean
+          visible_client_portal?: boolean
+          content?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      project_access: {
+        Row: {
+          project_access_id: number
+          team_member_id: number
+          project_id: number
+          permission_level: Database["public"]["Enums"]["project_permission_level"]
+          granted_at: string
+        }
+        Insert: {
+          project_access_id?: never
+          team_member_id: number
+          project_id: number
+          permission_level: Database["public"]["Enums"]["project_permission_level"]
+          granted_at?: string
+        }
+        Update: {
+          project_access_id?: never
+          team_member_id?: number
+          project_id?: number
+          permission_level?: Database["public"]["Enums"]["project_permission_level"]
+          granted_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_access_team_member_id_fkey"
+            columns: ["team_member_id"]
+            isOneToOne: false
+            referencedRelation: "team_member"
+            referencedColumns: ["team_member_id"]
+          },
+          {
+            foreignKeyName: "project_access_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
       team_member: {
         Row: {
           team_member_id: number
@@ -250,6 +443,10 @@ export type Database = {
           avatar_url: string | null
           is_active: boolean
           created_at: string
+          user_id: string | null
+          permission_role: Database["public"]["Enums"]["team_permission_role"] | null
+          bio: string | null
+          linkedin_url: string | null
         }
         Insert: {
           team_member_id?: never
@@ -259,6 +456,10 @@ export type Database = {
           avatar_url?: string | null
           is_active?: boolean
           created_at?: string
+          user_id?: string | null
+          permission_role?: Database["public"]["Enums"]["team_permission_role"] | null
+          bio?: string | null
+          linkedin_url?: string | null
         }
         Update: {
           team_member_id?: never
@@ -268,6 +469,10 @@ export type Database = {
           avatar_url?: string | null
           is_active?: boolean
           created_at?: string
+          user_id?: string | null
+          permission_role?: Database["public"]["Enums"]["team_permission_role"] | null
+          bio?: string | null
+          linkedin_url?: string | null
         }
         Relationships: []
       }
@@ -286,6 +491,7 @@ export type Database = {
           title: string
           total_value_cents: number
           updated_at: string
+          contract_url: string | null
         }
         Insert: {
           amount_paid_cents?: number
@@ -301,6 +507,7 @@ export type Database = {
           title: string
           total_value_cents?: number
           updated_at?: string
+          contract_url?: string | null
         }
         Update: {
           amount_paid_cents?: number
@@ -316,6 +523,7 @@ export type Database = {
           title?: string
           total_value_cents?: number
           updated_at?: string
+          contract_url?: string | null
         }
         Relationships: [
           {
@@ -327,12 +535,50 @@ export type Database = {
           },
         ]
       }
+      project_asset: {
+        Row: {
+          project_asset_id: number
+          project_id: number
+          asset_type: Database["public"]["Enums"]["project_asset_type"]
+          url: string
+          caption: string | null
+          uploaded_at: string
+        }
+        Insert: {
+          project_asset_id?: never
+          project_id: number
+          asset_type: Database["public"]["Enums"]["project_asset_type"]
+          url: string
+          caption?: string | null
+          uploaded_at?: string
+        }
+        Update: {
+          project_asset_id?: never
+          project_id?: number
+          asset_type?: Database["public"]["Enums"]["project_asset_type"]
+          url?: string
+          caption?: string | null
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_asset_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "project"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
       deliverable_status:
@@ -341,12 +587,42 @@ export type Database = {
         | "review"
         | "completed"
         | "blocked"
+      invoice_status:
+        | "unpaid"
+        | "paid"
+        | "overdue"
+      lead_status:
+        | "new"
+        | "contacted"
+        | "qualified"
+        | "proposal_sent"
+        | "closed_won"
+        | "closed_lost"
+      project_permission_level:
+        | "read"
+        | "write"
+        | "admin"
+      notification_type:
+        | "progress_update"
+        | "invoice_issued"
+        | "deliverable_completed"
+        | "project_status_change"
+        | "custom"
+      project_asset_type:
+        | "progress_photo"
+        | "completion_photo"
+        | "document"
       project_status:
         | "discovery"
         | "architecture"
         | "development"
         | "testing"
         | "shipped"
+      team_permission_role:
+        | "admin"
+        | "developer"
+        | "designer"
+        | "manager"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -481,12 +757,23 @@ export const Constants = {
         "completed",
         "blocked",
       ],
+      project_permission_level: [
+        "read",
+        "write",
+        "admin",
+      ],
       project_status: [
         "discovery",
         "architecture",
         "development",
         "testing",
         "shipped",
+      ],
+      team_permission_role: [
+        "admin",
+        "developer",
+        "designer",
+        "manager",
       ],
     },
   },

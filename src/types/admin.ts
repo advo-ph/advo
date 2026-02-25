@@ -4,8 +4,6 @@ export type ProjectStatus = "discovery" | "architecture" | "development" | "test
 
 export const STATUS_OPTIONS: ProjectStatus[] = ["discovery", "architecture", "development", "testing", "shipped"];
 
-export const ADMIN_EMAILS = ["hello@advo.ph", "dev@advo.ph", "test2@example.com"];
-
 export interface Client {
   client_id: number;
   contact_email?: string;
@@ -40,6 +38,9 @@ export interface Lead {
   budget: string;
   description: string;
   submitted_at: string;
+  status: "new" | "contacted" | "qualified" | "proposal_sent" | "closed_won" | "closed_lost";
+  assigned_to: number | null;
+  notes: string | null;
 }
 
 export interface RecentActivity {
@@ -57,9 +58,5 @@ export interface UpcomingDeadline {
 }
 
 export const formatCurrency = (cents: number) => {
-  return new Intl.NumberFormat("en-PH", {
-    style: "currency",
-    currency: "PHP",
-    minimumFractionDigits: 0,
-  }).format(cents / 100);
+  return "₱" + (cents / 100).toLocaleString("en-PH", { minimumFractionDigits: 2 });
 };

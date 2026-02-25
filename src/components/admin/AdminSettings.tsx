@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import * as db from "@/lib/db";
-import { ADMIN_EMAILS } from "@/types/admin";
+import { supabase } from "@/integrations/supabase/client";
 
 interface SiteConfig {
   agency_name: string;
@@ -43,7 +43,7 @@ const DEFAULT_CONFIG: SiteConfig = {
 const AdminSettings = () => {
   const { toast } = useToast();
   const [config, setConfig] = useState<SiteConfig>(DEFAULT_CONFIG);
-  const [adminEmails, setAdminEmails] = useState<string[]>(ADMIN_EMAILS);
+  const [adminEmails, setAdminEmails] = useState<string[]>([]);
   const [newEmail, setNewEmail] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isAddEmailOpen, setIsAddEmailOpen] = useState(false);
@@ -53,7 +53,22 @@ const AdminSettings = () => {
 
   useEffect(() => {
     checkSupabaseConnection();
+    fetchAdminEmails();
   }, []);
+
+  const fetchAdminEmails = async () => {
+    // Fetch admin_user rows and look up their emails
+    const { data } = await supabase
+      .from("admin_user")
+      .select("user_id");
+    if (data && data.length > 0) {
+      // Use the admin API isn't available from client, so we
+      // look up emails from the client table or show user_ids
+      // For now, just show the user IDs since auth.users isn't
+      // queryable from the client SDK
+      setAdminEmails(data.map((row) => row.user_id));
+    }
+  };
 
   const checkSupabaseConnection = async () => {
     setSupabaseStatus("checking");

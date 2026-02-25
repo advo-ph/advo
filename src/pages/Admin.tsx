@@ -1,20 +1,26 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { LogOut, Settings, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminData } from "@/hooks/useAdminData";
-import { ADMIN_EMAILS, formatCurrency } from "@/types/admin";
+import { useOrgProjects } from "@/hooks/useOrgProjects";
+import { formatCurrency } from "@/types/admin";
 
 // Admin Components
 import AdminSidebar, { type AdminSection } from "@/components/admin/AdminSidebar";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import AdminProjects from "@/components/admin/AdminProjects";
 import AdminClients from "@/components/admin/AdminClients";
+import AdminTeam from "@/components/admin/AdminTeam";
 import AdminSchedule from "@/components/admin/AdminSchedule";
 import AdminSocial from "@/components/admin/AdminSocial";
 import AdminAvailability from "@/components/admin/AdminAvailability";
+import AdminContentStudio from "@/components/admin/AdminContentStudio";
+import AdminPortfolio from "@/components/admin/AdminPortfolio";
+import AdminFinance from "@/components/admin/AdminFinance";
+import AdminNotifications from "@/components/admin/AdminNotifications";
 import AdminLeads from "@/components/admin/AdminLeads";
 import AdminSettings from "@/components/admin/AdminSettings";
 
@@ -37,35 +43,17 @@ const Admin = () => {
     refetch,
   } = useAdminData(user);
 
-  const isAdmin = user && ADMIN_EMAILS.includes(user.email || "");
-
-  // Auth guard — redirect in effect to avoid React warning
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/login");
-    } else if (!authLoading && user && !isAdmin) {
-      navigate("/hub");
-    }
-  }, [user, authLoading, navigate, isAdmin]);
+  // GitHub-enriched projects for the Projects section
+  const {
+    projects: orgProjects,
+    isLoading: orgLoading,
+    refetch: orgRefetch,
+  } = useOrgProjects();
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
   };
-
-  // Show loading while auth is being determined
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  // Don't render admin for non-admins (redirect is in useEffect)
-  if (!isAdmin) {
-    return null;
-  }
 
   // Calculate sidebar width for main content offset
   const sidebarWidth = isSidebarCollapsed ? 72 : 240;
@@ -128,10 +116,10 @@ const Admin = () => {
 
           {activeSection === "projects" && (
             <AdminProjects
-              projects={projects}
+              projects={orgProjects}
               clients={clients}
-              isLoading={isLoading}
-              onRefresh={refetch}
+              isLoading={orgLoading}
+              onRefresh={orgRefetch}
             />
           )}
 
@@ -143,19 +131,23 @@ const Admin = () => {
             />
           )}
 
+          {activeSection === "team" && <AdminTeam />}
+
           {activeSection === "schedule" && <AdminSchedule />}
 
           {activeSection === "availability" && <AdminAvailability />}
 
           {activeSection === "social" && <AdminSocial />}
 
-          {activeSection === "leads" && (
-            <AdminLeads
-              leads={leads}
-              isLoading={isLoading}
-              onRefresh={refetch}
-            />
-          )}
+          {activeSection === "content" && <AdminContentStudio />}
+
+          {activeSection === "portfolio" && <AdminPortfolio />}
+
+          {activeSection === "finance" && <AdminFinance projects={projects} />}
+
+          {activeSection === "notifications" && <AdminNotifications />}
+
+          {activeSection === "leads" && <AdminLeads />}
 
           {activeSection === "settings" && <AdminSettings />}
         </div>

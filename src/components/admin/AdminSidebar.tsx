@@ -3,17 +3,22 @@ import {
   LayoutDashboard,
   FolderKanban,
   Users,
+  Users2,
   Calendar,
   CalendarClock,
   Instagram,
-  Inbox,
+  FileText,
+  Image,
+  Banknote,
+  Bell,
+  UserPlus,
   Settings,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type AdminSection = "dashboard" | "projects" | "clients" | "schedule" | "availability" | "social" | "leads" | "settings";
+export type AdminSection = "dashboard" | "projects" | "clients" | "team" | "schedule" | "availability" | "social" | "content" | "portfolio" | "finance" | "notifications" | "leads" | "settings";
 
 interface AdminSidebarProps {
   activeSection: AdminSection;
@@ -26,10 +31,15 @@ const navItems: { id: AdminSection; label: string; icon: React.ElementType }[] =
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "projects", label: "Projects", icon: FolderKanban },
   { id: "clients", label: "Clients", icon: Users },
+  { id: "team", label: "Team", icon: Users2 },
   { id: "schedule", label: "Deliverables", icon: Calendar },
   { id: "availability", label: "Availability", icon: CalendarClock },
   { id: "social", label: "Social", icon: Instagram },
-  { id: "leads", label: "Leads", icon: Inbox },
+  { id: "content", label: "Content Studio", icon: FileText },
+  { id: "portfolio", label: "Portfolio", icon: Image },
+  { id: "finance", label: "Finance", icon: Banknote },
+  { id: "notifications", label: "Notifications", icon: Bell },
+  { id: "leads", label: "Leads", icon: UserPlus },
 ];
 
 const AdminSidebar = ({

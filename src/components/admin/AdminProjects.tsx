@@ -10,6 +10,9 @@ import {
   ExternalLink,
   Loader2,
   MessageSquarePlus,
+  GitCommitHorizontal,
+  GitPullRequest,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,14 +44,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import * as db from "@/lib/db";
 import { useToast } from "@/hooks/use-toast";
-import type { Project, Client, ProjectStatus } from "@/types/admin";
+import type { Client, ProjectStatus } from "@/types/admin";
 import { STATUS_OPTIONS, formatCurrency } from "@/types/admin";
+import type { MergedProject } from "@/hooks/useOrgProjects";
 
 interface AdminProjectsProps {
-  projects: Project[];
+  projects: MergedProject[];
   clients: Client[];
   isLoading: boolean;
-  onRefresh: () => Promise<void>;
+  onRefresh: () => void;
 }
 
 const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProjectsProps) => {
@@ -58,9 +62,9 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [deletingProject, setDeletingProject] = useState<Project | null>(null);
-  const [updatingProject, setUpdatingProject] = useState<Project | null>(null);
+  const [editingProject, setEditingProject] = useState<MergedProject | null>(null);
+  const [deletingProject, setDeletingProject] = useState<MergedProject | null>(null);
+  const [updatingProject, setUpdatingProject] = useState<MergedProject | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   // Form state
@@ -70,6 +74,7 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
     description: "",
     repository_name: "",
     preview_url: "",
+    contract_url: "",
     project_status: "discovery" as ProjectStatus,
     total_value_cents: 0,
     amount_paid_cents: 0,
@@ -90,6 +95,7 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
       description: "",
       repository_name: "",
       preview_url: "",
+      contract_url: "",
       project_status: "discovery",
       total_value_cents: 0,
       amount_paid_cents: 0,
@@ -98,7 +104,7 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
     setIsDialogOpen(true);
   };
 
-  const openEditDialog = (project: Project) => {
+  const openEditDialog = (project: MergedProject) => {
     setEditingProject(project);
     setFormData({
       client_id: project.client_id.toString(),
@@ -106,6 +112,7 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
       description: project.description || "",
       repository_name: project.repository_name || "",
       preview_url: project.preview_url || "",
+      contract_url: (project as any).contract_url || "",
       project_status: project.project_status,
       total_value_cents: project.total_value_cents,
       amount_paid_cents: project.amount_paid_cents,
@@ -114,7 +121,7 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
     setIsDialogOpen(true);
   };
 
-  const openUpdateDialog = (project: Project) => {
+  const openUpdateDialog = (project: MergedProject) => {
     setUpdatingProject(project);
     setUpdateFormData({
       update_title: "",
@@ -138,6 +145,7 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
       description: formData.description || null,
       repository_name: formData.repository_name || null,
       preview_url: formData.preview_url || null,
+      contract_url: formData.contract_url || null,
       project_status: formData.project_status,
       total_value_cents: formData.total_value_cents,
       amount_paid_cents: formData.amount_paid_cents,
@@ -279,6 +287,35 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
                       </a>
                     )}
                   </div>
+
+                  {/* GitHub enrichment row */}
+                  {project.githubRepo && (
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
+                      <span className="flex items-center gap-1">
+                        <GitCommitHorizontal className="h-3 w-3" />
+                        {project.commits.length} recent commits
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <GitPullRequest className="h-3 w-3" />
+                        {project.openPRs} open PRs
+                      </span>
+                      {project.lastPush && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          Last push {new Date(project.lastPush).toLocaleDateString()}
+                        </span>
+                      )}
+                      {project.detectedTechStack.length > 0 && (
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {project.detectedTechStack.slice(0, 4).map((t) => (
+                            <Badge key={t.name} variant="secondary" className="text-[10px] px-1.5 py-0">
+                              {t.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -404,6 +441,15 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
               </div>
             </div>
 
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Contract URL</label>
+              <Input
+                value={formData.contract_url}
+                onChange={(e) => setFormData({ ...formData, contract_url: e.target.value })}
+                placeholder="https://link-to-contract.pdf"
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Total Value (PHP)</label>
@@ -434,6 +480,66 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
                 placeholder="Next.js, Supabase, Stripe"
               />
             </div>
+
+            {/* Asset Upload – only in edit mode */}
+            {editingProject && (
+              <div className="space-y-3 pt-3 border-t border-border">
+                <label className="text-sm font-medium">Add Project Asset</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    id="asset-url"
+                    placeholder="Asset URL (image or doc link)"
+                    className="col-span-2"
+                  />
+                  <Input id="asset-caption" placeholder="Caption (optional)" />
+                  <Select defaultValue="progress_photo">
+                    <SelectTrigger id="asset-type">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="progress_photo">Progress Photo</SelectItem>
+                      <SelectItem value="completion_photo">Completion Photo</SelectItem>
+                      <SelectItem value="document">Document</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={async () => {
+                    const urlEl = document.getElementById("asset-url") as HTMLInputElement;
+                    const captionEl = document.getElementById("asset-caption") as HTMLInputElement;
+                    const typeEl = document.querySelector<HTMLButtonElement>("#asset-type");
+                    const assetUrl = urlEl?.value?.trim();
+                    if (!assetUrl || !editingProject) return;
+
+                    const assetType = (typeEl?.textContent?.toLowerCase().replace(/ /g, "_") || "progress_photo") as
+                      | "progress_photo"
+                      | "completion_photo"
+                      | "document";
+
+                    const { error } = await db.addProjectAsset({
+                      project_id: editingProject.project_id,
+                      asset_type: assetType,
+                      url: assetUrl,
+                      caption: captionEl?.value?.trim() || null,
+                    });
+
+                    if (error) {
+                      toast({ title: "Error", description: error, variant: "destructive" });
+                    } else {
+                      toast({ title: "Added", description: "Asset uploaded" });
+                      if (urlEl) urlEl.value = "";
+                      if (captionEl) captionEl.value = "";
+                      onRefresh();
+                    }
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Add Asset
+                </Button>
+              </div>
+            )}
           </div>
 
           <DialogFooter>

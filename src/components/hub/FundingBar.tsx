@@ -10,12 +10,7 @@ const FundingBar = ({ totalCents, paidCents }: FundingBarProps) => {
   const percentage = totalCents > 0 ? Math.round((paidCents / totalCents) * 100) : 0;
   
   const formatCurrency = (cents: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(cents / 100);
+    return "₱" + (cents / 100).toLocaleString("en-PH", { minimumFractionDigits: 2 });
   };
 
   return (
