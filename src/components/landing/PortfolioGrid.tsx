@@ -11,6 +11,7 @@ interface PortfolioProject {
   preview_url: string | null;
   image_url: string | null;
   tech_stack: string[];
+  slug: string | null;
 }
 
 const PortfolioGrid = () => {
@@ -21,11 +22,11 @@ const PortfolioGrid = () => {
     const fetchPortfolio = async () => {
       const { data } = await supabase
         .from("portfolio_project")
-        .select("portfolio_project_id, title, description, preview_url, image_url, tech_stack")
+        .select("portfolio_project_id, title, description, preview_url, image_url, tech_stack, slug")
         .eq("is_featured", true)
         .order("display_order", { ascending: true });
 
-      setProjects(data || []);
+      setProjects((data as unknown as PortfolioProject[]) || []);
       setLoading(false);
     };
 
@@ -63,6 +64,7 @@ const PortfolioGrid = () => {
                 techStack={project.tech_stack || []}
                 previewUrl={project.preview_url || "#"}
                 imageUrl={project.image_url || undefined}
+                slug={project.slug || undefined}
                 index={index}
               />
             ))}

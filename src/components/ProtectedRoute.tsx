@@ -1,4 +1,4 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRoles } from "@/hooks/useRoles";
@@ -16,6 +16,7 @@ const ProtectedRoute = ({
 }: ProtectedRouteProps) => {
   const { user, isLoading: authLoading } = useAuth();
   const { isAdmin, projectIds, isLoading: rolesLoading } = useRoles();
+  const location = useLocation();
 
   // Show spinner while loading
   if (authLoading || rolesLoading) {
@@ -26,9 +27,9 @@ const ProtectedRoute = ({
     );
   }
 
-  // Auth check
+  // Auth check — pass intended destination so login can redirect back
   if ((requireAuth || requireAdmin) && !user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={`/login?redirectTo=${encodeURIComponent(location.pathname)}`} replace />;
   }
 
   // Admin check
@@ -49,3 +50,4 @@ const ProtectedRoute = ({
 };
 
 export default ProtectedRoute;
+

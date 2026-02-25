@@ -1,75 +1,59 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, ExternalLink, Github } from "lucide-react";
+import { ArrowLeft, ExternalLink, Github, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import FloatingNav from "@/components/landing/FloatingNav";
 import Footer from "@/components/landing/Footer";
+import { supabase } from "@/integrations/supabase/client";
 
-// Project data - in a real app, this would come from a database/CMS
-const projectsData: Record<string, {
+interface CaseStudy {
+  overview?: string;
+  challenge?: string;
+  solution?: string;
+  results?: string[];
+  github_url?: string;
+}
+
+interface Project {
+  portfolio_project_id: number;
   title: string;
-  description: string;
-  fullDescription: string;
-  challenge: string;
-  solution: string;
-  results: string[];
-  techStack: string[];
-  imageUrl?: string;
-  previewUrl?: string;
-  githubUrl?: string;
-}> = {
-  "vbe-eye-center": {
-    title: "VBE Eye Center",
-    description: "EMR app for an ophthalmology clinic streamlining workflow between OPD, nurses, and doctors.",
-    fullDescription: "A comprehensive Electronic Medical Record (EMR) system designed specifically for ophthalmology clinics. The system digitizes the entire patient journey from registration to consultation and follow-up care.",
-    challenge: "The clinic was operating entirely on paper records, leading to lost files, slow patient processing, and difficulty tracking patient history across multiple visits.",
-    solution: "We built a custom EMR system with role-based access for OPD staff, nurses, and doctors. The system features real-time queue management, digital patient records, prescription generation, and appointment scheduling.",
-    results: [
-      "Reduced patient wait time by 40%",
-      "Zero lost patient records since implementation",
-      "Streamlined workflow between departments",
-      "Digital prescriptions and medical certificates",
-    ],
-    techStack: ["React", "Supabase", "PostgreSQL", "TypeScript", "Tailwind CSS"],
-    imageUrl: "/portfolio-vbe.png",
-    previewUrl: "#",
-  },
-  "sisia": {
-    title: "Sisia",
-    description: "AI-powered content generation tool for marketing teams.",
-    fullDescription: "Sisia is a marketing automation platform that leverages AI to generate compelling copy, images, and campaign strategies for marketing teams of all sizes.",
-    challenge: "Marketing teams often spend hours brainstorming content ideas and creating multiple variations for A/B testing, leading to slow campaign launches.",
-    solution: "We integrated OpenAI's GPT and DALL-E APIs to create a unified platform where marketing teams can generate copy, images, and complete campaign strategies with just a few prompts.",
-    results: [
-      "10x faster content creation",
-      "Consistent brand voice across channels",
-      "Reduced creative costs by 60%",
-      "Improved campaign performance",
-    ],
-    techStack: ["Next.js", "OpenAI", "Stripe", "Vercel", "TailwindCSS"],
-    previewUrl: "#",
-  },
-  "hiramin": {
-    title: "Hiramin",
-    description: "Enterprise workforce management solution.",
-    fullDescription: "A comprehensive workforce management platform handling scheduling, payroll integration, time tracking, and compliance management for enterprises with distributed teams.",
-    challenge: "Large enterprises struggle to manage schedules, track attendance, and ensure labor law compliance across multiple locations and time zones.",
-    solution: "We built a scalable solution on AWS with GraphQL APIs, featuring real-time schedule updates, automated compliance checks, and seamless integration with existing payroll systems.",
-    results: [
-      "Reduced scheduling errors by 85%",
-      "Automated compliance reporting",
-      "Seamless payroll integration",
-      "Real-time workforce visibility",
-    ],
-    techStack: ["React", "GraphQL", "AWS", "Docker", "Kubernetes"],
-    previewUrl: "#",
-  },
-};
+  description: string | null;
+  preview_url: string | null;
+  image_url: string | null;
+  image_urls: string[] | null;
+  tech_stack: string[] | null;
+  slug: string | null;
+  case_study: CaseStudy | null;
+}
 
 const ProjectDetail = () => {
   const { slug } = useParams<{ slug: string }>();
-  const project = slug ? projectsData[slug] : null;
+  const [project, setProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!slug) return;
+    (async () => {
+      const { data } = await (supabase
+        .from("portfolio_project") as unknown as { select: (q: string) => { eq: (col: string, val: string) => { maybeSingle: () => Promise<{ data: Project | null }> } } })
+        .select("portfolio_project_id, title, description, preview_url, image_url, image_urls, tech_stack, slug, case_study")
+        .eq("slug", slug)
+        .maybeSingle();
+
+      setProject(data || null);
+      setLoading(false);
+    })();
+  }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   if (!project) {
     return (
@@ -84,11 +68,14 @@ const ProjectDetail = () => {
     );
   }
 
+  const cs = project.case_study || {};
+  const heroImage = project.image_urls?.[0] || project.image_url;
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <FloatingNav />
       
-      <main className="pt-24 pb-16 px-6">
+      <main className="pt-24 pb-16 px-6 flex-1">
         <div className="max-w-4xl mx-auto">
           {/* Back Button */}
           <motion.div
@@ -115,30 +102,34 @@ const ProjectDetail = () => {
               Case Study
             </span>
             <h1 className="text-4xl md:text-5xl font-bold mb-4">{project.title}</h1>
-            <p className="text-xl text-muted-foreground mb-8">{project.description}</p>
+            {project.description && (
+              <p className="text-xl text-muted-foreground mb-8">{project.description}</p>
+            )}
             
             {/* Tech Stack */}
-            <div className="flex flex-wrap gap-2 mb-8">
-              {project.techStack.map((tech) => (
-                <Badge key={tech} variant="outline" className="font-mono text-xs">
-                  {tech}
-                </Badge>
-              ))}
-            </div>
+            {project.tech_stack && project.tech_stack.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-8">
+                {project.tech_stack.map((tech) => (
+                  <Badge key={tech} variant="outline" className="font-mono text-xs">
+                    {tech}
+                  </Badge>
+                ))}
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex gap-4 mb-12">
-              {project.previewUrl && project.previewUrl !== "#" && (
+              {project.preview_url && project.preview_url !== "#" && (
                 <Button asChild className="btn-press">
-                  <a href={project.previewUrl} target="_blank" rel="noopener noreferrer">
+                  <a href={project.preview_url} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="w-4 h-4 mr-2" />
                     View Live
                   </a>
                 </Button>
               )}
-              {project.githubUrl && (
+              {cs.github_url && (
                 <Button variant="outline" asChild className="btn-press">
-                  <a href={project.githubUrl} target="_blank" rel="noopener noreferrer">
+                  <a href={cs.github_url} target="_blank" rel="noopener noreferrer">
                     <Github className="w-4 h-4 mr-2" />
                     Source Code
                   </a>
@@ -148,7 +139,7 @@ const ProjectDetail = () => {
           </motion.div>
 
           {/* Project Image */}
-          {project.imageUrl && (
+          {heroImage && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -157,7 +148,7 @@ const ProjectDetail = () => {
             >
               <div className="aspect-video bg-secondary rounded-xl overflow-hidden border border-border">
                 <img 
-                  src={project.imageUrl} 
+                  src={heroImage} 
                   alt={project.title}
                   className="w-full h-full object-cover object-top"
                 />
@@ -168,62 +159,70 @@ const ProjectDetail = () => {
           {/* Content Sections */}
           <div className="space-y-12">
             {/* Overview */}
-            <motion.section
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              <h2 className="text-2xl font-bold mb-4">Overview</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                {project.fullDescription}
-              </p>
-            </motion.section>
+            {cs.overview && (
+              <motion.section
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+              >
+                <h2 className="text-2xl font-bold mb-4">Overview</h2>
+                <p className="text-muted-foreground leading-relaxed">
+                  {cs.overview}
+                </p>
+              </motion.section>
+            )}
 
             {/* Challenge */}
-            <motion.section
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="p-6 bg-card border border-border rounded-xl glass"
-            >
-              <h2 className="text-2xl font-bold mb-4">The Challenge</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                {project.challenge}
-              </p>
-            </motion.section>
+            {cs.challenge && (
+              <motion.section
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+                className="p-6 bg-card border border-border rounded-xl glass"
+              >
+                <h2 className="text-2xl font-bold mb-4">The Challenge</h2>
+                <p className="text-muted-foreground leading-relaxed">
+                  {cs.challenge}
+                </p>
+              </motion.section>
+            )}
 
             {/* Solution */}
-            <motion.section
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              <h2 className="text-2xl font-bold mb-4">Our Solution</h2>
-              <p className="text-muted-foreground leading-relaxed">
-                {project.solution}
-              </p>
-            </motion.section>
+            {cs.solution && (
+              <motion.section
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+              >
+                <h2 className="text-2xl font-bold mb-4">Our Solution</h2>
+                <p className="text-muted-foreground leading-relaxed">
+                  {cs.solution}
+                </p>
+              </motion.section>
+            )}
 
             {/* Results */}
-            <motion.section
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              <h2 className="text-2xl font-bold mb-4">Results</h2>
-              <ul className="space-y-3">
-                {project.results.map((result, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <span className="w-2 h-2 bg-accent rounded-full mt-2 shrink-0" />
-                    <span className="text-muted-foreground">{result}</span>
-                  </li>
-                ))}
-              </ul>
-            </motion.section>
+            {cs.results && cs.results.length > 0 && (
+              <motion.section
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+              >
+                <h2 className="text-2xl font-bold mb-4">Results</h2>
+                <ul className="space-y-3">
+                  {cs.results.map((result, index) => (
+                    <li key={index} className="flex items-start gap-3">
+                      <span className="w-2 h-2 bg-accent rounded-full mt-2 shrink-0" />
+                      <span className="text-muted-foreground">{result}</span>
+                    </li>
+                  ))}
+                </ul>
+              </motion.section>
+            )}
           </div>
 
           {/* CTA */}

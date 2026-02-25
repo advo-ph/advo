@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Mail, ArrowRight, Loader2, Lock, Eye, EyeOff } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,8 @@ const Login = () => {
   const [mode, setMode] = useState<"magic" | "password">("magic");
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectTo = searchParams.get("redirectTo") || "/hub";
 
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +28,7 @@ const Login = () => {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: window.location.origin + "/hub",
+        emailRedirectTo: window.location.origin + redirectTo,
       },
     });
 
@@ -65,7 +67,7 @@ const Login = () => {
         description: error.message,
       });
     } else {
-      navigate("/hub");
+      navigate(redirectTo);
     }
   };
 

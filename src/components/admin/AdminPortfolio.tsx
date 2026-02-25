@@ -12,6 +12,9 @@ import {
   Upload,
   GripVertical,
   ImagePlus,
+  ChevronDown,
+  ChevronUp,
+  BookOpen,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,9 +40,18 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+interface CaseStudy {
+  overview?: string;
+  challenge?: string;
+  solution?: string;
+  results?: string[];
+  github_url?: string;
+}
+
 interface PortfolioProject {
   portfolio_project_id: number;
   title: string;
+  slug: string | null;
   description: string | null;
   preview_url: string | null;
   image_url: string | null;
@@ -47,6 +59,7 @@ interface PortfolioProject {
   tech_stack: string[] | null;
   is_featured: boolean;
   display_order: number;
+  case_study: CaseStudy | null;
   created_at: string;
 }
 
@@ -177,14 +190,22 @@ const AdminPortfolio = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
+  const [showCaseStudy, setShowCaseStudy] = useState(false);
+
   const [formData, setFormData] = useState({
     title: "",
+    slug: "",
     description: "",
     preview_url: "",
     image_urls: [] as string[],
     tech_stack: "",
     is_featured: false,
     display_order: 0,
+    cs_overview: "",
+    cs_challenge: "",
+    cs_solution: "",
+    cs_results: "",
+    cs_github_url: "",
   });
 
   useEffect(() => {
@@ -197,20 +218,27 @@ const AdminPortfolio = () => {
       .from("portfolio_project")
       .select("*")
       .order("display_order", { ascending: true });
-    setProjects((data as PortfolioProject[]) || []);
+    setProjects((data as unknown as PortfolioProject[]) || []);
     setIsLoading(false);
   };
 
   const openCreateDialog = () => {
     setEditingProject(null);
+    setShowCaseStudy(false);
     setFormData({
       title: "",
+      slug: "",
       description: "",
       preview_url: "",
       image_urls: [],
       tech_stack: "",
       is_featured: false,
       display_order: projects.length,
+      cs_overview: "",
+      cs_challenge: "",
+      cs_solution: "",
+      cs_results: "",
+      cs_github_url: "",
     });
     setIsDialogOpen(true);
   };
@@ -224,14 +252,23 @@ const AdminPortfolio = () => {
       imgs = [project.image_url];
     }
 
+    const cs = project.case_study || {};
+    setShowCaseStudy(Boolean(cs.overview || cs.challenge || cs.solution));
+
     setFormData({
       title: project.title,
+      slug: project.slug || "",
       description: project.description || "",
       preview_url: project.preview_url || "",
       image_urls: imgs,
       tech_stack: (project.tech_stack || []).join(", "),
       is_featured: project.is_featured,
       display_order: project.display_order,
+      cs_overview: cs.overview || "",
+      cs_challenge: cs.challenge || "",
+      cs_solution: cs.solution || "",
+      cs_results: (cs.results || []).join("\n"),
+      cs_github_url: cs.github_url || "",
     });
     setIsDialogOpen(true);
   };
@@ -280,8 +317,19 @@ const AdminPortfolio = () => {
 
     setIsSaving(true);
 
+    // Auto-generate slug from title if empty
+    const slug = formData.slug.trim() || formData.title.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
+
+    const caseStudy: CaseStudy = {};
+    if (formData.cs_overview) caseStudy.overview = formData.cs_overview;
+    if (formData.cs_challenge) caseStudy.challenge = formData.cs_challenge;
+    if (formData.cs_solution) caseStudy.solution = formData.cs_solution;
+    if (formData.cs_results.trim()) caseStudy.results = formData.cs_results.split("\n").map(s => s.trim()).filter(Boolean);
+    if (formData.cs_github_url) caseStudy.github_url = formData.cs_github_url;
+
     const payload = {
       title: formData.title,
+      slug,
       description: formData.description || null,
       preview_url: formData.preview_url || null,
       image_url: formData.image_urls[0] || null,
@@ -292,6 +340,7 @@ const AdminPortfolio = () => {
         .filter(Boolean),
       is_featured: formData.is_featured,
       display_order: formData.display_order,
+      case_study: Object.keys(caseStudy).length > 0 ? caseStudy : null,
     };
 
     if (editingProject) {
@@ -567,6 +616,81 @@ const AdminPortfolio = () => {
                   {formData.is_featured ? "Featured" : "Not Featured"}
                 </Button>
               </div>
+            </div>
+            {/* Case Study Section */}
+            <div className="border-t border-border pt-4 mt-2">
+              <button
+                type="button"
+                onClick={() => setShowCaseStudy(!showCaseStudy)}
+                className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors w-full"
+              >
+                <BookOpen className="h-4 w-4" />
+                Case Study
+                {showCaseStudy ? <ChevronUp className="h-4 w-4 ml-auto" /> : <ChevronDown className="h-4 w-4 ml-auto" />}
+              </button>
+
+              {showCaseStudy && (
+                <div className="grid gap-4 mt-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">URL Slug</label>
+                    <Input
+                      value={formData.slug}
+                      onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                      placeholder="auto-generated-from-title"
+                    />
+                    <p className="text-xs text-muted-foreground">Leave blank to auto-generate from title.</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Overview</label>
+                    <Textarea
+                      value={formData.cs_overview}
+                      onChange={(e) => setFormData({ ...formData, cs_overview: e.target.value })}
+                      placeholder="A high-level overview of the project..."
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">The Challenge</label>
+                    <Textarea
+                      value={formData.cs_challenge}
+                      onChange={(e) => setFormData({ ...formData, cs_challenge: e.target.value })}
+                      placeholder="What problem was the client facing?"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Our Solution</label>
+                    <Textarea
+                      value={formData.cs_solution}
+                      onChange={(e) => setFormData({ ...formData, cs_solution: e.target.value })}
+                      placeholder="How we approached and solved it..."
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Results (one per line)</label>
+                    <Textarea
+                      value={formData.cs_results}
+                      onChange={(e) => setFormData({ ...formData, cs_results: e.target.value })}
+                      placeholder={"Reduced patient wait time by 40%\nZero lost records\nStreamlined workflow"}
+                      rows={4}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">GitHub URL</label>
+                    <Input
+                      value={formData.cs_github_url}
+                      onChange={(e) => setFormData({ ...formData, cs_github_url: e.target.value })}
+                      placeholder="https://github.com/..."
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
