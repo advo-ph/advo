@@ -62,7 +62,7 @@ Client management with company name, contact email, GitHub org, brand color.
 
 ### Team
 
-Team member profiles with name, role, email, avatar, bio, LinkedIn, permission role toggling.
+Team member profiles with name, role, email, bio, LinkedIn, permission role toggling. Avatar upload via clickable picture widget (uploads to Supabase Storage `avatars` bucket, max 5MB).
 
 **Files**: `AdminTeam.tsx`, `useAdminData.ts`
 
@@ -92,13 +92,13 @@ Sent notifications grouped by client with type badges and time-ago.
 
 ### Content Studio
 
-CMS for landing page sections. Toggle visibility (public/client portal). Edit JSONB content.
+CMS for landing page sections. Toggle visibility (public/client portal). Edit JSONB content. Editable sections: Hero, Services, Pricing, Testimonials, Contact, Client Dashboard.
 
 **Files**: `AdminContentStudio.tsx`, `useSiteContent.ts`
 
 ### Portfolio
 
-Manage public portfolio projects. Drag to reorder, toggle featured, full CRUD.
+Manage public portfolio projects. Multi-image upload with drag-to-reorder gallery (uploads to Supabase Storage `portfolio` bucket, max 10MB per image). First image = main thumbnail. Toggle featured. Full CRUD.
 
 **Files**: `AdminPortfolio.tsx`, `db.ts`
 

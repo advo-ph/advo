@@ -127,17 +127,18 @@ The ADVO Standard: BIGINT IDs, singular table naming, cents for currency.
 
 ### portfolio_project
 
-| Column                 | Type         | Description |
-| ---------------------- | ------------ | ----------- |
-| `portfolio_project_id` | BIGINT (PK)  |             |
-| `title`                | VARCHAR(255) |             |
-| `description`          | TEXT         |             |
-| `preview_url`          | TEXT         |             |
-| `image_url`            | TEXT         |             |
-| `tech_stack`           | TEXT[]       |             |
-| `is_featured`          | BOOLEAN      |             |
-| `display_order`        | INT          |             |
-| `created_at`           | TIMESTAMPTZ  |             |
+| Column                 | Type         | Description                          |
+| ---------------------- | ------------ | ------------------------------------ |
+| `portfolio_project_id` | BIGINT (PK)  |                                      |
+| `title`                | VARCHAR(255) |                                      |
+| `description`          | TEXT         |                                      |
+| `preview_url`          | TEXT         |                                      |
+| `image_url`            | TEXT         | Legacy single image (first of array) |
+| `image_urls`           | TEXT[]       | Multi-image gallery, first = thumb   |
+| `tech_stack`           | TEXT[]       |                                      |
+| `is_featured`          | BOOLEAN      |                                      |
+| `display_order`        | INT          |                                      |
+| `created_at`           | TIMESTAMPTZ  |                                      |
 
 ### site_content
 
@@ -193,6 +194,15 @@ The ADVO Standard: BIGINT IDs, singular table naming, cents for currency.
 | `portfolio_project` | ALL   | —                   | SELECT               |
 | `site_content`      | ALL   | SELECT              | SELECT               |
 | `lead`              | ALL   | INSERT              | INSERT               |
+
+## Storage Buckets
+
+| Bucket      | Public | Purpose                          |
+| ----------- | ------ | -------------------------------- |
+| `avatars`   | Yes    | Team member profile pictures     |
+| `portfolio` | Yes    | Portfolio project gallery images |
+
+**RLS**: Authenticated users can upload/update/delete. Anyone can view (public buckets).
 
 ## Edge Functions
 
