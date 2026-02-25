@@ -86,6 +86,7 @@ The ADVO Standard: BIGINT IDs, singular table naming, cents for currency.
 | `avatar_url`      | TEXT         |                             |
 | `bio`             | TEXT         |                             |
 | `linkedin_url`    | TEXT         |                             |
+| `github_url`      | TEXT         |                             |
 | `is_active`       | BOOLEAN      |                             |
 | `user_id`         | UUID         | → `auth.users`              |
 | `permission_role` | ENUM         | `admin`, `editor`, `viewer` |
@@ -199,7 +200,7 @@ The ADVO Standard: BIGINT IDs, singular table naming, cents for currency.
 
 | Bucket      | Public | Purpose                          |
 | ----------- | ------ | -------------------------------- |
-| `avatars`   | Yes    | Team member profile pictures     |
+| `avatar`    | Yes    | Team member profile pictures     |
 | `portfolio` | Yes    | Portfolio project gallery images |
 
 **RLS**: Authenticated users can upload/update/delete. Anyone can view (public buckets).

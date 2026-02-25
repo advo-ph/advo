@@ -8,6 +8,7 @@ import {
   Loader2,
   Linkedin,
   Camera,
+  Github,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,7 @@ interface TeamMember {
   avatar_url: string | null;
   bio: string | null;
   linkedin_url: string | null;
+  github_url: string | null;
   is_active: boolean;
 }
 
@@ -52,6 +54,7 @@ const AdminTeam = () => {
     avatar_url: "",
     bio: "",
     linkedin_url: "",
+    github_url: "",
   });
 
   useEffect(() => {
@@ -64,13 +67,13 @@ const AdminTeam = () => {
       .from("team_member")
       .select("*")
       .order("name");
-    setMembers((data as TeamMember[]) || []);
+    setMembers((data as unknown as TeamMember[]) || []);
     setIsLoading(false);
   };
 
   const openCreateDialog = () => {
     setEditingMember(null);
-    setFormData({ name: "", role: "", email: "", avatar_url: "", bio: "", linkedin_url: "" });
+    setFormData({ name: "", role: "", email: "", avatar_url: "", bio: "", linkedin_url: "", github_url: "" });
     setIsDialogOpen(true);
   };
 
@@ -83,6 +86,7 @@ const AdminTeam = () => {
       avatar_url: member.avatar_url || "",
       bio: member.bio || "",
       linkedin_url: member.linkedin_url || "",
+      github_url: member.github_url || "",
     });
     setIsDialogOpen(true);
   };
@@ -107,7 +111,7 @@ const AdminTeam = () => {
     const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
     const { error: uploadError } = await supabase.storage
-      .from("avatars")
+      .from("avatar")
       .upload(fileName, file, { cacheControl: "3600", upsert: false });
 
     if (uploadError) {
@@ -117,7 +121,7 @@ const AdminTeam = () => {
     }
 
     const { data: urlData } = supabase.storage
-      .from("avatars")
+      .from("avatar")
       .getPublicUrl(fileName);
 
     setFormData({ ...formData, avatar_url: urlData.publicUrl });
@@ -140,6 +144,7 @@ const AdminTeam = () => {
       avatar_url: formData.avatar_url || null,
       bio: formData.bio || null,
       linkedin_url: formData.linkedin_url || null,
+      github_url: formData.github_url || null,
     };
 
     if (editingMember) {
@@ -249,6 +254,17 @@ const AdminTeam = () => {
                         LinkedIn
                       </a>
                     )}
+                    {member.github_url && (
+                      <a
+                        href={member.github_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+                      >
+                        <Github className="h-3 w-3" />
+                        GitHub
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>
@@ -342,13 +358,23 @@ const AdminTeam = () => {
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">LinkedIn URL</label>
-              <Input
-                value={formData.linkedin_url}
-                onChange={(e) => setFormData({ ...formData, linkedin_url: e.target.value })}
-                placeholder="https://linkedin.com/in/..."
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">LinkedIn URL</label>
+                <Input
+                  value={formData.linkedin_url}
+                  onChange={(e) => setFormData({ ...formData, linkedin_url: e.target.value })}
+                  placeholder="https://linkedin.com/in/..."
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">GitHub URL</label>
+                <Input
+                  value={formData.github_url}
+                  onChange={(e) => setFormData({ ...formData, github_url: e.target.value })}
+                  placeholder="https://github.com/..."
+                />
+              </div>
             </div>
           </div>
 

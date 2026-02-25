@@ -62,7 +62,7 @@ Client management with company name, contact email, GitHub org, brand color.
 
 ### Team
 
-Team member profiles with name, role, email, bio, LinkedIn, permission role toggling. Avatar upload via clickable picture widget (uploads to Supabase Storage `avatars` bucket, max 5MB).
+Team member profiles with name, role, email, bio, social links (LinkedIn, GitHub), permission role toggling. Avatar upload via clickable picture widget (uploads to Supabase Storage `avatar` bucket, max 5MB).
 
 **Files**: `AdminTeam.tsx`, `useAdminData.ts`
 

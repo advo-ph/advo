@@ -627,8 +627,8 @@ const AdminContentStudio = () => {
                     )}
                   </div>
 
-                  {/* Expand button — only for editable sections */}
-                  {FormComponent && (
+                  {/* Expand button — spacer for non-editable rows */}
+                  {FormComponent ? (
                     <Button
                       variant="ghost"
                       size="sm"
@@ -642,6 +642,8 @@ const AdminContentStudio = () => {
                         <ChevronDown className="h-4 w-4" />
                       )}
                     </Button>
+                  ) : (
+                    <div className="w-8" />
                   )}
                 </div>
               </div>
