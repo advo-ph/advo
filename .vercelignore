@@ -1,0 +1,5 @@
+media/
+supabase/
+scripts/
+*.dump
+*.sql

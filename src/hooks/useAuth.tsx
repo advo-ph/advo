@@ -1,47 +1,115 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { User, Session } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
+import {
+  get,
+  post,
+  setTokens,
+  clearTokens,
+  hasRefreshToken,
+} from "@/lib/api";
+
+export interface AuthUser {
+  userId: number;
+  email: string;
+  role: "admin" | "team" | "client";
+  id: string; // alias for compatibility (userId as string)
+}
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: AuthUser | null;
   isLoading: boolean;
   signOut: () => Promise<void>;
+  login: (email: string, password: string) => Promise<{ error: string | null }>;
+  loginWithMagicLink: (email: string) => Promise<{ error: string | null }>;
+  verifyMagicLink: (token: string) => Promise<{ error: string | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const mapUser = (u: { userId: number; email: string; role: string }): AuthUser => ({
+    userId: u.userId,
+    email: u.email,
+    role: u.role as AuthUser["role"],
+    id: String(u.userId),
+  });
+
+  // On mount, try to restore session via refresh token
   useEffect(() => {
-    // Set up auth state listener BEFORE checking session
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+    (async () => {
+      if (!hasRefreshToken()) {
         setIsLoading(false);
+        return;
       }
-    );
 
-    // Check current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+      const res = await get<{
+        userId: number;
+        email: string;
+        role: string;
+        isActive: boolean;
+      }>("/api/auth/me");
+
+      if (res.data && !res.error) {
+        setUser(mapUser(res.data));
+      } else {
+        clearTokens();
+      }
       setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    })();
   }, []);
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
-  };
+  const login = useCallback(async (email: string, password: string) => {
+    const res = await post<{
+      accessToken: string;
+      refreshToken: string;
+      user: { userId: number; email: string; role: string };
+    }>("/api/auth/login", { email, password });
+
+    if (res.error || !res.data) {
+      return { error: res.error || "Login failed" };
+    }
+
+    setTokens(res.data.accessToken, res.data.refreshToken);
+    setUser(mapUser(res.data.user));
+    return { error: null };
+  }, []);
+
+  const loginWithMagicLink = useCallback(async (email: string) => {
+    const res = await post<{ message: string }>("/api/auth/magic-link", { email });
+    return { error: res.error };
+  }, []);
+
+  const verifyMagicLink = useCallback(async (token: string) => {
+    const res = await post<{
+      accessToken: string;
+      refreshToken: string;
+      user: { userId: number; email: string; role: string };
+    }>("/api/auth/magic-link/verify", { token });
+
+    if (res.error || !res.data) {
+      return { error: res.error || "Invalid magic link" };
+    }
+
+    setTokens(res.data.accessToken, res.data.refreshToken);
+    setUser(mapUser(res.data.user));
+    return { error: null };
+  }, []);
+
+  const signOut = useCallback(async () => {
+    const refreshToken = localStorage.getItem("advo_refresh_token");
+    if (refreshToken) {
+      await post("/api/auth/logout", { refreshToken });
+    }
+    clearTokens();
+    setUser(null);
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, session, isLoading, signOut }}>
+    <AuthContext.Provider
+      value={{ user, isLoading, signOut, login, loginWithMagicLink, verifyMagicLink }}
+    >
       {children}
     </AuthContext.Provider>
   );

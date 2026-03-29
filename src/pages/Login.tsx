@@ -5,7 +5,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import FloatingNav from "@/components/landing/FloatingNav";
 
@@ -20,17 +20,30 @@ const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") || "/hub";
+  const { login, loginWithMagicLink, verifyMagicLink } = useAuth();
+
+  // Handle magic link token from URL on mount
+  useState(() => {
+    const token = searchParams.get("token");
+    if (token) {
+      (async () => {
+        setIsLoading(true);
+        const { error } = await verifyMagicLink(token);
+        setIsLoading(false);
+        if (error) {
+          toast({ variant: "destructive", title: "Error", description: error });
+        } else {
+          navigate(redirectTo);
+        }
+      })();
+    }
+  });
 
   const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: window.location.origin + redirectTo,
-      },
-    });
+    const { error } = await loginWithMagicLink(email);
 
     setIsLoading(false);
 
@@ -38,7 +51,7 @@ const Login = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: error,
       });
     } else {
       setIsSent(true);
@@ -53,10 +66,7 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await login(email, password);
 
     setIsLoading(false);
 
@@ -64,7 +74,7 @@ const Login = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: error.message,
+        description: error,
       });
     } else {
       navigate(redirectTo);

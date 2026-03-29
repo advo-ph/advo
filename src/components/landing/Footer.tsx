@@ -1,68 +1,69 @@
-import { motion } from "framer-motion";
-import { Facebook, Instagram, Linkedin, Mail } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Facebook, Instagram, Linkedin, Mail, Twitter, Youtube, Globe } from "lucide-react";
+import { get } from "@/lib/api";
+
+const ICON_MAP: Record<string, React.ElementType> = {
+  Facebook, Instagram, Linkedin, Mail, Twitter, Youtube, Globe,
+};
+
+interface SocialLink {
+  icon: string;
+  href: string;
+  label: string;
+}
+
+const DEFAULTS: SocialLink[] = [
+  { icon: "Facebook", href: "https://www.facebook.com/share/1DDt8dVJUd/?mibextid=wwXIfr", label: "Facebook" },
+  { icon: "Instagram", href: "https://www.instagram.com/advo_ph/", label: "Instagram" },
+  { icon: "Linkedin", href: "https://www.linkedin.com/company/advocompany/", label: "LinkedIn" },
+  { icon: "Mail", href: "mailto:contact@advo.ph", label: "Email" },
+];
 
 const Footer = () => {
-  const socials = [
-    {
-      icon: Facebook,
-      href: "https://www.facebook.com/share/1DDt8dVJUd/?mibextid=wwXIfr",
-      label: "Facebook",
-    },
-    {
-      icon: Instagram,
-      href: "https://www.instagram.com/advo_ph/",
-      label: "Instagram",
-    },
-    {
-      icon: Linkedin,
-      href: "https://www.linkedin.com/company/advocompany/",
-      label: "LinkedIn",
-    },
-    {
-      icon: Mail,
-      href: "mailto:contact@advo.ph",
-      label: "Email",
-    },
-  ];
+  const [socials, setSocials] = useState<SocialLink[]>(DEFAULTS);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await get<{ key: string; value: unknown }[]>("/api/settings");
+      if (data) {
+        const setting = data.find((s) => s.key === "social_links");
+        if (setting?.value && Array.isArray(setting.value) && setting.value.length > 0) {
+          setSocials(setting.value as SocialLink[]);
+        }
+      }
+    })();
+  }, []);
 
   return (
-    <footer className="py-4 px-6 border-t border-border max-h-20">
-      <div className="max-w-6xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="flex flex-col md:flex-row items-center justify-between gap-6"
-        >
-          {/* Logo */}
-          <img 
-            src="/advo-logo-black.png" 
-            alt="ADVO" 
-            className="h-6 w-auto dark:invert"
-          />
+    <footer className="border-t border-border">
+      <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <img
+          src="/advo-logo-black.png"
+          alt="ADVO"
+          className="h-5 w-auto dark:invert opacity-60"
+        />
 
-          {/* Social Links */}
-          <nav className="flex items-center gap-4">
-            {socials.map((social) => (
+        <nav className="flex items-center gap-2">
+          {socials.map((social) => {
+            const Icon = ICON_MAP[social.icon] || Globe;
+            return (
               <a
                 key={social.label}
                 href={social.href}
                 target={social.href.startsWith("mailto:") ? undefined : "_blank"}
                 rel={social.href.startsWith("mailto:") ? undefined : "noopener noreferrer"}
-                className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+                className="p-2 text-muted-foreground/60 hover:text-foreground transition-colors"
                 aria-label={social.label}
               >
-                <social.icon className="h-5 w-5" />
+                <Icon className="h-4 w-4" />
               </a>
-            ))}
-          </nav>
+            );
+          })}
+        </nav>
 
-          {/* Copyright */}
-          <span className="font-mono text-xs text-muted-foreground">
-            © {new Date().getFullYear()} ADVO
-          </span>
-        </motion.div>
+        <span className="text-xs text-muted-foreground/50">
+          © {new Date().getFullYear()} ADVO
+        </span>
       </div>
     </footer>
   );

@@ -23,6 +23,8 @@ import AdminFinance from "@/components/admin/AdminFinance";
 import AdminNotifications from "@/components/admin/AdminNotifications";
 import AdminLeads from "@/components/admin/AdminLeads";
 import AdminSettings from "@/components/admin/AdminSettings";
+import AdminBrandScraper from "@/components/admin/AdminBrandScraper";
+import AdminFacebookScraper from "@/components/admin/AdminFacebookScraper";
 
 const Admin = () => {
   const { user, isLoading: authLoading, signOut } = useAuth();
@@ -148,6 +150,10 @@ const Admin = () => {
           {activeSection === "notifications" && <AdminNotifications />}
 
           {activeSection === "leads" && <AdminLeads />}
+
+          {activeSection === "brand-scraper" && <AdminBrandScraper />}
+
+          {activeSection === "fb-scraper" && <AdminFacebookScraper />}
 
           {activeSection === "settings" && <AdminSettings />}
         </div>

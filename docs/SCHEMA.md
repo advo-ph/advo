@@ -1,212 +1,253 @@
 # ADVO Database Schema
 
-The ADVO Standard: BIGINT IDs, singular table naming, cents for currency.
+Convention: BIGINT IDs, singular table naming, cents for currency, camelCase in API responses.
+
+Schema source of truth: `advo-api/src/db/schema.ts` (Drizzle ORM)
 
 ## Tables
 
+### user
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `user_id` | BIGSERIAL (PK) | |
+| `email` | VARCHAR(255) UNIQUE | |
+| `password_hash` | VARCHAR(255) | Nullable (magic-link-only users) |
+| `role` | ENUM | `admin`, `team`, `client` |
+| `is_active` | BOOLEAN | Default `true` |
+| `magic_token` | VARCHAR(255) | One-time magic link token |
+| `magic_token_expires_at` | TIMESTAMPTZ | 15 min expiry |
+| `created_at` | TIMESTAMPTZ | |
+| `updated_at` | TIMESTAMPTZ | |
+
+### session
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `session_id` | BIGSERIAL (PK) | |
+| `user_id` | BIGINT (FK) | → `user` |
+| `refresh_token` | VARCHAR(255) UNIQUE | One-time use, rotated on refresh |
+| `user_agent` | TEXT | |
+| `ip_address` | VARCHAR(45) | |
+| `expires_at` | TIMESTAMPTZ | 30-day expiry |
+| `created_at` | TIMESTAMPTZ | |
+
 ### client
 
-| Column            | Type         | Description             |
-| ----------------- | ------------ | ----------------------- |
-| `client_id`       | BIGINT (PK)  | Auto-generated          |
-| `user_id`         | UUID         | References `auth.users` |
-| `company_name`    | VARCHAR(100) | Company/client name     |
-| `contact_email`   | VARCHAR(255) | Contact email           |
-| `github_org_name` | VARCHAR(100) | GitHub org (optional)   |
-| `brand_color_hex` | CHAR(7)      | Brand color `#XXXXXX`   |
-| `created_at`      | TIMESTAMPTZ  |                         |
-| `updated_at`      | TIMESTAMPTZ  |                         |
+| Column | Type | Description |
+|--------|------|-------------|
+| `client_id` | BIGSERIAL (PK) | |
+| `user_id` | BIGINT (FK) | → `user` (nullable) |
+| `company_name` | VARCHAR(255) | |
+| `contact_email` | VARCHAR(255) | |
+| `github_org_name` | VARCHAR(100) | |
+| `brand_color_hex` | VARCHAR(7) | |
+| `created_at` | TIMESTAMPTZ | |
+| `updated_at` | TIMESTAMPTZ | |
 
 ### project
 
-| Column              | Type         | Description                                                      |
-| ------------------- | ------------ | ---------------------------------------------------------------- |
-| `project_id`        | BIGINT (PK)  | Auto-generated                                                   |
-| `client_id`         | BIGINT (FK)  | → `client`                                                       |
-| `title`             | VARCHAR(255) |                                                                  |
-| `description`       | TEXT         |                                                                  |
-| `repository_name`   | VARCHAR(100) | GitHub repo name                                                 |
-| `preview_url`       | TEXT         | Live preview URL                                                 |
-| `contract_url`      | TEXT         | Contract PDF link                                                |
-| `project_status`    | ENUM         | `discovery`, `architecture`, `development`, `testing`, `shipped` |
-| `total_value_cents` | BIGINT       | In PHP cents                                                     |
-| `amount_paid_cents` | BIGINT       | In PHP cents                                                     |
-| `is_active`         | BOOLEAN      |                                                                  |
-| `tech_stack`        | TEXT[]       | Array of technologies                                            |
-| `created_at`        | TIMESTAMPTZ  |                                                                  |
-| `updated_at`        | TIMESTAMPTZ  |                                                                  |
-
-### progress_update
-
-| Column                 | Type         | Description |
-| ---------------------- | ------------ | ----------- |
-| `progress_update_id`   | BIGINT (PK)  |             |
-| `project_id`           | BIGINT (FK)  | → `project` |
-| `update_title`         | VARCHAR(255) |             |
-| `update_body`          | TEXT         |             |
-| `commit_sha_reference` | VARCHAR(40)  | Git SHA     |
-| `created_at`           | TIMESTAMPTZ  |             |
-
-### deliverable
-
-| Column           | Type         | Description                                                    |
-| ---------------- | ------------ | -------------------------------------------------------------- |
-| `deliverable_id` | BIGINT (PK)  |                                                                |
-| `project_id`     | BIGINT (FK)  | → `project`                                                    |
-| `title`          | VARCHAR(255) |                                                                |
-| `description`    | TEXT         |                                                                |
-| `status`         | ENUM         | `not_started`, `in_progress`, `review`, `completed`, `blocked` |
-| `priority`       | INT          | Sort order                                                     |
-| `due_date`       | DATE         |                                                                |
-| `team_member_id` | BIGINT (FK)  | → `team_member` (assignee)                                     |
-| `created_at`     | TIMESTAMPTZ  |                                                                |
-
-### invoice
-
-| Column         | Type         | Description                 |
-| -------------- | ------------ | --------------------------- |
-| `invoice_id`   | BIGINT (PK)  |                             |
-| `project_id`   | BIGINT (FK)  | → `project`                 |
-| `label`        | VARCHAR(255) | Invoice name/description    |
-| `amount_cents` | BIGINT       | In PHP cents                |
-| `status`       | ENUM         | `unpaid`, `paid`, `overdue` |
-| `due_date`     | DATE         |                             |
-| `paid_at`      | TIMESTAMPTZ  |                             |
-| `notes`        | TEXT         |                             |
-| `created_at`   | TIMESTAMPTZ  |                             |
+| Column | Type | Description |
+|--------|------|-------------|
+| `project_id` | BIGSERIAL (PK) | |
+| `client_id` | BIGINT (FK) | → `client` |
+| `title` | VARCHAR(255) | |
+| `description` | TEXT | |
+| `repository_name` | VARCHAR(100) | GitHub repo name |
+| `preview_url` | VARCHAR(500) | Live preview |
+| `contract_url` | VARCHAR(500) | Contract PDF |
+| `project_status` | ENUM | `discovery`, `architecture`, `development`, `testing`, `shipped` |
+| `total_value_cents` | INTEGER | |
+| `amount_paid_cents` | INTEGER | |
+| `tech_stack` | TEXT[] | |
+| `created_at` | TIMESTAMPTZ | |
+| `updated_at` | TIMESTAMPTZ | |
 
 ### team_member
 
-| Column            | Type         | Description                 |
-| ----------------- | ------------ | --------------------------- |
-| `team_member_id`  | BIGINT (PK)  |                             |
-| `name`            | VARCHAR(100) |                             |
-| `role`            | VARCHAR(100) | Job title                   |
-| `email`           | VARCHAR(255) |                             |
-| `avatar_url`      | TEXT         |                             |
-| `bio`             | TEXT         |                             |
-| `linkedin_url`    | TEXT         |                             |
-| `github_url`      | TEXT         |                             |
-| `is_active`       | BOOLEAN      |                             |
-| `user_id`         | UUID         | → `auth.users`              |
-| `permission_role` | ENUM         | `admin`, `editor`, `viewer` |
-| `created_at`      | TIMESTAMPTZ  |                             |
+| Column | Type | Description |
+|--------|------|-------------|
+| `team_member_id` | BIGSERIAL (PK) | |
+| `user_id` | BIGINT (FK) | → `user` (nullable) |
+| `name` | VARCHAR(255) | |
+| `role` | VARCHAR(100) | Display role/title |
+| `email` | VARCHAR(255) | |
+| `avatar_url` | VARCHAR(500) | |
+| `bio` | TEXT | |
+| `linkedin_url` | VARCHAR(500) | |
+| `github_url` | VARCHAR(500) | |
+| `permission_role` | ENUM | `admin`, `developer`, `designer`, `manager` |
+| `is_active` | BOOLEAN | |
+| `created_at` | TIMESTAMPTZ | |
+| `updated_at` | TIMESTAMPTZ | |
 
 ### project_access
 
-| Column              | Type        | Description                 |
-| ------------------- | ----------- | --------------------------- |
-| `project_access_id` | BIGINT (PK) |                             |
-| `team_member_id`    | BIGINT (FK) | → `team_member`             |
-| `project_id`        | BIGINT (FK) | → `project`                 |
-| `permission_level`  | ENUM        | `owner`, `editor`, `viewer` |
-| `granted_at`        | TIMESTAMPTZ |                             |
+| Column | Type | Description |
+|--------|------|-------------|
+| `project_access_id` | BIGSERIAL (PK) | |
+| `team_member_id` | BIGINT (FK) | → `team_member` |
+| `project_id` | BIGINT (FK) | → `project` |
+| `permission_level` | ENUM | `read`, `write`, `admin` |
+| `granted_at` | TIMESTAMPTZ | |
 
-### notification
+Unique constraint on (`team_member_id`, `project_id`).
 
-| Column            | Type        | Description                                                                                     |
-| ----------------- | ----------- | ----------------------------------------------------------------------------------------------- |
-| `notification_id` | BIGINT (PK) |                                                                                                 |
-| `client_id`       | BIGINT (FK) | → `client`                                                                                      |
-| `project_id`      | BIGINT (FK) | → `project` (nullable)                                                                          |
-| `type`            | ENUM        | `progress_update`, `invoice_issued`, `deliverable_completed`, `project_status_change`, `custom` |
-| `title`           | TEXT        |                                                                                                 |
-| `body`            | TEXT        |                                                                                                 |
-| `is_read`         | BOOLEAN     | Default `false`                                                                                 |
-| `sent_at`         | TIMESTAMPTZ |                                                                                                 |
+### deliverable
 
-### project_asset
+| Column | Type | Description |
+|--------|------|-------------|
+| `deliverable_id` | BIGSERIAL (PK) | |
+| `project_id` | BIGINT (FK) | → `project` |
+| `assigned_to` | BIGINT (FK) | → `team_member` (nullable) |
+| `title` | VARCHAR(255) | |
+| `description` | TEXT | |
+| `priority` | INTEGER | 0-10 |
+| `status` | ENUM | `not_started`, `in_progress`, `review`, `completed`, `blocked` |
+| `due_date` | TIMESTAMPTZ | |
+| `completed_at` | TIMESTAMPTZ | |
+| `created_at` | TIMESTAMPTZ | |
+| `updated_at` | TIMESTAMPTZ | |
 
-| Column             | Type        | Description                                      |
-| ------------------ | ----------- | ------------------------------------------------ |
-| `project_asset_id` | BIGINT (PK) |                                                  |
-| `project_id`       | BIGINT (FK) | → `project`                                      |
-| `asset_type`       | ENUM        | `progress_photo`, `completion_photo`, `document` |
-| `url`              | TEXT        | Asset URL                                        |
-| `caption`          | TEXT        |                                                  |
-| `uploaded_at`      | TIMESTAMPTZ |                                                  |
+### invoice
 
-### portfolio_project
-
-| Column                 | Type         | Description                          |
-| ---------------------- | ------------ | ------------------------------------ |
-| `portfolio_project_id` | BIGINT (PK)  |                                      |
-| `title`                | VARCHAR(255) |                                      |
-| `description`          | TEXT         |                                      |
-| `preview_url`          | TEXT         |                                      |
-| `image_url`            | TEXT         | Legacy single image (first of array) |
-| `image_urls`           | TEXT[]       | Multi-image gallery, first = thumb   |
-| `tech_stack`           | TEXT[]       |                                      |
-| `is_featured`          | BOOLEAN      |                                      |
-| `display_order`        | INT          |                                      |
-| `created_at`           | TIMESTAMPTZ  |                                      |
-
-### site_content
-
-| Column                  | Type         | Description                                 |
-| ----------------------- | ------------ | ------------------------------------------- |
-| `section_id`            | VARCHAR (PK) | e.g. `hero`, `services`, `client_dashboard` |
-| `label`                 | VARCHAR      | Display name                                |
-| `visible_public`        | BOOLEAN      | Show on landing page                        |
-| `visible_client_portal` | BOOLEAN      | Show in client hub                          |
-| `content`               | JSONB        | Flexible content payload                    |
-| `updated_at`            | TIMESTAMPTZ  |                                             |
+| Column | Type | Description |
+|--------|------|-------------|
+| `invoice_id` | BIGSERIAL (PK) | |
+| `project_id` | BIGINT (FK) | → `project` |
+| `amount_cents` | INTEGER | |
+| `label` | VARCHAR(255) | |
+| `status` | ENUM | `unpaid`, `paid`, `overdue` |
+| `due_date` | TIMESTAMPTZ | |
+| `paid_at` | TIMESTAMPTZ | |
+| `notes` | TEXT | |
+| `created_at` | TIMESTAMPTZ | |
+| `updated_at` | TIMESTAMPTZ | |
 
 ### lead
 
-| Column         | Type         | Description                                                |
-| -------------- | ------------ | ---------------------------------------------------------- |
-| `lead_id`      | BIGINT (PK)  |                                                            |
-| `full_name`    | VARCHAR(100) |                                                            |
-| `email`        | VARCHAR(255) |                                                            |
-| `company`      | VARCHAR(100) |                                                            |
-| `project_type` | VARCHAR(50)  |                                                            |
-| `budget_range` | VARCHAR(50)  |                                                            |
-| `description`  | TEXT         |                                                            |
-| `status`       | ENUM         | `new`, `contacted`, `qualified`, `proposal`, `won`, `lost` |
-| `created_at`   | TIMESTAMPTZ  |                                                            |
+| Column | Type | Description |
+|--------|------|-------------|
+| `lead_id` | BIGSERIAL (PK) | |
+| `name` | VARCHAR(255) | |
+| `email` | VARCHAR(255) | |
+| `company` | VARCHAR(255) | |
+| `project_type` | VARCHAR(100) | |
+| `budget` | VARCHAR(100) | |
+| `description` | TEXT | |
+| `status` | ENUM | `new`, `contacted`, `qualified`, `proposal_sent`, `closed_won`, `closed_lost` |
+| `assigned_to` | BIGINT (FK) | → `team_member` (nullable) |
+| `notes` | TEXT | |
+| `submitted_at` | TIMESTAMPTZ | |
 
-## Enums
+### notification
 
-| Enum                       | Values                                                                                          |
-| -------------------------- | ----------------------------------------------------------------------------------------------- |
-| `project_status`           | `discovery`, `architecture`, `development`, `testing`, `shipped`                                |
-| `deliverable_status`       | `not_started`, `in_progress`, `review`, `completed`, `blocked`                                  |
-| `invoice_status`           | `unpaid`, `paid`, `overdue`                                                                     |
-| `notification_type`        | `progress_update`, `invoice_issued`, `deliverable_completed`, `project_status_change`, `custom` |
-| `project_asset_type`       | `progress_photo`, `completion_photo`, `document`                                                |
-| `team_permission_role`     | `admin`, `editor`, `viewer`                                                                     |
-| `project_permission_level` | `owner`, `editor`, `viewer`                                                                     |
-| `lead_status`              | `new`, `contacted`, `qualified`, `proposal`, `won`, `lost`                                      |
+| Column | Type | Description |
+|--------|------|-------------|
+| `notification_id` | BIGSERIAL (PK) | |
+| `client_id` | BIGINT (FK) | → `client` |
+| `project_id` | BIGINT (FK) | → `project` (nullable) |
+| `type` | ENUM | `progress_update`, `invoice_issued`, `deliverable_completed`, `project_status_change`, `custom` |
+| `title` | VARCHAR(255) | |
+| `body` | TEXT | |
+| `is_read` | BOOLEAN | |
+| `sent_at` | TIMESTAMPTZ | |
 
-## Row Level Security
+### progress_update
 
-| Table               | Admin | Client              | Public               |
-| ------------------- | ----- | ------------------- | -------------------- |
-| `client`            | ALL   | SELECT own          | —                    |
-| `project`           | ALL   | SELECT own          | —                    |
-| `progress_update`   | ALL   | SELECT own          | —                    |
-| `deliverable`       | ALL   | SELECT own          | —                    |
-| `invoice`           | ALL   | SELECT own          | —                    |
-| `team_member`       | ALL   | SELECT              | SELECT (public page) |
-| `project_access`    | ALL   | SELECT own          | —                    |
-| `notification`      | ALL   | SELECT + UPDATE own | —                    |
-| `project_asset`     | ALL   | SELECT own          | —                    |
-| `portfolio_project` | ALL   | —                   | SELECT               |
-| `site_content`      | ALL   | SELECT              | SELECT               |
-| `lead`              | ALL   | INSERT              | INSERT               |
+| Column | Type | Description |
+|--------|------|-------------|
+| `progress_update_id` | BIGSERIAL (PK) | |
+| `project_id` | BIGINT (FK) | → `project` |
+| `update_title` | VARCHAR(255) | |
+| `update_body` | TEXT | |
+| `commit_sha_reference` | VARCHAR(40) | |
+| `created_at` | TIMESTAMPTZ | |
 
-## Storage Buckets
+### project_asset
 
-| Bucket      | Public | Purpose                          |
-| ----------- | ------ | -------------------------------- |
-| `avatar`    | Yes    | Team member profile pictures     |
-| `portfolio` | Yes    | Portfolio project gallery images |
+| Column | Type | Description |
+|--------|------|-------------|
+| `project_asset_id` | BIGSERIAL (PK) | |
+| `project_id` | BIGINT (FK) | → `project` |
+| `asset_type` | ENUM | `progress_photo`, `completion_photo`, `document` |
+| `url` | VARCHAR(500) | |
+| `caption` | VARCHAR(255) | |
+| `uploaded_at` | TIMESTAMPTZ | |
 
-**RLS**: Authenticated users can upload/update/delete. Anyone can view (public buckets).
+### site_content
 
-## Edge Functions
+| Column | Type | Description |
+|--------|------|-------------|
+| `section_id` | VARCHAR(100) (PK) | e.g. `hero`, `services`, `contact` |
+| `label` | VARCHAR(255) | |
+| `visible_public` | BOOLEAN | |
+| `visible_client_portal` | BOOLEAN | |
+| `content` | JSONB | Section-specific content |
+| `updated_at` | TIMESTAMPTZ | |
 
-| Function            | Trigger       | Description                                                    |
-| ------------------- | ------------- | -------------------------------------------------------------- |
-| `send-notification` | Manual / auto | Inserts notification row + sends ADVO-branded email via Resend |
+### portfolio_project
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `portfolio_project_id` | BIGSERIAL (PK) | |
+| `title` | VARCHAR(255) | |
+| `description` | TEXT | |
+| `preview_url` | VARCHAR(500) | |
+| `image_url` | VARCHAR(500) | |
+| `image_urls` | TEXT[] | Multi-image support |
+| `tech_stack` | TEXT[] | |
+| `slug` | VARCHAR(100) UNIQUE | URL slug |
+| `is_featured` | BOOLEAN | |
+| `display_order` | INTEGER | |
+| `case_study` | JSONB | `{ overview, challenge, solution, results[], github_url }` |
+| `created_at` | TIMESTAMPTZ | |
+| `updated_at` | TIMESTAMPTZ | |
+
+### social_post
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `social_post_id` | BIGSERIAL (PK) | |
+| `platform` | VARCHAR(50) | |
+| `content` | TEXT | |
+| `image_url` | VARCHAR(500) | |
+| `scheduled_for` | TIMESTAMPTZ | |
+| `is_published` | BOOLEAN | |
+| `published_at` | TIMESTAMPTZ | |
+| `created_at` | TIMESTAMPTZ | |
+
+### site_config
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `key` | VARCHAR(100) (PK) | e.g. `agency_name`, `accent_color` |
+| `value` | JSONB | |
+| `updated_at` | TIMESTAMPTZ | |
+
+### github_event
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `event_id` | BIGSERIAL (PK) | |
+| `project_id` | BIGINT (FK) | → `project` (nullable) |
+| `event_type` | VARCHAR(50) | `push`, `pull_request`, `deployment_status` |
+| `payload` | JSONB | |
+| `repo_name` | VARCHAR(100) | |
+| `branch` | VARCHAR(100) | |
+| `commit_sha` | VARCHAR(40) | |
+| `author` | VARCHAR(100) | |
+| `message` | TEXT | |
+| `created_at` | TIMESTAMPTZ | |
+
+### activity_log
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `activity_id` | BIGSERIAL (PK) | |
+| `user_id` | BIGINT (FK) | → `user` (nullable) |
+| `action` | VARCHAR(50) | `create`, `update`, `delete`, `login` |
+| `entity_type` | VARCHAR(50) | `project`, `invoice`, `lead`, etc. |
+| `entity_id` | BIGINT | |
+| `metadata` | JSONB | |
+| `created_at` | TIMESTAMPTZ | |

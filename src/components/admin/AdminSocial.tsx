@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
+import { get, post, patch, del, upload } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 interface SocialPost {
@@ -75,13 +75,10 @@ const AdminSocial = () => {
 
   const fetchPosts = async () => {
     setIsLoading(true);
-    const { data, error } = await (supabase as any)
-      .from("social_post")
-      .select("*")
-      .order("scheduled_for", { ascending: true });
+    const { data, error } = await get<SocialPost[]>("/api/content/social");
 
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: error, variant: "destructive" });
     } else {
       setPosts(data || []);
       // Set first post as preview if none selected
@@ -104,23 +101,16 @@ const AdminSocial = () => {
     reader.readAsDataURL(file);
 
     setIsUploading(true);
-    const fileName = `social/${Date.now()}_${file.name}`;
-    
-    const { data, error } = await supabase.storage
-      .from("uploads")
-      .upload(fileName, file);
 
-    if (error) {
-      toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+    const result = await upload(file, "assets");
+
+    if (!result) {
+      toast({ title: "Upload failed", description: "Could not upload image", variant: "destructive" });
       setIsUploading(false);
       return;
     }
 
-    const { data: urlData } = supabase.storage
-      .from("uploads")
-      .getPublicUrl(fileName);
-
-    setFormData(prev => ({ ...prev, image_url: urlData.publicUrl }));
+    setFormData(prev => ({ ...prev, image_url: result.url }));
     setIsUploading(false);
     toast({ title: "Image uploaded", description: "Ready to use" });
   };
@@ -172,25 +162,20 @@ const AdminSocial = () => {
     };
 
     if (selectedPost) {
-      const { error } = await (supabase as any)
-        .from("social_post")
-        .update(postData)
-        .eq("social_post_id", selectedPost.social_post_id);
+      const { error } = await patch(`/api/content/social/${selectedPost.social_post_id}`, postData);
 
       if (error) {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
+        toast({ title: "Error", description: error, variant: "destructive" });
       } else {
         toast({ title: "Updated", description: "Post updated successfully" });
         setIsDialogOpen(false);
         fetchPosts();
       }
     } else {
-      const { error } = await (supabase as any)
-        .from("social_post")
-        .insert(postData);
+      const { error } = await post("/api/content/social", postData);
 
       if (error) {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
+        toast({ title: "Error", description: error, variant: "destructive" });
       } else {
         toast({ title: "Created", description: "Post scheduled successfully" });
         setIsDialogOpen(false);
@@ -202,13 +187,10 @@ const AdminSocial = () => {
   };
 
   const handleDelete = async (postId: number) => {
-    const { error } = await (supabase as any)
-      .from("social_post")
-      .delete()
-      .eq("social_post_id", postId);
+    const { error } = await del(`/api/content/social/${postId}`);
 
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: error, variant: "destructive" });
     } else {
       toast({ title: "Deleted", description: "Post removed" });
       fetchPosts();

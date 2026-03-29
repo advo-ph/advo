@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import type { User } from "@supabase/supabase-js";
+import type { AuthUser } from "@/hooks/useAuth";
 import type { Project, Client, Lead, RecentActivity, UpcomingDeadline } from "@/types/admin";
 import * as db from "@/lib/db";
 import { formatDistanceToNow } from "date-fns";
@@ -62,7 +62,7 @@ interface UseAdminDataReturn {
   refetch: () => void;
 }
 
-export const useAdminData = (user: User | null): UseAdminDataReturn => {
+export const useAdminData = (user: AuthUser | null): UseAdminDataReturn => {
   const {
     data,
     isLoading,

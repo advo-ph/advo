@@ -34,7 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
+import { get, post, patch, del } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 type BlockType = "school" | "break" | "work" | "unavailable";
@@ -98,31 +98,23 @@ const AdminAvailability = () => {
   const fetchData = async () => {
     setIsLoading(true);
     
-    // Using type assertions since new tables aren't in generated Supabase types yet
-    const { data: members } = await (supabase as any)
-      .from("team_member")
-      .select("*")
-      .eq("is_active", true);
-    
-    const { data: availabilityBlocks } = await (supabase as any)
-      .from("availability_block")
-      .select("*")
-      .order("day_of_week")
-      .order("start_time");
-    
-    if (members) {
-      setTeamMembers(members as TeamMember[]);
-      if (members.length > 0 && !selectedMember) {
-        setSelectedMember((members as TeamMember[])[0].team_member_id);
+    const { data: rawMembers } = await get<Record<string, unknown>[]>("/api/team");
+
+    if (rawMembers) {
+      const mapped: TeamMember[] = rawMembers.map((m) => ({
+        team_member_id: (m.teamMemberId ?? m.team_member_id) as number,
+        name: m.name as string,
+        role: m.role as string,
+        avatar_url: (m.avatarUrl ?? m.avatar_url) as string | null,
+      }));
+      setTeamMembers(mapped);
+      if (mapped.length > 0 && !selectedMember) {
+        setSelectedMember(mapped[0].team_member_id);
       }
     }
-    
-    if (availabilityBlocks) {
-      setBlocks((availabilityBlocks as any[]).map(b => ({
-        ...b,
-        block_type: b.block_type as BlockType,
-      })));
-    }
+
+    // Availability blocks — endpoint not yet implemented, start with empty
+    setBlocks([]);
     
     setIsLoading(false);
   };
@@ -247,23 +239,22 @@ const AdminAvailability = () => {
     };
     
     if (editingBlock) {
-      const { error } = await (supabase as any)
-        .from("availability_block")
-        .update(blockData)
-        .eq("block_id", editingBlock.block_id);
-      
+      // TODO: Replace with dedicated /api/availability/:id endpoint when available
+      const { error } = await patch(`/api/availability/${editingBlock.block_id}`, blockData);
+
       if (error) {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
+        toast({ title: "Error", description: error, variant: "destructive" });
       } else {
         toast({ title: "Updated", description: "Schedule block updated" });
         setIsDialogOpen(false);
         fetchData();
       }
     } else {
-      const { error } = await (supabase as any).from("availability_block").insert(blockData);
-      
+      // TODO: Replace with dedicated /api/availability endpoint when available
+      const { error } = await post("/api/availability", blockData);
+
       if (error) {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
+        toast({ title: "Error", description: error, variant: "destructive" });
       } else {
         toast({ title: "Added", description: "Schedule block added" });
         setIsDialogOpen(false);
@@ -277,13 +268,11 @@ const AdminAvailability = () => {
   const handleDelete = async () => {
     if (!editingBlock) return;
     
-    const { error } = await (supabase as any)
-      .from("availability_block")
-      .delete()
-      .eq("block_id", editingBlock.block_id);
-    
+    // TODO: Replace with dedicated /api/availability/:id endpoint when available
+    const { error } = await del(`/api/availability/${editingBlock.block_id}`);
+
     if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: error, variant: "destructive" });
     } else {
       toast({ title: "Deleted", description: "Schedule block removed" });
       setIsDialogOpen(false);

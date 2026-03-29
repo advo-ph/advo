@@ -1,8 +1,8 @@
 # ADVO — Client Project Portal
 
-A transparent client portal for tracking project progress, powered by real-time GitHub integration and Supabase.
+A transparent client portal for tracking project progress, powered by real-time GitHub integration.
 
-**Live**: [advo.ph](https://advo.ph) · **Repo**: `advo-ph/advo`
+**Live**: [advo.ph](https://advo.ph) · **API**: [api.advo.ph](https://api.advo.ph/api/health)
 
 ## Features
 
@@ -21,100 +21,138 @@ A transparent client portal for tracking project progress, powered by real-time 
 
 - **Dashboard** — KPI cards (projects, clients, revenue, leads)
 - **Projects** — Full CRUD, contract URL, asset upload (photos/docs)
-- **Clients** — Client management with contact info
-- **Team** — Team member profiles (bio, LinkedIn, permissions)
-- **Deliverables** — Kanban-style schedule with status tracking
+- **Clients** — Client management with invite flow (creates auth account + sends welcome email)
+- **Team** — Team member profiles (bio, LinkedIn, avatar upload)
+- **Deliverables** — Schedule with status tracking and assignment
 - **Availability** — Team capacity management
 - **Social** — Social media post management
 - **Content Studio** — CMS for landing page sections
-- **Portfolio** — Public portfolio management
+- **Portfolio** — Public portfolio with case studies
 - **Finance** — Invoice CRUD with status toggles
-- **Notifications** — Compose + send to clients, auto-notification toggles
-- **Leads** — Inquiry pipeline with status tracking
-- **Settings** — System configuration
+- **Notifications** — Send to individual clients or broadcast to all
+- **Leads** — Inquiry pipeline with lead-to-client conversion
+- **Settings** — System configuration (persisted to DB)
 
 ### Client Onboarding (`/start`)
 
 - Self-service project inquiry form
 - Captures name, email, company, budget, description
-- Creates lead records in database for admin review
-
-### Email Notifications
-
-- ADVO-branded email delivery via Resend API
-- Auto-triggers on: progress update posted, invoice created
-- Configurable toggles per notification type
-- Supabase Edge Function (`send-notification`)
+- Creates lead records for admin review
 
 ## Tech Stack
 
-| Layer            | Technology                                    |
-| ---------------- | --------------------------------------------- |
-| **Frontend**     | React 18 + Vite + TypeScript                  |
-| **Styling**      | Tailwind CSS + Shadcn/UI                      |
-| **Animation**    | Framer Motion                                 |
-| **Backend**      | Supabase (PostgreSQL + Auth + Edge Functions) |
-| **Email**        | Resend API                                    |
-| **State**        | TanStack React Query v5                       |
-| **Integrations** | GitHub API, Cloudflare Pages API              |
-| **Hosting**      | Vercel (auto-deploy from `main`)              |
-| **DNS**          | Cloudflare                                    |
+| Layer | Technology |
+|-------|-----------|
+| **Frontend** | React 18 + Vite + TypeScript |
+| **Styling** | Tailwind CSS + Shadcn/UI |
+| **Animation** | Framer Motion |
+| **API** | Hono (Node.js) + Drizzle ORM |
+| **Database** | PostgreSQL 16 |
+| **Auth** | JWT (access + refresh tokens, DB-backed sessions) |
+| **Email** | Nodemailer (Resend SMTP or custom SMTP) |
+| **State** | TanStack React Query v5 |
+| **Integrations** | GitHub API (webhooks + polling) |
+| **Frontend Hosting** | Vercel (auto-deploy from `main`) |
+| **API Hosting** | Contabo VPS (PM2 + Nginx + Let's Encrypt) |
+| **DNS** | Namecheap |
 
 ## Quick Start
 
+### 1. API
+
 ```bash
+cd advo-api
+cp .env.example .env     # Edit with your DB credentials
 npm install
-npm run dev          # Starts on port 6900
+npm run db:push           # Create tables
+npm run db:seed           # Seed defaults
+npm run dev               # Starts on port 3000
 ```
+
+### 2. Frontend
+
+```bash
+cd advo
+npm install
+npm run dev               # Starts on port 6400
+```
+
+Default login: `admin@advo.ph` / `changeme`
 
 ## Environment Variables
 
-| Variable                 | Required | Description                    |
-| ------------------------ | -------- | ------------------------------ |
-| `VITE_SUPABASE_URL`      | Yes      | Supabase project URL           |
-| `VITE_SUPABASE_ANON_KEY` | Yes      | Supabase anonymous key         |
-| `VITE_GITHUB_TOKEN`      | No       | GitHub PAT for commit history  |
-| `VITE_VERCEL_TOKEN`      | No       | Vercel token for deploy status |
+### Frontend (`advo/.env`)
 
-**Supabase Secrets** (set via `npx supabase secrets set`):
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `VITE_API_URL` | Yes | API base URL (`http://localhost:3000` or `https://api.advo.ph`) |
+| `VITE_GITHUB_TOKEN` | No | GitHub PAT for commit history |
 
-| Secret           | Description                            |
-| ---------------- | -------------------------------------- |
-| `RESEND_API_KEY` | Resend API key for email notifications |
+### API (`advo-api/.env`)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `JWT_SECRET` | Yes | 32+ char random string |
+| `JWT_REFRESH_SECRET` | Yes | 32+ char random string |
+| `RESEND_API_KEY` | No | Resend API key for email |
+| `GITHUB_TOKEN` | No | GitHub PAT (server-side) |
+| `GITHUB_WEBHOOK_SECRET` | No | Webhook signature verification |
 
 ## Deployment
 
 ```bash
-git push origin main       # Auto-deploys to Vercel → advo.ph
-npx supabase db push       # Push new migrations
-npx supabase functions deploy send-notification  # Deploy edge function
+# Frontend (auto-deploys on push, or manual):
+cd advo && npx vercel --prod
+
+# API:
+cd advo-api && ./deploy.sh root@217.216.72.28
+
+# Database backup:
+ssh root@217.216.72.28 "pg_dump -Fc advo > /var/backups/advo/advo_$(date +%Y%m%d).dump"
 ```
 
 ## Project Structure
 
 ```
-advo/
+advo/                          # Frontend (React/Vite)
 ├── src/
 │   ├── components/
-│   │   ├── admin/       # 14 admin panel components
-│   │   ├── hub/         # Client dashboard components
-│   │   ├── landing/     # Landing page sections
-│   │   └── ui/          # Shadcn components
-│   ├── pages/           # Index, Login, Hub, Admin, Start, Team
-│   ├── hooks/           # 12 custom hooks (auth, data, mutations)
-│   ├── lib/             # db.ts, github.ts, cloudflare.ts, notifications.ts
-│   └── integrations/    # Supabase client + types
-├── supabase/
-│   ├── migrations/      # 16 SQL migrations
-│   └── functions/       # Edge functions (send-notification)
-└── docs/                # SCHEMA, FEATURES, SETUP
+│   │   ├── admin/             # Admin panel components
+│   │   ├── hub/               # Client dashboard components
+│   │   ├── landing/           # Landing page sections
+│   │   └── ui/                # Shadcn components
+│   ├── pages/                 # Index, Login, Hub, Admin, Start, Team
+│   ├── hooks/                 # Auth, data fetching, mutations
+│   ├── lib/                   # api.ts, db.ts, github.ts, notifications.ts
+│   └── test/                  # API wiring + E2E tests (69 tests)
+├── public/team/               # Optimized team photos
+└── docs/                      # SCHEMA, FEATURES, SETUP
+
+advo-api/                      # Backend (Hono/Node)
+├── src/
+│   ├── db/                    # schema.ts, connection.ts, seed.ts
+│   ├── middleware/            # auth, rbac, requestId
+│   ├── routes/                # 13 route files (37 endpoints)
+│   ├── services/              # auth, email
+│   └── utils/                 # env, logger
+├── deploy.sh                  # VPS deployment script
+├── ecosystem.config.cjs       # PM2 config
+├── nginx.conf                 # Nginx reverse proxy config
+└── backup.sh                  # Daily DB backup script
+```
+
+## Tests
+
+```bash
+cd advo && npx vitest run src/test/    # 69 tests (64 pass, 5 rate-limited)
 ```
 
 ## Documentation
 
-- [SCHEMA.md](./docs/SCHEMA.md) — Full database schema reference
-- [FEATURES.md](./docs/FEATURES.md) — Feature documentation
-- [SETUP.md](./docs/SETUP.md) — Development setup guide
+- [SETUP.md](./docs/SETUP.md) — Development setup, deployment, VPS transfer guide
+- [SCHEMA.md](./docs/SCHEMA.md) — Full database schema (18 tables)
+- [FEATURES.md](./docs/FEATURES.md) — Feature documentation, auth system, hooks reference
 
 ## License
 

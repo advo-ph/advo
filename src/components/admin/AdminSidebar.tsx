@@ -15,10 +15,12 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  Scan,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type AdminSection = "dashboard" | "projects" | "clients" | "team" | "schedule" | "availability" | "social" | "content" | "portfolio" | "finance" | "notifications" | "leads" | "settings";
+export type AdminSection = "dashboard" | "projects" | "clients" | "team" | "schedule" | "availability" | "social" | "content" | "portfolio" | "finance" | "notifications" | "leads" | "brand-scraper" | "fb-scraper" | "settings";
 
 interface AdminSidebarProps {
   activeSection: AdminSection;
@@ -40,6 +42,8 @@ const navItems: { id: AdminSection; label: string; icon: React.ElementType }[] =
   { id: "finance", label: "Finance", icon: Banknote },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "leads", label: "Leads", icon: UserPlus },
+  { id: "brand-scraper", label: "Brand Scraper", icon: Scan },
+  { id: "fb-scraper", label: "FB Scraper", icon: BookOpen },
 ];
 
 const AdminSidebar = ({

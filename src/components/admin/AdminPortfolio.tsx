@@ -37,7 +37,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { supabase } from "@/integrations/supabase/client";
+import { get, post, patch, del, upload } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 interface CaseStudy {
@@ -214,11 +214,8 @@ const AdminPortfolio = () => {
 
   const fetchProjects = async () => {
     setIsLoading(true);
-    const { data } = await supabase
-      .from("portfolio_project")
-      .select("*")
-      .order("display_order", { ascending: true });
-    setProjects((data as unknown as PortfolioProject[]) || []);
+    const res = await get<PortfolioProject[]>("/api/content/portfolio");
+    setProjects(res.data || []);
     setIsLoading(false);
   };
 
@@ -284,26 +281,18 @@ const AdminPortfolio = () => {
     }
 
     setIsUploading(true);
-    const ext = file.name.split(".").pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from("portfolio")
-      .upload(fileName, file, { cacheControl: "3600", upsert: false });
+    const result = await upload(file, "portfolio");
 
-    if (uploadError) {
-      toast({ title: "Upload failed", description: uploadError.message, variant: "destructive" });
+    if (!result) {
+      toast({ title: "Upload failed", description: "Could not upload file", variant: "destructive" });
       setIsUploading(false);
       return;
     }
 
-    const { data: urlData } = supabase.storage
-      .from("portfolio")
-      .getPublicUrl(fileName);
-
     setFormData((prev) => ({
       ...prev,
-      image_urls: [...prev.image_urls, urlData.publicUrl],
+      image_urls: [...prev.image_urls, result.url],
     }));
     setIsUploading(false);
     toast({ title: "Uploaded", description: "Image added" });
@@ -354,30 +343,23 @@ const AdminPortfolio = () => {
       );
       setIsDialogOpen(false);
 
-      const { error } = await supabase
-        .from("portfolio_project")
-        .update(payload)
-        .eq("portfolio_project_id", editingProject.portfolio_project_id);
+      const res = await patch(`/api/content/portfolio/${editingProject.portfolio_project_id}`, payload);
 
-      if (error) {
+      if (res.error) {
         setProjects(prev);
-        toast({ title: "Error", description: error.message, variant: "destructive" });
+        toast({ title: "Error", description: res.error, variant: "destructive" });
       } else {
         toast({ title: "Updated", description: `${formData.title} updated` });
       }
     } else {
       setIsDialogOpen(false);
 
-      const { data, error } = await supabase
-        .from("portfolio_project")
-        .insert(payload)
-        .select()
-        .single();
+      const res = await post<PortfolioProject>("/api/content/portfolio", payload);
 
-      if (error) {
-        toast({ title: "Error", description: error.message, variant: "destructive" });
-      } else {
-        setProjects((p) => [...p, data as PortfolioProject]);
+      if (res.error) {
+        toast({ title: "Error", description: res.error, variant: "destructive" });
+      } else if (res.data) {
+        setProjects((p) => [...p, res.data as PortfolioProject]);
         toast({ title: "Created", description: `${formData.title} added to portfolio` });
       }
     }
@@ -394,14 +376,11 @@ const AdminPortfolio = () => {
     );
     setIsDeleteDialogOpen(false);
 
-    const { error } = await supabase
-      .from("portfolio_project")
-      .delete()
-      .eq("portfolio_project_id", deletingProject.portfolio_project_id);
+    const res = await del(`/api/content/portfolio/${deletingProject.portfolio_project_id}`);
 
-    if (error) {
+    if (res.error) {
       setProjects(prev);
-      toast({ title: "Error", description: error.message, variant: "destructive" });
+      toast({ title: "Error", description: res.error, variant: "destructive" });
     } else {
       toast({ title: "Deleted", description: `${deletingProject.title} removed` });
       setDeletingProject(null);

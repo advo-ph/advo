@@ -26,6 +26,9 @@ build/
 supabase/.temp/
 supabase/.branches/
 
+# Media (raw photos/videos — too large for git)
+media/
+
 # Logs
 *.log
 npm-debug.log*

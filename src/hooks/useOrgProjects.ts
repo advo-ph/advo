@@ -1,133 +1,104 @@
 import { useQuery } from "@tanstack/react-query";
-import { github, GitHubCommit, GitHubRepo, TechStackItem } from "@/lib/github";
-import { supabase } from "@/integrations/supabase/client";
+import { github, type GitHubCommit } from "@/lib/github";
+import { get } from "@/lib/api";
 import { useRoles } from "@/hooks/useRoles";
-import type { Project, Client } from "@/types/admin";
 
-export interface MergedProject extends Project {
-  // GitHub-enriched fields
-  githubRepo: GitHubRepo | null;
-  commits: GitHubCommit[];
-  openPRs: number;
-  lastPush: string | null;
-  detectedTechStack: TechStackItem[];
-}
-
-interface FetchOrgProjectsArgs {
-  isAdmin: boolean;
-  projectIds: number[];
-}
-
-async function fetchOrgProjects({
-  isAdmin,
-  projectIds,
-}: FetchOrgProjectsArgs): Promise<MergedProject[]> {
-  // 1. Fetch Supabase projects + GitHub org repos in parallel
-  const [dbResult, ghRepos] = await Promise.all([
-    supabase
-      .from("project")
-      .select("*, client(*)")
-      .order("created_at", { ascending: false }),
-    github.getOrgRepos(),
-  ]);
-
-  if (dbResult.error) {
-    throw new Error(dbResult.error.message);
-  }
-
-  const dbProjects = (dbResult.data || []) as Array<{
-    project_id: number;
-    client_id: number;
-    title: string;
-    description: string | null;
-    repository_name: string | null;
-    preview_url: string | null;
-    project_status: Project["project_status"];
-    total_value_cents: number;
-    amount_paid_cents: number;
-    is_active: boolean;
-    tech_stack: string[] | null;
-    created_at: string;
-    updated_at: string;
-    client: Client | null;
+interface MergedProject {
+  project_id: number;
+  title: string;
+  description?: string;
+  repository_name?: string;
+  preview_url?: string;
+  project_status: string;
+  total_value_cents: number;
+  amount_paid_cents: number;
+  tech_stack: string[];
+  created_at: string;
+  client?: {
+    company_name?: string;
+    github_org_name?: string;
+    brand_color_hex?: string;
+  };
+  commits?: Array<{
+    sha: string;
+    message: string;
+    author: string;
+    date: string;
   }>;
+  openPRs?: number;
+  detectedStack?: string[];
+}
 
-  // 2. RBAC filter: non-admins only see assigned projects
-  const filtered = isAdmin
-    ? dbProjects
-    : dbProjects.filter((p) => projectIds.includes(p.project_id));
+async function fetchOrgProjects(): Promise<MergedProject[]> {
+  // API handles RBAC filtering
+  const res = await get<unknown[]>("/api/projects");
+  if (res.error || !res.data) return [];
 
-  // 3. Build a map of GitHub repos by name for O(1) lookup
-  const ghRepoMap = new Map<string, GitHubRepo>();
-  for (const repo of ghRepos) {
-    ghRepoMap.set(repo.name, repo);
-  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const projects: MergedProject[] = res.data.map((p: any) => ({
+    project_id: p.projectId ?? p.project_id,
+    title: p.title,
+    description: p.description,
+    repository_name: p.repositoryName ?? p.repository_name,
+    preview_url: p.previewUrl ?? p.preview_url,
+    project_status: p.projectStatus ?? p.project_status,
+    total_value_cents: p.totalValueCents ?? p.total_value_cents ?? 0,
+    amount_paid_cents: p.amountPaidCents ?? p.amount_paid_cents ?? 0,
+    tech_stack: p.techStack ?? p.tech_stack ?? [],
+    created_at: p.createdAt ?? p.created_at,
+    client: p.client
+      ? {
+          company_name: p.client.companyName ?? p.client.company_name,
+          github_org_name: p.client.githubOrgName ?? p.client.github_org_name,
+          brand_color_hex: p.client.brandColorHex ?? p.client.brand_color_hex,
+        }
+      : undefined,
+  }));
 
-  // 4. For projects with a linked repo, fetch commits + PRs + tech stack in parallel
-  const merged: MergedProject[] = await Promise.all(
-    filtered.map(async (p) => {
-      const repoName = p.repository_name;
-      const matchedRepo = repoName ? ghRepoMap.get(repoName) ?? null : null;
-
-      let commits: GitHubCommit[] = [];
-      let openPRs = 0;
-      let detectedTechStack: TechStackItem[] = [];
-
-      if (repoName && matchedRepo) {
-        const [c, pr, ts] = await Promise.all([
-          github.getCommits(repoName, 5),
-          github.getOpenPullRequests(repoName),
-          github.detectTechStack(repoName),
+  // Enrich with GitHub data
+  const enriched = await Promise.all(
+    projects.map(async (project) => {
+      if (!project.repository_name) return project;
+      try {
+        const [commits, openPRs, stack] = await Promise.all([
+          github.getCommits(project.repository_name, 5, "main").catch(() => []),
+          github.getOpenPullRequests(project.repository_name).catch(() => 0),
+          github.detectTechStack(project.repository_name).catch(() => []),
         ]);
-        commits = c;
-        openPRs = pr;
-        detectedTechStack = ts;
+        return {
+          ...project,
+          commits: commits.map((c: GitHubCommit) => ({
+            sha: c.sha,
+            message: c.message,
+            author: c.author.name,
+            date: c.author.date,
+          })),
+          openPRs,
+          detectedStack: stack.map((s) => s.name),
+        };
+      } catch {
+        return project;
       }
-
-      return {
-        project_id: p.project_id,
-        client_id: p.client_id,
-        title: p.title,
-        description: p.description || undefined,
-        repository_name: p.repository_name || undefined,
-        preview_url: p.preview_url || undefined,
-        project_status: p.project_status,
-        total_value_cents: p.total_value_cents,
-        amount_paid_cents: p.amount_paid_cents,
-        tech_stack: p.tech_stack || [],
-        created_at: p.created_at,
-        client: p.client || undefined,
-        // GitHub-enriched
-        githubRepo: matchedRepo,
-        commits,
-        openPRs,
-        lastPush: matchedRepo?.pushed_at ?? null,
-        detectedTechStack,
-      };
     })
   );
 
-  return merged;
+  return enriched;
 }
 
 export function useOrgProjects() {
-  const { isAdmin, projectIds, isLoading: rolesLoading } = useRoles();
+  const { isAdmin, isLoading: rolesLoading } = useRoles();
 
-  const {
-    data: projects = [],
-    isLoading: queryLoading,
-    error,
-    refetch,
-  } = useQuery({
-    queryKey: ["orgProjects", isAdmin, projectIds],
-    queryFn: () => fetchOrgProjects({ isAdmin, projectIds }),
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ["orgProjects", isAdmin],
+    queryFn: fetchOrgProjects,
     enabled: !rolesLoading,
+    staleTime: 2 * 60 * 1000,
   });
 
   return {
-    projects,
-    isLoading: rolesLoading || queryLoading,
-    error: error?.message ?? null,
+    projects: data || [],
+    isLoading: isLoading || rolesLoading,
+    error: error ? (error as Error).message : null,
     refetch,
   };
 }

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import PortfolioCard from "./PortfolioCard";
-import { supabase } from "@/integrations/supabase/client";
+import { get } from "@/lib/api";
 
 interface PortfolioProject {
   portfolio_project_id: number;
@@ -20,13 +20,18 @@ const PortfolioGrid = () => {
 
   useEffect(() => {
     const fetchPortfolio = async () => {
-      const { data } = await supabase
-        .from("portfolio_project")
-        .select("portfolio_project_id, title, description, preview_url, image_url, tech_stack, slug")
-        .eq("is_featured", true)
-        .order("display_order", { ascending: true });
+      const { data } = await get<Record<string, unknown>[]>("/api/content/portfolio");
 
-      setProjects((data as unknown as PortfolioProject[]) || []);
+      setProjects((data || []).map((p) => ({
+        portfolio_project_id: (p.portfolioProjectId ?? p.portfolio_project_id) as number,
+        title: p.title as string,
+        description: (p.description as string) || null,
+        tech_stack: (p.techStack ?? p.tech_stack) as string[] | null,
+        preview_url: (p.previewUrl ?? p.preview_url) as string | null,
+        image_url: (p.imageUrl ?? p.image_url) as string | null,
+        slug: (p.slug as string) || null,
+        is_featured: (p.isFeatured ?? p.is_featured) as boolean,
+      })));
       setLoading(false);
     };
 

@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Linkedin, Github, Mail, Loader2 } from "lucide-react";
 import FloatingNav from "@/components/landing/FloatingNav";
-import { supabase } from "@/integrations/supabase/client";
+import { get } from "@/lib/api";
 
 interface TeamMember {
   team_member_id: number;
@@ -21,13 +21,18 @@ const Team = () => {
 
   useEffect(() => {
     const fetchTeam = async () => {
-      const { data } = await supabase
-        .from("team_member")
-        .select("team_member_id, name, role, bio, avatar_url, email, linkedin_url")
-        .eq("is_active", true)
-        .order("team_member_id", { ascending: true });
-
-      setMembers(data || []);
+      const { data } = await get<Array<Record<string, unknown>>>("/api/team");
+      setMembers(
+        (data || []).map((m) => ({
+          team_member_id: (m.teamMemberId ?? m.team_member_id) as number,
+          name: m.name as string,
+          role: m.role as string,
+          bio: (m.bio as string) || null,
+          avatar_url: (m.avatarUrl ?? m.avatar_url) as string | null,
+          email: (m.email as string) || null,
+          linkedin_url: (m.linkedinUrl ?? m.linkedin_url) as string | null,
+        }))
+      );
       setLoading(false);
     };
 

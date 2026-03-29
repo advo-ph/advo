@@ -11,7 +11,7 @@ import {
   Shield,
   type LucideIcon,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { get } from "@/lib/api";
 
 /* ─── Icon map ───────────────────────────────────────────── */
 
@@ -52,16 +52,15 @@ const ServiceTiers = () => {
 
   useEffect(() => {
     const fetchServices = async () => {
-      const { data } = await supabase
-        .from("site_content")
-        .select("content")
-        .eq("section_id", "services")
-        .single();
+      const { data } = await get<{ sectionId: string; content: unknown }[]>("/api/content/sections");
 
-      if (data?.content) {
-        const content = data.content as { items?: ServiceItem[] };
-        if (content.items && content.items.length > 0) {
-          setServices(content.items);
+      if (data) {
+        const section = data.find((s) => s.sectionId === "services");
+        if (section?.content) {
+          const content = section.content as { items?: ServiceItem[] };
+          if (content.items && content.items.length > 0) {
+            setServices(content.items);
+          }
         }
       }
 

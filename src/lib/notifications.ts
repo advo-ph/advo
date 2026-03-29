@@ -1,8 +1,8 @@
 /**
- * Trigger a notification via the send-notification Edge Function.
+ * Trigger a notification via the ADVO API.
  * Fire-and-forget — does not throw on failure.
  */
-import { supabase } from "@/integrations/supabase/client";
+import { post } from "@/lib/api";
 
 export async function triggerNotification(payload: {
   client_id: number;
@@ -12,9 +12,15 @@ export async function triggerNotification(payload: {
   type: "progress_update" | "invoice_issued" | "deliverable_completed" | "project_status_change" | "custom";
 }) {
   try {
-    await supabase.functions.invoke("send-notification", { body: payload });
+    await post("/api/notifications", {
+      clientId: payload.client_id,
+      projectId: payload.project_id,
+      title: payload.title,
+      body: payload.body,
+      type: payload.type,
+      sendEmail: true,
+    });
   } catch (err) {
-    // Fire-and-forget — log but don't disrupt the caller
     console.error("[triggerNotification]", err);
   }
 }

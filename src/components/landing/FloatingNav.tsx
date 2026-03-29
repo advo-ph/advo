@@ -57,29 +57,26 @@ const FloatingNav = () => {
   return (
     <>
       <header
-        className={`
-          fixed top-0 left-0 right-0 z-50 
-          transition-all duration-500 ease-out
-          ${showScrolledStyle 
-            ? "pt-3 px-4" 
-            : "bg-background backdrop-blur-lg border-b border-border/50"
-          }
-        `}
-        style={{ 
-          // Prevent layout shift by reserving space
-          minHeight: showScrolledStyle ? "auto" : "64px" 
-        }}
+        className="fixed top-0 left-0 right-0 z-50"
       >
+        {/* Full-width background layer — fades out on scroll */}
         <div
-          className={`
-            mx-auto flex items-center justify-between
-            transition-all duration-500 ease-out
-            ${showScrolledStyle 
-              ? "max-w-xl h-14 rounded-full border border-border shadow-lg px-3 bg-background backdrop-blur-lg" 
-              : "max-w-6xl h-16 px-6"
-            }
-          `}
-        >
+          className="absolute inset-0 bg-background/80 backdrop-blur-lg border-b border-border/50 transition-opacity duration-300 ease-out"
+          style={{ opacity: showScrolledStyle ? 0 : 1, pointerEvents: "none" }}
+        />
+
+        {/* Content container — morphs from full-width to pill */}
+        <div className={`relative transition-all duration-500 ease-out ${showScrolledStyle ? "pt-3 px-4" : "pt-0 px-0"}`}>
+          <div
+            className={`
+              mx-auto flex items-center justify-between
+              transition-all duration-500 ease-out
+              ${showScrolledStyle
+                ? "max-w-xl h-14 rounded-full border border-border shadow-lg px-4 bg-background/95 backdrop-blur-xl"
+                : "max-w-6xl h-16 px-6"
+              }
+            `}
+          >
           {/* Logo */}
           <Link
             to="/"
@@ -143,6 +140,7 @@ const FloatingNav = () => {
               )}
             </button>
           </div>
+          </div>
         </div>
       </header>
 
@@ -153,7 +151,7 @@ const FloatingNav = () => {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={`fixed ${showScrolledStyle ? "top-20" : "top-16"} left-4 right-4 z-40 md:hidden`}
+            className="fixed top-[5rem] left-4 right-4 z-40 md:hidden"
           >
             <div className="bg-card/95 backdrop-blur-xl border border-border rounded-2xl p-4 shadow-xl">
               {navLinks.map((link) => (

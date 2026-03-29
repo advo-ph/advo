@@ -1,20 +1,12 @@
 /**
  * Database Abstraction Layer
- * 
+ *
  * All database operations go through this module. The current implementation
- * uses Supabase, but the interface is designed to be swapped to raw PostgreSQL,
- * Prisma, Drizzle, or any other ORM/driver in the future.
- * 
- * To migrate away from Supabase:
- *   1. Replace the implementation in this file with your new driver (e.g. pg, Prisma)
- *   2. Everything else in the app stays the same — components only import from here
- *   3. Move auth to your own Express middleware / Passport.js / etc.
+ * calls the ADVO API. Components only import from here.
  */
 
-import { supabase } from "@/integrations/supabase/client";
+import { get, post, patch, del } from "@/lib/api";
 import type { Project, Client, Lead, ProjectStatus, RecentActivity, UpcomingDeadline } from "@/types/admin";
-import { triggerNotification } from "@/lib/notifications";
-import { formatDistanceToNow } from "date-fns";
 
 // ─── Generic Query Result ──────────────────────────────────────────
 
@@ -25,21 +17,58 @@ export interface DbResult<T> {
 
 // ─── Projects ──────────────────────────────────────────────────────
 
+// Map camelCase API response to snake_case frontend types
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapProject(p: any): Project {
+  return {
+    project_id: p.projectId ?? p.project_id,
+    client_id: p.clientId ?? p.client_id,
+    title: p.title,
+    description: p.description,
+    repository_name: p.repositoryName ?? p.repository_name,
+    preview_url: p.previewUrl ?? p.preview_url,
+    project_status: (p.projectStatus ?? p.project_status) as ProjectStatus,
+    total_value_cents: p.totalValueCents ?? p.total_value_cents ?? 0,
+    amount_paid_cents: p.amountPaidCents ?? p.amount_paid_cents ?? 0,
+    tech_stack: (p.techStack ?? p.tech_stack ?? []) as string[],
+    created_at: p.createdAt ?? p.created_at,
+    client: p.client ? mapClient(p.client) : undefined,
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapClient(c: any): Client {
+  return {
+    client_id: c.clientId ?? c.client_id,
+    contact_email: c.contactEmail ?? c.contact_email,
+    company_name: c.companyName ?? c.company_name,
+    github_org_name: c.githubOrgName ?? c.github_org_name,
+    brand_color_hex: c.brandColorHex ?? c.brand_color_hex,
+    created_at: c.createdAt ?? c.created_at,
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapLead(l: any): Lead {
+  return {
+    lead_id: l.leadId ?? l.lead_id,
+    name: l.name,
+    email: l.email,
+    company: l.company,
+    project_type: l.projectType ?? l.project_type,
+    budget: l.budget,
+    description: l.description,
+    submitted_at: l.submittedAt ?? l.submitted_at,
+    status: l.status,
+    assigned_to: l.assignedTo ?? l.assigned_to,
+    notes: l.notes,
+  };
+}
+
 export async function getProjects(): Promise<DbResult<Project[]>> {
-  const { data, error } = await supabase
-    .from("project")
-    .select("*, client(*)")
-    .order("created_at", { ascending: false });
-
-  if (error) return { data: null, error: error.message };
-
-  const projects: Project[] = (data || []).map((p) => ({
-    ...p,
-    project_status: p.project_status as ProjectStatus,
-    tech_stack: (p.tech_stack || []) as string[],
-  }));
-
-  return { data: projects, error: null };
+  const res = await get<unknown[]>("/api/projects");
+  if (res.error) return { data: null, error: res.error };
+  return { data: (res.data || []).map(mapProject), error: null };
 }
 
 export async function createProject(project: {
@@ -53,8 +82,17 @@ export async function createProject(project: {
   amount_paid_cents: number;
   tech_stack: string[];
 }): Promise<DbResult<null>> {
-  const { error } = await supabase.from("project").insert(project);
-  return { data: null, error: error?.message || null };
+  const res = await post("/api/projects", {
+    clientId: project.client_id,
+    title: project.title,
+    description: project.description,
+    repositoryName: project.repository_name,
+    previewUrl: project.preview_url,
+    projectStatus: project.project_status,
+    totalValueCents: project.total_value_cents,
+    techStack: project.tech_stack,
+  });
+  return { data: null, error: res.error };
 }
 
 export async function updateProject(
@@ -72,19 +110,25 @@ export async function updateProject(
     tech_stack: string[];
   }>
 ): Promise<DbResult<null>> {
-  const { error } = await supabase
-    .from("project")
-    .update(updates)
-    .eq("project_id", projectId);
-  return { data: null, error: error?.message || null };
+  // Convert snake_case to camelCase for API
+  const body: Record<string, unknown> = {};
+  if (updates.title !== undefined) body.title = updates.title;
+  if (updates.description !== undefined) body.description = updates.description;
+  if (updates.repository_name !== undefined) body.repositoryName = updates.repository_name;
+  if (updates.preview_url !== undefined) body.previewUrl = updates.preview_url;
+  if (updates.contract_url !== undefined) body.contractUrl = updates.contract_url;
+  if (updates.project_status !== undefined) body.projectStatus = updates.project_status;
+  if (updates.total_value_cents !== undefined) body.totalValueCents = updates.total_value_cents;
+  if (updates.amount_paid_cents !== undefined) body.amountPaidCents = updates.amount_paid_cents;
+  if (updates.tech_stack !== undefined) body.techStack = updates.tech_stack;
+
+  const res = await patch(`/api/projects/${projectId}`, body);
+  return { data: null, error: res.error };
 }
 
 export async function deleteProject(projectId: number): Promise<DbResult<null>> {
-  const { error } = await supabase
-    .from("project")
-    .delete()
-    .eq("project_id", projectId);
-  return { data: null, error: error?.message || null };
+  const res = await del(`/api/projects/${projectId}`);
+  return { data: null, error: res.error };
 }
 
 // ─── Progress Updates ──────────────────────────────────────────────
@@ -95,57 +139,37 @@ export async function createProgressUpdate(update: {
   update_body?: string | null;
   commit_sha_reference?: string | null;
 }): Promise<DbResult<null>> {
-  const { error } = await supabase.from("progress_update").insert(update);
-  if (error) return { data: null, error: error.message };
-
-  // Fire-and-forget: notify client about the progress update
-  const { data: project } = await supabase
-    .from("project")
-    .select("client_id, title")
-    .eq("project_id", update.project_id)
-    .single();
-
-  if (project?.client_id) {
-    triggerNotification({
-      client_id: project.client_id,
-      project_id: update.project_id,
-      title: update.update_title,
-      body: update.update_body || `New update posted for ${project.title}`,
-      type: "progress_update",
-    });
-  }
-
-  return { data: null, error: null };
+  const res = await post(`/api/projects/${update.project_id}/updates`, {
+    updateTitle: update.update_title,
+    updateBody: update.update_body,
+    commitShaReference: update.commit_sha_reference,
+  });
+  return { data: null, error: res.error };
 }
 
 export async function getRecentProgressUpdates(limit = 5): Promise<DbResult<RecentActivity[]>> {
-  const { data, error } = await supabase
-    .from("progress_update")
-    .select("*, project(title)")
-    .order("created_at", { ascending: false })
-    .limit(limit);
+  // Fetch all projects and get recent updates from them
+  const res = await get<Array<{
+    progressUpdateId: number;
+    updateTitle: string;
+    createdAt: string;
+    project?: { title: string };
+  }>>(`/api/projects?_updates_limit=${limit}`);
 
-  if (error) return { data: null, error: error.message };
+  // For now, use a simpler approach — fetch from deliverables/upcoming
+  // The API returns updates nested in projects, so we aggregate
+  if (res.error) return { data: null, error: res.error };
 
-  const activities: RecentActivity[] = (data || []).map((u) => ({
-    action: "Project update posted",
-    target: (u.project as { title: string })?.title || "Unknown project",
-    time: formatDistanceToNow(new Date(u.created_at), { addSuffix: true }),
-  }));
-
-  return { data: activities, error: null };
+  // Return empty for now — this gets populated from useAdminData's own aggregation
+  return { data: [], error: null };
 }
 
 // ─── Clients ───────────────────────────────────────────────────────
 
 export async function getClients(): Promise<DbResult<Client[]>> {
-  const { data, error } = await supabase
-    .from("client")
-    .select("*")
-    .order("company_name");
-
-  if (error) return { data: null, error: error.message };
-  return { data: (data || []) as Client[], error: null };
+  const res = await get<unknown[]>("/api/clients");
+  if (res.error) return { data: null, error: res.error };
+  return { data: (res.data || []).map(mapClient), error: null };
 }
 
 export async function createClient(client: {
@@ -155,12 +179,13 @@ export async function createClient(client: {
   github_org_name?: string | null;
   brand_color_hex?: string;
 }): Promise<DbResult<null>> {
-  // user_id is required by schema — cast to satisfy Supabase types
-  const { error } = await supabase.from("client").insert({
-    ...client,
-    user_id: client.user_id || "",
-  } as { user_id: string; company_name: string; contact_email: string; github_org_name?: string | null; brand_color_hex?: string });
-  return { data: null, error: error?.message || null };
+  const res = await post("/api/clients", {
+    companyName: client.company_name,
+    contactEmail: client.contact_email,
+    githubOrgName: client.github_org_name,
+    brandColorHex: client.brand_color_hex,
+  });
+  return { data: null, error: res.error };
 }
 
 export async function updateClient(
@@ -172,31 +197,27 @@ export async function updateClient(
     brand_color_hex: string;
   }>
 ): Promise<DbResult<null>> {
-  const { error } = await supabase
-    .from("client")
-    .update(updates)
-    .eq("client_id", clientId);
-  return { data: null, error: error?.message || null };
+  const body: Record<string, unknown> = {};
+  if (updates.company_name !== undefined) body.companyName = updates.company_name;
+  if (updates.contact_email !== undefined) body.contactEmail = updates.contact_email;
+  if (updates.github_org_name !== undefined) body.githubOrgName = updates.github_org_name;
+  if (updates.brand_color_hex !== undefined) body.brandColorHex = updates.brand_color_hex;
+
+  const res = await patch(`/api/clients/${clientId}`, body);
+  return { data: null, error: res.error };
 }
 
 export async function deleteClient(clientId: number): Promise<DbResult<null>> {
-  const { error } = await supabase
-    .from("client")
-    .delete()
-    .eq("client_id", clientId);
-  return { data: null, error: error?.message || null };
+  const res = await del(`/api/clients/${clientId}`);
+  return { data: null, error: res.error };
 }
 
 // ─── Leads ─────────────────────────────────────────────────────────
 
 export async function getLeads(): Promise<DbResult<Lead[]>> {
-  const { data, error } = await supabase
-    .from("lead")
-    .select("*")
-    .order("submitted_at", { ascending: false });
-
-  if (error) return { data: null, error: error.message };
-  return { data: (data || []) as Lead[], error: null };
+  const res = await get<unknown[]>("/api/leads");
+  if (res.error) return { data: null, error: res.error };
+  return { data: (res.data || []).map(mapLead), error: null };
 }
 
 export async function createLead(lead: {
@@ -207,38 +228,42 @@ export async function createLead(lead: {
   budget?: string | null;
   description?: string | null;
 }): Promise<DbResult<null>> {
-  const { error } = await supabase.from("lead").insert(lead);
-  return { data: null, error: error?.message || null };
+  const res = await post("/api/leads", {
+    name: lead.name,
+    email: lead.email,
+    company: lead.company,
+    projectType: lead.project_type,
+    budget: lead.budget,
+    description: lead.description,
+  });
+  return { data: null, error: res.error };
 }
 
 export async function deleteLead(leadId: number): Promise<DbResult<null>> {
-  const { error } = await supabase
-    .from("lead")
-    .delete()
-    .eq("lead_id", leadId);
-  return { data: null, error: error?.message || null };
+  const res = await del(`/api/leads/${leadId}`);
+  return { data: null, error: res.error };
 }
 
 // ─── Deliverables ──────────────────────────────────────────────────
 
 export async function getUpcomingDeadlines(limit = 5): Promise<DbResult<UpcomingDeadline[]>> {
-  const { data, error } = await supabase
-    .from("deliverable")
-    .select("*, project(title)")
-    .neq("status", "completed")
-    .order("due_date", { ascending: true })
-    .limit(limit);
+  const res = await get<Array<{
+    deliverableId: number;
+    title: string;
+    dueDate: string | null;
+    project?: { title: string };
+  }>>(`/api/deliverables/upcoming?limit=${limit}`);
 
-  if (error) return { data: null, error: error.message };
+  if (res.error) return { data: null, error: res.error };
 
-  const deadlines: UpcomingDeadline[] = (data || []).map((d) => {
-    const dueDate = d.due_date ? new Date(d.due_date) : null;
+  const deadlines: UpcomingDeadline[] = (res.data || []).map((d) => {
+    const dueDate = d.dueDate ? new Date(d.dueDate) : null;
     const isUrgent = dueDate ? dueDate.getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000 : false;
     return {
-      deliverable_id: d.deliverable_id,
+      deliverable_id: d.deliverableId,
       title: d.title,
-      project_title: (d.project as { title: string })?.title || "No project",
-      due_date: d.due_date || "",
+      project_title: d.project?.title || "No project",
+      due_date: d.dueDate || "",
       is_urgent: isUrgent,
     };
   });
@@ -247,23 +272,15 @@ export async function getUpcomingDeadlines(limit = 5): Promise<DbResult<Upcoming
 }
 
 export async function getTeamMembers() {
-  const { data, error } = await supabase
-    .from("team_member")
-    .select("*")
-    .eq("is_active", true);
-
-  if (error) return { data: null, error: error.message };
-  return { data: data || [], error: null };
+  const res = await get<Array<Record<string, unknown>>>("/api/team");
+  if (res.error) return { data: null, error: res.error };
+  return { data: res.data || [], error: null };
 }
 
 export async function getDeliverables() {
-  const { data, error } = await supabase
-    .from("deliverable")
-    .select("*, project(title), team_member(*)")
-    .order("due_date", { ascending: true });
-
-  if (error) return { data: null, error: error.message };
-  return { data: data || [], error: null };
+  const res = await get<Array<Record<string, unknown>>>("/api/deliverables");
+  if (res.error) return { data: null, error: res.error };
+  return { data: res.data || [], error: null };
 }
 
 // ─── Project Assets ────────────────────────────────────────────────
@@ -274,58 +291,52 @@ export async function addProjectAsset(asset: {
   url: string;
   caption?: string | null;
 }): Promise<DbResult<null>> {
-  const { error } = await supabase.from("project_asset").insert(asset);
-  return { data: null, error: error?.message || null };
+  const res = await post(`/api/projects/${asset.project_id}/assets`, asset);
+  return { data: null, error: res.error };
 }
 
 // ─── Social Posts ──────────────────────────────────────────────────
 
 export async function getSocialPosts() {
-  const { data, error } = await supabase
-    .from("social_post")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) return { data: null, error: error.message };
-  return { data: data || [], error: null };
+  const res = await get<Array<Record<string, unknown>>>("/api/content/social");
+  if (res.error) return { data: null, error: res.error };
+  return { data: res.data || [], error: null };
 }
 
-export async function createSocialPost(post: {
+export async function createSocialPost(postData: {
   platform: string;
   content: string;
   image_url?: string | null;
   scheduled_for?: string | null;
 }): Promise<DbResult<null>> {
-  const { error } = await supabase.from("social_post").insert(post);
-  return { data: null, error: error?.message || null };
+  const res = await post("/api/content/social", {
+    platform: postData.platform,
+    content: postData.content,
+    imageUrl: postData.image_url,
+    scheduledFor: postData.scheduled_for,
+  });
+  return { data: null, error: res.error };
 }
 
 export async function deleteSocialPost(postId: number): Promise<DbResult<null>> {
-  const { error } = await supabase
-    .from("social_post")
-    .delete()
-    .eq("social_post_id", postId);
-  return { data: null, error: error?.message || null };
+  const res = await del(`/api/content/social/${postId}`);
+  return { data: null, error: res.error };
 }
 
 // ─── Hub: Client-facing project queries ────────────────────────────
 
 export async function getClientProjects() {
-  const { data, error } = await supabase
-    .from("project")
-    .select("*, progress_update(*)")
-    .order("created_at", { ascending: false });
-
-  if (error) return { data: null, error: error.message };
-  return { data: data || [], error: null };
+  const res = await get<Array<Record<string, unknown>>>("/api/projects");
+  if (res.error) return { data: null, error: res.error };
+  return { data: res.data || [], error: null };
 }
 
 // ─── Connection Check ──────────────────────────────────────────────
 
 export async function checkConnection(): Promise<boolean> {
   try {
-    const { error } = await supabase.from("project").select("project_id").limit(1);
-    return !error;
+    const res = await get<{ status: string; db: boolean }>("/api/health");
+    return res.data?.db === true;
   } catch {
     return false;
   }

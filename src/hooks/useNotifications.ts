@@ -1,138 +1,130 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { get, post, patch } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 /* ─── Types ──────────────────────────────────────────────── */
 
-export type NotificationType =
-  | "progress_update"
-  | "invoice_issued"
-  | "deliverable_completed"
-  | "project_status_change"
-  | "custom";
-
-export interface NotificationRow {
+interface NotificationRow {
   notification_id: number;
   client_id: number;
   project_id: number | null;
-  type: NotificationType;
+  type: string;
   title: string;
-  body: string;
+  body: string | null;
   is_read: boolean;
   sent_at: string;
+  client?: { company_name: string; contact_email: string };
 }
 
-interface ClientRef {
+interface ClientOption {
   client_id: number;
   company_name: string;
   contact_email: string;
 }
 
-/* ─── Admin Hook ──────────────────────────────────────────── */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapNotification(n: any): NotificationRow {
+  return {
+    notification_id: n.notificationId ?? n.notification_id,
+    client_id: n.clientId ?? n.client_id,
+    project_id: n.projectId ?? n.project_id,
+    type: n.type,
+    title: n.title,
+    body: n.body,
+    is_read: n.isRead ?? n.is_read ?? false,
+    sent_at: n.sentAt ?? n.sent_at,
+    client: n.client
+      ? {
+          company_name: n.client.companyName ?? n.client.company_name,
+          contact_email: n.client.contactEmail ?? n.client.contact_email,
+        }
+      : undefined,
+  };
+}
+
+/* ─── Admin Notifications ────────────────────────────────── */
 
 interface AdminNotificationsData {
   notifications: NotificationRow[];
-  clients: ClientRef[];
+  clients: ClientOption[];
 }
 
 async function fetchAdminNotifications(): Promise<AdminNotificationsData> {
-  const [notifRes, clientRes] = await Promise.all([
-    supabase
-      .from("notification")
-      .select("*")
-      .order("sent_at", { ascending: false }),
-    supabase
-      .from("client")
-      .select("client_id, company_name, contact_email")
-      .order("company_name"),
+  const [notifRes, clientsRes] = await Promise.all([
+    get<unknown[]>("/api/notifications"),
+    get<unknown[]>("/api/clients"),
   ]);
 
-  if (notifRes.error) throw new Error(notifRes.error.message);
-
   return {
-    notifications: (notifRes.data || []) as unknown as NotificationRow[],
-    clients: (clientRes.data || []) as ClientRef[],
+    notifications: (notifRes.data || []).map(mapNotification),
+    clients: (clientsRes.data || []).map((c: Record<string, unknown>) => ({
+      client_id: (c.clientId ?? c.client_id) as number,
+      company_name: (c.companyName ?? c.company_name) as string,
+      contact_email: (c.contactEmail ?? c.contact_email) as string,
+    })),
   };
 }
 
 export function useAdminNotifications() {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
-  const QUERY_KEY = ["adminNotifications"];
+  const { toast } = useToast();
+  const queryKey = ["adminNotifications"];
 
   const { data, isLoading } = useQuery({
-    queryKey: QUERY_KEY,
+    queryKey,
     queryFn: fetchAdminNotifications,
+    staleTime: 2 * 60 * 1000,
   });
 
-  const notifications = data?.notifications ?? [];
-  const clients = data?.clients ?? [];
-
-  /* Send custom notification (insert row directly — edge function handles email) */
   const sendMutation = useMutation({
     mutationFn: async (payload: {
-      client_id: number;
-      project_id?: number | null;
+      clientId: number;
+      projectId?: number | null;
       title: string;
       body: string;
-      type: NotificationType;
+      type?: string;
     }) => {
-      // Call edge function which inserts + emails
-      const { data: funcData, error } = await supabase.functions.invoke(
-        "send-notification",
-        { body: payload }
-      );
-      if (error) throw new Error(error.message);
-      return funcData;
+      const res = await post("/api/notifications", {
+        clientId: payload.clientId,
+        projectId: payload.projectId,
+        title: payload.title,
+        body: payload.body,
+        type: payload.type || "custom",
+        sendEmail: true,
+      });
+      if (res.error) throw new Error(res.error);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
-      toast({ title: "Sent", description: "Notification delivered" });
+      queryClient.invalidateQueries({ queryKey });
+      toast({ title: "Notification sent" });
     },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+    onError: () => {
+      toast({ title: "Error", description: "Failed to send notification", variant: "destructive" });
     },
   });
 
-  /* Send to all clients */
   const sendToAllMutation = useMutation({
     mutationFn: async (payload: { title: string; body: string }) => {
-      const allClients = data?.clients ?? [];
-      const promises = allClients.map((c) =>
-        supabase.functions.invoke("send-notification", {
-          body: {
-            client_id: c.client_id,
-            title: payload.title,
-            body: payload.body,
-            type: "custom" as NotificationType,
-          },
-        })
-      );
-      await Promise.all(promises);
+      const res = await post("/api/notifications/broadcast", {
+        title: payload.title,
+        body: payload.body,
+        sendEmail: true,
+      });
+      if (res.error) throw new Error(res.error);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
-      toast({
-        title: "Sent",
-        description: "Notification sent to all clients",
-      });
+      queryClient.invalidateQueries({ queryKey });
+      toast({ title: "Broadcast sent to all clients" });
     },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+    onError: () => {
+      toast({ title: "Error", description: "Failed to broadcast", variant: "destructive" });
     },
   });
 
   return {
-    notifications,
-    clients,
+    notifications: data?.notifications || [],
+    clients: data?.clients || [],
     isLoading,
     sendNotification: sendMutation.mutate,
     sendToAll: sendToAllMutation.mutate,
@@ -140,68 +132,47 @@ export function useAdminNotifications() {
   };
 }
 
-/* ─── Client Hook ─────────────────────────────────────────── */
-
-async function fetchClientNotifications(): Promise<NotificationRow[]> {
-  const { data, error } = await supabase
-    .from("notification")
-    .select("*")
-    .order("sent_at", { ascending: false })
-    .limit(10);
-
-  if (error) throw new Error(error.message);
-  return (data || []) as unknown as NotificationRow[];
-}
+/* ─── Client Notifications ───────────────────────────────── */
 
 export function useClientNotifications() {
-  const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
-  const QUERY_KEY = ["clientNotifications"];
+  const queryKey = ["clientNotifications", user?.id];
 
   const { data: notifications = [], isLoading } = useQuery({
-    queryKey: QUERY_KEY,
-    queryFn: fetchClientNotifications,
+    queryKey,
+    queryFn: async () => {
+      const res = await get<unknown[]>("/api/notifications");
+      return (res.data || []).map(mapNotification);
+    },
+    enabled: !!user,
+    staleTime: 60 * 1000,
   });
-
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   const markReadMutation = useMutation({
     mutationFn: async (notificationId: number) => {
-      const { error } = await supabase
-        .from("notification")
-        .update({ is_read: true } as Record<string, unknown>)
-        .eq("notification_id", notificationId);
-      if (error) throw new Error(error.message);
+      const res = await patch(`/api/notifications/${notificationId}/read`, {});
+      if (res.error) throw new Error(res.error);
     },
     onMutate: async (notificationId) => {
-      await queryClient.cancelQueries({ queryKey: QUERY_KEY });
-      const previous =
-        queryClient.getQueryData<NotificationRow[]>(QUERY_KEY);
-
-      queryClient.setQueryData<NotificationRow[]>(QUERY_KEY, (old) =>
+      await queryClient.cancelQueries({ queryKey });
+      const prev = queryClient.getQueryData<NotificationRow[]>(queryKey);
+      queryClient.setQueryData<NotificationRow[]>(queryKey, (old) =>
         (old || []).map((n) =>
-          n.notification_id === notificationId
-            ? { ...n, is_read: true }
-            : n
+          n.notification_id === notificationId ? { ...n, is_read: true } : n
         )
       );
-      return { previous };
+      return { prev };
     },
-    onError: (_error, _vars, context) => {
-      if (context?.previous)
-        queryClient.setQueryData(QUERY_KEY, context.previous);
-      toast({
-        title: "Error",
-        description: "Failed to mark as read",
-        variant: "destructive",
-      });
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
     },
   });
 
   return {
     notifications,
-    unreadCount,
+    unreadCount: notifications.filter((n) => !n.is_read).length,
     isLoading,
-    markRead: markReadMutation.mutate,
+    markRead: (id: number) => markReadMutation.mutate(id),
   };
 }

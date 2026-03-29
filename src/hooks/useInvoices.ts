@@ -1,184 +1,141 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { get, post, patch, del } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { triggerNotification } from "@/lib/notifications";
 
-export type InvoiceStatus = "unpaid" | "paid" | "overdue";
-
-export interface Invoice {
+interface Invoice {
   invoice_id: number;
   project_id: number;
   amount_cents: number;
   label: string;
-  status: InvoiceStatus;
-  due_date: string | null;
-  paid_at: string | null;
-  notes: string | null;
+  status: "unpaid" | "paid" | "overdue";
+  due_date?: string | null;
+  paid_at?: string | null;
+  notes?: string | null;
   created_at: string;
+  project?: { title: string; client_id: number };
 }
 
-/* ─── Query Function ─────────────────────────────────────── */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapInvoice(i: any): Invoice {
+  return {
+    invoice_id: i.invoiceId ?? i.invoice_id,
+    project_id: i.projectId ?? i.project_id,
+    amount_cents: i.amountCents ?? i.amount_cents,
+    label: i.label,
+    status: i.status,
+    due_date: i.dueDate ?? i.due_date,
+    paid_at: i.paidAt ?? i.paid_at,
+    notes: i.notes,
+    created_at: i.createdAt ?? i.created_at,
+    project: i.project
+      ? { title: i.project.title, client_id: i.project.clientId ?? i.project.client_id }
+      : undefined,
+  };
+}
 
 async function fetchInvoices(): Promise<Invoice[]> {
-  const { data, error } = await supabase
-    .from("invoice")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) throw new Error(error.message);
-  return (data as Invoice[]) || [];
+  const res = await get<unknown[]>("/api/invoices");
+  return (res.data || []).map(mapInvoice);
 }
 
-/* ─── Hook ───────────────────────────────────────────────── */
-
 export function useInvoices() {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
-  const QUERY_KEY = ["invoices"];
+  const { toast } = useToast();
+  const queryKey = ["invoices"];
 
   const { data: invoices = [], isLoading } = useQuery({
-    queryKey: QUERY_KEY,
+    queryKey,
     queryFn: fetchInvoices,
+    staleTime: 2 * 60 * 1000,
   });
 
-  /* ─── Create Invoice ────────────────────────────────────── */
-
   const createMutation = useMutation({
-    mutationFn: async (
-      payload: Omit<Invoice, "invoice_id" | "created_at" | "paid_at">
-    ) => {
-      const { data, error } = await supabase
-        .from("invoice")
-        .insert(payload)
-        .select()
-        .single();
-      if (error) throw new Error(error.message);
-      return data as Invoice;
+    mutationFn: async (payload: {
+      project_id: number;
+      amount_cents: number;
+      label: string;
+      due_date?: string;
+      notes?: string;
+    }) => {
+      const res = await post<unknown>("/api/invoices", {
+        projectId: payload.project_id,
+        amountCents: payload.amount_cents,
+        label: payload.label,
+        dueDate: payload.due_date,
+        notes: payload.notes,
+      });
+      if (res.error) throw new Error(res.error);
+      return mapInvoice(res.data);
     },
-    onSuccess: async (newInvoice) => {
-      queryClient.setQueryData<Invoice[]>(QUERY_KEY, (old) => [
-        newInvoice,
-        ...(old || []),
-      ]);
-      toast({ title: "Created", description: `Invoice "${newInvoice.label}" created` });
-
-      // Fire-and-forget: notify client about new invoice
-      const { data: project } = await supabase
-        .from("project")
-        .select("client_id, title")
-        .eq("project_id", newInvoice.project_id)
-        .single();
-
-      if (project?.client_id) {
+    onSuccess: (newInvoice) => {
+      queryClient.invalidateQueries({ queryKey });
+      toast({ title: "Invoice created" });
+      if (newInvoice.project?.client_id) {
         triggerNotification({
-          client_id: project.client_id,
+          client_id: newInvoice.project.client_id,
           project_id: newInvoice.project_id,
-          title: `Invoice: ${newInvoice.label}`,
-          body: `A new invoice for ₱${(newInvoice.amount_cents / 100).toLocaleString("en-PH", { minimumFractionDigits: 2 })} has been issued for ${project.title}.`,
+          title: `New invoice: ${newInvoice.label}`,
+          body: `An invoice for ₱${(newInvoice.amount_cents / 100).toFixed(2)} has been issued.`,
           type: "invoice_issued",
         });
       }
     },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+    onError: () => {
+      toast({ title: "Error", description: "Failed to create invoice", variant: "destructive" });
     },
   });
-
-  /* ─── Toggle Status (optimistic) ────────────────────────── */
 
   const statusMutation = useMutation({
-    mutationFn: async ({
-      invoiceId,
-      status,
-    }: {
-      invoiceId: number;
-      status: InvoiceStatus;
-    }) => {
-      const payload: Record<string, unknown> = { status };
-      if (status === "paid") {
-        payload.paid_at = new Date().toISOString();
-      }
-      const { error } = await supabase
-        .from("invoice")
-        .update(payload)
-        .eq("invoice_id", invoiceId);
-      if (error) throw new Error(error.message);
+    mutationFn: async ({ invoiceId, status }: { invoiceId: number; status: string }) => {
+      const res = await patch(`/api/invoices/${invoiceId}`, { status });
+      if (res.error) throw new Error(res.error);
     },
     onMutate: async ({ invoiceId, status }) => {
-      await queryClient.cancelQueries({ queryKey: QUERY_KEY });
-      const previous = queryClient.getQueryData<Invoice[]>(QUERY_KEY);
-
-      queryClient.setQueryData<Invoice[]>(QUERY_KEY, (old) =>
-        (old || []).map((inv) =>
-          inv.invoice_id === invoiceId
-            ? {
-                ...inv,
-                status,
-                paid_at: status === "paid" ? new Date().toISOString() : inv.paid_at,
-              }
-            : inv
+      await queryClient.cancelQueries({ queryKey });
+      const prev = queryClient.getQueryData<Invoice[]>(queryKey);
+      queryClient.setQueryData<Invoice[]>(queryKey, (old) =>
+        (old || []).map((i) =>
+          i.invoice_id === invoiceId
+            ? { ...i, status: status as Invoice["status"], paid_at: status === "paid" ? new Date().toISOString() : i.paid_at }
+            : i
         )
       );
-
-      return { previous };
+      return { prev };
     },
-    onError: (_error, _vars, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(QUERY_KEY, context.previous);
-      }
-      toast({
-        title: "Error",
-        description: "Failed to update invoice status",
-        variant: "destructive",
-      });
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
+      toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
     },
+    onSuccess: () => toast({ title: "Invoice updated" }),
   });
-
-  /* ─── Delete Invoice (optimistic) ───────────────────────── */
 
   const deleteMutation = useMutation({
     mutationFn: async (invoiceId: number) => {
-      const { error } = await supabase
-        .from("invoice")
-        .delete()
-        .eq("invoice_id", invoiceId);
-      if (error) throw new Error(error.message);
+      const res = await del(`/api/invoices/${invoiceId}`);
+      if (res.error) throw new Error(res.error);
     },
     onMutate: async (invoiceId) => {
-      await queryClient.cancelQueries({ queryKey: QUERY_KEY });
-      const previous = queryClient.getQueryData<Invoice[]>(QUERY_KEY);
-
-      queryClient.setQueryData<Invoice[]>(QUERY_KEY, (old) =>
-        (old || []).filter((inv) => inv.invoice_id !== invoiceId)
+      await queryClient.cancelQueries({ queryKey });
+      const prev = queryClient.getQueryData<Invoice[]>(queryKey);
+      queryClient.setQueryData<Invoice[]>(queryKey, (old) =>
+        (old || []).filter((i) => i.invoice_id !== invoiceId)
       );
-
-      return { previous };
+      return { prev };
     },
-    onError: (_error, _vars, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(QUERY_KEY, context.previous);
-      }
-      toast({
-        title: "Error",
-        description: "Failed to delete invoice",
-        variant: "destructive",
-      });
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
+      toast({ title: "Error", description: "Failed to delete invoice", variant: "destructive" });
     },
-    onSuccess: () => {
-      toast({ title: "Deleted", description: "Invoice removed" });
-    },
+    onSuccess: () => toast({ title: "Invoice deleted" }),
   });
 
   return {
     invoices,
     isLoading,
     createInvoice: createMutation.mutate,
-    toggleStatus: statusMutation.mutate,
-    deleteInvoice: deleteMutation.mutate,
+    toggleStatus: (invoiceId: number, status: string) => statusMutation.mutate({ invoiceId, status }),
+    deleteInvoice: (invoiceId: number) => deleteMutation.mutate(invoiceId),
     isCreating: createMutation.isPending,
   };
 }

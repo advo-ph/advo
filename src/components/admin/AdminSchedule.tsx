@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Calendar, Clock, CheckCircle2, Circle, AlertCircle, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { supabase } from "@/integrations/supabase/client";
+import { get } from "@/lib/api";
 
 type DeliverableStatus = "not_started" | "in_progress" | "review" | "completed" | "blocked";
 
@@ -48,21 +48,28 @@ const AdminSchedule = () => {
   const fetchData = async () => {
     setIsLoading(true);
     
-    const { data: members } = await supabase
-      .from("team_member")
-      .select("*")
-      .eq("is_active", true);
-    
-    const { data: tasks } = await supabase
-      .from("deliverable")
-      .select("*, project(title), team_member(*)")
-      .order("due_date", { ascending: true });
-    
-    if (members) setTeamMembers(members);
-    if (tasks) {
-      setDeliverables(tasks.map(t => ({
-        ...t,
-        status: t.status as DeliverableStatus,
+    const { data: rawMembers } = await get<Record<string, unknown>[]>("/api/team");
+    const { data: rawTasks } = await get<Record<string, unknown>[]>("/api/deliverables");
+
+    if (rawMembers) {
+      setTeamMembers(rawMembers.map((m) => ({
+        team_member_id: (m.teamMemberId ?? m.team_member_id) as number,
+        name: m.name as string,
+        role: m.role as string,
+        avatar_url: (m.avatarUrl ?? m.avatar_url) as string | undefined,
+      })));
+    }
+    if (rawTasks) {
+      setDeliverables(rawTasks.map((t) => ({
+        deliverable_id: (t.deliverableId ?? t.deliverable_id) as number,
+        project_id: (t.projectId ?? t.project_id) as number,
+        title: t.title as string,
+        status: (t.status as DeliverableStatus) || "not_started",
+        priority: (t.priority as number) || 0,
+        due_date: (t.dueDate ?? t.due_date) as string | null,
+        assigned_to: (t.assignedTo ?? t.assigned_to) as number | null,
+        project: t.project as { title: string } | undefined,
+        assignee: (t.assignee ?? t.team_member) as TeamMember | undefined,
       })));
     }
     

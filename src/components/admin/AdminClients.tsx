@@ -11,6 +11,8 @@ import {
   Save,
   X,
   Loader2,
+  Search,
+  UserPlus,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,6 +35,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import * as db from "@/lib/db";
+import { post } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import type { Client } from "@/types/admin";
@@ -61,6 +64,27 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
     github_org_name: "",
     brand_color_hex: "#22C55E",
   });
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [invitingClient, setInvitingClient] = useState<number | null>(null);
+
+  const filteredClients = clients.filter((c) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (c.company_name || "").toLowerCase().includes(q) ||
+      (c.contact_email || "").toLowerCase().includes(q);
+  });
+
+  const handleInvite = async (client: Client) => {
+    setInvitingClient(client.client_id);
+    const res = await post(`/api/clients/${client.client_id}/invite`, {});
+    if (res.error) {
+      toast({ title: "Error", description: res.error, variant: "destructive" });
+    } else {
+      toast({ title: "Invite sent", description: `Welcome email sent to ${client.contact_email}` });
+    }
+    setInvitingClient(null);
+  };
 
   const openCreateDialog = () => {
     setEditingClient(null);
@@ -163,6 +187,12 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
         </div>
       </div>
 
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input placeholder="Search clients..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
+      </div>
+
       {/* Client List */}
       {isLoading ? (
         <div className="space-y-4">
@@ -170,7 +200,7 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
             <div key={i} className="h-24 bg-secondary animate-pulse rounded-xl" />
           ))}
         </div>
-      ) : clients.length === 0 ? (
+      ) : filteredClients.length === 0 ? (
         <div className="text-center py-12 bg-card border border-border rounded-xl">
           <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-muted-foreground">No clients yet</p>
@@ -180,7 +210,7 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
         </div>
       ) : (
         <div className="grid gap-4">
-          {clients.map((client, index) => (
+          {filteredClients.map((client, index) => (
             <motion.div
               key={client.client_id}
               initial={{ opacity: 0, y: 10 }}
@@ -228,6 +258,20 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
                     <FolderKanban className="h-3 w-3" />
                     {client.projectCount || 0} projects
                   </Badge>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-accent hover:bg-accent/10"
+                    disabled={invitingClient === client.client_id}
+                    onClick={() => handleInvite(client)}
+                  >
+                    {invitingClient === client.client_id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <UserPlus className="h-3.5 w-3.5" />
+                    )}
+                    Invite
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"

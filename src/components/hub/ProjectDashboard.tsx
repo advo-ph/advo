@@ -105,6 +105,13 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
     setBranch,
   } = useGitHub(project.repository_name || null);
 
+  // Safe defaults for optional nested arrays
+  const deliverables = project.deliverables || [];
+  const invoices = project.invoices || [];
+  const assets = project.assets || [];
+  const contacts = project.contacts || [];
+  const updates = project.updates || [];
+
   const [deployment, setDeployment] = useState<DeploymentStatus | null>(null);
 
   // Fetch Cloudflare Pages deployment status
@@ -122,15 +129,19 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
   }, [project.preview_url]);
 
   // Use GitHub-detected tech stack if available, fallback to DB
+  const safeTechStack = techStack || [];
+  const safeCommits = commits || [];
+  const safeBranches = branches || [];
+  const safeOpenPRs = openPRs || 0;
   const displayTechStack =
-    techStack.length > 0 ? techStack.map((t) => t.name) : project.tech_stack;
+    safeTechStack.length > 0 ? safeTechStack.map((t) => t.name) : (project.tech_stack || []);
 
   // Merge GitHub commits and DB progress updates into a single feed
   const buildFeed = (): FeedItem[] => {
     const items: FeedItem[] = [];
 
     // Add GitHub commits
-    commits.forEach((commit) => {
+    safeCommits.forEach((commit) => {
       items.push({
         id: `commit-${commit.sha}`,
         type: "commit",
@@ -144,7 +155,7 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
     });
 
     // Add DB progress updates (manual updates from admin)
-    project.progress_update.forEach((update) => {
+    (project.updates || project.progress_update || []).forEach((update) => {
       items.push({
         id: `update-${update.progress_update_id}`,
         type: "update",
@@ -167,8 +178,8 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
   const feed = buildFeed();
 
   // Deliverable stats
-  const totalDeliverables = project.deliverables.length;
-  const completedDeliverables = project.deliverables.filter(
+  const totalDeliverables = deliverables.length;
+  const completedDeliverables = deliverables.filter(
     (d) => d.status === "completed"
   ).length;
 
@@ -197,7 +208,7 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
                   {tech}
                 </Badge>
               ))}
-              {techStack.length > 0 && (
+              {safeTechStack.length > 0 && (
                 <Badge
                   variant="secondary"
                   className="text-xs text-green-500 border-green-500/30"
@@ -227,10 +238,10 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
               </a>
             </Button>
           )}
-          {openPRs > 0 && (
+          {safeOpenPRs > 0 && (
             <Badge variant="secondary" className="flex items-center gap-1">
               <GitPullRequest className="h-3 w-3" />
-              {openPRs} open PR{openPRs > 1 ? "s" : ""}
+              {safeOpenPRs} open PR{safeOpenPRs > 1 ? "s" : ""}
             </Badge>
           )}
           {project.preview_url && (
@@ -303,7 +314,7 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
 
               {/* Deliverable list */}
               <div className="space-y-2 max-h-64 overflow-y-auto">
-                {project.deliverables.map((d) => {
+                {deliverables.map((d) => {
                   const cfg = statusConfig[d.status];
                   const StatusIcon = cfg.icon;
                   const isPastDue =
@@ -383,19 +394,19 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
       </div>
 
       {/* Invoices */}
-      {project.invoices.length > 0 && (
+      {invoices.length > 0 && (
         <div className="p-6 bg-card border border-border rounded-xl shadow-card">
           <div className="flex items-center justify-between mb-4">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
               Invoices
             </span>
             <Badge variant="outline" className="text-xs">
-              {project.invoices.filter((i) => i.status === "paid").length}/
-              {project.invoices.length} paid
+              {invoices.filter((i) => i.status === "paid").length}/
+              {invoices.length} paid
             </Badge>
           </div>
           <div className="space-y-2">
-            {project.invoices.map((inv) => {
+            {invoices.map((inv) => {
               const isPaid = inv.status === "paid";
               const isOverdue = inv.status === "overdue";
               return (
@@ -481,13 +492,13 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
       </div>
 
       {/* Progress Photos */}
-      {project.assets.filter((a) => a.asset_type === "progress_photo").length > 0 && (
+      {assets.filter((a) => a.asset_type === "progress_photo").length > 0 && (
         <div className="p-6 bg-card border border-border rounded-xl shadow-card">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4 block">
             Progress Photos
           </span>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {project.assets
+            {assets
               .filter((a) => a.asset_type === "progress_photo")
               .map((asset) => (
                 <a
@@ -523,13 +534,13 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
       )}
 
       {/* Contact — Assigned Team Members */}
-      {project.contacts.length > 0 && (
+      {contacts.length > 0 && (
         <div className="p-6 bg-card border border-border rounded-xl shadow-card">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4 block">
             Your Team
           </span>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {project.contacts.map((contact) => (
+            {contacts.map((contact) => (
               <div
                 key={contact.team_member_id}
                 className="flex items-center gap-3 p-3 bg-secondary/30 rounded-lg"
@@ -586,14 +597,14 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
             </span>
 
             {/* Branch Selector */}
-            {branches.length > 0 && (
+            {safeBranches.length > 0 && (
               <Select value={currentBranch} onValueChange={setBranch}>
                 <SelectTrigger className="w-[140px] h-8 text-xs font-mono">
                   <GitBranch className="h-3 w-3 mr-1" />
                   <SelectValue placeholder="Branch" />
                 </SelectTrigger>
                 <SelectContent>
-                  {branches.map((branch) => (
+                  {safeBranches.map((branch) => (
                     <SelectItem
                       key={branch.name}
                       value={branch.name}
@@ -707,7 +718,7 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
         </div>
 
         <div className="mt-4 pt-4 border-t border-border flex items-center gap-2">
-          {commits.length > 0 && (
+          {safeCommits.length > 0 && (
             <Badge
               variant="outline"
               className="text-xs text-green-500 border-green-500/30"

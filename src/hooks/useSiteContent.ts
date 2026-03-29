@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { get, patch } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 export interface SiteSection {
@@ -7,38 +7,37 @@ export interface SiteSection {
   label: string;
   visible_public: boolean;
   visible_client_portal: boolean;
-  content: Record<string, unknown> | null;
+  content: Record<string, unknown>;
   updated_at: string;
 }
 
-/* ─── Query Function ─────────────────────────────────────── */
-
-async function fetchSections(): Promise<SiteSection[]> {
-  const { data, error } = await supabase
-    .from("site_content")
-    .select("*")
-    .order("section_id");
-
-  if (error) throw new Error(error.message);
-  return (data as unknown as SiteSection[]) || [];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapSection(s: any): SiteSection {
+  return {
+    section_id: s.sectionId ?? s.section_id,
+    label: s.label,
+    visible_public: s.visiblePublic ?? s.visible_public ?? true,
+    visible_client_portal: s.visibleClientPortal ?? s.visible_client_portal ?? true,
+    content: s.content || {},
+    updated_at: s.updatedAt ?? s.updated_at,
+  };
 }
 
-/* ─── Hook ───────────────────────────────────────────────── */
+async function fetchSections(): Promise<SiteSection[]> {
+  const res = await get<unknown[]>("/api/content/sections");
+  return (res.data || []).map(mapSection);
+}
 
 export function useSiteContent() {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
-  const QUERY_KEY = ["siteContent"];
+  const { toast } = useToast();
+  const queryKey = ["siteContent"];
 
-  const {
-    data: sections = [],
-    isLoading,
-  } = useQuery({
-    queryKey: QUERY_KEY,
+  const { data: sections = [], isLoading } = useQuery({
+    queryKey,
     queryFn: fetchSections,
+    staleTime: 2 * 60 * 1000,
   });
-
-  /* ─── Toggle Mutation (optimistic) ──────────────────────── */
 
   const toggleMutation = useMutation({
     mutationFn: async ({
@@ -50,37 +49,26 @@ export function useSiteContent() {
       field: "visible_public" | "visible_client_portal";
       value: boolean;
     }) => {
-      const { error } = await supabase
-        .from("site_content")
-        .update({ [field]: value, updated_at: new Date().toISOString() })
-        .eq("section_id", sectionId);
-      if (error) throw new Error(error.message);
+      // Map to camelCase for API
+      const apiField = field === "visible_public" ? "visiblePublic" : "visibleClientPortal";
+      const res = await patch(`/api/content/sections/${sectionId}`, { [apiField]: value });
+      if (res.error) throw new Error(res.error);
     },
     onMutate: async ({ sectionId, field, value }) => {
-      await queryClient.cancelQueries({ queryKey: QUERY_KEY });
-      const previous = queryClient.getQueryData<SiteSection[]>(QUERY_KEY);
-
-      queryClient.setQueryData<SiteSection[]>(QUERY_KEY, (old) =>
-        (old || []).map((sec) =>
-          sec.section_id === sectionId ? { ...sec, [field]: value } : sec
+      await queryClient.cancelQueries({ queryKey });
+      const prev = queryClient.getQueryData<SiteSection[]>(queryKey);
+      queryClient.setQueryData<SiteSection[]>(queryKey, (old) =>
+        (old || []).map((s) =>
+          s.section_id === sectionId ? { ...s, [field]: value } : s
         )
       );
-
-      return { previous };
+      return { prev };
     },
-    onError: (_error, { sectionId, field }, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(QUERY_KEY, context.previous);
-      }
-      toast({
-        title: "Failed to update",
-        description: `Could not toggle ${field} for ${sectionId}`,
-        variant: "destructive",
-      });
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
+      toast({ title: "Error", description: "Failed to toggle visibility", variant: "destructive" });
     },
   });
-
-  /* ─── Content Update Mutation (optimistic) ──────────────── */
 
   const contentMutation = useMutation({
     mutationFn: async ({
@@ -90,61 +78,33 @@ export function useSiteContent() {
       sectionId: string;
       content: Record<string, unknown>;
     }) => {
-      const { error } = await supabase
-        .from("site_content")
-        .update({
-          content: content as unknown as string,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("section_id", sectionId);
-      if (error) throw new Error(error.message);
+      const res = await patch(`/api/content/sections/${sectionId}`, { content });
+      if (res.error) throw new Error(res.error);
     },
     onMutate: async ({ sectionId, content }) => {
-      await queryClient.cancelQueries({ queryKey: QUERY_KEY });
-      const previous = queryClient.getQueryData<SiteSection[]>(QUERY_KEY);
-
-      queryClient.setQueryData<SiteSection[]>(QUERY_KEY, (old) =>
-        (old || []).map((sec) =>
-          sec.section_id === sectionId ? { ...sec, content } : sec
+      await queryClient.cancelQueries({ queryKey });
+      const prev = queryClient.getQueryData<SiteSection[]>(queryKey);
+      queryClient.setQueryData<SiteSection[]>(queryKey, (old) =>
+        (old || []).map((s) =>
+          s.section_id === sectionId ? { ...s, content } : s
         )
       );
-
-      return { previous };
+      return { prev };
     },
-    onError: (_error, { sectionId }, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(QUERY_KEY, context.previous);
-      }
-      toast({
-        title: "Failed to save content",
-        description: `Could not update content for ${sectionId}`,
-        variant: "destructive",
-      });
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
+      toast({ title: "Error", description: "Failed to update content", variant: "destructive" });
     },
-    onSuccess: (_data, { sectionId }) => {
-      toast({ title: "Saved", description: `${sectionId} content updated` });
-    },
+    onSuccess: () => toast({ title: "Content saved" }),
   });
 
-  /* ─── Public API ────────────────────────────────────────── */
-
-  const toggle = (
-    sectionId: string,
-    field: "visible_public" | "visible_client_portal",
-    value: boolean
-  ) => {
-    toggleMutation.mutate({ sectionId, field, value });
+  return {
+    sections,
+    isLoading,
+    toggle: (sectionId: string, field: "visible_public" | "visible_client_portal", value: boolean) =>
+      toggleMutation.mutate({ sectionId, field, value }),
+    updateContent: (sectionId: string, content: Record<string, unknown>) =>
+      contentMutation.mutate({ sectionId, content }),
+    getSection: (sectionId: string) => sections.find((s) => s.section_id === sectionId),
   };
-
-  const updateContent = (
-    sectionId: string,
-    content: Record<string, unknown>
-  ) => {
-    contentMutation.mutate({ sectionId, content });
-  };
-
-  const getSection = (sectionId: string) =>
-    sections.find((s) => s.section_id === sectionId);
-
-  return { sections, isLoading, toggle, updateContent, getSection };
 }

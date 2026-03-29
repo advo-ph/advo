@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Rocket } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { get } from "@/lib/api";
 
 interface ContactContent {
   heading: string;
@@ -24,15 +24,14 @@ const ContactCTA = () => {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("site_content")
-        .select("content")
-        .eq("section_id", "contact")
-        .maybeSingle();
+      const { data } = await get<{ sectionId: string; content: unknown }[]>("/api/content/sections");
 
-      if (data?.content) {
-        const c = data.content as unknown as Partial<ContactContent>;
-        setContent({ ...DEFAULTS, ...c });
+      if (data) {
+        const section = data.find((s) => s.sectionId === "contact");
+        if (section?.content) {
+          const c = section.content as Partial<ContactContent>;
+          setContent({ ...DEFAULTS, ...c });
+        }
       }
     })();
   }, []);

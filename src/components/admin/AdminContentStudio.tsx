@@ -450,6 +450,165 @@ const TestimonialsForm = ({
   );
 };
 
+const FAQForm = ({
+  section,
+  onSave,
+}: {
+  section: SiteSection;
+  onSave: (c: Record<string, unknown>) => void;
+}) => {
+  const c = (section.content || {}) as Record<string, unknown>;
+  interface FAQ { question: string; answer: string }
+  const initial = (c.items as FAQ[]) || [];
+  const [items, setItems] = useState<FAQ[]>(initial);
+
+  const update = (idx: number, field: string, val: string) => {
+    setItems(items.map((item, i) => (i === idx ? { ...item, [field]: val } : item)));
+  };
+
+  return (
+    <div className="grid gap-3 pt-3">
+      {items.map((item, idx) => (
+        <div key={idx} className="grid grid-cols-2 gap-2">
+          <Input placeholder="Question" value={item.question} onChange={(e) => update(idx, "question", e.target.value)} />
+          <Textarea placeholder="Answer" value={item.answer} onChange={(e) => update(idx, "answer", e.target.value)} rows={2} />
+        </div>
+      ))}
+      <div className="flex gap-2">
+        <Button variant="outline" size="sm" onClick={() => setItems([...items, { question: "", answer: "" }])}>
+          + Add FAQ
+        </Button>
+        <Button size="sm" className="w-fit" onClick={() => onSave({ items })}>
+          <Save className="h-3.5 w-3.5 mr-1.5" /> Save FAQ
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+const ProcessForm = ({
+  section,
+  onSave,
+}: {
+  section: SiteSection;
+  onSave: (c: Record<string, unknown>) => void;
+}) => {
+  const c = (section.content || {}) as Record<string, unknown>;
+  interface Step { title: string; description: string }
+  const initial = (c.steps as Step[]) || [];
+  const [steps, setSteps] = useState<Step[]>(initial);
+
+  const update = (idx: number, field: string, val: string) => {
+    setSteps(steps.map((s, i) => (i === idx ? { ...s, [field]: val } : s)));
+  };
+
+  return (
+    <div className="grid gap-3 pt-3">
+      {steps.map((step, idx) => (
+        <div key={idx} className="grid grid-cols-3 gap-2 items-center">
+          <span className="text-xs font-mono text-muted-foreground text-center">Step {idx + 1}</span>
+          <Input placeholder="Title" value={step.title} onChange={(e) => update(idx, "title", e.target.value)} />
+          <Input placeholder="Description" value={step.description} onChange={(e) => update(idx, "description", e.target.value)} />
+        </div>
+      ))}
+      <div className="flex gap-2">
+        <Button variant="outline" size="sm" onClick={() => setSteps([...steps, { title: "", description: "" }])}>
+          + Add Step
+        </Button>
+        <Button size="sm" className="w-fit" onClick={() => onSave({ steps })}>
+          <Save className="h-3.5 w-3.5 mr-1.5" /> Save Process
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+const WhyDigitalForm = ({
+  section,
+  onSave,
+}: {
+  section: SiteSection;
+  onSave: (c: Record<string, unknown>) => void;
+}) => {
+  const c = (section.content || {}) as Record<string, unknown>;
+  const [headline, setHeadline] = useState((c.headline as string) || "");
+  const [subtext, setSubtext] = useState((c.subtext as string) || "");
+  interface Feature { title: string; description: string }
+  const initial = (c.features as Feature[]) || [];
+  const [features, setFeatures] = useState<Feature[]>(initial);
+
+  const update = (idx: number, field: string, val: string) => {
+    setFeatures(features.map((f, i) => (i === idx ? { ...f, [field]: val } : f)));
+  };
+
+  return (
+    <div className="grid gap-3 pt-3">
+      <Input placeholder="Headline" value={headline} onChange={(e) => setHeadline(e.target.value)} />
+      <Textarea placeholder="Subtext" value={subtext} onChange={(e) => setSubtext(e.target.value)} rows={2} />
+      {features.map((f, idx) => (
+        <div key={idx} className="grid grid-cols-2 gap-2">
+          <Input placeholder="Feature title" value={f.title} onChange={(e) => update(idx, "title", e.target.value)} />
+          <Input placeholder="Description" value={f.description} onChange={(e) => update(idx, "description", e.target.value)} />
+        </div>
+      ))}
+      <div className="flex gap-2">
+        <Button variant="outline" size="sm" onClick={() => setFeatures([...features, { title: "", description: "" }])}>
+          + Add Feature
+        </Button>
+        <Button size="sm" className="w-fit" onClick={() => onSave({ headline, subtext, features })}>
+          <Save className="h-3.5 w-3.5 mr-1.5" /> Save
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+const TeamSectionForm = ({
+  section,
+  onSave,
+}: {
+  section: SiteSection;
+  onSave: (c: Record<string, unknown>) => void;
+}) => {
+  const c = (section.content || {}) as Record<string, unknown>;
+  const [headline, setHeadline] = useState((c.headline as string) || "");
+  const [subtext, setSubtext] = useState((c.subtext as string) || "");
+
+  return (
+    <div className="grid gap-3 pt-3">
+      <Input placeholder="Headline" value={headline} onChange={(e) => setHeadline(e.target.value)} />
+      <Textarea placeholder="Subtext" value={subtext} onChange={(e) => setSubtext(e.target.value)} rows={2} />
+      <p className="text-xs text-muted-foreground">Team members are managed in the Team section. This controls the heading text only.</p>
+      <Button size="sm" className="w-fit" onClick={() => onSave({ headline, subtext })}>
+        <Save className="h-3.5 w-3.5 mr-1.5" /> Save
+      </Button>
+    </div>
+  );
+};
+
+const PortfolioSectionForm = ({
+  section,
+  onSave,
+}: {
+  section: SiteSection;
+  onSave: (c: Record<string, unknown>) => void;
+}) => {
+  const c = (section.content || {}) as Record<string, unknown>;
+  const [headline, setHeadline] = useState((c.headline as string) || "");
+  const [subtext, setSubtext] = useState((c.subtext as string) || "");
+
+  return (
+    <div className="grid gap-3 pt-3">
+      <Input placeholder="Headline" value={headline} onChange={(e) => setHeadline(e.target.value)} />
+      <Textarea placeholder="Subtext" value={subtext} onChange={(e) => setSubtext(e.target.value)} rows={2} />
+      <p className="text-xs text-muted-foreground">Portfolio items are managed in the Portfolio section. This controls the heading text only.</p>
+      <Button size="sm" className="w-fit" onClick={() => onSave({ headline, subtext })}>
+        <Save className="h-3.5 w-3.5 mr-1.5" /> Save
+      </Button>
+    </div>
+  );
+};
+
 /* ─── Section → Form mapping ─────────────────────────────── */
 
 const EDITABLE_SECTIONS: Record<
@@ -465,6 +624,11 @@ const EDITABLE_SECTIONS: Record<
   testimonials: TestimonialsForm,
   contact: ContactForm,
   client_dashboard: ClientDashboardForm,
+  faq: FAQForm,
+  process: ProcessForm,
+  why_digital: WhyDigitalForm,
+  team: TeamSectionForm,
+  portfolio: PortfolioSectionForm,
 };
 
 /* ─── Main Component ─────────────────────────────────────── */

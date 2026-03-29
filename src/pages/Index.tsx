@@ -9,7 +9,7 @@ import FAQ from "@/components/landing/FAQ";
 import ContactCTA from "@/components/landing/ContactCTA";
 import Footer from "@/components/landing/Footer";
 import FloatingNav from "@/components/landing/FloatingNav";
-import { supabase } from "@/integrations/supabase/client";
+import { get } from "@/lib/api";
 
 /* ─── Map site_content section_id → component ───────────── */
 
@@ -38,10 +38,13 @@ const Index = () => {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("site_content")
-        .select("section_id, visible_public");
-      setVisibility((data as Visibility[]) || []);
+      const { data } = await get<Array<{ sectionId?: string; section_id?: string; visiblePublic?: boolean; visible_public?: boolean }>>("/api/content/sections");
+      setVisibility(
+        (data || []).map((d) => ({
+          section_id: d.sectionId ?? d.section_id ?? "",
+          visible_public: d.visiblePublic ?? d.visible_public ?? true,
+        }))
+      );
       setLoaded(true);
     })();
   }, []);

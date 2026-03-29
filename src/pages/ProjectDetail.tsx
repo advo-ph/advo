@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import FloatingNav from "@/components/landing/FloatingNav";
 import Footer from "@/components/landing/Footer";
-import { supabase } from "@/integrations/supabase/client";
+import { get } from "@/lib/api";
 
 interface CaseStudy {
   overview?: string;
@@ -36,13 +36,21 @@ const ProjectDetail = () => {
   useEffect(() => {
     if (!slug) return;
     (async () => {
-      const { data } = await (supabase
-        .from("portfolio_project") as unknown as { select: (q: string) => { eq: (col: string, val: string) => { maybeSingle: () => Promise<{ data: Project | null }> } } })
-        .select("portfolio_project_id, title, description, preview_url, image_url, image_urls, tech_stack, slug, case_study")
-        .eq("slug", slug)
-        .maybeSingle();
-
-      setProject(data || null);
+      const res = await get<Record<string, unknown>>(`/api/content/portfolio/${slug}`);
+      if (res.data) {
+        const d = res.data;
+        setProject({
+          portfolio_project_id: (d.portfolioProjectId ?? d.portfolio_project_id) as number,
+          title: d.title as string,
+          description: (d.description as string) || null,
+          preview_url: (d.previewUrl ?? d.preview_url) as string | null,
+          image_url: (d.imageUrl ?? d.image_url) as string | null,
+          image_urls: (d.imageUrls ?? d.image_urls) as string[] | null,
+          tech_stack: (d.techStack ?? d.tech_stack) as string[] | null,
+          slug: (d.slug as string) || null,
+          case_study: (d.caseStudy ?? d.case_study) as CaseStudy | null,
+        });
+      }
       setLoading(false);
     })();
   }, [slug]);
