@@ -57,7 +57,7 @@ const ProjectDetail = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -65,7 +65,7 @@ const ProjectDetail = () => {
 
   if (!project) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-4xl font-bold mb-4">Project Not Found</h1>
           <Link to="/" className="text-accent hover:underline">
@@ -80,7 +80,7 @@ const ProjectDetail = () => {
   const heroImage = project.image_urls?.[0] || project.image_url;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <FloatingNav />
       
       <main className="pt-24 pb-16 px-6 flex-1">
@@ -245,7 +245,7 @@ const ProjectDetail = () => {
             <p className="text-muted-foreground mb-6">
               Let's discuss how we can help with your project.
             </p>
-            <Button asChild className="btn-press gradient-accent text-white border-0">
+            <Button asChild className="btn-press bg-foreground text-background hover:bg-foreground/90">
               <Link to="/start">Start a Project</Link>
             </Button>
           </motion.div>

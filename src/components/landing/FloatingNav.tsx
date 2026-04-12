@@ -2,44 +2,34 @@ import { useState, useEffect, useLayoutEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
-// Use useLayoutEffect on client, useEffect on server
-const useIsomorphicLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+const SPRING = { type: "spring" as const, stiffness: 380, damping: 38, mass: 0.8 };
 
 const FloatingNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const isLandingPage = location.pathname === "/";
-  
-  // All pages use scroll-based behavior: full at top, pill when scrolled
-  const [isScrolled, setIsScrolled] = useState(() => {
-    if (typeof window !== "undefined") {
-      return window.scrollY > 80;
-    }
-    return false;
-  });
+
+  const [isScrolled, setIsScrolled] = useState(() =>
+    typeof window !== "undefined" ? window.scrollY > 80 : false,
+  );
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useIsomorphicLayoutEffect(() => {
-    // All pages use scroll-based behavior
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 80);
-    };
-    
+    const handleScroll = () => setIsScrolled(window.scrollY > 80);
     handleScroll();
-    
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [location.pathname]); // Re-run when route changes
+  }, [location.pathname]);
 
   const handleAboutClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (isLandingPage) {
-      // Scroll to top of landing page
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
-      // Navigate to landing page
       navigate("/");
     }
   };
@@ -50,110 +40,109 @@ const FloatingNav = () => {
     { label: "Client Hub", href: "/login" },
   ];
 
-  // Use isScrolled directly since we initialize correctly
-  const showScrolledStyle = isScrolled;
-
-
   return (
     <>
-      <header
-        className="fixed top-0 left-0 right-0 z-50"
-      >
-        {/* Full-width background layer — fades out on scroll */}
-        <div
-          className="absolute inset-0 bg-background/80 backdrop-blur-lg border-b border-border/50 transition-opacity duration-300 ease-out"
-          style={{ opacity: showScrolledStyle ? 0 : 1, pointerEvents: "none" }}
-        />
-
-        {/* Content container — morphs from full-width to pill */}
-        <div className={`relative transition-all duration-500 ease-out ${showScrolledStyle ? "pt-3 px-4" : "pt-0 px-0"}`}>
-          <div
-            className={`
-              mx-auto flex items-center justify-between
-              transition-all duration-500 ease-out
-              ${showScrolledStyle
-                ? "max-w-xl h-14 rounded-full border border-border shadow-lg px-4 bg-background/95 backdrop-blur-xl"
-                : "max-w-6xl h-16 px-6"
-              }
-            `}
+      <header className="fixed top-0 left-0 right-0 z-50">
+        <motion.div
+          initial={false}
+          animate={{
+            paddingTop: isScrolled ? 12 : 0,
+            paddingLeft: isScrolled ? 16 : 0,
+            paddingRight: isScrolled ? 16 : 0,
+          }}
+          transition={SPRING}
+        >
+          <motion.div
+            initial={false}
+            transition={SPRING}
+            animate={{
+              maxWidth: isScrolled ? 560 : 1152,
+              height: isScrolled ? 52 : 72,
+              borderRadius: 9999,
+              backgroundColor: isScrolled
+                ? "hsla(0, 0%, 10%, 0.55)"
+                : "hsla(0, 0%, 10%, 0)",
+              borderColor: isScrolled
+                ? "hsla(0, 0%, 100%, 0.08)"
+                : "hsla(0, 0%, 100%, 0)",
+              boxShadow: isScrolled
+                ? "inset 0 1px 0 hsla(0, 0%, 100%, 0.08), inset 0 -1px 0 hsla(0, 0%, 0%, 0.3), 0 12px 40px -8px hsla(0, 0%, 0%, 0.5)"
+                : "inset 0 1px 0 hsla(0, 0%, 100%, 0), inset 0 -1px 0 hsla(0, 0%, 0%, 0), 0 12px 40px -8px hsla(0, 0%, 0%, 0)",
+            }}
+            style={{
+              borderWidth: 1,
+              borderStyle: "solid",
+              backdropFilter: isScrolled
+                ? "blur(24px) saturate(180%)"
+                : "blur(0px) saturate(100%)",
+              WebkitBackdropFilter: isScrolled
+                ? "blur(24px) saturate(180%)"
+                : "blur(0px) saturate(100%)",
+              transition:
+                "backdrop-filter 250ms ease-out, -webkit-backdrop-filter 250ms ease-out",
+              willChange: "transform, max-width, height",
+            }}
+            className="mx-auto flex items-center justify-between px-6"
           >
-          {/* Logo */}
-          <Link
-            to="/"
-            className="shrink-0"
-          >
-            <img 
-              src="/advo-logo-black.png" 
-              alt="ADVO" 
-              className="h-6 w-auto dark:invert"
-              width={72}
-              height={24}
-              loading="eager"
-            />
-          </Link>
-
-          {/* Desktop Nav Links */}
-          <nav 
-            className={`
-              hidden md:flex items-center
-              transition-all duration-500 ease-out
-              ${showScrolledStyle ? "gap-1" : "gap-6"}
-            `}
-          >
-            {navLinks.map((link) => (
-              <Link
-                key={link.label}
-                to={link.href}
-                onClick={link.onClick}
-                className={`
-                  text-sm text-muted-foreground hover:text-foreground 
-                  transition-all duration-300 rounded-full
-                  ${showScrolledStyle ? "px-3 py-1.5 hover:bg-secondary/50" : "px-2 py-1"}
-                `}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Right side */}
-          <div className="flex items-center gap-2 shrink-0">
-            <Link to="/start" className="hidden sm:block">
-              <Button
-                size="sm"
-                className="rounded-full px-4 bg-foreground text-background hover:bg-foreground/90"
-              >
-                Get Started
-              </Button>
+            <Link to="/" className="shrink-0">
+              <img
+                src="/advo-logo-black.png"
+                alt="ADVO"
+                className="h-5 w-auto invert"
+                width={72}
+                height={20}
+                loading="eager"
+              />
             </Link>
 
-            {/* Mobile Menu Toggle */}
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 text-muted-foreground hover:text-foreground transition-colors"
-              aria-label="Toggle menu"
-            >
-              {isMobileMenuOpen ? (
-                <X className="w-5 h-5" />
-              ) : (
-                <Menu className="w-5 h-5" />
-              )}
-            </button>
-          </div>
-          </div>
-        </div>
+            <nav className="hidden md:flex items-center gap-1">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.label}
+                  to={link.href}
+                  onClick={link.onClick}
+                  className="text-sm text-foreground/75 hover:text-foreground hover:bg-secondary/60 transition-colors rounded-full px-3 py-1.5"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <Link
+                to="/start"
+                className="hidden sm:inline-flex items-center px-4 py-1.5 rounded-full bg-foreground text-background text-sm font-medium hover:bg-foreground/90 btn-press"
+              >
+                Get Started
+              </Link>
+
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="md:hidden p-2 text-foreground hover:text-foreground transition-colors"
+                style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.6))" }}
+                aria-label="Toggle menu"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="w-5 h-5" />
+                ) : (
+                  <Menu className="w-5 h-5" />
+                )}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
       </header>
 
-      {/* Mobile Menu Dropdown */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.15 }}
             className="fixed top-[5rem] left-4 right-4 z-40 md:hidden"
           >
-            <div className="bg-card/95 backdrop-blur-xl border border-border rounded-2xl p-4 shadow-xl">
+            <div className="bg-card border border-border rounded-2xl p-4">
               {navLinks.map((link) => (
                 <Link
                   key={link.label}
@@ -164,14 +153,12 @@ const FloatingNav = () => {
                   {link.label}
                 </Link>
               ))}
-              <Link 
-                to="/start" 
-                className="block pt-3"
+              <Link
+                to="/start"
+                className="block mt-2 px-4 py-2.5 rounded-full bg-foreground text-background text-sm font-medium text-center"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                <Button className="w-full rounded-full bg-foreground text-background">
-                  Get Started
-                </Button>
+                Get Started
               </Link>
             </div>
           </motion.div>

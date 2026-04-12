@@ -1,8 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import {
-  Eye,
-  EyeOff,
   Globe,
   Monitor,
   Loader2,
@@ -10,7 +8,6 @@ import {
   ChevronUp,
   Save,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -631,6 +628,50 @@ const EDITABLE_SECTIONS: Record<
   portfolio: PortfolioSectionForm,
 };
 
+/* ─── Sub-components ─────────────────────────────────────── */
+
+const ToggleRow = ({
+  icon: Icon,
+  label,
+  active,
+  onToggle,
+}: {
+  icon: React.ElementType;
+  label: string;
+  active: boolean;
+  onToggle: () => void;
+}) => (
+  <button
+    onClick={onToggle}
+    className="flex items-center gap-2 group"
+    title={`${active ? "Visible" : "Hidden"} on ${label}`}
+  >
+    <Icon
+      className={`h-3.5 w-3.5 transition-colors ${
+        active ? "text-foreground/80" : "text-muted-foreground/50"
+      }`}
+    />
+    <span
+      className={`text-[11px] font-mono uppercase tracking-wider hidden md:inline transition-colors ${
+        active ? "text-foreground/80" : "text-muted-foreground/50"
+      }`}
+    >
+      {label}
+    </span>
+    <div
+      className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${
+        active ? "bg-accent" : "bg-secondary border border-border"
+      }`}
+    >
+      <div
+        className={`absolute top-0.5 w-4 h-4 rounded-full bg-background transition-transform shadow-sm ${
+          active ? "translate-x-[18px]" : "translate-x-0.5"
+        }`}
+      />
+    </div>
+  </button>
+);
+
 /* ─── Main Component ─────────────────────────────────────── */
 
 const AdminContentStudio = () => {
@@ -647,23 +688,28 @@ const AdminContentStudio = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold mb-2">Content Studio</h1>
-        <p className="text-muted-foreground">
-          Control visibility and edit content for each section
-        </p>
-      </div>
-
-      {/* Legend */}
-      <div className="flex items-center gap-6 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1.5">
-          <Globe className="h-3.5 w-3.5" />
-          Public Site (advo.ph)
-        </span>
-        <span className="flex items-center gap-1.5">
-          <Monitor className="h-3.5 w-3.5" />
-          Client Portal (/hub)
-        </span>
+      <div className="flex items-start justify-between flex-wrap gap-4">
+        <div>
+          <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-muted-foreground mb-2">
+            Content
+          </p>
+          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight mb-1">
+            Content Studio
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Toggle visibility and edit content per section.
+          </p>
+        </div>
+        <div className="flex items-center gap-5 text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
+          <span className="flex items-center gap-1.5">
+            <Globe className="h-3.5 w-3.5" />
+            advo.ph
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Monitor className="h-3.5 w-3.5" />
+            /hub
+          </span>
+        </div>
       </div>
 
       <div className="space-y-3">
@@ -674,128 +720,52 @@ const AdminContentStudio = () => {
           return (
             <motion.div
               key={section.section_id}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.03 }}
-              className="p-4 bg-card border border-border rounded-xl shadow-card hover:border-accent/30 transition-colors"
+              className="p-4 bg-card border border-border rounded-xl hover:border-foreground/20 transition-colors"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-                    <span className="text-accent font-bold text-sm">
-                      {section.label.charAt(0)}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm">{section.label}</p>
-                    <p className="text-xs text-muted-foreground font-mono">
-                      {section.section_id}
-                    </p>
-                  </div>
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                {/* Label + id */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{section.label}</p>
+                  <p className="text-[11px] text-muted-foreground/70 font-mono mt-0.5">
+                    {section.section_id}
+                  </p>
                 </div>
 
-                <div className="flex items-center gap-3 ml-auto">
-                  {/* Public site toggle */}
-                  <button
-                    onClick={() =>
+                {/* Controls */}
+                <div className="flex items-center gap-4 shrink-0">
+                  <ToggleRow
+                    icon={Globe}
+                    label="Public"
+                    active={section.visible_public}
+                    onToggle={() =>
                       toggle(
                         section.section_id,
                         "visible_public",
-                        !section.visible_public
+                        !section.visible_public,
                       )
                     }
-                    className="flex items-center gap-2"
-                    title={
-                      section.visible_public
-                        ? "Visible on public site"
-                        : "Hidden from public site"
-                    }
-                  >
-                    <Globe className="h-3.5 w-3.5 text-muted-foreground" />
-                    <div
-                      className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${
-                        section.visible_public ? "bg-accent" : "bg-secondary"
-                      }`}
-                    >
-                      <div
-                        className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${
-                          section.visible_public
-                            ? "translate-x-4"
-                            : "translate-x-0"
-                        }`}
-                      />
-                    </div>
-                  </button>
-
-                  {/* Client portal toggle */}
-                  <button
-                    onClick={() =>
+                  />
+                  <ToggleRow
+                    icon={Monitor}
+                    label="Hub"
+                    active={section.visible_client_portal}
+                    onToggle={() =>
                       toggle(
                         section.section_id,
                         "visible_client_portal",
-                        !section.visible_client_portal
+                        !section.visible_client_portal,
                       )
                     }
-                    className="flex items-center gap-2"
-                    title={
-                      section.visible_client_portal
-                        ? "Visible in client portal"
-                        : "Hidden from client portal"
-                    }
-                  >
-                    <Monitor className="h-3.5 w-3.5 text-muted-foreground" />
-                    <div
-                      className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer ${
-                        section.visible_client_portal
-                          ? "bg-blue-500"
-                          : "bg-secondary"
-                      }`}
-                    >
-                      <div
-                        className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform shadow-sm ${
-                          section.visible_client_portal
-                            ? "translate-x-4"
-                            : "translate-x-0"
-                        }`}
-                      />
-                    </div>
-                  </button>
+                  />
 
-                  {/* Status badges */}
-                  <div className="flex items-center gap-1.5 w-[100px] justify-end">
-                    {section.visible_public ? (
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] text-accent border-accent/30 gap-1"
-                      >
-                        <Eye className="h-2.5 w-2.5" />
-                        Public
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] text-muted-foreground border-border gap-1"
-                      >
-                        <EyeOff className="h-2.5 w-2.5" />
-                        Hidden
-                      </Badge>
-                    )}
-                    {section.visible_client_portal && (
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] text-blue-500 border-blue-500/30 gap-1"
-                      >
-                        <Monitor className="h-2.5 w-2.5" />
-                        Portal
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Expand button — spacer for non-editable rows */}
                   {FormComponent ? (
                     <Button
                       variant="ghost"
                       size="sm"
+                      className="h-8 w-8 p-0 rounded-full"
                       onClick={() =>
                         setExpanded(isExpanded ? null : section.section_id)
                       }
@@ -812,9 +782,8 @@ const AdminContentStudio = () => {
                 </div>
               </div>
 
-              {/* Expandable edit form */}
               {isExpanded && FormComponent && (
-                <div className="mt-3 pt-3 border-t border-border">
+                <div className="mt-4 pt-4 border-t border-border">
                   <FormComponent
                     section={section}
                     onSave={(c) => updateContent(section.section_id, c)}

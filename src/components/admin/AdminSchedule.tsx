@@ -24,7 +24,7 @@ interface Deliverable {
   priority: number;
   due_date?: string;
   project?: { title: string };
-  team_member?: TeamMember;
+  assignee?: TeamMember;
 }
 
 const statusConfig: Record<DeliverableStatus, { label: string; color: string; icon: React.ElementType }> = {
@@ -172,16 +172,16 @@ const AdminSchedule = () => {
                     </p>
                     
                     <div className="flex items-center gap-4 text-sm">
-                      {deliverable.team_member && (
+                      {deliverable.assignee && (
                         <div className="flex items-center gap-2">
                           <Avatar className="h-6 w-6">
-                            <AvatarImage src={deliverable.team_member.avatar_url} />
+                            <AvatarImage src={deliverable.assignee.avatar_url} />
                             <AvatarFallback className="text-xs">
-                              {getInitials(deliverable.team_member.name)}
+                              {getInitials(deliverable.assignee.name)}
                             </AvatarFallback>
                           </Avatar>
                           <span className="text-muted-foreground">
-                            {deliverable.team_member.name}
+                            {deliverable.assignee.name}
                           </span>
                         </div>
                       )}

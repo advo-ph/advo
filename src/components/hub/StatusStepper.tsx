@@ -38,7 +38,7 @@ const StatusStepper = ({ currentStatus }: StatusStepperProps) => {
                   className={`
                     w-8 h-8 rounded-full border-2 flex items-center justify-center font-mono text-xs
                     ${isCompleted ? "bg-accent border-accent text-accent-foreground" : ""}
-                    ${isCurrent ? "border-accent text-accent glow-accent" : ""}
+                    ${isCurrent ? "border-accent text-accent" : ""}
                     ${isPending ? "border-border text-muted-foreground" : ""}
                   `}
                 >

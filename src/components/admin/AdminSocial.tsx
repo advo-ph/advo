@@ -41,13 +41,6 @@ const platformConfig = {
   twitter: { icon: Twitter, color: "text-sky-500", bg: "bg-sky-500/10", label: "Twitter" },
 };
 
-// Current posts from the real @advo_ph profile
-const existingPosts = [
-  { id: "existing-1", image_url: "/advo-post-1.jpg", placeholder: "ACCEPTING CLIENTS, ACCEPTING CLIENTS" },
-  { id: "existing-2", image_url: "/advo-post-2.jpg", placeholder: "REALITY, NOT DREAMS" },
-  { id: "existing-3", image_url: "/advo-post-3.jpg", placeholder: "ADVO" },
-];
-
 const AdminSocial = () => {
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -509,25 +502,6 @@ const AdminSocial = () => {
                 </motion.div>
               ))}
               
-              {/* Existing posts (current profile) */}
-              {existingPosts.map((post, index) => (
-                <div
-                  key={post.id}
-                  className="aspect-square bg-card relative group"
-                >
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900 text-white p-4">
-                    <span className="text-[10px] text-center font-medium leading-tight">
-                      {post.placeholder}
-                    </span>
-                  </div>
-                  {/* Live badge */}
-                  <div className="absolute top-2 left-2">
-                    <Badge className="bg-green-500 text-white text-[10px] px-1.5 py-0.5">
-                      Live
-                    </Badge>
-                  </div>
-                </div>
-              ))}
             </div>
             
             {/* Empty slots preview */}

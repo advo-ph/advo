@@ -9,6 +9,7 @@ import FAQ from "@/components/landing/FAQ";
 import ContactCTA from "@/components/landing/ContactCTA";
 import Footer from "@/components/landing/Footer";
 import FloatingNav from "@/components/landing/FloatingNav";
+import TechTicker from "@/components/landing/TechTicker";
 import { get } from "@/lib/api";
 
 /* ─── Map site_content section_id → component ───────────── */
@@ -56,22 +57,22 @@ const Index = () => {
 
   if (!loaded) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <FloatingNav />
 
-      {/* Toggleable sections */}
       {isVisible("hero") && <Hero />}
       <WhyDigital />
       <ProcessSteps />
-      {isVisible("portfolio") && <PortfolioGrid />}
+      <TechTicker />
       {isVisible("services") && <ServiceTiers />}
+      {isVisible("portfolio") && <PortfolioGrid />}
       <FAQ />
       {isVisible("contact") && <ContactCTA />}
 

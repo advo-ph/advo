@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut, Settings, Loader2 } from "lucide-react";
+import { LogOut, Settings, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
@@ -33,6 +33,7 @@ const Admin = () => {
   // Layout state
   const [activeSection, setActiveSection] = useState<AdminSection>("dashboard");
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Centralized data
   const {
@@ -64,26 +65,40 @@ const Admin = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
-        <div className="px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link to="/">
+        <div className="px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* Mobile menu toggle */}
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="lg:hidden p-2 -ml-2 text-foreground hover:bg-secondary/60 rounded-lg transition-colors"
+              aria-label="Open menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+
+            <Link to="/" className="shrink-0">
               <img
                 src="/advo-logo-black.png"
                 alt="ADVO"
-                className="h-6 w-auto dark:invert"
+                className="h-5 sm:h-6 w-auto invert"
               />
             </Link>
-            <Badge className="font-mono text-xs bg-accent/10 text-accent border-accent/30 hover:bg-accent/20">
+            <Badge className="hidden sm:inline-flex font-mono text-xs bg-accent/10 text-accent border-accent/30 hover:bg-accent/20">
               <Settings className="h-3 w-3 mr-1" />
               Admin
             </Badge>
           </div>
 
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground font-mono">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+            <span className="hidden md:inline text-sm text-muted-foreground font-mono truncate max-w-[180px]">
               {user?.email}
             </span>
-            <Button variant="ghost" size="sm" className="rounded-full" onClick={handleSignOut}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-full"
+              onClick={handleSignOut}
+            >
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
@@ -96,23 +111,25 @@ const Admin = () => {
         onSectionChange={setActiveSection}
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        isMobileOpen={isMobileMenuOpen}
+        onMobileClose={() => setIsMobileMenuOpen(false)}
       />
 
       {/* Main Content */}
       <main
-        className="pt-24 pb-16 px-6 transition-all duration-200"
-        style={{ marginLeft: sidebarWidth }}
+        className="pt-24 pb-16 px-4 sm:px-6 transition-all duration-200 lg:ml-[var(--sidebar-w)]"
+        style={{ ["--sidebar-w" as string]: `${sidebarWidth}px` }}
       >
         <div className="max-w-6xl mx-auto">
           {activeSection === "dashboard" && (
             <AdminDashboard
-              projectCount={projects.length}
-              clientCount={clients.length}
-              leadCount={leads.length}
-              totalRevenue={projects.reduce((sum, p) => sum + p.amount_paid_cents, 0)}
+              projects={projects}
+              clients={clients}
+              leads={leads}
               formatCurrency={formatCurrency}
               recentActivity={recentActivity}
               upcomingDeadlines={upcomingDeadlines}
+              userName={user?.email}
             />
           )}
 

@@ -82,7 +82,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <FloatingNav />
       
       <div className="min-h-screen flex items-center justify-center px-6 pt-16">
@@ -95,10 +95,10 @@ const Login = () => {
           transition={{ duration: 0.5, type: "spring", damping: 20 }}
           className="relative z-10 w-full max-w-sm"
         >
-          <div className="p-8 bg-card border border-border rounded-xl glass-strong shadow-card">
+          <div className="p-8 bg-card border border-border rounded-xl shadow-card">
             <div className="text-center mb-8">
-              <div className="w-12 h-12 rounded-full gradient-accent flex items-center justify-center mx-auto mb-4">
-                <Lock className="h-6 w-6 text-white" />
+              <div className="w-12 h-12 rounded-full bg-secondary border border-border flex items-center justify-center mx-auto mb-4">
+                <Lock className="h-6 w-6 text-foreground" />
               </div>
               <h1 className="text-2xl font-bold mb-2">Client Hub</h1>
               <p className="text-sm text-muted-foreground">
@@ -141,7 +141,7 @@ const Login = () => {
 
                 <Button
                   type="submit"
-                  className="w-full group btn-press gradient-accent text-white border-0"
+                  className="w-full group btn-press bg-foreground text-background hover:bg-foreground/90"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -205,7 +205,7 @@ const Login = () => {
 
                 <Button
                   type="submit"
-                  className="w-full group btn-press gradient-accent text-white border-0"
+                  className="w-full group btn-press bg-foreground text-background hover:bg-foreground/90"
                   disabled={isLoading}
                 >
                   {isLoading ? (

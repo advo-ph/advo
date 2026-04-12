@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { Globe, TrendingUp, Clock, Users } from "lucide-react";
 import { get } from "@/lib/api";
+import { Section, SectionHeader } from "@/components/ui/section";
 
 const ICON_MAP: Record<string, React.ElementType> = {
-  Globe, TrendingUp, Clock, Users,
+  Globe,
+  TrendingUp,
+  Clock,
+  Users,
 };
 
 interface Benefit {
@@ -34,58 +37,43 @@ const WhyDigital = () => {
         const section = data.find((s) => s.sectionId === "why_digital");
         if (section?.content) {
           const c = section.content as Partial<typeof DEFAULTS>;
-          setContent({ ...DEFAULTS, ...c, benefits: (c.benefits?.length ? c.benefits : DEFAULTS.benefits) });
+          setContent({ ...DEFAULTS, ...c, benefits: c.benefits?.length ? c.benefits : DEFAULTS.benefits });
         }
       }
     })();
   }, []);
 
   return (
-    <section className="py-24 px-6 bg-secondary/30">
-      <div className="max-w-6xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="mb-14"
-        >
-          <span className="text-xs font-medium text-accent uppercase tracking-wider mb-3 block">
-            Why Go Digital
-          </span>
-          <h2 className="text-3xl md:text-4xl font-bold">
-            {content.heading}
-          </h2>
-          {content.subtitle && (
-            <p className="text-muted-foreground mt-3 max-w-xl">{content.subtitle}</p>
-          )}
-        </motion.div>
+    <Section divided>
+      <SectionHeader
+        number="01"
+        eyebrow="Why Go Digital"
+        title={content.heading}
+        subtitle={content.subtitle || undefined}
+      />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {content.benefits.map((benefit, index) => {
-            const Icon = ICON_MAP[benefit.icon] || Globe;
-            return (
-              <motion.div
-                key={benefit.title}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.08, duration: 0.4 }}
-                className="group flex gap-4 p-5 rounded-xl hover:bg-card transition-colors"
-              >
-                <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0 group-hover:bg-accent/15 transition-colors">
-                  <Icon className="w-5 h-5 text-accent" />
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-1">{benefit.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{benefit.description}</p>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-border border border-border rounded-xl overflow-hidden">
+        {content.benefits.map((benefit) => {
+          const Icon = ICON_MAP[benefit.icon] || Globe;
+          return (
+            <div
+              key={benefit.title}
+              className="group flex gap-4 p-6 bg-background hover:bg-card transition-colors"
+            >
+              <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center shrink-0 group-hover:bg-foreground group-hover:text-background transition-colors">
+                <Icon className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="font-medium mb-1.5">{benefit.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {benefit.description}
+                </p>
+              </div>
+            </div>
+          );
+        })}
       </div>
-    </section>
+    </Section>
   );
 };
 

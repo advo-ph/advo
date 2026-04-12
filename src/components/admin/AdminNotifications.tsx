@@ -122,7 +122,7 @@ const AdminNotifications = () => {
         </div>
         <Button
           onClick={() => setComposeOpen(!composeOpen)}
-          className="gradient-accent text-white border-0"
+          className="bg-foreground text-background hover:bg-foreground/90"
         >
           <Mail className="h-4 w-4 mr-2" />
           Compose
@@ -245,7 +245,7 @@ const AdminNotifications = () => {
               size="sm"
               onClick={handleSend}
               disabled={!title.trim() || !body.trim() || isSending}
-              className="gradient-accent text-white border-0"
+              className="bg-foreground text-background hover:bg-foreground/90"
             >
               {isSending ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-1" />

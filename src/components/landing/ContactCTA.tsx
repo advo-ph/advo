@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { ArrowRight, Rocket } from "lucide-react";
+import { ArrowRight, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { get } from "@/lib/api";
 
 interface ContactContent {
@@ -13,7 +11,7 @@ interface ContactContent {
 }
 
 const DEFAULTS: ContactContent = {
-  heading: "Ready to Digitalize?",
+  heading: "Ready to digitalize?",
   subtext: "Prepare your business for the future. Let's work together.",
   cta_label: "Start a Project",
   cta_url: "/start",
@@ -24,8 +22,9 @@ const ContactCTA = () => {
 
   useEffect(() => {
     (async () => {
-      const { data } = await get<{ sectionId: string; content: unknown }[]>("/api/content/sections");
-
+      const { data } = await get<{ sectionId: string; content: unknown }[]>(
+        "/api/content/sections",
+      );
       if (data) {
         const section = data.find((s) => s.sectionId === "contact");
         if (section?.content) {
@@ -37,37 +36,43 @@ const ContactCTA = () => {
   }, []);
 
   return (
-    <section id="contact" className="py-24 px-6 relative overflow-hidden">
-      {/* Subtle gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-accent/10" />
-      
-      <div className="max-w-4xl mx-auto text-center relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, type: "spring", damping: 20 }}
-        >
-          <span className="text-xs font-medium text-accent uppercase tracking-wider mb-4 block">Let's Build</span>
-          <h2 className="text-3xl md:text-5xl font-bold mb-6">
-            {content.heading}
-          </h2>
-          <p className="text-lg text-muted-foreground mb-8 max-w-lg mx-auto">
-            {content.subtext}
-          </p>
-          
-          <Button 
-            size="lg" 
-            className="group btn-press gradient-accent hover:opacity-90 border-0 text-white" 
-            asChild
+    <section
+      className="relative py-32 px-6 text-center overflow-hidden"
+      style={{ backgroundColor: "hsl(16 92% 60%)" }}
+    >
+      <div className="max-w-4xl mx-auto">
+        <span className="text-xs font-medium text-background/80 uppercase tracking-[0.18em] mb-6 block">
+          Let's Build
+        </span>
+
+        <h2 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-semibold tracking-tight leading-[1.0] mb-8 text-balance text-background">
+          {content.heading}
+        </h2>
+
+        <p className="text-background/85 mb-14 max-w-lg mx-auto leading-relaxed text-lg">
+          {content.subtext}
+        </p>
+
+        <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
+          <Link
+            to={content.cta_url}
+            className="group inline-flex items-center gap-2.5 px-8 py-4 bg-background text-foreground rounded-full text-base font-medium hover:bg-background/90 btn-press shadow-[0_12px_40px_-8px_rgba(0,0,0,0.4)]"
           >
-            <Link to={content.cta_url}>
-              <Rocket className="mr-2 h-4 w-4" />
-              {content.cta_label}
-              <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </Button>
-        </motion.div>
+            {content.cta_label}
+            <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+          <a
+            href="mailto:contact@advo.ph"
+            className="inline-flex items-center gap-2 px-7 py-4 border border-background/40 rounded-full text-base text-background hover:bg-background/10 hover:border-background/70 transition-colors"
+          >
+            <Mail className="w-4 h-4" />
+            contact@advo.ph
+          </a>
+        </div>
+
+        <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-background/75">
+          No sales calls · Reply within 24h · Free consultation
+        </p>
       </div>
     </section>
   );

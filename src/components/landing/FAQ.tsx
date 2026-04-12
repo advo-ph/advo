@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus } from "lucide-react";
 import { get } from "@/lib/api";
+import { Section, SectionHeader } from "@/components/ui/section";
 
 interface FAQItem {
   question: string;
@@ -31,67 +32,57 @@ const FAQ = () => {
         const section = data.find((s) => s.sectionId === "faq");
         if (section?.content) {
           const c = section.content as Partial<typeof DEFAULTS>;
-          setContent({ ...DEFAULTS, ...c, items: (c.items?.length ? c.items : DEFAULTS.items) });
+          setContent({ ...DEFAULTS, ...c, items: c.items?.length ? c.items : DEFAULTS.items });
         }
       }
     })();
   }, []);
 
   return (
-    <section className="py-24 px-6 bg-card">
-      <div className="max-w-3xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="text-center mb-12"
-        >
-          <span className="text-xs font-medium text-accent uppercase tracking-wider mb-2 block">FAQ</span>
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">{content.heading}</h2>
-          <p className="text-muted-foreground">{content.subtitle}</p>
-        </motion.div>
+    <Section narrow divided>
+      <SectionHeader
+        number="05"
+        eyebrow="FAQ"
+        title={content.heading}
+        subtitle={content.subtitle}
+        align="center"
+      />
 
-        <div className="space-y-3">
-          {content.items.map((faq, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1, duration: 0.4 }}
-              className="glass-strong rounded-xl overflow-hidden"
+      <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
+        {content.items.map((faq, index) => (
+          <div key={index} className="bg-card">
+            <button
+              onClick={() => setOpenIndex(openIndex === index ? null : index)}
+              className="w-full flex items-center justify-between p-5 text-left hover:bg-secondary/50 transition-colors"
             >
-              <button
-                onClick={() => setOpenIndex(openIndex === index ? null : index)}
-                className="w-full flex items-center justify-between p-5 text-left hover:bg-secondary/30 transition-colors"
-              >
-                <span className="font-medium pr-4">{faq.question}</span>
-                <span className="shrink-0 w-6 h-6 rounded-full bg-secondary flex items-center justify-center">
-                  {openIndex === index ? (
-                    <Minus className="w-4 h-4 text-muted-foreground" />
-                  ) : (
-                    <Plus className="w-4 h-4 text-muted-foreground" />
-                  )}
-                </span>
-              </button>
-              <AnimatePresence>
-                {openIndex === index && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <div className="px-5 pb-5 text-muted-foreground text-sm">{faq.answer}</div>
-                  </motion.div>
+              <span className="font-medium pr-4">{faq.question}</span>
+              <span className="shrink-0 w-6 h-6 rounded-full border border-border flex items-center justify-center">
+                {openIndex === index ? (
+                  <Minus className="w-3.5 h-3.5 text-muted-foreground" />
+                ) : (
+                  <Plus className="w-3.5 h-3.5 text-muted-foreground" />
                 )}
-              </AnimatePresence>
-            </motion.div>
-          ))}
-        </div>
+              </span>
+            </button>
+            <AnimatePresence>
+              {openIndex === index && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-5 pb-5 text-muted-foreground text-sm leading-relaxed">
+                    {faq.answer}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        ))}
       </div>
-    </section>
+    </Section>
   );
 };
 

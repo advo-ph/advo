@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Linkedin, Github, Mail, Loader2 } from "lucide-react";
+import { Linkedin, Mail, Loader2 } from "lucide-react";
 import FloatingNav from "@/components/landing/FloatingNav";
+import Footer from "@/components/landing/Footer";
 import { get } from "@/lib/api";
 
 interface TeamMember {
@@ -20,7 +20,7 @@ const Team = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchTeam = async () => {
+    (async () => {
       const { data } = await get<Array<Record<string, unknown>>>("/api/team");
       setMembers(
         (data || []).map((m) => ({
@@ -31,116 +31,113 @@ const Team = () => {
           avatar_url: (m.avatarUrl ?? m.avatar_url) as string | null,
           email: (m.email as string) || null,
           linkedin_url: (m.linkedinUrl ?? m.linkedin_url) as string | null,
-        }))
+        })),
       );
       setLoading(false);
-    };
-
-    fetchTeam();
+    })();
   }, []);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <FloatingNav />
 
-      <main className="max-w-6xl mx-auto px-6 pt-24 pb-16 flex-1">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-16"
-        >
-          <span className="text-xs font-medium text-accent uppercase tracking-wider mb-2 block">
-            About Us
-          </span>
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            Meet the Team
-          </h1>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            We're a small team of engineers and designers who love building great software.
-          </p>
-        </motion.div>
-
-        {/* Loading Skeleton */}
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-accent" />
+      <main className="flex-1 pt-32 pb-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-20">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-[0.18em] mb-4 block">
+              About Us
+            </span>
+            <h1 className="text-4xl md:text-5xl font-semibold tracking-tight mb-6">
+              Meet the Team
+            </h1>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              A small team of engineers and designers who love building great software.
+            </p>
           </div>
-        ) : (
-          /* Team Grid */
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-            {members.map((member, index) => (
-              <motion.div
-                key={member.team_member_id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="bg-card border border-border rounded-xl p-6 text-center"
-              >
-                {/* Avatar */}
-                <div className="w-24 h-24 rounded-full bg-secondary flex items-center justify-center mx-auto mb-4">
-                  {member.avatar_url ? (
-                    <img 
-                      src={member.avatar_url} 
-                      alt={member.name}
-                      className="w-full h-full rounded-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-3xl font-bold text-muted-foreground/50">
-                      {member.name.charAt(0)}
-                    </span>
-                  )}
-                </div>
 
-                {/* Info */}
-                <h3 className="text-xl font-semibold mb-1">{member.name}</h3>
-                <p className="text-sm text-accent mb-3">{member.role}</p>
-                <p className="text-sm text-muted-foreground mb-4">{member.bio || ""}</p>
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {members.map((member) => (
+                <div
+                  key={member.team_member_id}
+                  className="group relative overflow-hidden rounded-2xl border border-border bg-card aspect-[3/4]"
+                >
+                  {/* Full-bleed image */}
+                  <div className="absolute inset-0">
+                    {member.avatar_url ? (
+                      <img
+                        src={member.avatar_url}
+                        alt={member.name}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-7xl font-semibold text-muted-foreground/10 bg-secondary">
+                        {member.name.charAt(0)}
+                      </div>
+                    )}
+                  </div>
 
-                {/* Social Links */}
-                <div className="flex items-center justify-center gap-3">
-                  {member.linkedin_url && (
-                    <a 
-                      href={member.linkedin_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <Linkedin className="h-5 w-5" />
-                    </a>
-                  )}
-                  {member.email && (
-                    <a 
-                      href={`mailto:${member.email}`}
-                      className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <Mail className="h-5 w-5" />
-                    </a>
-                  )}
+                  {/* Gradient fade — image merges into card */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-card via-card/85 via-40% to-transparent" />
+
+                  {/* Content overlaid at bottom */}
+                  <div className="absolute inset-x-0 bottom-0 p-6">
+                    <h3 className="text-xl font-semibold tracking-tight mb-1">
+                      {member.name}
+                    </h3>
+                    <p className="text-[11px] font-mono uppercase tracking-[0.15em] text-accent mb-4">
+                      {member.role}
+                    </p>
+
+                    {member.bio && (
+                      <p className="text-sm text-muted-foreground leading-relaxed mb-4 opacity-90">
+                        {member.bio}
+                      </p>
+                    )}
+
+                    <div className="flex items-center gap-1">
+                      {member.linkedin_url && (
+                        <a
+                          href={member.linkedin_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <Linkedin className="h-4 w-4" />
+                        </a>
+                      )}
+                      {member.email && (
+                        <a
+                          href={`mailto:${member.email}`}
+                          className="p-2 text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          <Mail className="h-4 w-4" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </motion.div>
-            ))}
+              ))}
+            </div>
+          )}
+
+          <div className="text-center mt-24 pt-16 border-t border-border">
+            <p className="text-muted-foreground mb-6">Want to work with us?</p>
+            <Link
+              to="/start"
+              className="inline-flex items-center px-6 py-3 bg-foreground text-background rounded-full text-sm font-medium hover:bg-foreground/90 btn-press"
+            >
+              Start a Project
+            </Link>
           </div>
-        )}
-
-        {/* CTA */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
-          className="text-center mt-16"
-        >
-          <p className="text-muted-foreground mb-4">
-            Want to work with us?
-          </p>
-          <Link 
-            to="/start"
-            className="inline-flex items-center px-6 py-3 bg-foreground text-background rounded-full font-medium hover:bg-foreground/90 transition-colors"
-          >
-            Start a Project
-          </Link>
-        </motion.div>
+        </div>
       </main>
+
+      <Footer />
     </div>
   );
 };

@@ -1,17 +1,12 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   Send,
   Loader2,
-  CheckCircle,
-  Briefcase,
+  Check,
   Mail,
-  User,
-  Building2,
-  FileText,
-  DollarSign,
+  Clock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,17 +18,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import * as db from "@/lib/db";
 import { useToast } from "@/hooks/use-toast";
 import FloatingNav from "@/components/landing/FloatingNav";
-import Footer from "@/components/landing/Footer";
 
 const BUDGET_RANGES = [
   { value: "under-50k", label: "Under ₱50,000" },
-  { value: "50k-100k", label: "₱50,000 - ₱100,000" },
-  { value: "100k-250k", label: "₱100,000 - ₱250,000" },
-  { value: "250k-500k", label: "₱250,000 - ₱500,000" },
+  { value: "50k-100k", label: "₱50,000 – ₱100,000" },
+  { value: "100k-250k", label: "₱100,000 – ₱250,000" },
+  { value: "250k-500k", label: "₱250,000 – ₱500,000" },
   { value: "500k-plus", label: "₱500,000+" },
   { value: "not-sure", label: "Not sure yet" },
 ];
@@ -48,12 +41,18 @@ const PROJECT_TYPES = [
   "Other",
 ];
 
+const PERKS = [
+  "Scope, timeline, and price in 24h",
+  "Optional 30-min discovery call",
+  "No commitment. No pressure.",
+];
+
 const Start = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -65,7 +64,7 @@ const Start = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.name || !formData.email || !formData.description) {
       toast({
         title: "Missing information",
@@ -74,11 +73,10 @@ const Start = () => {
       });
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
-      // Insert lead via database abstraction layer
       const { error } = await db.createLead({
         name: formData.name,
         email: formData.email,
@@ -87,11 +85,10 @@ const Start = () => {
         budget: formData.budget || null,
         description: formData.description,
       });
-      
+
       if (error) throw new Error(error);
-      
+
       setIsSubmitted(true);
-      
       toast({
         title: "Inquiry sent!",
         description: "We'll be in touch within 24 hours.",
@@ -100,7 +97,7 @@ const Start = () => {
       console.error("Error submitting inquiry:", error);
       toast({
         title: "Something went wrong",
-        description: "Please try again or email us directly at hello@advo.ph",
+        description: "Please try again or email us at contact@advo.ph",
         variant: "destructive",
       });
     } finally {
@@ -110,145 +107,178 @@ const Start = () => {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="min-h-screen flex flex-col">
         <FloatingNav />
         <div className="flex items-center justify-center flex-1 p-6">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="max-w-md text-center"
-          >
-            <div className="w-16 h-16 rounded-full gradient-accent flex items-center justify-center mx-auto mb-6">
-              <CheckCircle className="h-8 w-8 text-white" />
+          <div className="max-w-md text-center">
+            <div
+              className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-8"
+              style={{ backgroundColor: "hsl(16 92% 60% / 0.15)" }}
+            >
+              <Check className="h-9 w-9 text-accent" strokeWidth={2.5} />
             </div>
-            <h1 className="text-2xl font-bold mb-2">We got your inquiry!</h1>
-            <p className="text-muted-foreground mb-6">
-              Our team will review your project and get back to you within 24 hours.
+            <h1 className="text-3xl font-semibold tracking-tight mb-3">
+              Got it.
+            </h1>
+            <p className="text-muted-foreground mb-8 leading-relaxed">
+              Thanks, {formData.name.split(" ")[0]}. We'll review your project
+              and get back to you within 24 hours.
             </p>
-            <Button onClick={() => navigate("/")} className="btn-press">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Home
-            </Button>
-          </motion.div>
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              <Button
+                onClick={() => navigate("/")}
+                className="btn-press bg-foreground text-background hover:bg-foreground/90"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Home
+              </Button>
+              <a
+                href="mailto:contact@advo.ph"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Mail className="h-4 w-4" />
+                Or email us directly
+              </a>
+            </div>
+          </div>
         </div>
-        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <FloatingNav />
-      
-      <main className="pt-32 pb-24 px-6 flex-1">
+
+      <main className="pt-28 pb-16 px-6 flex-1">
         <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="grid grid-cols-1 lg:grid-cols-2 gap-12"
-          >
-            {/* Left Side - Info */}
-            <div>
-              <Badge variant="outline" className="font-mono text-xs mb-4">
-                // Start a Project
-              </Badge>
-              <h1 className="text-3xl md:text-4xl font-bold mb-4">
-                Let's build something great together
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-20">
+            {/* Left — Info */}
+            <div className="lg:col-span-2">
+              <div className="flex items-baseline gap-6 mb-4">
+                <span className="text-[48px] md:text-[64px] font-mono font-light text-muted-foreground/30 leading-none tracking-tighter">
+                  06
+                </span>
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-[0.18em]">
+                  Start a Project
+                </span>
+              </div>
+
+              <h1 className="text-4xl md:text-5xl font-semibold tracking-tight leading-[1.05] mb-6 text-balance">
+                Tell us what you're building.
               </h1>
-              <p className="text-muted-foreground mb-8">
-                Tell us about your project and we'll get back to you within 24 hours 
-                with a custom proposal.
+
+              <p className="text-muted-foreground text-lg mb-10 leading-relaxed">
+                Sketch, napkin, bullet points — all welcome.
               </p>
-              
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full gradient-accent flex items-center justify-center shrink-0">
-                    <span className="text-white font-bold text-sm">1</span>
-                  </div>
-                  <div>
-                    <h3 className="font-medium">Submit your inquiry</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Share your project details and goals
+
+              {/* What you get */}
+              <div className="space-y-3 mb-10">
+                {PERKS.map((perk) => (
+                  <div key={perk} className="flex items-start gap-3">
+                    <div className="mt-0.5 w-5 h-5 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0">
+                      <Check className="h-3 w-3 text-accent" strokeWidth={3} />
+                    </div>
+                    <p className="text-sm text-foreground/85 leading-relaxed">
+                      {perk}
                     </p>
                   </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                    <span className="text-muted-foreground font-bold text-sm">2</span>
+                ))}
+              </div>
+
+              {/* Quick contact */}
+              <div className="pt-8 border-t border-border space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-secondary border border-border flex items-center justify-center shrink-0">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <div>
-                    <h3 className="font-medium text-muted-foreground">Get a proposal</h3>
-                    <p className="text-sm text-muted-foreground">
-                      We'll send you scope, timeline, and pricing
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-0.5">
+                      Prefer email?
                     </p>
+                    <a
+                      href="mailto:contact@advo.ph"
+                      className="text-sm font-medium hover:text-accent transition-colors"
+                    >
+                      contact@advo.ph
+                    </a>
                   </div>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0">
-                    <span className="text-muted-foreground font-bold text-sm">3</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-secondary border border-border flex items-center justify-center shrink-0">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <div>
-                    <h3 className="font-medium text-muted-foreground">Start building</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Access your dashboard to track progress
+                  <div className="flex-1">
+                    <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-0.5">
+                      Response time
+                    </p>
+                    <p className="text-sm font-medium">
+                      Within 24 hours, every time
                     </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Right Side - Form */}
-            <div className="p-6 bg-card border border-border rounded-xl glass-strong">
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="grid grid-cols-2 gap-4">
+            {/* Right — Form */}
+            <div className="lg:col-span-3">
+              <form
+                onSubmit={handleSubmit}
+                className="p-6 md:p-8 bg-card border border-border rounded-2xl space-y-6"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium flex items-center gap-2">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      Your Name
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Your Name <span className="text-accent">*</span>
                     </label>
                     <Input
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="John Doe"
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
+                      placeholder="Juan dela Cruz"
                       required
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      Email
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Email <span className="text-accent">*</span>
                     </label>
                     <Input
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="john@company.com"
+                      onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                      }
+                      placeholder="juan@company.ph"
                       required
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    <Building2 className="h-4 w-4 text-muted-foreground" />
-                    Company (optional)
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Company
                   </label>
                   <Input
                     value={formData.company}
-                    onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                    placeholder="Acme Corp"
+                    onChange={(e) =>
+                      setFormData({ ...formData, company: e.target.value })
+                    }
+                    placeholder="Optional"
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <label className="text-sm font-medium flex items-center gap-2">
-                      <Briefcase className="h-4 w-4 text-muted-foreground" />
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Project Type
                     </label>
                     <Select
                       value={formData.projectType}
-                      onValueChange={(v) => setFormData({ ...formData, projectType: v })}
+                      onValueChange={(v) =>
+                        setFormData({ ...formData, projectType: v })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select type" />
@@ -263,16 +293,17 @@ const Start = () => {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      Budget Range
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      Budget
                     </label>
                     <Select
                       value={formData.budget}
-                      onValueChange={(v) => setFormData({ ...formData, budget: v })}
+                      onValueChange={(v) =>
+                        setFormData({ ...formData, budget: v })
+                      }
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select budget" />
+                        <SelectValue placeholder="Select range" />
                       </SelectTrigger>
                       <SelectContent>
                         {BUDGET_RANGES.map((range) => (
@@ -286,39 +317,49 @@ const Start = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    Project Description
+                  <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    Tell us about your project <span className="text-accent">*</span>
                   </label>
                   <Textarea
                     value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Tell us about your project goals, features you need, and any technical requirements..."
-                    rows={8}
-                    className="min-h-[180px]"
+                    onChange={(e) =>
+                      setFormData({ ...formData, description: e.target.value })
+                    }
+                    placeholder="What are you building? What problem does it solve?"
+                    rows={6}
+                    className="min-h-[160px] resize-none"
                     required
                   />
                 </div>
 
-                <Button type="submit" className="w-full btn-press gradient-accent text-white border-0" disabled={isSubmitting}>
-                  {isSubmitting ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4 mr-2" />
-                  )}
-                  {isSubmitting ? "Sending..." : "Send Inquiry"}
-                </Button>
-                
-                <p className="text-xs text-center text-muted-foreground">
-                  We typically respond within 24 hours
-                </p>
+                <div className="pt-2">
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full btn-press h-12 rounded-full text-base font-medium text-white"
+                    style={{
+                      backgroundColor: "hsl(16 92% 60%)",
+                    }}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        Send Inquiry
+                      </>
+                    )}
+                  </Button>
+
+                </div>
               </form>
             </div>
-          </motion.div>
+          </div>
         </div>
       </main>
-      
-      <Footer />
     </div>
   );
 };

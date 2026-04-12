@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { LogOut, Briefcase, ChevronRight, User, Bell, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,6 @@ import { useClientData, type ClientProject } from "@/hooks/useClientData";
 import { useClientNotifications } from "@/hooks/useNotifications";
 import ProjectDashboard from "@/components/hub/ProjectDashboard";
 import FloatingNav from "@/components/landing/FloatingNav";
-import Footer from "@/components/landing/Footer";
 
 const Hub = () => {
   const { user, isLoading: authLoading, signOut } = useAuth();
@@ -38,7 +36,7 @@ const Hub = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen flex flex-col">
       <FloatingNav />
 
       <main className="pt-24 pb-16 px-6 flex-1">
@@ -49,22 +47,18 @@ const Hub = () => {
               <div className="h-64 bg-secondary animate-pulse rounded-lg" />
             </div>
           ) : projects.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-24"
-            >
+            <div className="text-center py-24">
               <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mx-auto mb-6">
-                <Briefcase className="h-8 w-8 text-muted-foreground" />
+                <Briefcase className="h-7 w-7 text-muted-foreground" />
               </div>
-              <h2 className="text-xl font-semibold mb-2">No Projects Yet</h2>
+              <h2 className="text-xl font-medium mb-2">No Projects Yet</h2>
               <p className="text-muted-foreground max-w-sm mx-auto mb-6">
                 Your projects will appear here once we begin working together.
               </p>
-              <Button asChild className="btn-press gradient-accent text-white border-0">
+              <Button asChild className="btn-press bg-foreground text-background hover:bg-foreground/90">
                 <Link to="/start">Start a Project</Link>
               </Button>
-            </motion.div>
+            </div>
           ) : (
             <div className="flex flex-col lg:flex-row gap-8">
               {/* Sidebar - Project List + User Info (Sticky) */}
@@ -173,14 +167,11 @@ const Hub = () => {
                         <button
                           key={project.project_id}
                           onClick={() => setSelectedProject(project)}
-                          className={`
-                            w-full text-left p-3 rounded-xl border transition-all flex items-center justify-between card-glow
-                            ${
-                              selectedProject?.project_id === project.project_id
-                                ? "bg-card border-accent shadow-card"
-                                : "border-border hover:bg-card hover:shadow-card hover:border-border"
-                            }
-                          `}
+                          className={`w-full text-left p-3 rounded-xl border transition-colors flex items-center justify-between ${
+                            selectedProject?.project_id === project.project_id
+                              ? "bg-card border-foreground/40"
+                              : "border-border hover:bg-card hover:border-foreground/20"
+                          }`}
                         >
                           <span className="text-sm font-medium truncate">{project.title}</span>
                           <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
@@ -199,8 +190,6 @@ const Hub = () => {
           )}
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };

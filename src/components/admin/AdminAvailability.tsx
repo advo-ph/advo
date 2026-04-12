@@ -113,9 +113,21 @@ const AdminAvailability = () => {
       }
     }
 
-    // Availability blocks — endpoint not yet implemented, start with empty
-    setBlocks([]);
-    
+    // Fetch availability blocks
+    const { data: rawBlocks } = await get<Record<string, unknown>[]>("/api/availability");
+    if (rawBlocks) {
+      const mappedBlocks: AvailabilityBlock[] = rawBlocks.map((b) => ({
+        block_id: (b.blockId ?? b.block_id) as number,
+        team_member_id: (b.teamMemberId ?? b.team_member_id) as number,
+        day_of_week: (b.dayOfWeek ?? b.day_of_week) as number,
+        start_time: (b.startTime ?? b.start_time) as string,
+        end_time: (b.endTime ?? b.end_time) as string,
+        block_type: (b.blockType ?? b.block_type) as BlockType,
+        label: (b.label as string) || undefined,
+      }));
+      setBlocks(mappedBlocks);
+    }
+
     setIsLoading(false);
   };
 
@@ -230,16 +242,15 @@ const AdminAvailability = () => {
     setIsSaving(true);
     
     const blockData = {
-      team_member_id: parseInt(formData.team_member_id),
-      day_of_week: parseInt(formData.day_of_week),
-      start_time: formData.start_time,
-      end_time: formData.end_time,
-      block_type: formData.block_type,
-      label: formData.label || null,
+      teamMemberId: parseInt(formData.team_member_id),
+      dayOfWeek: parseInt(formData.day_of_week),
+      startTime: formData.start_time,
+      endTime: formData.end_time,
+      blockType: formData.block_type,
+      label: formData.label || undefined,
     };
-    
+
     if (editingBlock) {
-      // TODO: Replace with dedicated /api/availability/:id endpoint when available
       const { error } = await patch(`/api/availability/${editingBlock.block_id}`, blockData);
 
       if (error) {
@@ -250,7 +261,6 @@ const AdminAvailability = () => {
         fetchData();
       }
     } else {
-      // TODO: Replace with dedicated /api/availability endpoint when available
       const { error } = await post("/api/availability", blockData);
 
       if (error) {
@@ -268,7 +278,6 @@ const AdminAvailability = () => {
   const handleDelete = async () => {
     if (!editingBlock) return;
     
-    // TODO: Replace with dedicated /api/availability/:id endpoint when available
     const { error } = await del(`/api/availability/${editingBlock.block_id}`);
 
     if (error) {
