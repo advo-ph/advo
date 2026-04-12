@@ -1,10 +1,22 @@
-# ADVO — Client Project Portal
+# ADVO — Agency Platform
 
-A transparent client portal for tracking project progress, powered by real-time GitHub integration.
+Landing site, client portal, and admin CMS for ADVO — a Philippine software agency. Dark minimal design, self-hosted stack.
 
 **Live**: [advo.ph](https://advo.ph) · **API**: [api.advo.ph](https://api.advo.ph/api/health)
 
 ## Features
+
+### Public Site (`/`)
+
+- **Hero** — Full-bleed team photo with stagger-animated overlay text + stats row
+- **Why Go Digital** — Benefits grid (numeral `01`)
+- **Our Process** — Step-by-step methodology (numeral `02`)
+- **TechTicker** — Scrolling brand logos from Simple Icons CDN
+- **Services** — Core offerings (numeral `03`)
+- **Portfolio** — Recent work grid (numeral `04`)
+- **FAQ** — Centered accordion (numeral `05`)
+- **ContactCTA** — Full-bleed orange ending with dual CTAs
+- **Team page** — Editorial portrait cards with image fade into card
 
 ### Client Hub (`/hub`)
 
@@ -19,39 +31,69 @@ A transparent client portal for tracking project progress, powered by real-time 
 
 ### Admin Panel (`/admin`)
 
-- **Dashboard** — KPI cards (projects, clients, revenue, leads)
+- **Dashboard** — Time-aware greeting, KPI cards, project pipeline bars, cash flow snapshot, 3-column feeds (activity / deadlines / leads)
 - **Projects** — Full CRUD, contract URL, asset upload (photos/docs)
 - **Clients** — Client management with invite flow (creates auth account + sends welcome email)
 - **Team** — Team member profiles (bio, LinkedIn, avatar upload)
 - **Deliverables** — Schedule with status tracking and assignment
 - **Availability** — Team capacity management
 - **Social** — Social media post management
-- **Content Studio** — CMS for landing page sections
+- **Content Studio** — CMS with monochrome visibility toggles (public / hub)
 - **Portfolio** — Public portfolio with case studies
 - **Finance** — Invoice CRUD with status toggles
 - **Notifications** — Send to individual clients or broadcast to all
 - **Leads** — Inquiry pipeline with lead-to-client conversion
+- **Brand Scraper** — Full-spectrum site analysis (screenshots, colors, SEO, a11y, perf, animations)
+- **FB Scraper** — Facebook page + posts extraction (authenticated Playwright)
 - **Settings** — System configuration (persisted to DB)
+- **Mobile**: hamburger overlay sidebar + full-width content
 
 ### Client Onboarding (`/start`)
 
-- Self-service project inquiry form
-- Captures name, email, company, budget, description
-- Creates lead records for admin review
+- Two-column numbered layout (matches `01`–`05` landing rhythm as `06`)
+- Form: name, email, company, project type, budget, description
+- Perks checklist + direct email + 24h response promise
+- Success state personalized with first name
+
+## Design System
+
+All tokens in `src/index.css`, Tailwind config in `tailwind.config.ts`.
+
+| Token | Value | Use |
+|-------|-------|-----|
+| `--background` | `hsl(0 0% 4%)` — `#0A0A0A` | Page background |
+| `--foreground` | `hsl(0 0% 98%)` — `#FAFAFA` | Body text |
+| `--card` | `hsl(0 0% 6%)` — `#0F0F0F` | Raised surfaces |
+| `--secondary` | `hsl(0 0% 10%)` — `#1A1A1A` | Subtle fills |
+| `--accent` | `hsl(19 77% 56%)` — `#E67A3A` | CTAs, highlights (warm orange) |
+| `--border` | `hsl(0 0% 14%)` — `#242424` | Hairline dividers |
+| `--radius` | `0.625rem` (10px) | Default rounding |
+
+**Typography**: Geist (sans) + Geist Mono — both loaded from Google Fonts. Headings use `-0.02em` letter-spacing for tight display. Mono used for eyebrow labels, micro-info, and numerals (`01`, `02`…).
+
+**Primitives** (`src/components/ui/section.tsx`):
+- `<Section>` — standardized `py-24 px-6`, `max-w-6xl` container, optional `divided` (top border) and `narrow` (for centered text sections)
+- `<SectionHeader>` — eyebrow + huge mono numeral + title + optional subtitle
+
+**Animation philosophy**: zero scroll animations. Only kinetic surfaces are:
+- `FloatingNav` pill morph using Framer Motion spring `{ stiffness: 380, damping: 38 }` + liquid glass backdrop filter
+- Hero content stagger on page load
+- `TechTicker` CSS keyframe marquee
+- Button hover micro-transitions
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
 | **Frontend** | React 18 + Vite + TypeScript |
-| **Styling** | Tailwind CSS + Shadcn/UI |
-| **Animation** | Framer Motion |
+| **Styling** | Tailwind CSS + Shadcn/UI + Geist font |
+| **Animation** | Framer Motion (spring physics) |
 | **API** | Hono (Node.js) + Drizzle ORM |
 | **Database** | PostgreSQL 16 |
 | **Auth** | JWT (access + refresh tokens, DB-backed sessions) |
 | **Email** | Nodemailer (Resend SMTP or custom SMTP) |
 | **State** | TanStack React Query v5 |
-| **Integrations** | GitHub API (webhooks + polling) |
+| **Integrations** | GitHub API (webhooks + polling), Simple Icons CDN, Puppeteer, Playwright |
 | **Frontend Hosting** | Vercel (auto-deploy from `main`) |
 | **API Hosting** | Contabo VPS (PM2 + Nginx + Let's Encrypt) |
 | **DNS** | Namecheap |

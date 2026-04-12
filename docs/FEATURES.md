@@ -44,7 +44,15 @@ Unread count badge on bell icon. Dropdown shows last 10 notifications with mark-
 
 ### Dashboard
 
-KPI cards: total projects, active clients, total revenue, active leads.
+Time-aware greeting ("Good morning, {name}"), today's date in mono caps, and quick-action buttons.
+
+**KPI row** (4 cards): Active Projects (+ shipped count), Revenue Collected (% of billed, orange accent), Open Leads (+ qualified count), Active Clients (+ total projects).
+
+**Pipeline panel**: horizontal stacked bars showing projects by stage — Discovery → Architecture → Development → Testing → Shipped, each with its own color dot and count.
+
+**Cash flow panel**: Collected vs Outstanding progress bars + large collection rate %.
+
+**Bottom feeds** (3 columns): Recent Activity, Upcoming Deadlines (urgent badges in red), Latest Leads (avatar + submission date).
 
 **Files**: `AdminDashboard.tsx`, `useAdminData.ts`
 
@@ -86,7 +94,9 @@ Compose notifications to single client or broadcast to all. Auto-notification on
 
 ### Content Studio
 
-CMS for landing page sections. Toggle visibility (public/client portal). **Form-based editing** for 11 sections: hero, services, pricing, testimonials, contact, client dashboard, FAQ, process steps, why digital, team heading, portfolio heading.
+CMS for landing page sections. Each row shows section label + `section_id` with two monochrome visibility toggles (🌐 `Public` — advo.ph, 🖥 `Hub` — /hub) plus an expand chevron for editable sections.
+
+**Form-based editing** for 11 sections: hero, services, pricing, testimonials, contact, client dashboard, FAQ, process steps, why digital, team heading, portfolio heading.
 
 **Files**: `AdminContentStudio.tsx`, `useSiteContent.ts`
 
@@ -118,7 +128,9 @@ Pipeline view of inquiries. Status: new → contacted → qualified → proposal
 
 ### Brand Scraper
 
-Paste any URL → extracts branding intelligence via stealth Puppeteer:
+Two modes — lightweight `/api/scrape/brand` (fast) and full `/api/scrape/brand-full` (deep analysis). Uses stealth Puppeteer with a single browser instance reused across viewports and pages.
+
+**Core extraction** (both modes):
 - Colors (hex, frequency, CSS variables, theme color)
 - Fonts (Google Fonts, CSS declarations)
 - Logos & favicons (img, SVG inline, apple-touch-icon)
@@ -127,7 +139,20 @@ Paste any URL → extracts branding intelligence via stealth Puppeteer:
 - Page structure (heading hierarchy, sections, CTAs, buttons, inputs)
 - Navigation links + social media profiles
 - All images with previews
-- Auto-saves to DB, load past scrapes from history
+
+**Full-scrape additions** (13 features):
+- Screenshots at 3 viewports (desktop 1440×900, tablet 768×1024, mobile 375×812) as base64 data URLs
+- Multi-page crawl (follows up to `crawlDepth` internal nav links, merges data)
+- Color palette grouping (primary / secondary / accent[] / neutral[]) via HSL clustering
+- Typography scale from real DOM computed styles (h1-h6, body, p)
+- UI component pattern detection (14 patterns: hero+CTA, pricing, FAQ, team, video, etc.)
+- SEO audit (11 checks — title, meta, H1 count, hierarchy, canonical, OG, JSON-LD, sitemap, robots.txt, alt text %) with score
+- Performance metrics (load time, DOM nodes, JS heap, requests, JS/CSS files, page weight)
+- Animation detection (CSS keyframes, transitions, GSAP, Framer Motion, AOS, Lenis, Lottie)
+- Accessibility audit (lang, alt, ARIA, focus indicators, WCAG contrast) with score
+- Compare mode — pass `compareUrl` to get a diff (`onlyInMain` / `shared` / `onlyInCompare`)
+
+Auto-saves to DB, load past scrapes from history.
 
 **Files**: `AdminBrandScraper.tsx`, `advo-api/src/routes/scrape.routes.ts`
 
@@ -140,6 +165,7 @@ Paste a Facebook page URL → extracts company data via authenticated Playwright
 - Photos gallery
 - Uses blead's saved Facebook session for authenticated access
 - SSR `<script>` tag parsing + DOM fallback + infinite scroll
+- Profile image extraction: matches `<img>` whose `alt` contains the page name (from FB CDN) to avoid leaking the logged-in user's avatar from `og:image`
 - Auto-saves to DB, load past scrapes from history
 
 **Files**: `AdminFacebookScraper.tsx`, `advo-api/src/routes/fb-scrape.routes.ts`, `advo-api/src/routes/scrape.routes.ts`
