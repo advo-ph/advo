@@ -1,1 +1,0 @@
-SELECT * FROM public.client; SELECT * FROM public.project;

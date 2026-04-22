@@ -5,37 +5,31 @@ const ScrollProgress = () => {
 
   useEffect(() => {
     let animationFrameId: number;
+    const scrollEl = document.getElementById("root");
+    if (!scrollEl) return;
 
     const updateProgress = () => {
       if (!progressRef.current) return;
-      
-      const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const scrollHeight = scrollEl.scrollHeight - scrollEl.clientHeight;
       if (scrollHeight <= 0) {
         progressRef.current.style.width = "0%";
         return;
       }
-      
-      const scrolled = (window.scrollY / scrollHeight) * 100;
+      const scrolled = (scrollEl.scrollTop / scrollHeight) * 100;
       progressRef.current.style.width = `${Math.min(scrolled, 100)}%`;
     };
 
     const handleScroll = () => {
-      // Cancel any pending frame
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
-      // Request new frame for smooth update
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
       animationFrameId = requestAnimationFrame(updateProgress);
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
+    scrollEl.addEventListener("scroll", handleScroll, { passive: true });
     updateProgress();
 
     return () => {
-      window.removeEventListener("scroll", handleScroll);
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
+      scrollEl.removeEventListener("scroll", handleScroll);
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
     };
   }, []);
 

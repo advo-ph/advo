@@ -12,10 +12,11 @@ Landing site, client portal, and admin CMS for ADVO — a Philippine software ag
 - **Why Go Digital** — Benefits grid (numeral `01`)
 - **Our Process** — Step-by-step methodology (numeral `02`)
 - **TechTicker** — Scrolling brand logos from Simple Icons CDN
+- **Infrastructure** — Isometric 3D scene (React Three Fiber) showing the Security / Frontend / Backend / Database pipeline with animated circuit traces. Responsive: vertical stack on mobile
 - **Services** — Core offerings (numeral `03`)
 - **Portfolio** — Recent work grid (numeral `04`)
 - **FAQ** — Centered accordion (numeral `05`)
-- **ContactCTA** — Full-bleed orange ending with dual CTAs
+- **ContactCTA** — Animated organic orange blob gradient with grain texture, over the "Ready to digitalize?" CTA
 - **Team page** — Editorial portrait cards with image fade into card
 
 ### Client Hub (`/hub`)
@@ -79,7 +80,11 @@ All tokens in `src/index.css`, Tailwind config in `tailwind.config.ts`.
 - `FloatingNav` pill morph using Framer Motion spring `{ stiffness: 380, damping: 38 }` + liquid glass backdrop filter
 - Hero content stagger on page load
 - `TechTicker` CSS keyframe marquee
+- `InfrastructureDiagram` — animated circuit-trace pulses (dashOffset) + orthographic iso camera
+- `ContactCTA` — 4 ambient blobs drifting on 22–28s cycles with SVG grain overlay
 - Button hover micro-transitions
+
+**Scrollbars**: overlay-style across macOS/Windows (no gutter reservation). `scrollbar-width: thin` + hover-only WebKit fallback. `#root` is the scroll container (body is fixed-height) — see [src/index.css](src/index.css).
 
 ## Tech Stack
 
@@ -87,15 +92,15 @@ All tokens in `src/index.css`, Tailwind config in `tailwind.config.ts`.
 |-------|-----------|
 | **Frontend** | React 18 + Vite + TypeScript |
 | **Styling** | Tailwind CSS + Shadcn/UI + Geist font |
-| **Animation** | Framer Motion (spring physics) |
+| **Animation** | Framer Motion (spring physics) + React Three Fiber (r3f) for the Infrastructure scene |
+| **3D** | `three` + `@react-three/fiber` v8 + `@react-three/drei` v9 (React-18-compatible pins) |
 | **API** | Hono (Node.js) + Drizzle ORM |
 | **Database** | PostgreSQL 16 |
 | **Auth** | JWT (access + refresh tokens, DB-backed sessions) |
 | **Email** | Nodemailer (Resend SMTP or custom SMTP) |
 | **State** | TanStack React Query v5 |
 | **Integrations** | GitHub API (webhooks + polling), Simple Icons CDN, Puppeteer, Playwright |
-| **Frontend Hosting** | Vercel (auto-deploy from `main`) |
-| **API Hosting** | Contabo VPS (PM2 + Nginx + Let's Encrypt) |
+| **Hosting** | Contabo VPS (Singapore): Nginx + PM2 + Let's Encrypt. Frontend served as static build from `/var/www/advo/dist`, API on `127.0.0.1:6107`. |
 | **DNS** | Namecheap |
 
 ## Quick Start
@@ -108,7 +113,7 @@ cp .env.example .env     # Edit with your DB credentials
 npm install
 npm run db:push           # Create tables
 npm run db:seed           # Seed defaults
-npm run dev               # Starts on port 3000
+npm run dev               # Starts on port 6107
 ```
 
 ### 2. Frontend
@@ -116,7 +121,7 @@ npm run dev               # Starts on port 3000
 ```bash
 cd advo
 npm install
-npm run dev               # Starts on port 6400
+npm run dev               # Starts on port 6100
 ```
 
 Default login: `admin@advo.ph` / `changeme`
@@ -127,7 +132,7 @@ Default login: `admin@advo.ph` / `changeme`
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `VITE_API_URL` | Yes | API base URL (`http://localhost:3000` or `https://api.advo.ph`) |
+| `VITE_API_URL` | Yes | API base URL (`http://localhost:6107` or `https://api.advo.ph`) |
 | `VITE_GITHUB_TOKEN` | No | GitHub PAT for commit history |
 
 ### API (`advo-api/.env`)
@@ -144,15 +149,17 @@ Default login: `admin@advo.ph` / `changeme`
 ## Deployment
 
 ```bash
-# Frontend (auto-deploys on push, or manual):
-cd advo && npx vercel --prod
+# Frontend — build on VPS from git, deploy to /var/www/advo/dist:
+ssh advo "cd /opt/advo && git pull && npm install && npm run build && rsync -a --delete dist/ /var/www/advo/dist/"
 
 # API:
-cd advo-api && ./deploy.sh root@217.216.72.28
+cd advo-api && ./deploy.sh root@advo
 
-# Database backup:
-ssh root@217.216.72.28 "pg_dump -Fc advo > /var/backups/advo/advo_$(date +%Y%m%d).dump"
+# Manual DB backup (automated nightly at 3am via cron):
+ssh advo "sudo -u postgres pg_dump -Fc advo > /var/backups/advo/advo_$(date +%Y%m%d).dump"
 ```
+
+> `advo` is an SSH alias for `root@62.146.237.12` — add to `~/.ssh/config` locally.
 
 ## Project Structure
 

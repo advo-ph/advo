@@ -70,9 +70,10 @@ const Hero = () => {
           style={{ objectPosition: "center 35%" }}
           loading="eager"
         />
-        {/* Dark gradient for text legibility */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/20" />
-        <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/20 to-transparent" />
+        {/* Overall darkening for contrast */}
+        <div className="absolute inset-0 bg-black/45" />
+        {/* Vertical gradient: heavier at the bottom where text sits */}
+        <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-background via-background/75 to-transparent" />
       </div>
 
       {/* Content overlay */}
@@ -86,7 +87,7 @@ const Hero = () => {
           <motion.h1
             variants={fadeUp}
             transition={{ duration: 0.6, ease: EASE }}
-            className="text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tight leading-[1.02] mb-8 text-balance drop-shadow-[0_4px_24px_rgba(0,0,0,0.6)]"
+            className="text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tight leading-[1.02] mb-8 text-balance [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]"
           >
             {content.headline}
           </motion.h1>
@@ -94,7 +95,7 @@ const Hero = () => {
           <motion.p
             variants={fadeUp}
             transition={{ duration: 0.5, ease: EASE }}
-            className="text-lg text-foreground/80 max-w-xl mb-10 leading-relaxed drop-shadow-[0_2px_12px_rgba(0,0,0,0.6)]"
+            className="text-lg text-foreground/80 max-w-xl mb-10 leading-relaxed [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]"
           >
             {content.subtext}
           </motion.p>
@@ -113,7 +114,7 @@ const Hero = () => {
             </Link>
             <Link
               to="/team"
-              className="inline-flex items-center px-5 py-3 border border-border rounded-full text-sm text-foreground/90 hover:text-foreground bg-card/30 backdrop-blur-md hover:bg-card/50 transition-colors"
+              className="inline-flex items-center px-5 py-3 border border-border rounded-full text-sm text-foreground/90 hover:text-foreground bg-card/40 hover:bg-card/60 transition-colors"
             >
               Meet the Team
             </Link>

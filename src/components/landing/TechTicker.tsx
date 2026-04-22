@@ -44,7 +44,7 @@ const Row = () => (
 
 const TechTicker = () => {
   return (
-    <section className="border-y border-border py-10 overflow-hidden bg-card/30">
+    <section className="relative border-y border-border py-10 overflow-hidden bg-card/30">
       <div className="relative flex overflow-hidden">
         <Row />
         <Row />

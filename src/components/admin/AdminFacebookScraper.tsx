@@ -35,7 +35,7 @@ import { get } from "@/lib/api";
 import { getAccessToken } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:6107";
 
 // Resolve image URLs — local uploads need API prefix, FB CDN URLs stay as-is
 function resolveImgUrl(url: string): string {

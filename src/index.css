@@ -61,6 +61,19 @@
     color-scheme: dark;
   }
 
+  html, body {
+    @apply overflow-hidden;
+    height: 100svh;
+    height: 100dvh;
+  }
+
+  #root {
+    height: 100svh;
+    height: 100dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: "Geist", system-ui, sans-serif;
@@ -77,7 +90,49 @@
   }
 }
 
+/* ── Overlay scrollbars (macOS/Windows parity, no gutter reservation) ──
+ * Modern browsers: scrollbar-width: thin + scrollbar-color (preserves overlay).
+ * WebKit fallback: transparent until hover. Never set ::-webkit-scrollbar width
+ * — that forces overlay→classic mode on macOS.
+ */
+@supports (scrollbar-width: auto) {
+  * {
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+    scrollbar-width: thin;
+  }
+}
+
+@supports selector(::-webkit-scrollbar) {
+  ::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *:hover::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+  }
+  *:hover::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.6);
+  }
+}
+
+/* Radix ScrollArea viewport uses a table-layout wrapper by default which
+ * breaks nested overflow-x-auto. Force block layout. */
+[data-radix-scroll-area-viewport] > div {
+  display: block !important;
+}
+
 @layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   .shadow-card {
     box-shadow:
       0 1px 0 hsl(var(--border)),

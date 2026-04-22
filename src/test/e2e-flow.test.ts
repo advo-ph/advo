@@ -7,7 +7,7 @@
 
 import { describe, it, expect, beforeAll } from "vitest";
 
-const API = "http://localhost:3000";
+const API = "http://localhost:6107";
 
 let adminToken: string;
 let teamToken: string;

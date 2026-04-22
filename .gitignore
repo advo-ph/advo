@@ -19,12 +19,8 @@ build/
 *.swo
 .DS_Store
 
-# Vercel
-.vercel
-
-# Supabase local
-supabase/.temp/
-supabase/.branches/
+# Claude Code per-project local settings (not shared with team)
+.claude/settings.local.json
 
 # Media (raw photos/videos — too large for git)
 media/

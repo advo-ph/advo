@@ -4,9 +4,14 @@
 
 ```
 Frontend (React/Vite)  →  ADVO API (Hono/Node)  →  PostgreSQL
-     port 6400                port 3001              port 5432
-     (Vercel prod)           (VPS prod)
+     port 6100                port 6107              port 5432
+     (static /var/www       (PM2 fork, localhost)
+      /advo/dist via nginx)
 ```
+
+Ports follow the shared-VPS [PORTS.md](../../../Downloads/PORTS.md) scheme: advo gets range `6100–6199` (first slot on the fresh Singapore box). API always ends in `07`.
+
+All three tiers run on the same Contabo VPS in Singapore (`62.146.237.12`, ssh alias `advo`).
 
 ## Prerequisites
 
@@ -24,7 +29,7 @@ cp .env.example .env          # Edit with your local DB credentials
 npm install
 npm run db:push               # Create tables in PostgreSQL
 npm run db:seed               # Seed default data
-npm run dev                   # Starts on port 3000
+npm run dev                   # Starts on port 6107
 ```
 
 ### 2. Start the Frontend
@@ -32,10 +37,10 @@ npm run dev                   # Starts on port 3000
 ```bash
 cd /path/to/Antigravity/advo
 npm install
-npm run dev                   # Starts on port 6400
+npm run dev                   # Starts on port 6100
 ```
 
-Open http://localhost:6400
+Open http://localhost:6100
 
 Default admin login: `admin@advo.ph` / `changeme`
 
@@ -44,7 +49,7 @@ Default admin login: `admin@advo.ph` / `changeme`
 ### Frontend (`advo/.env`)
 
 ```env
-VITE_API_URL=http://localhost:3000        # Local
+VITE_API_URL=http://localhost:6107        # Local
 # VITE_API_URL=https://api.advo.ph       # Production
 
 VITE_GITHUB_TOKEN=ghp_...                # Optional: GitHub commit history
@@ -66,12 +71,12 @@ GITHUB_ORG=advo-ph
 CLOUDFLARE_TOKEN=...                      # Deployment status
 CLOUDFLARE_ACCOUNT_ID=...
 
-# Server
-PORT=3000
+# Server (advo = 6100–6499 per PORTS.md; API ends in 07)
+PORT=6107
 NODE_ENV=development
 UPLOAD_DIR=./uploads
-API_URL=http://localhost:3000
-FRONTEND_URL=http://localhost:6400
+API_URL=http://localhost:6107
+FRONTEND_URL=http://localhost:6100
 ```
 
 ## Database
@@ -111,75 +116,68 @@ npm run db:generate           # Generate migration files
 
 ## Production Deployment
 
-### VPS (Contabo: 217.216.72.28)
+Host: `advo` (ssh alias for `root@62.146.237.12`, Contabo Singapore). Add to `~/.ssh/config`:
+
+```
+Host advo advo-vps
+  HostName 62.146.237.12
+  User root
+  IdentityFile ~/.ssh/id_ed25519_advo
+  IdentitiesOnly yes
+```
+
+### API
 
 ```bash
-# Deploy API
-cd advo-api
-./deploy.sh root@217.216.72.28
+# One-shot deploy:
+cd advo-api && ./deploy.sh root@advo
 
 # Or manually:
-rsync -azP --exclude node_modules --exclude .env ./ root@217.216.72.28:/opt/advo-api/
-ssh root@217.216.72.28 "cd /opt/advo-api && npm install && npx drizzle-kit push && pm2 restart advo-api"
+rsync -azP --exclude node_modules --exclude .env ./ root@advo:/opt/advo-api/
+ssh advo "cd /opt/advo-api && npm install && npx drizzle-kit push && pm2 restart advo-api"
 ```
 
-### Frontend (VPS — migrating from Vercel)
+API runs under PM2 as `advo-api` (fork mode, port 6107). Logs: `/var/log/advo-api/{out,error}.log`.
+
+### Frontend (built on VPS)
 
 ```bash
-# Build locally
-cd advo
-npm run build
-
-# Deploy to VPS
-rsync -azP --delete dist/ root@217.216.72.28:/var/www/advo/dist/
-rsync -azP public/ root@217.216.72.28:/var/www/advo/dist/   # team photos, logos
+ssh advo "cd /opt/advo && git pull && npm install && npm run build && rsync -a --delete dist/ /var/www/advo/dist/"
 ```
 
-Nginx serves from `/var/www/advo/dist/` with SPA fallback.
-
-> **Note:** Currently still on Vercel while DNS migrates. Once `advo.ph` A record points to `217.216.72.28`, run `certbot --nginx -d advo.ph -d www.advo.ph` for SSL.
+`/opt/advo` is a `git clone https://github.com/advo-ph/advo.git` with `.env.production` containing `VITE_API_URL=https://api.advo.ph`. Nginx serves `/var/www/advo/dist` with SPA fallback (`try_files $uri $uri/ /index.html`).
 
 ### SSL
 
+One cert covers all three hostnames, auto-renewed by certbot:
+
 ```bash
-ssh root@217.216.72.28
-certbot --nginx -d api.advo.ph
+ssh advo "certbot certificates"    # view
+ssh advo "certbot renew --dry-run" # test renewal
 ```
+
+Initial issuance (already done): `certbot --nginx -d advo.ph -d www.advo.ph -d api.advo.ph --redirect`
 
 ### Database Backup
 
+Automated: `backup.sh` runs nightly at 3am via root crontab, writes to `/var/backups/advo/`, keeps 14 days.
+
 ```bash
 # Manual backup
-ssh root@217.216.72.28 "pg_dump -Fc advo > /var/backups/advo/advo_$(date +%Y%m%d).dump"
+ssh advo "sudo -u postgres pg_dump -Fc advo > /var/backups/advo/advo_$(date +%Y%m%d).dump"
 
 # Restore
-pg_restore -d advo backup.dump
-
-# Automated daily (cron)
-ssh root@217.216.72.28 "crontab -e"
-# Add: 0 3 * * * /opt/advo-api/backup.sh
-```
-
-### Transfer to New VPS
-
-```bash
-# On old VPS:
-pg_dump -Fc advo > advo.dump
-rsync -az /var/www/advo/uploads/ newvps:/var/www/advo/uploads/
-
-# On new VPS:
-pg_restore -d advo advo.dump
-rsync -az oldvps:/opt/advo-api/ /opt/advo-api/
-# Update .env, restart PM2, update DNS
+scp advo:/var/backups/advo/advo_YYYYMMDD.dump ./
+sudo -u postgres pg_restore -d advo advo_YYYYMMDD.dump
 ```
 
 ## Infrastructure
 
 | Service | URL / Location |
 |---------|---------------|
-| **Frontend (prod)** | [advo.ph](https://advo.ph) (VPS nginx, migrating from Vercel) |
-| **API (prod)** | [api.advo.ph](https://api.advo.ph) (VPS) |
-| **VPS** | 217.216.72.28 (Contabo) |
+| **Frontend (prod)** | [advo.ph](https://advo.ph) + [www.advo.ph](https://www.advo.ph) (VPS nginx) |
+| **API (prod)** | [api.advo.ph](https://api.advo.ph) (VPS, PM2 port 6107) |
+| **VPS** | `62.146.237.12` (Contabo Cloud VPS 20 SSD, Singapore 2). SSH alias `advo`. |
 | **Database** | PostgreSQL on VPS (port 5432) |
 | **DNS** | Namecheap |
 | **GitHub Org** | [github.com/advo-ph](https://github.com/advo-ph) |
@@ -212,8 +210,8 @@ Quick reference:
 ### Port in use
 
 ```bash
-lsof -ti :6400 | xargs kill -9    # Frontend
-lsof -ti :3000 | xargs kill -9    # API
+lsof -ti :6100 | xargs kill -9    # Frontend
+lsof -ti :6107 | xargs kill -9    # API
 ```
 
 ### API not starting

@@ -3,12 +3,12 @@
  *
  * These tests verify that all frontend modules correctly call
  * the ADVO API instead of Supabase. They run against the live
- * local API at http://localhost:3000.
+ * local API at http://localhost:6107.
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
 
-const API = "http://localhost:3000";
+const API = "http://localhost:6107";
 
 async function apiGet(path: string, token?: string) {
   const headers: Record<string, string> = {};

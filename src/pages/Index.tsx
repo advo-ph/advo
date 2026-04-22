@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import Hero from "@/components/landing/Hero";
 import WhyDigital from "@/components/landing/WhyDigital";
@@ -11,6 +11,10 @@ import Footer from "@/components/landing/Footer";
 import FloatingNav from "@/components/landing/FloatingNav";
 import TechTicker from "@/components/landing/TechTicker";
 import { get } from "@/lib/api";
+
+const InfrastructureDiagram = lazy(
+  () => import("@/components/landing/InfrastructureDiagram")
+);
 
 /* ─── Map site_content section_id → component ───────────── */
 
@@ -71,6 +75,9 @@ const Index = () => {
       <WhyDigital />
       <ProcessSteps />
       <TechTicker />
+      <Suspense fallback={<div className="h-[520px] border-t border-border" />}>
+        <InfrastructureDiagram />
+      </Suspense>
       {isVisible("services") && <ServiceTiers />}
       {isVisible("portfolio") && <PortfolioGrid />}
       <FAQ />

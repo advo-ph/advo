@@ -13,22 +13,31 @@ const FloatingNav = () => {
   const navigate = useNavigate();
   const isLandingPage = location.pathname === "/";
 
-  const [isScrolled, setIsScrolled] = useState(() =>
-    typeof window !== "undefined" ? window.scrollY > 80 : false,
-  );
+  const [isScrolled, setIsScrolled] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const el = document.getElementById("root");
+    return (el?.scrollTop ?? window.scrollY) > 80;
+  });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useIsomorphicLayoutEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 80);
+    const el = document.getElementById("root");
+    const handleScroll = () =>
+      setIsScrolled((el?.scrollTop ?? window.scrollY) > 80);
     handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    const target: Window | HTMLElement = el ?? window;
+    target.addEventListener("scroll", handleScroll, { passive: true } as AddEventListenerOptions);
+    return () =>
+      target.removeEventListener("scroll", handleScroll as EventListener);
   }, [location.pathname]);
 
   const handleAboutClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (isLandingPage) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      (document.getElementById("root") ?? document.scrollingElement)?.scrollTo({
+        top: 0,
+        behavior: "smooth",
+      });
     } else {
       navigate("/");
     }

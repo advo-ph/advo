@@ -36,11 +36,41 @@ const ContactCTA = () => {
   }, []);
 
   return (
-    <section
-      className="relative py-32 px-6 text-center overflow-hidden"
-      style={{ backgroundColor: "hsl(16 92% 60%)" }}
-    >
-      <div className="max-w-4xl mx-auto">
+    <section className="relative py-48 lg:py-56 px-6 text-center overflow-hidden bg-[#6b2a12]">
+      {/* Organic blob gradient — warm orange palette blended via blur */}
+      {/* Blobs are oversized and overlap the section edges so there is no
+         dark halo along the top/bottom where the base shows through. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-[30%] -left-[20%] w-[110%] h-[130%] rounded-full blur-[120px] opacity-95 animate-blob-1 will-change-transform"
+        style={{ background: "#E67A3A" }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-[15%] -right-[20%] w-[90%] h-[120%] rounded-full blur-[140px] opacity-85 animate-blob-2 will-change-transform"
+        style={{ background: "#C94820" }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-[25%] left-[15%] w-[80%] h-[90%] rounded-full blur-[130px] opacity-80 animate-blob-3 will-change-transform"
+        style={{ background: "#F59E5B" }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute top-[30%] left-[30%] w-[55%] h-[60%] rounded-full blur-[110px] opacity-70 animate-blob-4 will-change-transform"
+        style={{ background: "#FFBA85" }}
+      />
+      {/* Grain texture via inline SVG noise — adds that organic, non-uniform quality */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.18] mix-blend-overlay"
+        style={{
+          backgroundImage:
+            "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>\")",
+        }}
+      />
+
+      <div className="relative max-w-4xl mx-auto">
         <span className="text-xs font-medium text-background/80 uppercase tracking-[0.18em] mb-6 block">
           Let's Build
         </span>
