@@ -68,14 +68,24 @@ const AdminSocial = () => {
 
   const fetchPosts = async () => {
     setIsLoading(true);
-    const { data, error } = await get<SocialPost[]>("/api/content/social");
+    // API returns camelCase; component uses snake_case shape
+    const { data, error } = await get<Record<string, unknown>[]>("/api/content/social");
 
     if (error) {
       toast({ title: "Error", description: error, variant: "destructive" });
     } else {
-      setPosts(data || []);
-      // Set first post as preview if none selected
-      const igPosts = (data || []).filter((p: SocialPost) => p.platform === "instagram" && !p.is_published);
+      const mapped: SocialPost[] = (data || []).map((p) => ({
+        social_post_id: (p.socialPostId ?? p.social_post_id) as number,
+        platform: p.platform as string,
+        content: p.content as string,
+        image_url: (p.imageUrl ?? p.image_url) as string | null,
+        scheduled_for: (p.scheduledFor ?? p.scheduled_for) as string | null,
+        is_published: Boolean(p.isPublished ?? p.is_published),
+        published_at: (p.publishedAt ?? p.published_at) as string | null,
+        created_at: (p.createdAt ?? p.created_at) as string,
+      }));
+      setPosts(mapped);
+      const igPosts = mapped.filter((p) => p.platform === "instagram" && !p.is_published);
       if (igPosts.length > 0 && !previewPost) {
         setPreviewPost(igPosts[0]);
       }
@@ -147,11 +157,12 @@ const AdminSocial = () => {
       ? new Date(`${formData.scheduled_date}T${formData.scheduled_time}`).toISOString()
       : null;
 
+    // API expects camelCase; snake_case fields are silently dropped by Zod
     const postData = {
       platform: formData.platform,
       content: formData.content,
-      image_url: formData.image_url || null,
-      scheduled_for: scheduledFor,
+      imageUrl: formData.image_url || undefined,
+      scheduledFor: scheduledFor || undefined,
     };
 
     if (selectedPost) {
