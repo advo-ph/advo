@@ -19,8 +19,8 @@ build/
 *.swo
 .DS_Store
 
-# Claude Code per-project local settings (not shared with team)
-.claude/settings.local.json
+# Claude Code per-project session state (not shared with team)
+.claude/
 
 # Media (raw photos/videos — too large for git)
 media/

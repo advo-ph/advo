@@ -187,6 +187,8 @@ function detectUnicodeFonts(text: string): { font: string; sample: string; count
 
 // Emoji extraction and frequency
 function extractEmojis(text: string): { emoji: string; count: number }[] {
+  // ZWJ (200D) is intentional for compound emoji sequences
+  // eslint-disable-next-line no-misleading-character-class
   const emojiRegex = /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1FA00}-\u{1FA9F}\u{200D}]/gu;
   const matches = text.match(emojiRegex);
   if (!matches) return [];

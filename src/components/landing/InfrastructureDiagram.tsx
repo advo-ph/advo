@@ -125,7 +125,8 @@ function CircuitTrace({
   to: V3;
   vertical?: boolean;
 }) {
-  const lineRef = useRef<any>(null);
+  // R3F's Line ref isn't well-typed; we only touch .material.dashOffset
+  const lineRef = useRef<{ material?: { dashOffset: number } } | null>(null);
 
   // Route traces so they never pass through the node bodies.
   // Desktop (horizontal): drop to ground plane y=0, straight across.
@@ -143,7 +144,7 @@ function CircuitTrace({
       ];
 
   useFrame(() => {
-    const mat = lineRef.current?.material as any;
+    const mat = lineRef.current?.material;
     if (mat) mat.dashOffset -= 0.008;
   });
 
@@ -153,7 +154,8 @@ function CircuitTrace({
       <Line points={points} color="#333333" lineWidth={1.5} />
       {/* slow, sparse orange pulse */}
       <Line
-        ref={lineRef as any}
+        // R3F's Line ref type is complex; our minimal shape is enough
+        ref={lineRef as unknown as React.Ref<unknown>}
         points={points}
         color={ACCENT}
         lineWidth={2}

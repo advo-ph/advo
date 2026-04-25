@@ -112,7 +112,7 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
       description: project.description || "",
       repository_name: project.repository_name || "",
       preview_url: project.preview_url || "",
-      contract_url: (project as any).contract_url || "",
+      contract_url: (project as MergedProject & { contract_url?: string }).contract_url || "",
       project_status: project.project_status,
       total_value_cents: project.total_value_cents,
       amount_paid_cents: project.amount_paid_cents,
