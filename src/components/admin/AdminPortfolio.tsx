@@ -319,17 +319,17 @@ const AdminPortfolio = () => {
     const payload = {
       title: formData.title,
       slug,
-      description: formData.description || null,
-      preview_url: formData.preview_url || null,
-      image_url: formData.image_urls[0] || null,
-      image_urls: formData.image_urls,
-      tech_stack: formData.tech_stack
+      description: formData.description || undefined,
+      previewUrl: formData.preview_url || undefined,
+      imageUrl: formData.image_urls[0] || undefined,
+      imageUrls: formData.image_urls,
+      techStack: formData.tech_stack
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean),
-      is_featured: formData.is_featured,
-      display_order: formData.display_order,
-      case_study: Object.keys(caseStudy).length > 0 ? caseStudy : null,
+      isFeatured: formData.is_featured,
+      displayOrder: formData.display_order,
+      caseStudy: Object.keys(caseStudy).length > 0 ? caseStudy : undefined,
     };
 
     if (editingProject) {
