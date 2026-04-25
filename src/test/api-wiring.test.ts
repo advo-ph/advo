@@ -1,14 +1,14 @@
 /**
  * API Wiring Validation Tests
  *
- * These tests verify that all frontend modules correctly call
- * the ADVO API instead of Supabase. They run against the live
- * local API at http://localhost:6107.
+ * These tests verify that all frontend modules correctly call the ADVO
+ * API. Default target is the local dev API (http://localhost:6107) but
+ * can be overridden via VITE_API_URL (e.g. https://api.advo.ph).
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
 
-const API = "http://localhost:6107";
+const API = process.env.VITE_API_URL || "http://localhost:6107";
 
 async function apiGet(path: string, token?: string) {
   const headers: Record<string, string> = {};

@@ -7,7 +7,7 @@
 
 import { describe, it, expect, beforeAll } from "vitest";
 
-const API = "http://localhost:6107";
+const API = process.env.VITE_API_URL || "http://localhost:6107";
 
 let adminToken: string;
 let teamToken: string;
