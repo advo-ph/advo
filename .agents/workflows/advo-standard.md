@@ -9,14 +9,14 @@ description: ADVO coding standards and conventions
 - **Currency**: Always in cents (`amount_cents BIGINT`), format with `formatCurrency()` from `types/admin.ts`
 - **Timestamps**: `TIMESTAMPTZ NOT NULL DEFAULT NOW()`
 - **Foreign keys**: `ON DELETE CASCADE` for child tables, `ON DELETE SET NULL` for optional refs
-- **Enums**: `CREATE TYPE public.<name> AS ENUM (...)` — always in migration files
+- **Enums**: PostgreSQL `CREATE TYPE` enums, defined in `advo-api/src/db/schema.ts` via Drizzle
 
-## RLS Rules
+## Auth & Authorization
 
-- Every table has RLS enabled
-- Admin policy: `auth.uid() IN (SELECT user_id FROM team_member WHERE permission_role = 'admin')`
-- Client policy: chain through `client.user_id = auth.uid()`
-- Public tables (portfolio, site_content): anon SELECT
+- JWT access tokens (15min) + refresh tokens (30d) issued by `/api/auth/login` and `/api/auth/refresh`
+- Refresh tokens persisted in `session` table (DB-backed); revoke by deleting the row
+- Middleware: `requireAuth` (any logged-in user), `requireAdmin` (role check)
+- No RLS — authorization is enforced in Hono route handlers
 
 ## React Patterns
 
@@ -24,27 +24,38 @@ description: ADVO coding standards and conventions
 - **Optimistic updates**: Use `onMutate` → `cancelQueries` → `setQueryData` → return `{ previous }`
 - **State management**: React Query cache is the source of truth
 - **Components**: Functional components, named exports for hooks, default exports for components
-- **Types**: Define interfaces in the hook file, export them. Use Supabase types from `integrations/supabase/types.ts`
+- **Types**: Define interfaces in the hook file, export them. Shared types in `src/types/admin.ts`
+
+## API Client (`src/lib/api.ts`)
+
+- All requests envelope: `{ data, error }`
+- Helpers: `get()`, `post()`, `patch()`, `del()`, `upload()`
+- Auto-refreshes JWT on 401, retries the original request once
+- `upload()` returns `{ url, filename, error }` (discriminated union — surface real API errors)
+- Snake_case fields are silently dropped by Zod — **always send camelCase** (`imageUrl`, `techStack`, `isFeatured`)
 
 ## File Organization
 
-- `src/hooks/use<Feature>.ts` — Data hooks with RQ
+- `src/hooks/use<Feature>.ts` — Data hooks with React Query
 - `src/components/admin/Admin<Feature>.tsx` — Admin panel sections
 - `src/components/hub/<Component>.tsx` — Client portal components
-- `src/lib/<service>.ts` — Utility/service modules
-- `supabase/migrations/<date>_<name>.sql` — Sequential migrations
-- `supabase/functions/<name>/index.ts` — Edge functions (Deno)
-
-## Supabase Edge Functions
-
-- Runtime: Deno (not Node)
-- Import from `https://esm.sh/` (not npm)
-- Use `Deno.serve()` handler pattern
-- Always handle CORS with `OPTIONS` preflight
-- Use `SUPABASE_SERVICE_ROLE_KEY` for admin DB operations
+- `src/components/landing/<Section>.tsx` — Public site sections
+- `src/components/ui/section.tsx` — `<Section>` + `<SectionHeader>` primitives
+- `src/lib/<service>.ts` — Utility/service modules (api, db, github, notifications)
+- `advo-api/src/routes/<feature>.routes.ts` — Hono route files
+- `advo-api/src/db/schema.ts` — Drizzle schema (single file)
 
 ## Notifications
 
 - Helper: `triggerNotification()` from `lib/notifications.ts`
 - Fire-and-forget: never block the caller's flow
-- Auto-toggle config stored in `site_content.client_dashboard` JSONB
+- Per-event toggles in `site_content.client_dashboard` JSONB
+- Email transport via Nodemailer (Resend SMTP or custom)
+
+## Design System
+
+- Dark, monochrome with a single warm orange accent (`#E67A3A`)
+- Geist font (sans + mono); mono used for eyebrow labels and numerals (`01`, `02`…)
+- No `whileInView` scroll animations — only Hero stagger on mount, nav pill morph, TechTicker marquee, ContactCTA blobs
+- Use `<Section>` + `<SectionHeader>` for any new landing/admin section
+- Tokens defined in `src/index.css` `@layer base :root`

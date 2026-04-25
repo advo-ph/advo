@@ -2,9 +2,14 @@
 description: How to deploy ADVO to production
 ---
 
-## Deploy Steps
+## Stack overview
 
-// turbo-all
+- **VPS**: `root@62.146.237.12` (SSH alias: `advo`) — Contabo, Singapore
+- **Frontend**: Static build served by Nginx from `/var/www/advo/dist`
+- **API**: Node + Hono on `127.0.0.1:6107`, managed by PM2 (process: `advo-api`)
+- **Database**: PostgreSQL 16 on the same VPS
+
+## Deploy frontend
 
 1. Build and verify locally:
 
@@ -12,38 +17,53 @@ description: How to deploy ADVO to production
 cd /Users/angelonrevelo/Antigravity/advo && npm run build
 ```
 
-2. Stage, commit, and push:
+2. Stage, commit, push:
 
 ```bash
 cd /Users/angelonrevelo/Antigravity/advo && git add -A && git status
+git commit -m "feat: <description>"
+git push origin main
 ```
 
-3. Commit with descriptive message:
+3. Pull + rebuild on VPS:
 
 ```bash
-cd /Users/angelonrevelo/Antigravity/advo && git commit -m "feat: <description>"
+ssh advo "cd /opt/advo && git pull && npm install && npm run build && rsync -a --delete dist/ /var/www/advo/dist/"
 ```
 
-4. Push to GitHub (auto-deploys to Vercel):
+## Deploy API
+
+`advo-api` is **not git-tracked** — it deploys directly via rsync.
 
 ```bash
-cd /Users/angelonrevelo/Antigravity/advo && git push origin main
+cd /Users/angelonrevelo/Antigravity/advo-api && ./deploy.sh advo
 ```
 
-5. If there are new database migrations, push them:
+This:
+- Syncs source to `/opt/advo-api` (excluding `node_modules`, `uploads`, `.env`)
+- Runs `npm install --production` on the VPS
+- Restarts the `advo-api` PM2 process
+
+After restart, give it ~3s before hitting `/api/health` (warm-up).
+
+## Database migrations
+
+Use Drizzle Kit from the API project:
 
 ```bash
-cd /Users/angelonrevelo/Antigravity/advo && npx supabase db push -p '3Hv?%scd_Qz7yP4' --yes
+cd /Users/angelonrevelo/Antigravity/advo-api && npm run db:push    # local dev
+ssh advo "cd /opt/advo-api && npm run db:push"                     # prod
 ```
 
-6. If the edge function was modified, redeploy:
+Manual backups (automated nightly at 3am via cron):
 
 ```bash
-cd /Users/angelonrevelo/Antigravity/advo && npx supabase functions deploy send-notification
+ssh advo "sudo -u postgres pg_dump -Fc advo > /var/backups/advo/advo_\$(date +%Y%m%d).dump"
 ```
 
 ## Verify
 
-- Vercel dashboard: https://vercel.com/gelos-projects-0b0c312c/advo
-- Production URL: https://advo.ph
-- Supabase: https://supabase.com/dashboard/project/cxtreuwqrnrfpwvunjqm
+- Production: https://advo.ph
+- API health: https://api.advo.ph/api/health → `{"status":"ok","db":true}`
+- PM2 status: `ssh advo "pm2 list | grep advo-api"`
+- Recent API logs: `ssh advo "pm2 logs advo-api --lines 50 --nostream"`

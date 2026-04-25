@@ -122,7 +122,7 @@ Pipeline view of inquiries. Status: new → contacted → qualified → proposal
 - **Social Links Editor**: add/edit/remove, saved to `site_config.social_links`, displayed in footer
 - **Security**: Change password dialog
 - **Admin Users**: manage admin email list
-- **Integrations**: API + Vercel connection status
+- **Integrations**: API + VPS health status
 
 **Files**: `AdminSettings.tsx`
 
