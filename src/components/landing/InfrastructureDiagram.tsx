@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect, Suspense } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { RoundedBox, Text, Billboard, Edges, Line } from "@react-three/drei";
+import type { Line2 } from "three-stdlib";
 
 const ACCENT = "#E67A3A";
 const FG = "#FAFAFA";
@@ -125,8 +126,7 @@ function CircuitTrace({
   to: V3;
   vertical?: boolean;
 }) {
-  // R3F's Line ref isn't well-typed; we only touch .material.dashOffset
-  const lineRef = useRef<{ material?: { dashOffset: number } } | null>(null);
+  const lineRef = useRef<Line2>(null);
 
   // Route traces so they never pass through the node bodies.
   // Desktop (horizontal): drop to ground plane y=0, straight across.
@@ -154,8 +154,7 @@ function CircuitTrace({
       <Line points={points} color="#333333" lineWidth={1.5} />
       {/* slow, sparse orange pulse */}
       <Line
-        // R3F's Line ref type is complex; our minimal shape is enough
-        ref={lineRef as unknown as React.Ref<unknown>}
+        ref={lineRef}
         points={points}
         color={ACCENT}
         lineWidth={2}
