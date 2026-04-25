@@ -167,29 +167,50 @@ ssh advo "sudo -u postgres pg_dump -Fc advo > /var/backups/advo/advo_$(date +%Y%
 advo/                          # Frontend (React/Vite)
 ├── src/
 │   ├── components/
-│   │   ├── admin/             # Admin panel components
+│   │   ├── admin/             # Admin panel components — pure UI, hooks own data
 │   │   ├── hub/               # Client dashboard components
 │   │   ├── landing/           # Landing page sections
-│   │   └── ui/                # Shadcn components
+│   │   └── ui/                # Shadcn components + Section primitives
 │   ├── pages/                 # Index, Login, Hub, Admin, Start, Team
-│   ├── hooks/                 # Auth, data fetching, mutations
-│   ├── lib/                   # api.ts, db.ts, github.ts, notifications.ts
-│   └── test/                  # API wiring + E2E tests (69 tests)
+│   ├── hooks/                 # React Query data hooks (one per resource)
+│   ├── lib/                   # api.ts, github.ts, notifications.ts
+│   └── test/                  # 68 integration tests (api-wiring + e2e-flow)
 ├── public/team/               # Optimized team photos
 └── docs/                      # SCHEMA, FEATURES, SETUP
 
 advo-api/                      # Backend (Hono/Node)
 ├── src/
-│   ├── db/                    # schema.ts, connection.ts, seed.ts
+│   ├── db/                    # schema.ts, connection.ts, seed.ts (Drizzle)
 │   ├── middleware/            # auth, rbac, requestId
 │   ├── routes/                # 13 route files (37 endpoints)
 │   ├── services/              # auth, email
+│   ├── vendor/                # easydiv-detector.js (component scanner)
 │   └── utils/                 # env, logger
 ├── deploy.sh                  # VPS deployment script
 ├── ecosystem.config.cjs       # PM2 config
 ├── nginx.conf                 # Nginx reverse proxy config
 └── backup.sh                  # Daily DB backup script
 ```
+
+## Data Architecture
+
+**One hook per resource, all using TanStack React Query v5.** Components are pure UI — no `useState` for server data, no manual `fetch` + `refetch` plumbing. Each admin CRUD hook returns the canonical shape:
+
+```ts
+const { items, isLoading, createItem, updateItem, deleteItem, isSaving } = useAdminFoo();
+```
+
+Shared cache means the projects list shows up cached when navigating between admin sections. Optimistic updates with rollback on error (drag-reorder, delete, status toggle).
+
+**Cross-stack field naming convention** (strict — see [.agents/workflows/advo-standard.md](.agents/workflows/advo-standard.md)):
+
+| Layer | Convention |
+|-------|-----------|
+| Postgres columns | `snake_case` |
+| Drizzle JS schema | `camelCase` mapped to snake_case columns |
+| API I/O (Zod-validated) | `camelCase` — **snake_case fields are silently dropped** |
+| Frontend interfaces & state | `snake_case` (matches DB shape) |
+| Mapping layer | Inside each hook (`mapX(camelCase) → snake_case` on read; `toApiPayload(snake_case) → camelCase` on write) |
 
 ## Tests
 

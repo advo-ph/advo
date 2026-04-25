@@ -228,15 +228,34 @@ Both brand and Facebook scrapes auto-save to `scrape_result` table. Endpoints:
 
 ## Hooks Reference
 
+All data fetching uses React Query (`@tanstack/react-query` v5). Each admin CRUD hook returns the canonical shape `{ items, isLoading, createX, updateX, deleteX, isSaving }` with optimistic updates and shared cache.
+
+### Auth + utility
+
 | Hook | Purpose |
 |------|---------|
 | `useAuth` | JWT auth state, login, magic link, password change, sign out |
-| `useAdminData` | Fetch admin dashboard data (projects, clients, leads, stats) |
-| `useOrgProjects` | Fetch projects with GitHub enrichment (commits, PRs, tech stack) |
-| `useClientData` | Client-side: projects, deliverables, invoices, assets, contacts |
-| `useInvoices` | Invoice CRUD with optimistic updates |
+| `useRoles` | Permission role from JWT token |
+| `useGitHub` | GitHub commits and branches (via `lib/github.ts`) |
+
+### Admin data
+
+| Hook | Purpose |
+|------|---------|
+| `useAdminData` | Aggregated dashboard counts (projects, clients, leads, stats) |
+| `useOrgProjects` | Projects with GitHub enrichment (commits, PRs, tech stack) |
+| `useAdminPortfolio` | Portfolio CRUD (list, create, update, delete) |
+| `useAdminSocial` | Social post CRUD |
+| `useAdminTeam` | Team member CRUD + drag-reorder |
+| `useAdminAvailability` | Team availability blocks CRUD |
+| `useAdminDeliverables` | Read-only deliverables list |
+| `useInvoices` | Invoice CRUD with optimistic status toggle |
 | `useNotifications` | Admin: fetch all + send/broadcast. Client: fetch + mark-read |
 | `useLeads` | Lead management with status updates, assignment, bulk actions, conversion |
 | `useSiteContent` | CMS sections: toggle visibility, update content |
-| `useRoles` | Permission role from JWT token |
-| `useGitHub` | GitHub commits and branches (via `lib/github.ts`) |
+
+### Client portal
+
+| Hook | Purpose |
+|------|---------|
+| `useClientData` | Client-side: projects, deliverables, invoices, assets, contacts |

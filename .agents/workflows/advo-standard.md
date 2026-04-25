@@ -47,30 +47,82 @@ The DB and the frontend use different cases. The boundary is the API client; **m
 | **Frontend → API payload** | Map back to `camelCase` before send (`imageUrl`, `techStack`, `isFeatured`) | Match Zod schema |
 | **API response → Frontend state** | Map response keys to `snake_case` in `fetchX()` or hook | Match interface shape; **avoid `setX(res.data)` directly** |
 
-**Pattern to copy** (from `src/hooks/useSiteContent.ts`, `useNotifications.ts`, `useInvoices.ts`):
-
-```ts
-const res = await get<Record<string, unknown>[]>("/api/foo");
-const mapped = (res.data || []).map((r): Foo => ({
-  foo_id: (r.fooId ?? r.foo_id) as number,
-  image_url: (r.imageUrl ?? r.image_url) as string | null,
-  // ...
-}));
-setFoo(mapped);
-```
-
-Sending: invert it.
-
-```ts
-const payload = {
-  fooId: f.foo_id,
-  imageUrl: f.image_url || undefined,
-  // omit empty strings / nulls — the route's Zod schema treats fields as .optional()
-};
-await patch(`/api/foo/${f.foo_id}`, payload);
-```
-
 **Bug shape to watch for**: `setX(res.data)` directly → next edit's PATCH URL becomes `/api/x/undefined` → API parses `Number("undefined")` → `NaN` → Postgres rejects with `invalid input syntax for type bigint: "NaN"`.
+
+## Data hooks — canonical shape (React Query)
+
+Components are **pure UI**. No `useState` for server data, no manual `fetchX`/`useEffect`/refetch-after-mutate. One hook per resource, all using React Query v5.
+
+Reference implementations: `useAdminPortfolio`, `useAdminSocial`, `useAdminTeam`, `useAdminAvailability`, `useInvoices`, `useNotifications`, `useSiteContent`.
+
+```ts
+// src/hooks/useAdminFoo.ts
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { get, post, patch, del } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+
+export interface Foo { foo_id: number; image_url: string | null; /* ... */ }
+export interface FooInput { image_url?: string; /* ... */ }
+
+function mapFoo(r: Record<string, unknown>): Foo {
+  return {
+    foo_id: (r.fooId ?? r.foo_id) as number,
+    image_url: (r.imageUrl ?? r.image_url ?? null) as string | null,
+  };
+}
+
+function toApiPayload(input: FooInput) {
+  return { imageUrl: input.image_url || undefined };
+}
+
+const QUERY_KEY = ["adminFoo"];
+
+export function useAdminFoo() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: QUERY_KEY,
+    queryFn: async () => (await get<Record<string, unknown>[]>("/api/foo"))
+      .data?.map(mapFoo) ?? [],
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (input: FooInput) => {
+      const res = await post<Record<string, unknown>>("/api/foo", toApiPayload(input));
+      if (res.error) throw new Error(res.error);
+      return mapFoo(res.data!);
+    },
+    onSuccess: (created) => {
+      queryClient.setQueryData<Foo[]>(QUERY_KEY, (old = []) => [...old, created]);
+      toast({ title: "Created" });
+    },
+    onError: (err: Error) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+  });
+
+  // updateMutation + deleteMutation follow the same shape with optimistic
+  // updates: onMutate cancels in-flight, snapshots prev, applies optimistic
+  // patch; onError restores prev; onSuccess swaps in server-truth.
+
+  return {
+    items,
+    isLoading,
+    createFoo: createMutation.mutateAsync,
+    updateFoo: (id: number, input: FooInput) => updateMutation.mutateAsync({ id, input }),
+    deleteFoo: deleteMutation.mutateAsync,
+    isSaving: createMutation.isPending || updateMutation.isPending,
+  };
+}
+```
+
+Component consumers stay tiny:
+
+```tsx
+const { items, isLoading, createFoo, updateFoo, deleteFoo, isSaving } = useAdminFoo();
+```
+
+The hook owns all mapping at the API boundary so the component never sees camelCase.
 
 ## Database tables — singular, never plural
 
