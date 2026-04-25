@@ -97,8 +97,8 @@ const AdminSocial = () => {
 
     const result = await upload(file, "assets");
 
-    if (!result) {
-      toast({ title: "Upload failed", description: "Could not upload image", variant: "destructive" });
+    if (result.error) {
+      toast({ title: "Upload failed", description: result.error, variant: "destructive" });
       setIsUploading(false);
       return;
     }

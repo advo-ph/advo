@@ -284,8 +284,8 @@ const AdminPortfolio = () => {
 
     const result = await upload(file, "portfolio");
 
-    if (!result) {
-      toast({ title: "Upload failed", description: "Could not upload file", variant: "destructive" });
+    if (result.error) {
+      toast({ title: "Upload failed", description: result.error, variant: "destructive" });
       setIsUploading(false);
       return;
     }

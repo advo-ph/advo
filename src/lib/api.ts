@@ -136,7 +136,7 @@ export function del<T>(path: string) {
 export async function upload(
   file: File,
   bucket: string = "assets"
-): Promise<{ url: string; filename: string } | null> {
+): Promise<{ url: string; filename: string; error: null } | { url: null; filename: null; error: string }> {
   const formData = new FormData();
   formData.append("file", file);
   formData.append("bucket", bucket);
@@ -146,6 +146,8 @@ export async function upload(
     formData
   );
 
-  if (res.error || !res.data) return null;
-  return { url: res.data.url, filename: res.data.filename };
+  if (res.error || !res.data) {
+    return { url: null, filename: null, error: res.error || "Upload failed" };
+  }
+  return { url: res.data.url, filename: res.data.filename, error: null };
 }
