@@ -214,8 +214,23 @@ const AdminPortfolio = () => {
 
   const fetchProjects = async () => {
     setIsLoading(true);
-    const res = await get<PortfolioProject[]>("/api/content/portfolio");
-    setProjects(res.data || []);
+    // API returns camelCase; component uses snake_case shape
+    const res = await get<Record<string, unknown>[]>("/api/content/portfolio");
+    const mapped = (res.data || []).map((p): PortfolioProject => ({
+      portfolio_project_id: (p.portfolioProjectId ?? p.portfolio_project_id) as number,
+      title: p.title as string,
+      slug: (p.slug as string) || null,
+      description: (p.description as string) || null,
+      preview_url: (p.previewUrl ?? p.preview_url) as string | null,
+      image_url: (p.imageUrl ?? p.image_url) as string | null,
+      image_urls: (p.imageUrls ?? p.image_urls) as string[] | null,
+      tech_stack: (p.techStack ?? p.tech_stack) as string[] | null,
+      is_featured: Boolean(p.isFeatured ?? p.is_featured),
+      display_order: Number(p.displayOrder ?? p.display_order ?? 0),
+      case_study: (p.caseStudy ?? p.case_study) as CaseStudy | null,
+      created_at: (p.createdAt ?? p.created_at) as string,
+    }));
+    setProjects(mapped);
     setIsLoading(false);
   };
 
@@ -354,12 +369,14 @@ const AdminPortfolio = () => {
     } else {
       setIsDialogOpen(false);
 
-      const res = await post<PortfolioProject>("/api/content/portfolio", payload);
+      const res = await post<Record<string, unknown>>("/api/content/portfolio", payload);
 
       if (res.error) {
         toast({ title: "Error", description: res.error, variant: "destructive" });
       } else if (res.data) {
-        setProjects((p) => [...p, res.data as PortfolioProject]);
+        // API returns camelCase — refetch to keep state consistent with the
+        // mapping in fetchProjects (instead of pushing a half-mapped object).
+        await fetchProjects();
         toast({ title: "Created", description: `${formData.title} added to portfolio` });
       }
     }
