@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Plus,
@@ -37,31 +37,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { get, post, patch, del, upload } from "@/lib/api";
+import { upload } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-
-interface CaseStudy {
-  overview?: string;
-  challenge?: string;
-  solution?: string;
-  results?: string[];
-  github_url?: string;
-}
-
-interface PortfolioProject {
-  portfolio_project_id: number;
-  title: string;
-  slug: string | null;
-  description: string | null;
-  preview_url: string | null;
-  image_url: string | null;
-  image_urls: string[] | null;
-  tech_stack: string[] | null;
-  is_featured: boolean;
-  display_order: number;
-  case_study: CaseStudy | null;
-  created_at: string;
-}
+import {
+  useAdminPortfolio,
+  type CaseStudy,
+  type PortfolioProject,
+} from "@/hooks/useAdminPortfolio";
 
 /* ─── Drag-and-drop image list ──────────────────── */
 
@@ -181,13 +163,19 @@ const ImageList = ({
 
 const AdminPortfolio = () => {
   const { toast } = useToast();
-  const [projects, setProjects] = useState<PortfolioProject[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const {
+    projects,
+    isLoading,
+    createPortfolio,
+    updatePortfolio,
+    deletePortfolio,
+    isSaving,
+  } = useAdminPortfolio();
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<PortfolioProject | null>(null);
   const [deletingProject, setDeletingProject] = useState<PortfolioProject | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
   const [showCaseStudy, setShowCaseStudy] = useState(false);
@@ -207,32 +195,6 @@ const AdminPortfolio = () => {
     cs_results: "",
     cs_github_url: "",
   });
-
-  useEffect(() => {
-    fetchProjects();
-  }, []);
-
-  const fetchProjects = async () => {
-    setIsLoading(true);
-    // API returns camelCase; component uses snake_case shape
-    const res = await get<Record<string, unknown>[]>("/api/content/portfolio");
-    const mapped = (res.data || []).map((p): PortfolioProject => ({
-      portfolio_project_id: (p.portfolioProjectId ?? p.portfolio_project_id) as number,
-      title: p.title as string,
-      slug: (p.slug as string) || null,
-      description: (p.description as string) || null,
-      preview_url: (p.previewUrl ?? p.preview_url) as string | null,
-      image_url: (p.imageUrl ?? p.image_url) as string | null,
-      image_urls: (p.imageUrls ?? p.image_urls) as string[] | null,
-      tech_stack: (p.techStack ?? p.tech_stack) as string[] | null,
-      is_featured: Boolean(p.isFeatured ?? p.is_featured),
-      display_order: Number(p.displayOrder ?? p.display_order ?? 0),
-      case_study: (p.caseStudy ?? p.case_study) as CaseStudy | null,
-      created_at: (p.createdAt ?? p.created_at) as string,
-    }));
-    setProjects(mapped);
-    setIsLoading(false);
-  };
 
   const openCreateDialog = () => {
     setEditingProject(null);
@@ -319,8 +281,6 @@ const AdminPortfolio = () => {
       return;
     }
 
-    setIsSaving(true);
-
     // Auto-generate slug from title if empty
     const slug = formData.slug.trim() || formData.title.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
 
@@ -331,76 +291,43 @@ const AdminPortfolio = () => {
     if (formData.cs_results.trim()) caseStudy.results = formData.cs_results.split("\n").map(s => s.trim()).filter(Boolean);
     if (formData.cs_github_url) caseStudy.github_url = formData.cs_github_url;
 
-    const payload = {
+    const input = {
       title: formData.title,
       slug,
       description: formData.description || undefined,
-      previewUrl: formData.preview_url || undefined,
-      imageUrl: formData.image_urls[0] || undefined,
-      imageUrls: formData.image_urls,
-      techStack: formData.tech_stack
+      preview_url: formData.preview_url || undefined,
+      image_url: formData.image_urls[0] || undefined,
+      image_urls: formData.image_urls,
+      tech_stack: formData.tech_stack
         .split(",")
         .map((s) => s.trim())
         .filter(Boolean),
-      isFeatured: formData.is_featured,
-      displayOrder: formData.display_order,
-      caseStudy: Object.keys(caseStudy).length > 0 ? caseStudy : undefined,
+      is_featured: formData.is_featured,
+      display_order: formData.display_order,
+      case_study: Object.keys(caseStudy).length > 0 ? caseStudy : undefined,
     };
 
-    if (editingProject) {
-      const prev = [...projects];
-      setProjects((p) =>
-        p.map((proj) =>
-          proj.portfolio_project_id === editingProject.portfolio_project_id
-            ? { ...proj, ...payload }
-            : proj
-        )
-      );
-      setIsDialogOpen(false);
+    setIsDialogOpen(false);
 
-      const res = await patch(`/api/content/portfolio/${editingProject.portfolio_project_id}`, payload);
-
-      if (res.error) {
-        setProjects(prev);
-        toast({ title: "Error", description: res.error, variant: "destructive" });
+    try {
+      if (editingProject) {
+        await updatePortfolio(editingProject.portfolio_project_id, input);
       } else {
-        toast({ title: "Updated", description: `${formData.title} updated` });
+        await createPortfolio(input);
       }
-    } else {
-      setIsDialogOpen(false);
-
-      const res = await post<Record<string, unknown>>("/api/content/portfolio", payload);
-
-      if (res.error) {
-        toast({ title: "Error", description: res.error, variant: "destructive" });
-      } else if (res.data) {
-        // API returns camelCase — refetch to keep state consistent with the
-        // mapping in fetchProjects (instead of pushing a half-mapped object).
-        await fetchProjects();
-        toast({ title: "Created", description: `${formData.title} added to portfolio` });
-      }
+    } catch {
+      // Hook surfaces the toast; nothing extra to do here
     }
-
-    setIsSaving(false);
   };
 
   const handleDelete = async () => {
     if (!deletingProject) return;
-
-    const prev = [...projects];
-    setProjects((p) =>
-      p.filter((proj) => proj.portfolio_project_id !== deletingProject.portfolio_project_id)
-    );
     setIsDeleteDialogOpen(false);
-
-    const res = await del(`/api/content/portfolio/${deletingProject.portfolio_project_id}`);
-
-    if (res.error) {
-      setProjects(prev);
-      toast({ title: "Error", description: res.error, variant: "destructive" });
-    } else {
-      toast({ title: "Deleted", description: `${deletingProject.title} removed` });
+    try {
+      await deletePortfolio(deletingProject.portfolio_project_id);
       setDeletingProject(null);
+    } catch {
+      // Hook surfaces the toast
     }
   };
 

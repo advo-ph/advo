@@ -155,7 +155,7 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
     });
 
     // Add DB progress updates (manual updates from admin)
-    (project.updates || project.progress_update || []).forEach((update) => {
+    (project.updates || []).forEach((update) => {
       items.push({
         id: `update-${update.progress_update_id}`,
         type: "update",
@@ -269,7 +269,16 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4 block">
           Project Status
         </span>
-        <StatusStepper currentStatus={project.project_status} />
+        <StatusStepper
+          currentStatus={
+            project.project_status as
+              | "discovery"
+              | "architecture"
+              | "development"
+              | "testing"
+              | "shipped"
+          }
+        />
       </div>
 
       {/* Grid: Funding + Deliverables */}

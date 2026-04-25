@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Calendar, 
@@ -34,27 +34,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { get, post, patch, del } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-
-type BlockType = "school" | "break" | "work" | "unavailable";
-
-interface TeamMember {
-  team_member_id: number;
-  name: string;
-  role: string;
-  avatar_url?: string;
-}
-
-interface AvailabilityBlock {
-  block_id: number;
-  team_member_id: number;
-  day_of_week: number;
-  start_time: string;
-  end_time: string;
-  block_type: BlockType;
-  label?: string;
-}
+import { useAdminTeam } from "@/hooks/useAdminTeam";
+import {
+  useAdminAvailability,
+  type AvailabilityBlock,
+  type BlockType,
+} from "@/hooks/useAdminAvailability";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const FULL_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -69,12 +55,24 @@ const blockTypeConfig: Record<BlockType, { label: string; color: string; bgColor
 
 const AdminAvailability = () => {
   const { toast } = useToast();
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [blocks, setBlocks] = useState<AvailabilityBlock[]>([]);
+  const { members: teamMembers, isLoading: teamLoading } = useAdminTeam();
+  const {
+    blocks,
+    isLoading: blocksLoading,
+    createBlock,
+    updateBlock,
+    deleteBlock,
+    isSaving,
+  } = useAdminAvailability();
+
+  const isLoading = teamLoading || blocksLoading;
   const [selectedMember, setSelectedMember] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  
+
+  // Auto-select first member when data loads
+  if (selectedMember === null && teamMembers.length > 0) {
+    setSelectedMember(teamMembers[0].team_member_id);
+  }
+
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState<AvailabilityBlock | null>(null);
@@ -86,50 +84,10 @@ const AdminAvailability = () => {
     block_type: "work" as BlockType,
     label: "",
   });
-  
+
   // Find Free Time state
   const [showFreeTime, setShowFreeTime] = useState(false);
   const [selectedMembers, setSelectedMembers] = useState<number[]>([]);
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    setIsLoading(true);
-    
-    const { data: rawMembers } = await get<Record<string, unknown>[]>("/api/team");
-
-    if (rawMembers) {
-      const mapped: TeamMember[] = rawMembers.map((m) => ({
-        team_member_id: (m.teamMemberId ?? m.team_member_id) as number,
-        name: m.name as string,
-        role: m.role as string,
-        avatar_url: (m.avatarUrl ?? m.avatar_url) as string | null,
-      }));
-      setTeamMembers(mapped);
-      if (mapped.length > 0 && !selectedMember) {
-        setSelectedMember(mapped[0].team_member_id);
-      }
-    }
-
-    // Fetch availability blocks
-    const { data: rawBlocks } = await get<Record<string, unknown>[]>("/api/availability");
-    if (rawBlocks) {
-      const mappedBlocks: AvailabilityBlock[] = rawBlocks.map((b) => ({
-        block_id: (b.blockId ?? b.block_id) as number,
-        team_member_id: (b.teamMemberId ?? b.team_member_id) as number,
-        day_of_week: (b.dayOfWeek ?? b.day_of_week) as number,
-        start_time: (b.startTime ?? b.start_time) as string,
-        end_time: (b.endTime ?? b.end_time) as string,
-        block_type: (b.blockType ?? b.block_type) as BlockType,
-        label: (b.label as string) || undefined,
-      }));
-      setBlocks(mappedBlocks);
-    }
-
-    setIsLoading(false);
-  };
 
   const getInitials = (name: string) => {
     return name.split(" ").map(n => n[0]).join("").toUpperCase();
@@ -238,54 +196,35 @@ const AdminAvailability = () => {
       toast({ title: "Error", description: "Please fill all required fields", variant: "destructive" });
       return;
     }
-    
-    setIsSaving(true);
-    
-    const blockData = {
-      teamMemberId: parseInt(formData.team_member_id),
-      dayOfWeek: parseInt(formData.day_of_week),
-      startTime: formData.start_time,
-      endTime: formData.end_time,
-      blockType: formData.block_type,
+
+    const input = {
+      team_member_id: parseInt(formData.team_member_id),
+      day_of_week: parseInt(formData.day_of_week),
+      start_time: formData.start_time,
+      end_time: formData.end_time,
+      block_type: formData.block_type,
       label: formData.label || undefined,
     };
 
-    if (editingBlock) {
-      const { error } = await patch(`/api/availability/${editingBlock.block_id}`, blockData);
-
-      if (error) {
-        toast({ title: "Error", description: error, variant: "destructive" });
+    setIsDialogOpen(false);
+    try {
+      if (editingBlock) {
+        await updateBlock(editingBlock.block_id, input);
       } else {
-        toast({ title: "Updated", description: "Schedule block updated" });
-        setIsDialogOpen(false);
-        fetchData();
+        await createBlock(input);
       }
-    } else {
-      const { error } = await post("/api/availability", blockData);
-
-      if (error) {
-        toast({ title: "Error", description: error, variant: "destructive" });
-      } else {
-        toast({ title: "Added", description: "Schedule block added" });
-        setIsDialogOpen(false);
-        fetchData();
-      }
+    } catch {
+      // Hook surfaces the toast
     }
-    
-    setIsSaving(false);
   };
 
   const handleDelete = async () => {
     if (!editingBlock) return;
-    
-    const { error } = await del(`/api/availability/${editingBlock.block_id}`);
-
-    if (error) {
-      toast({ title: "Error", description: error, variant: "destructive" });
-    } else {
-      toast({ title: "Deleted", description: "Schedule block removed" });
-      setIsDialogOpen(false);
-      fetchData();
+    setIsDialogOpen(false);
+    try {
+      await deleteBlock(editingBlock.block_id);
+    } catch {
+      // Hook surfaces the toast
     }
   };
 

@@ -29,3 +29,4 @@ media/
 *.log
 npm-debug.log*
 .env*.local
+tsconfig*.tsbuildinfo

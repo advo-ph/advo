@@ -1,31 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar, Clock, CheckCircle2, Circle, AlertCircle, User } from "lucide-react";
+import { Calendar, Clock, CheckCircle2, Circle, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { get } from "@/lib/api";
-
-type DeliverableStatus = "not_started" | "in_progress" | "review" | "completed" | "blocked";
-
-interface TeamMember {
-  team_member_id: number;
-  name: string;
-  role: string;
-  avatar_url?: string;
-}
-
-interface Deliverable {
-  deliverable_id: number;
-  project_id: number;
-  assigned_to: number;
-  title: string;
-  description?: string;
-  status: DeliverableStatus;
-  priority: number;
-  due_date?: string;
-  project?: { title: string };
-  assignee?: TeamMember;
-}
+import { useAdminTeam } from "@/hooks/useAdminTeam";
+import {
+  useAdminDeliverables,
+  type DeliverableStatus,
+} from "@/hooks/useAdminDeliverables";
 
 const statusConfig: Record<DeliverableStatus, { label: string; color: string; icon: React.ElementType }> = {
   not_started: { label: "Not Started", color: "bg-secondary text-muted-foreground", icon: Circle },
@@ -36,45 +18,10 @@ const statusConfig: Record<DeliverableStatus, { label: string; color: string; ic
 };
 
 const AdminSchedule = () => {
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { members: teamMembers, isLoading: teamLoading } = useAdminTeam();
+  const { deliverables, isLoading: deliverablesLoading } = useAdminDeliverables();
+  const isLoading = teamLoading || deliverablesLoading;
   const [selectedMember, setSelectedMember] = useState<number | null>(null);
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    setIsLoading(true);
-    
-    const { data: rawMembers } = await get<Record<string, unknown>[]>("/api/team");
-    const { data: rawTasks } = await get<Record<string, unknown>[]>("/api/deliverables");
-
-    if (rawMembers) {
-      setTeamMembers(rawMembers.map((m) => ({
-        team_member_id: (m.teamMemberId ?? m.team_member_id) as number,
-        name: m.name as string,
-        role: m.role as string,
-        avatar_url: (m.avatarUrl ?? m.avatar_url) as string | undefined,
-      })));
-    }
-    if (rawTasks) {
-      setDeliverables(rawTasks.map((t) => ({
-        deliverable_id: (t.deliverableId ?? t.deliverable_id) as number,
-        project_id: (t.projectId ?? t.project_id) as number,
-        title: t.title as string,
-        status: (t.status as DeliverableStatus) || "not_started",
-        priority: (t.priority as number) || 0,
-        due_date: (t.dueDate ?? t.due_date) as string | null,
-        assigned_to: (t.assignedTo ?? t.assigned_to) as number | null,
-        project: t.project as { title: string } | undefined,
-        assignee: (t.assignee ?? t.team_member) as TeamMember | undefined,
-      })));
-    }
-    
-    setIsLoading(false);
-  };
 
   const filteredDeliverables = selectedMember
     ? deliverables.filter(d => d.assigned_to === selectedMember)

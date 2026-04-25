@@ -321,10 +321,7 @@ const AdminFinance = ({ projects }: AdminFinanceProps) => {
                             <Select
                               value={inv.status}
                               onValueChange={(val: string) =>
-                                toggleStatus({
-                                  invoiceId: inv.invoice_id,
-                                  status: val as InvoiceStatus,
-                                })
+                                toggleStatus(inv.invoice_id, val as InvoiceStatus)
                               }
                             >
                               <SelectTrigger className="w-24 h-7 text-xs">

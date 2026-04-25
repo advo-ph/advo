@@ -1,0 +1,144 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { get, post, patch } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+
+export interface TeamMember {
+  team_member_id: number;
+  name: string;
+  role: string;
+  email: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  linkedin_url: string | null;
+  github_url: string | null;
+  is_active: boolean;
+}
+
+function mapMember(m: Record<string, unknown>): TeamMember {
+  return {
+    team_member_id: (m.teamMemberId ?? m.team_member_id) as number,
+    name: m.name as string,
+    role: m.role as string,
+    email: (m.email as string) || null,
+    avatar_url: (m.avatarUrl ?? m.avatar_url ?? null) as string | null,
+    bio: (m.bio as string) || null,
+    linkedin_url: (m.linkedinUrl ?? m.linkedin_url ?? null) as string | null,
+    github_url: (m.githubUrl ?? m.github_url ?? null) as string | null,
+    is_active: Boolean(m.isActive ?? m.is_active ?? true),
+  };
+}
+
+export interface TeamMemberInput {
+  name: string;
+  role: string;
+  email?: string | null;
+  avatar_url?: string | null;
+  bio?: string | null;
+  linkedin_url?: string | null;
+  github_url?: string | null;
+}
+
+function toApiPayload(input: TeamMemberInput) {
+  return {
+    name: input.name,
+    role: input.role,
+    email: input.email || null,
+    avatarUrl: input.avatar_url || null,
+    bio: input.bio || null,
+    linkedinUrl: input.linkedin_url || null,
+    githubUrl: input.github_url || null,
+  };
+}
+
+const QUERY_KEY = ["adminTeam"];
+
+async function fetchTeam(): Promise<TeamMember[]> {
+  const [teamRes, orderRes] = await Promise.all([
+    get<Record<string, unknown>[]>("/api/team"),
+    get<{ value: unknown }>("/api/settings/team_order"),
+  ]);
+  const mapped = (teamRes.data || []).map(mapMember);
+  if (orderRes.data?.value) {
+    const order = (typeof orderRes.data.value === "string"
+      ? JSON.parse(orderRes.data.value)
+      : orderRes.data.value) as number[];
+    mapped.sort((a, b) => {
+      const ai = order.indexOf(a.team_member_id);
+      const bi = order.indexOf(b.team_member_id);
+      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+    });
+  }
+  return mapped;
+}
+
+export function useAdminTeam() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const { data: members = [], isLoading } = useQuery({
+    queryKey: QUERY_KEY,
+    queryFn: fetchTeam,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (input: TeamMemberInput) => {
+      const res = await post<Record<string, unknown>>("/api/team", toApiPayload(input));
+      if (res.error) throw new Error(res.error);
+      return mapMember(res.data!);
+    },
+    onSuccess: (created) => {
+      queryClient.setQueryData<TeamMember[]>(QUERY_KEY, (old = []) => [...old, created]);
+      toast({ title: "Created", description: `${created.name} added to team` });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, input }: { id: number; input: TeamMemberInput }) => {
+      const res = await patch<Record<string, unknown>>(`/api/team/${id}`, toApiPayload(input));
+      if (res.error) throw new Error(res.error);
+      return mapMember(res.data!);
+    },
+    onSuccess: (updated) => {
+      queryClient.setQueryData<TeamMember[]>(QUERY_KEY, (old = []) =>
+        old.map((m) => (m.team_member_id === updated.team_member_id ? updated : m)),
+      );
+      toast({ title: "Updated", description: `${updated.name} updated` });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const reorderMutation = useMutation({
+    mutationFn: async (orderedMembers: TeamMember[]) => {
+      const order = orderedMembers.map((m) => m.team_member_id);
+      const res = await post("/api/team/reorder", { order });
+      if (res.error) throw new Error(res.error);
+    },
+    onMutate: async (orderedMembers) => {
+      await queryClient.cancelQueries({ queryKey: QUERY_KEY });
+      const prev = queryClient.getQueryData<TeamMember[]>(QUERY_KEY);
+      queryClient.setQueryData<TeamMember[]>(QUERY_KEY, orderedMembers);
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(QUERY_KEY, ctx.prev);
+      toast({ title: "Error", description: "Failed to save order", variant: "destructive" });
+    },
+    onSuccess: () => toast({ title: "Order saved" }),
+  });
+
+  return {
+    members,
+    isLoading,
+    createMember: createMutation.mutateAsync,
+    updateMember: (id: number, input: TeamMemberInput) =>
+      updateMutation.mutateAsync({ id, input }),
+    reorderMembers: reorderMutation.mutate,
+    isSaving: createMutation.isPending || updateMutation.isPending,
+  };
+}

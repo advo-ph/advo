@@ -4,7 +4,39 @@ import { useAuth } from "@/hooks/useAuth";
 
 /* ─── Shared Types ───────────────────────────────────────── */
 
-interface ClientProject {
+export type DeliverableStatus =
+  | "not_started"
+  | "in_progress"
+  | "review"
+  | "completed"
+  | "blocked";
+
+export type ClientInvoiceStatus = "unpaid" | "paid" | "overdue";
+
+export interface Deliverable {
+  deliverable_id: number;
+  title: string;
+  status: string;
+  due_date?: string;
+  completed_at?: string;
+  team_member?: {
+    team_member_id: number;
+    name: string;
+    role?: string;
+    avatar_url?: string;
+  };
+}
+
+export interface ClientInvoice {
+  invoice_id: number;
+  label: string;
+  amount_cents: number;
+  status: string;
+  due_date?: string;
+  paid_at?: string;
+}
+
+export interface ClientProject {
   project_id: number;
   title: string;
   description?: string;
@@ -24,26 +56,14 @@ interface ClientProject {
     commit_sha_reference?: string;
     created_at: string;
   }>;
-  deliverables: Array<{
-    deliverable_id: number;
-    title: string;
-    status: string;
-    due_date?: string;
-    completed_at?: string;
-  }>;
-  invoices: Array<{
-    invoice_id: number;
-    label: string;
-    amount_cents: number;
-    status: string;
-    due_date?: string;
-    paid_at?: string;
-  }>;
+  deliverables: Deliverable[];
+  invoices: ClientInvoice[];
   assets: Array<{
     project_asset_id: number;
     asset_type: string;
     url: string;
     caption?: string;
+    uploaded_at?: string;
   }>;
   contacts: Array<{
     team_member_id: number;

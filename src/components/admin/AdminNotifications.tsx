@@ -81,7 +81,7 @@ const AdminNotifications = () => {
       sendToAll({ title, body });
     } else {
       sendNotification({
-        client_id: parseInt(targetClient, 10),
+        clientId: parseInt(targetClient, 10),
         title,
         body,
         type: "custom",

@@ -3,12 +3,14 @@ import { get, post, patch, del } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { triggerNotification } from "@/lib/notifications";
 
-interface Invoice {
+export type InvoiceStatus = "unpaid" | "paid" | "overdue";
+
+export interface Invoice {
   invoice_id: number;
   project_id: number;
   amount_cents: number;
   label: string;
-  status: "unpaid" | "paid" | "overdue";
+  status: InvoiceStatus;
   due_date?: string | null;
   paid_at?: string | null;
   notes?: string | null;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Instagram, Linkedin, Twitter, Calendar, Clock, Image, Heart, MessageCircle, Share2, Plus, Trash2, Edit, Loader2, Upload, Grid3X3, Bookmark, MoreHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -21,19 +21,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { get, post, patch, del, upload } from "@/lib/api";
+import { upload } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-
-interface SocialPost {
-  social_post_id: number;
-  platform: string;
-  content: string;
-  image_url: string | null;
-  scheduled_for: string | null;
-  is_published: boolean;
-  published_at: string | null;
-  created_at: string;
-}
+import { useAdminSocial, type SocialPost } from "@/hooks/useAdminSocial";
 
 const platformConfig = {
   instagram: { icon: Instagram, color: "text-pink-500", bg: "bg-pink-500/10", label: "Instagram" },
@@ -42,10 +32,8 @@ const platformConfig = {
 };
 
 const AdminSocial = () => {
-  const [posts, setPosts] = useState<SocialPost[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { posts, isLoading, createPost, updatePost, deletePost, isSaving } = useAdminSocial();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [selectedPost, setSelectedPost] = useState<SocialPost | null>(null);
   const [previewPost, setPreviewPost] = useState<SocialPost | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -62,36 +50,11 @@ const AdminSocial = () => {
     scheduled_time: "",
   });
 
-  useEffect(() => {
-    fetchPosts();
-  }, []);
-
-  const fetchPosts = async () => {
-    setIsLoading(true);
-    // API returns camelCase; component uses snake_case shape
-    const { data, error } = await get<Record<string, unknown>[]>("/api/content/social");
-
-    if (error) {
-      toast({ title: "Error", description: error, variant: "destructive" });
-    } else {
-      const mapped: SocialPost[] = (data || []).map((p) => ({
-        social_post_id: (p.socialPostId ?? p.social_post_id) as number,
-        platform: p.platform as string,
-        content: p.content as string,
-        image_url: (p.imageUrl ?? p.image_url) as string | null,
-        scheduled_for: (p.scheduledFor ?? p.scheduled_for) as string | null,
-        is_published: Boolean(p.isPublished ?? p.is_published),
-        published_at: (p.publishedAt ?? p.published_at) as string | null,
-        created_at: (p.createdAt ?? p.created_at) as string,
-      }));
-      setPosts(mapped);
-      const igPosts = mapped.filter((p) => p.platform === "instagram" && !p.is_published);
-      if (igPosts.length > 0 && !previewPost) {
-        setPreviewPost(igPosts[0]);
-      }
-    }
-    setIsLoading(false);
-  };
+  // Auto-pick the first unpublished IG post for the preview pane
+  if (!previewPost && posts.length > 0) {
+    const firstIg = posts.find((p) => p.platform === "instagram" && !p.is_published);
+    if (firstIg) setPreviewPost(firstIg);
+  }
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -151,53 +114,34 @@ const AdminSocial = () => {
       return;
     }
 
-    setIsSaving(true);
-    
     const scheduledFor = formData.scheduled_date && formData.scheduled_time
       ? new Date(`${formData.scheduled_date}T${formData.scheduled_time}`).toISOString()
-      : null;
+      : undefined;
 
-    // API expects camelCase; snake_case fields are silently dropped by Zod
-    const postData = {
+    const input = {
       platform: formData.platform,
       content: formData.content,
-      imageUrl: formData.image_url || undefined,
-      scheduledFor: scheduledFor || undefined,
+      image_url: formData.image_url || undefined,
+      scheduled_for: scheduledFor,
     };
 
-    if (selectedPost) {
-      const { error } = await patch(`/api/content/social/${selectedPost.social_post_id}`, postData);
-
-      if (error) {
-        toast({ title: "Error", description: error, variant: "destructive" });
+    setIsDialogOpen(false);
+    try {
+      if (selectedPost) {
+        await updatePost(selectedPost.social_post_id, input);
       } else {
-        toast({ title: "Updated", description: "Post updated successfully" });
-        setIsDialogOpen(false);
-        fetchPosts();
+        await createPost(input);
       }
-    } else {
-      const { error } = await post("/api/content/social", postData);
-
-      if (error) {
-        toast({ title: "Error", description: error, variant: "destructive" });
-      } else {
-        toast({ title: "Created", description: "Post scheduled successfully" });
-        setIsDialogOpen(false);
-        fetchPosts();
-      }
+    } catch {
+      // Hook surfaces the toast
     }
-
-    setIsSaving(false);
   };
 
   const handleDelete = async (postId: number) => {
-    const { error } = await del(`/api/content/social/${postId}`);
-
-    if (error) {
-      toast({ title: "Error", description: error, variant: "destructive" });
-    } else {
-      toast({ title: "Deleted", description: "Post removed" });
-      fetchPosts();
+    try {
+      await deletePost(postId);
+    } catch {
+      // Hook surfaces the toast
     }
   };
 

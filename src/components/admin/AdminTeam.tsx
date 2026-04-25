@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Plus,
@@ -23,46 +23,29 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { get, post, patch, upload } from "@/lib/api";
+import { upload } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-
-interface TeamMember {
-  team_member_id: number;
-  name: string;
-  role: string;
-  email: string | null;
-  avatar_url: string | null;
-  bio: string | null;
-  linkedin_url: string | null;
-  github_url: string | null;
-  is_active: boolean;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapMember(m: any): TeamMember {
-  return {
-    team_member_id: m.teamMemberId ?? m.team_member_id,
-    name: m.name,
-    role: m.role,
-    email: m.email,
-    avatar_url: m.avatarUrl ?? m.avatar_url,
-    bio: m.bio,
-    linkedin_url: m.linkedinUrl ?? m.linkedin_url,
-    github_url: m.githubUrl ?? m.github_url,
-    is_active: m.isActive ?? m.is_active ?? true,
-  };
-}
+import { useAdminTeam, type TeamMember } from "@/hooks/useAdminTeam";
 
 const AdminTeam = () => {
   const { toast } = useToast();
-  const [members, setMembers] = useState<TeamMember[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const {
+    members,
+    isLoading,
+    createMember,
+    updateMember,
+    reorderMembers,
+    isSaving,
+  } = useAdminTeam();
+
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+  const [localOrder, setLocalOrder] = useState<TeamMember[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const displayMembers = localOrder || members;
 
   const [formData, setFormData] = useState({
     name: "",
@@ -74,53 +57,23 @@ const AdminTeam = () => {
     github_url: "",
   });
 
-  useEffect(() => {
-    fetchMembers();
-  }, []);
-
-  const fetchMembers = async () => {
-    setIsLoading(true);
-    const [teamRes, orderRes] = await Promise.all([
-      get<unknown[]>("/api/team"),
-      get<{ value: unknown }>("/api/settings/team_order"),
-    ]);
-    const mapped = (teamRes.data || []).map(mapMember);
-    // Apply custom order if exists
-    if (orderRes.data?.value) {
-      const order = (typeof orderRes.data.value === "string"
-        ? JSON.parse(orderRes.data.value)
-        : orderRes.data.value) as number[];
-      mapped.sort((a, b) => {
-        const ai = order.indexOf(a.team_member_id);
-        const bi = order.indexOf(b.team_member_id);
-        return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
-      });
-    }
-    setMembers(mapped);
-    setIsLoading(false);
-  };
-
   const handleDragStart = (idx: number) => setDraggedIdx(idx);
 
   const handleDragOver = (e: React.DragEvent, idx: number) => {
     e.preventDefault();
     if (draggedIdx === null || draggedIdx === idx) return;
-    const next = [...members];
+    const next = [...displayMembers];
     const [moved] = next.splice(draggedIdx, 1);
     next.splice(idx, 0, moved);
-    setMembers(next);
+    setLocalOrder(next);
     setDraggedIdx(idx);
   };
 
-  const handleDragEnd = async () => {
+  const handleDragEnd = () => {
     setDraggedIdx(null);
-    const order = members.map((m) => m.team_member_id);
-    const res = await post("/api/team/reorder", { order });
-    if (res.error) {
-      toast({ title: "Error", description: "Failed to save order", variant: "destructive" });
-      fetchMembers();
-    } else {
-      toast({ title: "Order saved" });
+    if (localOrder) {
+      reorderMembers(localOrder);
+      setLocalOrder(null); // hook will hold the new order via optimistic update
     }
   };
 
@@ -175,37 +128,26 @@ const AdminTeam = () => {
       return;
     }
 
-    setIsSaving(true);
-    const payload = {
+    const input = {
       name: formData.name,
       role: formData.role,
       email: formData.email || null,
-      avatarUrl: formData.avatar_url || null,
+      avatar_url: formData.avatar_url || null,
       bio: formData.bio || null,
-      linkedinUrl: formData.linkedin_url || null,
-      githubUrl: formData.github_url || null,
+      linkedin_url: formData.linkedin_url || null,
+      github_url: formData.github_url || null,
     };
 
-    if (editingMember) {
-      const res = await patch(`/api/team/${editingMember.team_member_id}`, payload);
-      if (res.error) {
-        toast({ title: "Error", description: res.error, variant: "destructive" });
+    setIsDialogOpen(false);
+    try {
+      if (editingMember) {
+        await updateMember(editingMember.team_member_id, input);
       } else {
-        toast({ title: "Updated", description: `${formData.name} updated` });
-        setIsDialogOpen(false);
-        fetchMembers();
+        await createMember(input);
       }
-    } else {
-      const res = await post("/api/team", payload);
-      if (res.error) {
-        toast({ title: "Error", description: res.error, variant: "destructive" });
-      } else {
-        toast({ title: "Created", description: `${formData.name} added to team` });
-        setIsDialogOpen(false);
-        fetchMembers();
-      }
+    } catch {
+      // Hook surfaces the toast
     }
-    setIsSaving(false);
   };
 
   const getInitials = (name: string) =>
@@ -230,7 +172,7 @@ const AdminTeam = () => {
         </div>
       ) : (
         <div className="space-y-3">
-          {members.map((member, index) => (
+          {displayMembers.map((member, index) => (
             <motion.div
               key={member.team_member_id}
               initial={{ opacity: 0, y: 10 }}

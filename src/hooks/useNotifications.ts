@@ -5,7 +5,14 @@ import { useAuth } from "@/hooks/useAuth";
 
 /* ─── Types ──────────────────────────────────────────────── */
 
-interface NotificationRow {
+export type NotificationType =
+  | "progress_update"
+  | "invoice_issued"
+  | "deliverable_completed"
+  | "project_status_change"
+  | "custom";
+
+export interface NotificationRow {
   notification_id: number;
   client_id: number;
   project_id: number | null;

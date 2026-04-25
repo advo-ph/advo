@@ -3,12 +3,14 @@ import { github, type GitHubCommit } from "@/lib/github";
 import { get } from "@/lib/api";
 import { useRoles } from "@/hooks/useRoles";
 
-interface MergedProject {
+export interface MergedProject {
   project_id: number;
+  client_id?: number;
   title: string;
   description?: string;
   repository_name?: string;
   preview_url?: string;
+  contract_url?: string;
   project_status: string;
   total_value_cents: number;
   amount_paid_cents: number;
@@ -16,6 +18,7 @@ interface MergedProject {
   created_at: string;
   client?: {
     company_name?: string;
+    contact_email?: string;
     github_org_name?: string;
     brand_color_hex?: string;
   };
@@ -27,6 +30,10 @@ interface MergedProject {
   }>;
   openPRs?: number;
   detectedStack?: string[];
+  // GitHub-enriched fields (populated when org_name + token available)
+  githubRepo?: { name: string; url: string; defaultBranch?: string };
+  lastPush?: string;
+  detectedTechStack?: Array<{ name: string }>;
 }
 
 async function fetchOrgProjects(): Promise<MergedProject[]> {
