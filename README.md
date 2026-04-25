@@ -193,9 +193,25 @@ advo-api/                      # Backend (Hono/Node)
 
 ## Tests
 
+68 integration tests across two files (`src/test/api-wiring.test.ts` + `src/test/e2e-flow.test.ts`) hit the live API. Two ways to run:
+
 ```bash
-cd advo && npx vitest run src/test/    # 69 tests (64 pass, 5 rate-limited)
+npm run test:local      # auto-boots advo-api on :6107, runs full suite, cleans up — 68/68
+npm run test            # runs vitest against whatever VITE_API_URL points at
 ```
+
+The local script (`scripts/test-local.sh`) reuses an existing API on `:6107` if you already have one running.
+
+## CI
+
+GitHub Actions ([.github/workflows/ci.yml](.github/workflows/ci.yml)) runs on every push to `main` and every PR:
+
+| Job | Steps | Time |
+|-----|-------|------|
+| **Verify** | `npm ci` → `tsc --noEmit` → `eslint` → `vite build` | ~32s |
+| **Audit** | `npm audit --audit-level=high` (non-blocking) | ~7s |
+
+Concurrency cancels superseded runs per branch — no wasted minutes when you push twice in a row. Integration tests are not in CI (would need a Postgres + API service step) — run them locally before merging.
 
 ## Documentation
 

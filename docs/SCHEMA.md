@@ -145,8 +145,8 @@ Unique constraint on (`team_member_id`, `project_id`).
 | Column | Type | Description |
 |--------|------|-------------|
 | `notification_id` | BIGSERIAL (PK) | |
-| `client_id` | BIGINT (FK) | → `client` |
-| `project_id` | BIGINT (FK) | → `project` (nullable) |
+| `client_id` | BIGINT (FK) | → `client` ON DELETE CASCADE |
+| `project_id` | BIGINT (FK) | → `project` ON DELETE CASCADE (nullable) |
 | `type` | ENUM | `progress_update`, `invoice_issued`, `deliverable_completed`, `project_status_change`, `custom` |
 | `title` | VARCHAR(255) | |
 | `body` | TEXT | |
@@ -230,7 +230,7 @@ Unique constraint on (`team_member_id`, `project_id`).
 | Column | Type | Description |
 |--------|------|-------------|
 | `event_id` | BIGSERIAL (PK) | |
-| `project_id` | BIGINT (FK) | → `project` (nullable) |
+| `project_id` | BIGINT (FK) | → `project` ON DELETE CASCADE (nullable) |
 | `event_type` | VARCHAR(50) | `push`, `pull_request`, `deployment_status` |
 | `payload` | JSONB | |
 | `repo_name` | VARCHAR(100) | |

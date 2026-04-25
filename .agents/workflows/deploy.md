@@ -9,21 +9,31 @@ description: How to deploy ADVO to production
 - **API**: Node + Hono on `127.0.0.1:6107`, managed by PM2 (process: `advo-api`)
 - **Database**: PostgreSQL 16 on the same VPS
 
-## Deploy frontend
+## Pre-deploy checklist
 
-1. Build and verify locally:
+Run all three of these locally before pushing:
 
 ```bash
-cd /Users/angelonrevelo/Antigravity/advo && npm run build
+cd /Users/angelonrevelo/Antigravity/advo
+npx tsc --noEmit              # type check
+npm run lint                  # 0 errors expected
+npm run test:local            # 68/68 — boots the API automatically
+npm run build                 # production build succeeds
 ```
 
-2. Stage, commit, push:
+CI (`.github/workflows/ci.yml`) will run typecheck + lint + build on every push, but **not** the integration tests (those need a Postgres + API service step that isn't wired yet). Run `test:local` manually before merging anything that touches the API client or hooks.
+
+## Deploy frontend
+
+1. Stage, commit, push:
 
 ```bash
 cd /Users/angelonrevelo/Antigravity/advo && git add -A && git status
 git commit -m "feat: <description>"
 git push origin main
 ```
+
+2. Wait for the CI run to go green at https://github.com/advo-ph/advo/actions
 
 3. Pull + rebuild on VPS:
 

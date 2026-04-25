@@ -145,16 +145,24 @@ Two modes — lightweight `/api/scrape/brand` (fast) and full `/api/scrape/brand
 - Multi-page crawl (follows up to `crawlDepth` internal nav links, merges data)
 - Color palette grouping (primary / secondary / accent[] / neutral[]) via HSL clustering
 - Typography scale from real DOM computed styles (h1-h6, body, p)
-- UI component pattern detection (14 patterns: hero+CTA, pricing, FAQ, team, video, etc.)
+- **Component detection** — see "Component detector" below
 - SEO audit (11 checks — title, meta, H1 count, hierarchy, canonical, OG, JSON-LD, sitemap, robots.txt, alt text %) with score
 - Performance metrics (load time, DOM nodes, JS heap, requests, JS/CSS files, page weight)
 - Animation detection (CSS keyframes, transitions, GSAP, Framer Motion, AOS, Lenis, Lottie)
 - Accessibility audit (lang, alt, ARIA, focus indicators, WCAG contrast) with score
 - Compare mode — pass `compareUrl` to get a diff (`onlyInMain` / `shared` / `onlyInCompare`)
 
+#### Component detector
+
+Powered by the [easydiv](https://github.com/CelestialBrain/easydiv) component scanner, vendored at `advo-api/src/vendor/easydiv-detector.js` and injected into the live Puppeteer page via `mainPage.evaluate()`. Uses 6 signals: semantic tags, ARIA roles, class-name hints, structural shape, sibling clustering (3+ children with same tag+class signature), browser-side visibility checks. Includes a CSS-in-JS-aware class normalizer that strips hash suffixes (`hero-a8b3f9` → `hero`, `css-x1y2z3` → dropped) so it works against emotion / styled-components / CSS Modules sites.
+
+Two response fields:
+- `components: [{ name, selector, count }]` — legacy shape grouped by type, used by the existing UI
+- `componentCandidates: { [type]: [{ tag, classes, score, reason, depth, childCount, textPreview, ... }] }` — top 5 per type with full element data including a 80-char text preview
+
 Auto-saves to DB, load past scrapes from history.
 
-**Files**: `AdminBrandScraper.tsx`, `advo-api/src/routes/scrape.routes.ts`
+**Files**: `AdminBrandScraper.tsx`, `advo-api/src/routes/scrape.routes.ts`, `advo-api/src/vendor/easydiv-detector.js`
 
 ### Facebook Scraper
 

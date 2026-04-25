@@ -18,6 +18,7 @@ All three tiers run on the same Contabo VPS in Singapore (`62.146.237.12`, ssh a
 - Node.js 20+
 - npm
 - PostgreSQL 15+ (local: `brew services start postgresql@15`)
+- **Chromium** (for the brand scraper's full-mode endpoint and FB scraper) — macOS: bundled in Puppeteer; Linux/VPS: `apt-get install chromium-browser`. The API auto-detects `/usr/bin/chromium-browser`, `/usr/bin/chromium`, `/usr/bin/google-chrome`, or the macOS `Google Chrome.app`.
 
 ## Local Development
 
@@ -43,6 +44,15 @@ npm run dev                   # Starts on port 6100
 Open http://localhost:6100
 
 Default admin login: `admin@advo.ph` / `changeme`
+
+### 3. Run the test suite
+
+```bash
+cd /path/to/Antigravity/advo
+npm run test:local            # boots the API automatically, runs 68 tests, cleans up
+```
+
+If you already have the API running on `:6107`, the script reuses it. Pass extra args to target a single file: `npm run test:local src/test/e2e-flow`.
 
 ## Environment Variables
 
