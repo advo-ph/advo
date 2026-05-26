@@ -22,23 +22,15 @@ All three tiers run on the same Contabo VPS in Singapore (`62.146.237.12`, ssh a
 
 ## Local Development
 
-### 1. Start the API
-
-```bash
-cd /path/to/Antigravity/advo-api
-cp .env.example .env          # Edit with your local DB credentials
-npm install
-npm run db:push               # Create tables in PostgreSQL
-npm run db:seed               # Seed default data
-npm run dev                   # Starts on port 6107
-```
-
-### 2. Start the Frontend
+The repo is an npm-workspaces monorepo (`apps/web` + `apps/api`). One install, one dev command.
 
 ```bash
 cd /path/to/Antigravity/advo
-npm install
-npm run dev                   # Starts on port 6100
+cp apps/api/.env.example apps/api/.env   # Edit with your local DB credentials
+npm install                              # Installs both workspaces
+npm --workspace apps/api run db:push     # Create tables in PostgreSQL
+npm --workspace apps/api run db:seed     # Seed default data
+npm run dev                              # Starts web (6100) + api (6107) concurrently
 ```
 
 Open http://localhost:6100
@@ -65,7 +57,7 @@ VITE_API_URL=http://localhost:6107        # Local
 VITE_GITHUB_TOKEN=ghp_...                # Optional: GitHub commit history
 ```
 
-### API (`advo-api/.env`)
+### API (`apps/api/.env`)
 
 ```env
 # Required
@@ -91,7 +83,7 @@ FRONTEND_URL=http://localhost:6100
 
 ## Database
 
-Schema is defined in `advo-api/src/db/schema.ts` using Drizzle ORM.
+Schema is defined in `apps/api/src/db/schema.ts` using Drizzle ORM.
 
 ```bash
 npm run db:push               # Push schema to database
@@ -136,15 +128,17 @@ Host advo advo-vps
   IdentitiesOnly yes
 ```
 
+> **Cutover pending.** The repo is now a monorepo (`apps/web` + `apps/api`) but the VPS still has the pre-monorepo layout (`/opt/advo` = frontend-only, `/opt/advo-api` = standalone API). The commands below are for **post-cutover** state. Until the VPS is repointed, running `git pull` in `/opt/advo` against `main` will break the frontend build (paths shifted).
+
 ### API
 
 ```bash
 # One-shot deploy:
-cd advo-api && ./deploy.sh root@advo
+cd apps/api && ./deploy.sh root@advo
 
 # Or manually:
-rsync -azP --exclude node_modules --exclude .env ./ root@advo:/opt/advo-api/
-ssh advo "cd /opt/advo-api && npm install && npx drizzle-kit push && pm2 restart advo-api"
+rsync -azP --exclude node_modules --exclude .env ./ root@advo:/opt/advo/apps/api/
+ssh advo "cd /opt/advo/apps/api && npm install && npx drizzle-kit push && pm2 restart advo-api"
 ```
 
 API runs under PM2 as `advo-api` (fork mode, port 6107). Logs: `/var/log/advo-api/{out,error}.log`.
@@ -152,10 +146,10 @@ API runs under PM2 as `advo-api` (fork mode, port 6107). Logs: `/var/log/advo-ap
 ### Frontend (built on VPS)
 
 ```bash
-ssh advo "cd /opt/advo && git pull && npm install && npm run build && rsync -a --delete dist/ /var/www/advo/dist/"
+ssh advo "cd /opt/advo && git pull && npm install && npm run build:web && rsync -a --delete apps/web/dist/ /var/www/advo/dist/"
 ```
 
-`/opt/advo` is a `git clone https://github.com/advo-ph/advo.git` with `.env.production` containing `VITE_API_URL=https://api.advo.ph`. Nginx serves `/var/www/advo/dist` with SPA fallback (`try_files $uri $uri/ /index.html`).
+`/opt/advo` is a `git clone https://github.com/advo-ph/advo.git` with `apps/web/.env.production` containing `VITE_API_URL=https://api.advo.ph`. Nginx serves `/var/www/advo/dist` with SPA fallback (`try_files $uri $uri/ /index.html`).
 
 ### SSL
 
@@ -195,7 +189,7 @@ sudo -u postgres pg_restore -d advo advo_YYYYMMDD.dump
 
 ## API Endpoints
 
-Full endpoint list: see `advo-api/src/routes/*.routes.ts`
+Full endpoint list: see `apps/api/src/routes/*.routes.ts`
 
 Quick reference:
 - `GET /api/health` — health check
@@ -231,7 +225,7 @@ lsof -ti :6107 | xargs kill -9    # API
 pm2 logs advo-api --lines 20
 
 # Check env
-cat /opt/advo-api/.env
+cat /opt/advo/apps/api/.env
 
 # Check DB connection
 psql -U advo -d advo -c "SELECT 1;"
@@ -241,5 +235,5 @@ psql -U advo -d advo -c "SELECT 1;"
 
 ```bash
 dropdb advo && createdb advo
-cd advo-api && npm run db:push && npm run db:seed
+npm --workspace apps/api run db:push && npm --workspace apps/api run db:seed
 ```

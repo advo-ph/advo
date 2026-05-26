@@ -42,6 +42,14 @@ Unread count badge on bell icon. Dropdown shows last 10 notifications with mark-
 
 ## Admin Panel (`/admin`)
 
+### Sidebar Navigation
+
+Fixed left sidebar (240px / 72px collapsed). Dashboard sits at the top on its own; remaining sections are grouped under four labels — **Operations** (Projects, Clients, Team, Deliverables, Availability, Finance), **Marketing Site** (Content Studio, Portfolio, Social), **Pipeline** (Leads, Notifications), **Tools** (Brand Scraper, FB Scraper). Settings is anchored to the bottom. Collapsed state replaces group labels with thin dividers to preserve visual rhythm.
+
+Admins landing on `/hub` are auto-redirected to `/admin` via `redirectAdminTo` on the route guard (post-login destination is also role-aware).
+
+**Files**: `AdminSidebar.tsx`, `ProtectedRoute.tsx`, `Login.tsx`, `useAuth.tsx`
+
 ### Dashboard
 
 Time-aware greeting ("Good morning, {name}"), today's date in mono caps, and quick-action buttons.
