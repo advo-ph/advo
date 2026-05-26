@@ -7,12 +7,14 @@ interface ProtectedRouteProps {
   requireAuth?: boolean;
   requireAdmin?: boolean;
   requireProjectAccess?: number;
+  redirectAdminTo?: string;
 }
 
 const ProtectedRoute = ({
   requireAuth = false,
   requireAdmin = false,
   requireProjectAccess,
+  redirectAdminTo,
 }: ProtectedRouteProps) => {
   const { user, isLoading: authLoading } = useAuth();
   const { isAdmin, projectIds, isLoading: rolesLoading } = useRoles();
@@ -35,6 +37,11 @@ const ProtectedRoute = ({
   // Admin check
   if (requireAdmin && !isAdmin) {
     return <Navigate to="/hub" replace />;
+  }
+
+  // Bounce admins away from client-only routes
+  if (redirectAdminTo && isAdmin) {
+    return <Navigate to={redirectAdminTo} replace />;
   }
 
   // Project access check

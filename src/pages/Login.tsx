@@ -19,8 +19,11 @@ const Login = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/hub";
+  const explicitRedirect = searchParams.get("redirectTo");
   const { login, loginWithMagicLink, verifyMagicLink } = useAuth();
+
+  const destinationFor = (role: string | undefined) =>
+    explicitRedirect ?? (role === "admin" ? "/admin" : "/hub");
 
   // Handle magic link token from URL on mount
   useState(() => {
@@ -28,12 +31,12 @@ const Login = () => {
     if (token) {
       (async () => {
         setIsLoading(true);
-        const { error } = await verifyMagicLink(token);
+        const { error, user } = await verifyMagicLink(token);
         setIsLoading(false);
         if (error) {
           toast({ variant: "destructive", title: "Error", description: error });
         } else {
-          navigate(redirectTo);
+          navigate(destinationFor(user?.role));
         }
       })();
     }
@@ -66,7 +69,7 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { error } = await login(email, password);
+    const { error, user } = await login(email, password);
 
     setIsLoading(false);
 
@@ -77,7 +80,7 @@ const Login = () => {
         description: error,
       });
     } else {
-      navigate(redirectTo);
+      navigate(destinationFor(user?.role));
     }
   };
 

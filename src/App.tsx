@@ -29,7 +29,7 @@ const App = () => (
           <Route path="/project/:slug" element={<ProjectDetail />} />
 
           {/* Protected: requires auth */}
-          <Route element={<ProtectedRoute requireAuth />}>
+          <Route element={<ProtectedRoute requireAuth redirectAdminTo="/admin" />}>
             <Route path="/hub" element={<Hub />} />
           </Route>
 

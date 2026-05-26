@@ -18,9 +18,9 @@ interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   signOut: () => Promise<void>;
-  login: (email: string, password: string) => Promise<{ error: string | null }>;
+  login: (email: string, password: string) => Promise<{ error: string | null; user: AuthUser | null }>;
   loginWithMagicLink: (email: string) => Promise<{ error: string | null }>;
-  verifyMagicLink: (token: string) => Promise<{ error: string | null }>;
+  verifyMagicLink: (token: string) => Promise<{ error: string | null; user: AuthUser | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -68,12 +68,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }>("/api/auth/login", { email, password });
 
     if (res.error || !res.data) {
-      return { error: res.error || "Login failed" };
+      return { error: res.error || "Login failed", user: null };
     }
 
     setTokens(res.data.accessToken, res.data.refreshToken);
-    setUser(mapUser(res.data.user));
-    return { error: null };
+    const mapped = mapUser(res.data.user);
+    setUser(mapped);
+    return { error: null, user: mapped };
   }, []);
 
   const loginWithMagicLink = useCallback(async (email: string) => {
@@ -89,12 +90,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }>("/api/auth/magic-link/verify", { token });
 
     if (res.error || !res.data) {
-      return { error: res.error || "Invalid magic link" };
+      return { error: res.error || "Invalid magic link", user: null };
     }
 
     setTokens(res.data.accessToken, res.data.refreshToken);
-    setUser(mapUser(res.data.user));
-    return { error: null };
+    const mapped = mapUser(res.data.user);
+    setUser(mapped);
+    return { error: null, user: mapped };
   }, []);
 
   const signOut = useCallback(async () => {
