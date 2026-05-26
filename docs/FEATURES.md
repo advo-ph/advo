@@ -259,3 +259,41 @@ All data fetching uses React Query (`@tanstack/react-query` v5). Each admin CRUD
 | Hook | Purpose |
 |------|---------|
 | `useClientData` | Client-side: projects, deliverables, invoices, assets, contacts |
+
+## Roadmap
+
+### Internal Library (planned)
+
+A MotionSites-style visual library at `/admin/library` — team-wide (not admin-only) — for pulling references into client conversations and reusing internal assets.
+
+**Item types** (single `library_item` table, `type` enum drives render):
+- `website` — reference sites with thumbnail + optional looping preview, external URL
+- `prompt` — reusable vibe-coding prompts with copy-to-clipboard
+- `module` — code modules / reusable component recipes
+- `asset` — marketing files, deck slides, brand kits (download)
+- `doc` — KT notes, runbooks (markdown body)
+
+**v1 surface**
+- Grid view with thumbnail cards, type chip, tags, hover preview
+- Filters: type chips + tag multi-select + search
+- Detail drawer per item (copy / link out / download)
+- Add Item modal with type selector → fields adjust by type
+- File storage on VPS at `/var/advo/library/`, served by nginx behind auth
+
+**Out of scope v1:** versioning, comments, collections/folders, client-facing access, AI-suggested tagging — all additive later.
+
+**Open question:** one unified grid (filter by type) vs tabs-per-type. Shipping unified first; revisit if it feels incoherent in practice.
+
+**Estimated effort:** ~3 days (schema + API + page + upload handling).
+
+### Admin UX cleanup (planned)
+
+The admin currently has 14 ungrouped sidebar items, modal-heavy CRUD, and sparse empty states. Planned, in order:
+1. **Sidebar grouping** — bucket the 14 items into Work / Content / Growth / Settings (or similar).
+2. **Modal → page** for high-field-count CRUD (Projects, Clients).
+3. **Empty-state CTAs** — every "no data" state needs a button to the relevant create action.
+4. **Hide experimental tools** (Brand Scraper, FB Scraper) behind a "Tools" submenu.
+
+### Monorepo restructure (in progress)
+
+Combine `advo` (frontend) and `advo-api` (backend) into a single npm-workspaces monorepo at `advo/apps/{web,api}/`. Eliminates the two-repo split and aligns deploys.

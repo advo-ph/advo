@@ -46,23 +46,45 @@ interface AdminSidebarProps {
   onMobileClose: () => void;
 }
 
-const navItems: { id: AdminSection; label: string; icon: React.ElementType }[] =
-  [
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { id: "projects", label: "Projects", icon: FolderKanban },
-    { id: "clients", label: "Clients", icon: Users },
-    { id: "team", label: "Team", icon: Users2 },
-    { id: "schedule", label: "Deliverables", icon: Calendar },
-    { id: "availability", label: "Availability", icon: CalendarClock },
-    { id: "social", label: "Social", icon: Instagram },
-    { id: "content", label: "Content Studio", icon: FileText },
-    { id: "portfolio", label: "Portfolio", icon: Image },
-    { id: "finance", label: "Finance", icon: Banknote },
-    { id: "notifications", label: "Notifications", icon: Bell },
-    { id: "leads", label: "Leads", icon: UserPlus },
-    { id: "brand-scraper", label: "Brand Scraper", icon: Scan },
-    { id: "fb-scraper", label: "FB Scraper", icon: BookOpen },
-  ];
+type NavItem = { id: AdminSection; label: string; icon: React.ElementType };
+
+const topItem: NavItem = { id: "dashboard", label: "Dashboard", icon: LayoutDashboard };
+
+const navGroups: { label: string; items: NavItem[] }[] = [
+  {
+    label: "Operations",
+    items: [
+      { id: "projects", label: "Projects", icon: FolderKanban },
+      { id: "clients", label: "Clients", icon: Users },
+      { id: "team", label: "Team", icon: Users2 },
+      { id: "schedule", label: "Deliverables", icon: Calendar },
+      { id: "availability", label: "Availability", icon: CalendarClock },
+      { id: "finance", label: "Finance", icon: Banknote },
+    ],
+  },
+  {
+    label: "Marketing Site",
+    items: [
+      { id: "content", label: "Content Studio", icon: FileText },
+      { id: "portfolio", label: "Portfolio", icon: Image },
+      { id: "social", label: "Social", icon: Instagram },
+    ],
+  },
+  {
+    label: "Pipeline",
+    items: [
+      { id: "leads", label: "Leads", icon: UserPlus },
+      { id: "notifications", label: "Notifications", icon: Bell },
+    ],
+  },
+  {
+    label: "Tools",
+    items: [
+      { id: "brand-scraper", label: "Brand Scraper", icon: Scan },
+      { id: "fb-scraper", label: "FB Scraper", icon: BookOpen },
+    ],
+  },
+];
 
 const AdminSidebar = ({
   activeSection,
@@ -107,34 +129,55 @@ const AdminSidebar = ({
         )}
       >
         {/* Navigation */}
-        <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
-          {navItems.map((item) => {
-            const isActive = activeSection === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleSectionChange(item.id)}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all",
-                  isActive
-                    ? "bg-accent/10 text-accent"
-                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
-                )}
-              >
-                <item.icon
+        <nav className="flex-1 p-3 overflow-y-auto">
+          {(() => {
+            const renderItem = (item: NavItem) => {
+              const isActive = activeSection === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleSectionChange(item.id)}
                   className={cn(
-                    "h-5 w-5 flex-shrink-0",
-                    isActive && "text-accent",
+                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all",
+                    isActive
+                      ? "bg-accent/10 text-accent"
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
                   )}
-                />
-                {!isCollapsed && (
-                  <span className="text-sm font-medium truncate">
-                    {item.label}
-                  </span>
-                )}
-              </button>
+                >
+                  <item.icon
+                    className={cn(
+                      "h-5 w-5 flex-shrink-0",
+                      isActive && "text-accent",
+                    )}
+                  />
+                  {!isCollapsed && (
+                    <span className="text-sm font-medium truncate">
+                      {item.label}
+                    </span>
+                  )}
+                </button>
+              );
+            };
+
+            return (
+              <>
+                <div className="space-y-1">{renderItem(topItem)}</div>
+                {navGroups.map((group) => (
+                  <div key={group.label} className="mt-5 space-y-1">
+                    {!isCollapsed && (
+                      <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                        {group.label}
+                      </div>
+                    )}
+                    {isCollapsed && (
+                      <div className="mx-3 mb-1 h-px bg-border/50" />
+                    )}
+                    {group.items.map(renderItem)}
+                  </div>
+                ))}
+              </>
             );
-          })}
+          })()}
         </nav>
 
         {/* Settings & Collapse */}

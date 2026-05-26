@@ -504,7 +504,7 @@ const AdminPortfolio = () => {
                 onChange={(e) =>
                   setFormData({ ...formData, tech_stack: e.target.value })
                 }
-                placeholder="Next.js, Supabase, Tailwind"
+                placeholder="React, Postgres, Tailwind"
               />
             </div>
 

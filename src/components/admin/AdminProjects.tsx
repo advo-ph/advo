@@ -477,7 +477,7 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
               <Input
                 value={formData.tech_stack}
                 onChange={(e) => setFormData({ ...formData, tech_stack: e.target.value })}
-                placeholder="Next.js, Supabase, Stripe"
+                placeholder="React, Postgres, Stripe"
               />
             </div>
 
