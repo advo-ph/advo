@@ -42,9 +42,16 @@ pm2 save
 # 7. Verify API health (downtime ends)
 curl -fsS http://localhost:6107/api/health
 
-# 8. Build + deploy frontend
+# 8. Move .env.production into apps/web/ — Vite looks for it relative
+#    to the workspace it builds from, not the monorepo root
+cp /opt/advo/.env.production /opt/advo/apps/web/.env.production
+
+# 9. Build + deploy frontend
 cd /opt/advo && npm run build:web
 rsync -a --delete apps/web/dist/ /var/www/advo/dist/
+
+# 10. Sanity check: the bundle must reference the prod API URL
+grep -o "api\.advo\.ph" /var/www/advo/dist/assets/index-*.js | head -1
 ```
 
 ## What was preserved without action
