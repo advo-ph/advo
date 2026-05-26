@@ -105,37 +105,27 @@ All tokens in `src/index.css`, Tailwind config in `tailwind.config.ts`.
 
 ## Quick Start
 
-### 1. API
-
-```bash
-cd advo-api
-cp .env.example .env     # Edit with your DB credentials
-npm install
-npm run db:push           # Create tables
-npm run db:seed           # Seed defaults
-npm run dev               # Starts on port 6107
-```
-
-### 2. Frontend
-
 ```bash
 cd advo
-npm install
-npm run dev               # Starts on port 6100
+cp apps/api/.env.example apps/api/.env   # Edit with your DB credentials
+npm install                              # Installs both workspaces
+npm --workspace apps/api run db:push     # Create tables
+npm --workspace apps/api run db:seed     # Seed defaults
+npm run dev                              # Starts web (6100) + api (6107) together
 ```
 
 Default login: `admin@advo.ph` / `changeme`
 
 ## Environment Variables
 
-### Frontend (`advo/.env`)
+### Frontend (`apps/web/.env`)
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `VITE_API_URL` | Yes | API base URL (`http://localhost:6107` or `https://api.advo.ph`) |
 | `VITE_GITHUB_TOKEN` | No | GitHub PAT for commit history |
 
-### API (`advo-api/.env`)
+### API (`apps/api/.env`)
 
 | Variable | Required | Description |
 |----------|----------|-------------|
@@ -149,11 +139,11 @@ Default login: `admin@advo.ph` / `changeme`
 ## Deployment
 
 ```bash
-# Frontend — build on VPS from git, deploy to /var/www/advo/dist:
-ssh advo "cd /opt/advo && git pull && npm install && npm run build && rsync -a --delete dist/ /var/www/advo/dist/"
+# Frontend — build on VPS from monorepo, deploy to /var/www/advo/dist:
+ssh advo "cd /opt/advo && git pull && npm install && npm run build:web && rsync -a --delete apps/web/dist/ /var/www/advo/dist/"
 
 # API:
-cd advo-api && ./deploy.sh root@advo
+cd apps/api && ./deploy.sh root@advo
 
 # Manual DB backup (automated nightly at 3am via cron):
 ssh advo "sudo -u postgres pg_dump -Fc advo > /var/backups/advo/advo_$(date +%Y%m%d).dump"
@@ -164,32 +154,31 @@ ssh advo "sudo -u postgres pg_dump -Fc advo > /var/backups/advo/advo_$(date +%Y%
 ## Project Structure
 
 ```
-advo/                          # Frontend (React/Vite)
-├── src/
-│   ├── components/
-│   │   ├── admin/             # Admin panel components — pure UI, hooks own data
-│   │   ├── hub/               # Client dashboard components
-│   │   ├── landing/           # Landing page sections
-│   │   └── ui/                # Shadcn components + Section primitives
-│   ├── pages/                 # Index, Login, Hub, Admin, Start, Team
-│   ├── hooks/                 # React Query data hooks (one per resource)
-│   ├── lib/                   # api.ts, github.ts, notifications.ts
-│   └── test/                  # 68 integration tests (api-wiring + e2e-flow)
-├── public/team/               # Optimized team photos
-└── docs/                      # SCHEMA, FEATURES, SETUP
-
-advo-api/                      # Backend (Hono/Node)
-├── src/
-│   ├── db/                    # schema.ts, connection.ts, seed.ts (Drizzle)
-│   ├── middleware/            # auth, rbac, requestId
-│   ├── routes/                # 13 route files (37 endpoints)
-│   ├── services/              # auth, email
-│   ├── vendor/                # easydiv-detector.js (component scanner)
-│   └── utils/                 # env, logger
-├── deploy.sh                  # VPS deployment script
-├── ecosystem.config.cjs       # PM2 config
-├── nginx.conf                 # Nginx reverse proxy config
-└── backup.sh                  # Daily DB backup script
+advo/                          # Monorepo root (npm workspaces)
+├── apps/
+│   ├── web/                   # Frontend (React/Vite)
+│   │   ├── src/
+│   │   │   ├── components/{admin,hub,landing,ui}/
+│   │   │   ├── pages/         # Index, Login, Hub, Admin, Start, Team
+│   │   │   ├── hooks/         # React Query data hooks (one per resource)
+│   │   │   ├── lib/           # api.ts, github.ts, notifications.ts
+│   │   │   └── test/          # 68 integration tests
+│   │   └── public/team/       # Optimized team photos
+│   └── api/                   # Backend (Hono/Node)
+│       ├── src/
+│       │   ├── db/            # schema.ts, connection.ts, seed.ts (Drizzle)
+│       │   ├── middleware/    # auth, rbac, requestId
+│       │   ├── routes/        # 13 route files (37 endpoints)
+│       │   ├── services/      # auth, email
+│       │   ├── vendor/        # easydiv-detector.js (component scanner)
+│       │   └── utils/         # env, logger
+│       ├── deploy.sh          # VPS deployment script
+│       ├── ecosystem.config.cjs  # PM2 config
+│       ├── nginx.conf         # Nginx reverse proxy config
+│       └── backup.sh          # Daily DB backup script
+├── docs/                      # SCHEMA, FEATURES, SETUP — shared docs
+├── scripts/                   # test-local.sh, combine-media.sh
+└── package.json               # Workspace root
 ```
 
 ## Data Architecture

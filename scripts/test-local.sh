@@ -8,7 +8,7 @@
 
 set -euo pipefail
 
-API_DIR="$(cd "$(dirname "$0")/../../advo-api" && pwd)"
+API_DIR="$(cd "$(dirname "$0")/../apps/api" && pwd)"
 API_URL="http://localhost:6107"
 LOG_FILE="/tmp/advo-api-test.log"
 
