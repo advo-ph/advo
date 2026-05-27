@@ -10,6 +10,8 @@ import {
   Camera,
   Github,
   GripVertical,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,7 +47,11 @@ const AdminTeam = () => {
   const [localOrder, setLocalOrder] = useState<TeamMember[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const displayMembers = localOrder || members;
+  const allMembers = localOrder || members;
+  const displayMembers = showInactive ? allMembers : allMembers.filter((m) => m.is_active);
+  const inactiveCount = allMembers.filter((m) => !m.is_active).length;
+
+  const [showInactive, setShowInactive] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -55,6 +61,7 @@ const AdminTeam = () => {
     bio: "",
     linkedin_url: "",
     github_url: "",
+    is_active: true,
   });
 
   const handleDragStart = (idx: number) => setDraggedIdx(idx);
@@ -79,7 +86,7 @@ const AdminTeam = () => {
 
   const openCreateDialog = () => {
     setEditingMember(null);
-    setFormData({ name: "", role: "", email: "", avatar_url: "", bio: "", linkedin_url: "", github_url: "" });
+    setFormData({ name: "", role: "", email: "", avatar_url: "", bio: "", linkedin_url: "", github_url: "", is_active: true });
     setIsDialogOpen(true);
   };
 
@@ -93,6 +100,7 @@ const AdminTeam = () => {
       bio: member.bio || "",
       linkedin_url: member.linkedin_url || "",
       github_url: member.github_url || "",
+      is_active: member.is_active,
     });
     setIsDialogOpen(true);
   };
@@ -136,6 +144,7 @@ const AdminTeam = () => {
       bio: formData.bio || null,
       linkedin_url: formData.linkedin_url || null,
       github_url: formData.github_url || null,
+      is_active: formData.is_active,
     };
 
     setIsDialogOpen(false);
@@ -160,10 +169,23 @@ const AdminTeam = () => {
           <h1 className="text-2xl font-bold mb-2">Team</h1>
           <p className="text-muted-foreground">Manage team members — drag to reorder</p>
         </div>
-        <Button onClick={openCreateDialog} className="rounded-full bg-foreground text-background hover:bg-foreground/90">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Member
-        </Button>
+        <div className="flex items-center gap-2">
+          {inactiveCount > 0 && (
+            <Button
+              variant={showInactive ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowInactive(!showInactive)}
+              className="gap-1.5"
+            >
+              {showInactive ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+              {inactiveCount} inactive
+            </Button>
+          )}
+          <Button onClick={openCreateDialog} className="rounded-full bg-foreground text-background hover:bg-foreground/90">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Member
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -281,6 +303,29 @@ const AdminTeam = () => {
                 <label className="text-sm font-medium">GitHub URL</label>
                 <Input value={formData.github_url} onChange={(e) => setFormData({ ...formData, github_url: e.target.value })} placeholder="https://github.com/..." />
               </div>
+            </div>
+
+            {/* Active / Inactive toggle */}
+            <div className="flex items-center justify-between pt-2 border-t border-border">
+              <div>
+                <p className="text-sm font-medium">Status</p>
+                <p className="text-xs text-muted-foreground">
+                  Inactive members are hidden from all admin views
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant={formData.is_active ? "default" : "outline"}
+                size="sm"
+                onClick={() => setFormData({ ...formData, is_active: !formData.is_active })}
+                className="gap-1.5"
+              >
+                {formData.is_active ? (
+                  <><Eye className="h-3.5 w-3.5" /> Active</>
+                ) : (
+                  <><EyeOff className="h-3.5 w-3.5" /> Inactive</>
+                )}
+              </Button>
             </div>
           </div>
           <DialogFooter>

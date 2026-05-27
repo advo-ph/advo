@@ -45,10 +45,10 @@ team.get("/:id", optionalAuth, async (c) => {
 const createSchema = z.object({
   name: z.string().min(1).max(255),
   role: z.string().min(1).max(100),
-  email: z.string().email().max(255).optional(),
-  bio: z.string().max(2000).optional(),
-  linkedinUrl: z.string().url().max(500).optional(),
-  githubUrl: z.string().url().max(500).optional(),
+  email: z.string().email().max(255).nullish(),
+  bio: z.string().max(2000).nullish(),
+  linkedinUrl: z.string().url().max(500).nullish(),
+  githubUrl: z.string().url().max(500).nullish(),
   permissionRole: z.enum(["admin", "developer", "designer", "manager"]).optional(),
   isActive: z.boolean().optional(),
 });

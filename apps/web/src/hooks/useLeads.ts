@@ -59,10 +59,12 @@ async function fetchLeadsData(): Promise<LeadsData> {
 
   return {
     leads: (leadsRes.data || []).map(mapLead),
-    teamMembers: (teamRes.data || []).map((t: Record<string, unknown>) => ({
-      team_member_id: (t.teamMemberId ?? t.team_member_id) as number,
-      name: t.name as string,
-    })),
+    teamMembers: (teamRes.data || [])
+      .filter((t: Record<string, unknown>) => Boolean(t.isActive ?? t.is_active ?? true))
+      .map((t: Record<string, unknown>) => ({
+        team_member_id: (t.teamMemberId ?? t.team_member_id) as number,
+        name: t.name as string,
+      })),
   };
 }
 

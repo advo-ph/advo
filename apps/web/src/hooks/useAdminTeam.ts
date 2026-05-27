@@ -36,17 +36,19 @@ export interface TeamMemberInput {
   bio?: string | null;
   linkedin_url?: string | null;
   github_url?: string | null;
+  is_active?: boolean;
 }
 
 function toApiPayload(input: TeamMemberInput) {
   return {
     name: input.name,
     role: input.role,
-    email: input.email || null,
-    avatarUrl: input.avatar_url || null,
-    bio: input.bio || null,
-    linkedinUrl: input.linkedin_url || null,
-    githubUrl: input.github_url || null,
+    email: input.email || undefined,
+    avatarUrl: input.avatar_url || undefined,
+    bio: input.bio || undefined,
+    linkedinUrl: input.linkedin_url || undefined,
+    githubUrl: input.github_url || undefined,
+    ...(input.is_active !== undefined && { isActive: input.is_active }),
   };
 }
 
@@ -132,8 +134,11 @@ export function useAdminTeam() {
     onSuccess: () => toast({ title: "Order saved" }),
   });
 
+  const activeMembers = members.filter((m) => m.is_active);
+
   return {
     members,
+    activeMembers,
     isLoading,
     createMember: createMutation.mutateAsync,
     updateMember: (id: number, input: TeamMemberInput) =>

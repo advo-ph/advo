@@ -44,7 +44,7 @@ import {
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const FULL_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const HOURS = Array.from({ length: 16 }, (_, i) => i + 6); // 6am to 9pm
+const HOURS = Array.from({ length: 24 }, (_, i) => i); // 12am to 11pm
 
 const blockTypeConfig: Record<BlockType, { label: string; color: string; bgColor: string; icon: React.ElementType }> = {
   school: { label: "School/Class", color: "text-blue-500", bgColor: "bg-blue-500/20 border-blue-500/30", icon: School },
@@ -55,7 +55,7 @@ const blockTypeConfig: Record<BlockType, { label: string; color: string; bgColor
 
 const AdminAvailability = () => {
   const { toast } = useToast();
-  const { members: teamMembers, isLoading: teamLoading } = useAdminTeam();
+  const { activeMembers: teamMembers, isLoading: teamLoading } = useAdminTeam();
   const {
     blocks,
     isLoading: blocksLoading,
@@ -388,7 +388,7 @@ const AdminAvailability = () => {
             <div key={hour} className="contents">
               {/* Hour Label */}
               <div className="p-2 text-xs text-muted-foreground text-right pr-3 border-t border-border bg-secondary/30">
-                {hour > 12 ? `${hour - 12}pm` : hour === 12 ? "12pm" : `${hour}am`}
+                {hour === 0 ? "12am" : hour > 12 ? `${hour - 12}pm` : hour === 12 ? "12pm" : `${hour}am`}
               </div>
               
               {/* Day Cells */}

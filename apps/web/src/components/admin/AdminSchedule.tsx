@@ -18,7 +18,7 @@ const statusConfig: Record<DeliverableStatus, { label: string; color: string; ic
 };
 
 const AdminSchedule = () => {
-  const { members: teamMembers, isLoading: teamLoading } = useAdminTeam();
+  const { activeMembers: teamMembers, isLoading: teamLoading } = useAdminTeam();
   const { deliverables, isLoading: deliverablesLoading } = useAdminDeliverables();
   const isLoading = teamLoading || deliverablesLoading;
   const [selectedMember, setSelectedMember] = useState<number | null>(null);
