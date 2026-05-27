@@ -175,14 +175,14 @@ export async function getClients(): Promise<DbResult<Client[]>> {
 export async function createClient(client: {
   user_id?: string;
   company_name: string;
-  contact_email: string;
+  contact_email?: string;
   github_org_name?: string | null;
   brand_color_hex?: string;
 }): Promise<DbResult<null>> {
   const res = await post("/api/clients", {
     companyName: client.company_name,
-    contactEmail: client.contact_email,
-    githubOrgName: client.github_org_name,
+    contactEmail: client.contact_email || undefined,
+    githubOrgName: client.github_org_name || undefined,
     brandColorHex: client.brand_color_hex,
   });
   return { data: null, error: res.error };

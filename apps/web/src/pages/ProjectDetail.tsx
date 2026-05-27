@@ -8,6 +8,8 @@ import FloatingNav from "@/components/landing/FloatingNav";
 import Footer from "@/components/landing/Footer";
 import { get } from "@/lib/api";
 
+const isVideoUrl = (url: string) => /\.(mp4|webm|mov|ogg|ogv|m4v)(\?|$)/i.test(url);
+
 interface CaseStudy {
   overview?: string;
   challenge?: string;
@@ -155,11 +157,21 @@ const ProjectDetail = () => {
               className="mb-16"
             >
               <div className="aspect-video bg-secondary rounded-xl overflow-hidden border border-border">
-                <img 
-                  src={heroImage} 
-                  alt={project.title}
-                  className="w-full h-full object-cover object-top"
-                />
+                {isVideoUrl(heroImage) ? (
+                  <video
+                    src={heroImage}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    className="w-full h-full object-cover object-top"
+                  />
+                ) : (
+                  <img
+                    src={heroImage}
+                    alt={project.title}
+                    className="w-full h-full object-cover object-top"
+                  />
+                )}
               </div>
             </motion.div>
           )}

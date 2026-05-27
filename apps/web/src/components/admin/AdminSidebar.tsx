@@ -17,8 +17,11 @@ import {
   ChevronRight,
   Scan,
   BookOpen,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/hooks/useTheme";
 
 export type AdminSection =
   | "dashboard"
@@ -94,6 +97,8 @@ const AdminSidebar = ({
   isMobileOpen,
   onMobileClose,
 }: AdminSidebarProps) => {
+  const { theme, toggle: toggleTheme } = useTheme();
+
   const handleSectionChange = (s: AdminSection) => {
     onSectionChange(s);
     onMobileClose();
@@ -180,8 +185,24 @@ const AdminSidebar = ({
           })()}
         </nav>
 
-        {/* Settings & Collapse */}
+        {/* Theme toggle, Settings & Collapse */}
         <div className="p-3 border-t border-border space-y-1">
+          <button
+            onClick={toggleTheme}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+          >
+            {theme === "dark" ? (
+              <Sun className="h-5 w-5 flex-shrink-0" />
+            ) : (
+              <Moon className="h-5 w-5 flex-shrink-0" />
+            )}
+            {!isCollapsed && (
+              <span className="text-sm font-medium">
+                {theme === "dark" ? "Light Mode" : "Dark Mode"}
+              </span>
+            )}
+          </button>
+
           <button
             onClick={() => handleSectionChange("settings")}
             className={cn(

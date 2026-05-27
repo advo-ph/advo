@@ -24,11 +24,15 @@ const ALLOWED_TYPES = new Set([
   "image/heif",
   "image/avif",
   "application/pdf",
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
+  "video/ogg",
 ]);
 
 const BUCKET_LIMITS: Record<string, number> = {
   avatars: 5 * 1024 * 1024, // 5MB
-  portfolio: 10 * 1024 * 1024, // 10MB
+  portfolio: 100 * 1024 * 1024, // 100MB
   assets: 25 * 1024 * 1024, // 25MB
 };
 

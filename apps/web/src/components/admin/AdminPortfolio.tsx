@@ -11,7 +11,7 @@ import {
   ExternalLink,
   Upload,
   GripVertical,
-  ImagePlus,
+  Film,
   ChevronDown,
   ChevronUp,
   BookOpen,
@@ -45,16 +45,18 @@ import {
   type PortfolioProject,
 } from "@/hooks/useAdminPortfolio";
 
-/* ─── Drag-and-drop image list ──────────────────── */
+/* ─── Drag-and-drop media list ──────────────────── */
 
-const ImageList = ({
-  images,
+const isVideoUrl = (url: string) => /\.(mp4|webm|mov|ogg|ogv|m4v)(\?|$)/i.test(url);
+
+const MediaList = ({
+  items,
   onChange,
   onUpload,
   isUploading,
 }: {
-  images: string[];
-  onChange: (imgs: string[]) => void;
+  items: string[];
+  onChange: (urls: string[]) => void;
   onUpload: (file: File) => void;
   isUploading: boolean;
 }) => {
@@ -68,7 +70,7 @@ const ImageList = ({
   const handleDragOver = (e: React.DragEvent, idx: number) => {
     e.preventDefault();
     if (dragIdx === null || dragIdx === idx) return;
-    const next = [...images];
+    const next = [...items];
     const [moved] = next.splice(dragIdx, 1);
     next.splice(idx, 0, moved);
     onChange(next);
@@ -79,19 +81,19 @@ const ImageList = ({
     setDragIdx(null);
   };
 
-  const removeImage = (idx: number) => {
-    onChange(images.filter((_, i) => i !== idx));
+  const removeItem = (idx: number) => {
+    onChange(items.filter((_, i) => i !== idx));
   };
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium">Images</label>
+      <label className="text-sm font-medium">Media</label>
       <p className="text-xs text-muted-foreground">
-        First image is the main thumbnail. Drag to reorder.
+        First item is the main thumbnail. Drag to reorder.
       </p>
 
       <div className="grid grid-cols-3 gap-2">
-        {images.map((url, idx) => (
+        {items.map((url, idx) => (
           <div
             key={`${url}-${idx}`}
             draggable
@@ -104,12 +106,26 @@ const ImageList = ({
                 : "border-border"
             } ${dragIdx === idx ? "opacity-50" : ""}`}
           >
-            <img
-              src={url}
-              alt={`Image ${idx + 1}`}
-              className="w-full h-full object-cover"
-              draggable={false}
-            />
+            {isVideoUrl(url) ? (
+              <>
+                <video
+                  src={url}
+                  muted
+                  playsInline
+                  preload="metadata"
+                  className="w-full h-full object-cover"
+                  draggable={false}
+                />
+                <Film className="absolute bottom-1 right-1 h-3.5 w-3.5 text-white drop-shadow" />
+              </>
+            ) : (
+              <img
+                src={url}
+                alt={`Media ${idx + 1}`}
+                className="w-full h-full object-cover"
+                draggable={false}
+              />
+            )}
             {idx === 0 && (
               <Badge className="absolute top-1 left-1 text-[9px] bg-accent text-white px-1.5 py-0">
                 ★ Main
@@ -118,7 +134,7 @@ const ImageList = ({
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
               <GripVertical className="h-4 w-4 text-white" />
               <button
-                onClick={() => removeImage(idx)}
+                onClick={() => removeItem(idx)}
                 className="p-1 rounded-full bg-destructive/80 hover:bg-destructive"
               >
                 <X className="h-3 w-3 text-white" />
@@ -127,7 +143,6 @@ const ImageList = ({
           </div>
         ))}
 
-        {/* Add image button */}
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={isUploading}
@@ -137,8 +152,8 @@ const ImageList = ({
             <Loader2 className="h-5 w-5 text-muted-foreground animate-spin" />
           ) : (
             <>
-              <ImagePlus className="h-5 w-5 text-muted-foreground mb-1" />
-              <span className="text-[10px] text-muted-foreground">Add image</span>
+              <Upload className="h-5 w-5 text-muted-foreground mb-1" />
+              <span className="text-[10px] text-muted-foreground">Add media</span>
             </>
           )}
         </button>
@@ -147,7 +162,7 @@ const ImageList = ({
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,video/mp4,video/webm,video/quicktime,video/ogg"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
@@ -247,13 +262,14 @@ const AdminPortfolio = () => {
     setIsDialogOpen(true);
   };
 
-  const handleImageUpload = async (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      toast({ title: "Error", description: "Please select an image file", variant: "destructive" });
+  const handleMediaUpload = async (file: File) => {
+    if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) {
+      toast({ title: "Error", description: "Please select an image or video file", variant: "destructive" });
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      toast({ title: "Error", description: "Image must be under 10MB", variant: "destructive" });
+    const limit = file.type.startsWith("video/") ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > limit) {
+      toast({ title: "Error", description: `File must be under ${limit / (1024 * 1024)}MB`, variant: "destructive" });
       return;
     }
 
@@ -272,7 +288,7 @@ const AdminPortfolio = () => {
       image_urls: [...prev.image_urls, result.url],
     }));
     setIsUploading(false);
-    toast({ title: "Uploaded", description: "Image added" });
+    toast({ title: "Uploaded", description: file.type.startsWith("video/") ? "Video added" : "Image added" });
   };
 
   const handleSave = async () => {
@@ -364,17 +380,20 @@ const AdminPortfolio = () => {
               <div className="flex items-center gap-4">
                 {/* Thumbnail */}
                 <div className="w-16 h-12 rounded-lg bg-secondary overflow-hidden flex-shrink-0">
-                  {(project.image_urls?.[0] || project.image_url) ? (
-                    <img
-                      src={project.image_urls?.[0] || project.image_url || ""}
-                      alt={project.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
-                      No img
-                    </div>
-                  )}
+                  {(() => {
+                    const thumb = project.image_urls?.[0] || project.image_url;
+                    if (!thumb) return (
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+                        No media
+                      </div>
+                    );
+                    if (isVideoUrl(thumb)) return (
+                      <video src={thumb} muted playsInline preload="metadata" className="w-full h-full object-cover" />
+                    );
+                    return (
+                      <img src={thumb} alt={project.title} className="w-full h-full object-cover" />
+                    );
+                  })()}
                 </div>
 
                 <div>
@@ -391,7 +410,7 @@ const AdminPortfolio = () => {
                     </span>
                     {(project.image_urls?.length || 0) > 1 && (
                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                        {project.image_urls!.length} images
+                        {project.image_urls!.length} media
                       </Badge>
                     )}
                   </div>
@@ -476,11 +495,11 @@ const AdminPortfolio = () => {
               />
             </div>
 
-            {/* Multi-image upload */}
-            <ImageList
-              images={formData.image_urls}
-              onChange={(imgs) => setFormData({ ...formData, image_urls: imgs })}
-              onUpload={handleImageUpload}
+            {/* Media upload (images + videos) */}
+            <MediaList
+              items={formData.image_urls}
+              onChange={(urls) => setFormData({ ...formData, image_urls: urls })}
+              onUpload={handleMediaUpload}
               isUploading={isUploading}
             />
 

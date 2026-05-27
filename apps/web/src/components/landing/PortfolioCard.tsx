@@ -2,6 +2,8 @@ import { ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 
+const isVideoUrl = (url: string) => /\.(mp4|webm|mov|ogg|ogv|m4v)(\?|$)/i.test(url);
+
 interface PortfolioCardProps {
   title: string;
   description: string;
@@ -27,11 +29,21 @@ const PortfolioCard = ({
       <Link to={`/project/${projectSlug}`} className="block">
         <div className="aspect-video bg-secondary/40 flex items-center justify-center relative overflow-hidden">
           {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={title}
-              className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]"
-            />
+            isVideoUrl(imageUrl) ? (
+              <video
+                src={imageUrl}
+                muted
+                playsInline
+                preload="metadata"
+                className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]"
+              />
+            ) : (
+              <img
+                src={imageUrl}
+                alt={title}
+                className="w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]"
+              />
+            )
           ) : (
             <span className="font-mono text-5xl font-semibold text-muted-foreground/20">
               {title.charAt(0)}

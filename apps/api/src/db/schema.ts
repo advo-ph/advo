@@ -118,7 +118,7 @@ export const client = pgTable(
     clientId: bigserial("client_id", { mode: "number" }).primaryKey(),
     userId: integer("user_id").references(() => user.userId),
     companyName: varchar("company_name", { length: 255 }).notNull(),
-    contactEmail: varchar("contact_email", { length: 255 }).notNull(),
+    contactEmail: varchar("contact_email", { length: 255 }),
     githubOrgName: varchar("github_org_name", { length: 100 }),
     brandColorHex: varchar("brand_color_hex", { length: 7 }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

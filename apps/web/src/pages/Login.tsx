@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Mail, ArrowRight, Loader2, Lock, Eye, EyeOff } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -20,10 +20,16 @@ const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const explicitRedirect = searchParams.get("redirectTo");
-  const { login, loginWithMagicLink, verifyMagicLink } = useAuth();
+  const { user, isLoading: authLoading, login, loginWithMagicLink, verifyMagicLink } = useAuth();
 
   const destinationFor = (role: string | undefined) =>
     explicitRedirect ?? (role === "admin" ? "/admin" : "/hub");
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate(destinationFor(user.role), { replace: true });
+    }
+  }, [authLoading, user, navigate]);
 
   // Handle magic link token from URL on mount
   useState(() => {

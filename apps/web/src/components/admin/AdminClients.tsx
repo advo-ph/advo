@@ -109,8 +109,8 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
   };
 
   const handleSave = async () => {
-    if (!formData.company_name || !formData.contact_email) {
-      toast({ title: "Error", description: "Company name and email are required", variant: "destructive" });
+    if (!formData.company_name) {
+      toast({ title: "Error", description: "Company name is required", variant: "destructive" });
       return;
     }
 
@@ -119,7 +119,7 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
     if (editingClient) {
       const { error } = await db.updateClient(editingClient.client_id, {
           company_name: formData.company_name,
-          contact_email: formData.contact_email,
+          contact_email: formData.contact_email || undefined,
           github_org_name: formData.github_org_name || null,
           brand_color_hex: formData.brand_color_hex,
         });
@@ -136,7 +136,7 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
       const { error } = await db.createClient({
         user_id: user?.id,
         company_name: formData.company_name,
-        contact_email: formData.contact_email,
+        contact_email: formData.contact_email || undefined,
         github_org_name: formData.github_org_name || null,
         brand_color_hex: formData.brand_color_hex,
       });

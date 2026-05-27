@@ -101,7 +101,8 @@ export async function api<T>(
   const json = await res.json();
 
   if (!res.ok) {
-    return { data: null as T, error: json.error || `HTTP ${res.status}` };
+    const errMsg = typeof json.error === "string" ? json.error : json.error?.message || json.message || `HTTP ${res.status}`;
+    return { data: null as T, error: errMsg };
   }
 
   return json as ApiResponse<T>;

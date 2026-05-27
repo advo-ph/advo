@@ -93,7 +93,7 @@ notifications.post("/", requireAdmin, zValidator("json", sendSchema), async (c) 
       .where(eq(client.clientId, data.clientId))
       .limit(1);
 
-    if (cl) {
+    if (cl?.contactEmail) {
       await sendNotificationEmail(cl.contactEmail, data.title, data.body || "");
     }
   }
@@ -133,7 +133,7 @@ notifications.post(
 
       created.push(n);
 
-      if (data.sendEmail) {
+      if (data.sendEmail && cl.contactEmail) {
         await sendNotificationEmail(cl.contactEmail, data.title, data.body || "");
       }
     }

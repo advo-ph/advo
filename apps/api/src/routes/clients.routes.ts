@@ -53,9 +53,9 @@ clients.get("/:id", async (c) => {
 
 const createSchema = z.object({
   companyName: z.string().min(1).max(255),
-  contactEmail: z.string().email().max(255),
-  githubOrgName: z.string().max(100).optional(),
-  brandColorHex: z.string().max(7).optional(),
+  contactEmail: z.string().email().max(255).nullish(),
+  githubOrgName: z.string().max(100).nullish(),
+  brandColorHex: z.string().max(7).nullish(),
 });
 
 clients.post("/", requireAdmin, zValidator("json", createSchema), async (c) => {
@@ -106,16 +106,21 @@ clients.post("/:id/invite", requireAdmin, async (c) => {
     .limit(1);
 
   if (!existing) throw new HTTPException(404, { message: "Client not found" });
+  if (!existing.contactEmail) {
+    throw new HTTPException(400, { message: "Client has no contact email" });
+  }
   if (existing.userId) {
     throw new HTTPException(409, { message: "Client already has an account" });
   }
+
+  const contactEmail = existing.contactEmail;
 
   // If a user with this email already exists (e.g. left over from a previous
   // invite or seeded), link to it instead of failing on the unique constraint.
   const [existingUser] = await d
     .select()
     .from(user)
-    .where(eq(user.email, existing.contactEmail))
+    .where(eq(user.email, contactEmail))
     .limit(1);
 
   let newUser: typeof user.$inferSelect;
@@ -129,7 +134,7 @@ clients.post("/:id/invite", requireAdmin, async (c) => {
     [newUser] = await d
       .insert(user)
       .values({
-        email: existing.contactEmail,
+        email: contactEmail,
         passwordHash,
         role: "client",
       })
@@ -143,7 +148,7 @@ clients.post("/:id/invite", requireAdmin, async (c) => {
 
   // Fire-and-forget — account creation already succeeded, don't fail the
   // request if SMTP is misconfigured (e.g. no RESEND_API_KEY locally).
-  sendWelcomeEmail(existing.contactEmail, tempPassword).catch((err) => {
+  sendWelcomeEmail(contactEmail, tempPassword).catch((err) => {
     console.error("[invite] welcome email failed:", err);
   });
 
