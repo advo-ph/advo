@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminData } from "@/hooks/useAdminData";
 import { useOrgProjects } from "@/hooks/useOrgProjects";
+import { useTheme } from "@/hooks/useTheme";
 import { formatCurrency } from "@/types/admin";
 
 // Admin Components
@@ -29,6 +30,7 @@ import AdminFacebookScraper from "@/components/admin/AdminFacebookScraper";
 const Admin = () => {
   const { user, isLoading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
+  const { theme, toggle: toggleTheme } = useTheme(user?.userId);
 
   // Layout state
   const [activeSection, setActiveSection] = useState<AdminSection>("dashboard");
@@ -62,7 +64,7 @@ const Admin = () => {
   const sidebarWidth = isSidebarCollapsed ? 72 : 240;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen bg-background${theme === "light" ? " admin-light" : ""}`}>
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
@@ -80,7 +82,7 @@ const Admin = () => {
               <img
                 src="/advo-logo-black.png"
                 alt="ADVO"
-                className="h-5 sm:h-6 w-auto invert"
+                className={`h-5 sm:h-6 w-auto${theme === "dark" ? " invert" : ""}`}
               />
             </Link>
             <Badge className="hidden sm:inline-flex font-mono text-xs bg-accent/10 text-accent border-accent/30 hover:bg-accent/20">
@@ -113,6 +115,8 @@ const Admin = () => {
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         isMobileOpen={isMobileMenuOpen}
         onMobileClose={() => setIsMobileMenuOpen(false)}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {/* Main Content */}

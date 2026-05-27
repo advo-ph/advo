@@ -1,36 +1,23 @@
-import { useCallback, useSyncExternalStore } from "react";
+import { useState, useEffect, useCallback } from "react";
 
-const STORAGE_KEY = "advo-theme";
 type Theme = "dark" | "light";
 
-function getTheme(): Theme {
-  return localStorage.getItem(STORAGE_KEY) === "light" ? "light" : "dark";
-}
+export function useTheme(userId: number | undefined) {
+  const [theme, setTheme] = useState<Theme>("dark");
 
-function applyTheme(theme: Theme) {
-  document.documentElement.classList.toggle("light", theme === "light");
-}
+  useEffect(() => {
+    if (!userId) return;
+    const saved = localStorage.getItem(`advo-theme-${userId}`);
+    if (saved === "light") setTheme("light");
+  }, [userId]);
 
-let listeners: Array<() => void> = [];
-function subscribe(cb: () => void) {
-  listeners.push(cb);
-  return () => {
-    listeners = listeners.filter((l) => l !== cb);
-  };
-}
-
-function setTheme(theme: Theme) {
-  localStorage.setItem(STORAGE_KEY, theme);
-  applyTheme(theme);
-  listeners.forEach((l) => l());
-}
-
-applyTheme(getTheme());
-
-export function useTheme() {
-  const theme = useSyncExternalStore(subscribe, getTheme);
   const toggle = useCallback(() => {
-    setTheme(theme === "dark" ? "light" : "dark");
-  }, [theme]);
+    setTheme((prev) => {
+      const next = prev === "dark" ? "light" : "dark";
+      if (userId) localStorage.setItem(`advo-theme-${userId}`, next);
+      return next;
+    });
+  }, [userId]);
+
   return { theme, toggle } as const;
 }

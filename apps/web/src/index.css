@@ -51,7 +51,7 @@
     --sidebar-ring: 0 0% 98%;
   }
 
-  html.light {
+  .admin-light {
     color-scheme: light;
 
     --background: 0 0% 100%;
@@ -98,7 +98,7 @@
     @apply border-border;
   }
 
-  html:not(.light) {
+  html {
     color-scheme: dark;
   }
 

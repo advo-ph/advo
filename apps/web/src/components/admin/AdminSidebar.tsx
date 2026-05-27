@@ -21,7 +21,6 @@ import {
   Moon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useTheme } from "@/hooks/useTheme";
 
 export type AdminSection =
   | "dashboard"
@@ -47,6 +46,8 @@ interface AdminSidebarProps {
   onToggleCollapse: () => void;
   isMobileOpen: boolean;
   onMobileClose: () => void;
+  theme: "dark" | "light";
+  onToggleTheme: () => void;
 }
 
 type NavItem = { id: AdminSection; label: string; icon: React.ElementType };
@@ -96,9 +97,9 @@ const AdminSidebar = ({
   onToggleCollapse,
   isMobileOpen,
   onMobileClose,
+  theme,
+  onToggleTheme,
 }: AdminSidebarProps) => {
-  const { theme, toggle: toggleTheme } = useTheme();
-
   const handleSectionChange = (s: AdminSection) => {
     onSectionChange(s);
     onMobileClose();
@@ -188,7 +189,7 @@ const AdminSidebar = ({
         {/* Theme toggle, Settings & Collapse */}
         <div className="p-3 border-t border-border space-y-1">
           <button
-            onClick={toggleTheme}
+            onClick={onToggleTheme}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
           >
             {theme === "dark" ? (
