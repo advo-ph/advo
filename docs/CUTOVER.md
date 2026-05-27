@@ -54,6 +54,11 @@ rsync -a --delete apps/web/dist/ /var/www/advo/dist/
 grep -o "api\.advo\.ph" /var/www/advo/dist/assets/index-*.js | head -1
 ```
 
+> **Gotcha for future pulls.** `apps/web/.env.production` is gitignored. Never run `git stash -u` on `/opt/advo` — the `-u` flag sweeps untracked files into the stash, including the env file, and the next build will bake in `localhost:6107` instead of `api.advo.ph`. Always verify the env file exists post-pull, and grep the built bundle for `api.advo.ph` before rsyncing to `/var/www/advo/dist/`.
+
+```bash
+```
+
 ## What was preserved without action
 
 - **Uploads** — `UPLOAD_DIR=/var/www/advo/uploads` in `.env` is absolute, so the API serves them from the same location regardless of cwd.
