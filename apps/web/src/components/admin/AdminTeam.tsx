@@ -46,12 +46,11 @@ const AdminTeam = () => {
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [localOrder, setLocalOrder] = useState<TeamMember[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showInactive, setShowInactive] = useState(false);
 
   const allMembers = localOrder || members;
   const displayMembers = showInactive ? allMembers : allMembers.filter((m) => m.is_active);
   const inactiveCount = allMembers.filter((m) => !m.is_active).length;
-
-  const [showInactive, setShowInactive] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",

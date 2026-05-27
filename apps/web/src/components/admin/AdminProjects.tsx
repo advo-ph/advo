@@ -107,7 +107,7 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
   const openEditDialog = (project: MergedProject) => {
     setEditingProject(project);
     setFormData({
-      client_id: project.client_id.toString(),
+      client_id: project.client_id?.toString() ?? "",
       title: project.title,
       description: project.description || "",
       repository_name: project.repository_name || "",

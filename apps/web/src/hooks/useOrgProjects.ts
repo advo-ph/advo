@@ -44,10 +44,12 @@ async function fetchOrgProjects(): Promise<MergedProject[]> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const projects: MergedProject[] = res.data.map((p: any) => ({
     project_id: p.projectId ?? p.project_id,
+    client_id: p.clientId ?? p.client_id,
     title: p.title,
     description: p.description,
     repository_name: p.repositoryName ?? p.repository_name,
     preview_url: p.previewUrl ?? p.preview_url,
+    contract_url: p.contractUrl ?? p.contract_url,
     project_status: p.projectStatus ?? p.project_status,
     total_value_cents: p.totalValueCents ?? p.total_value_cents ?? 0,
     amount_paid_cents: p.amountPaidCents ?? p.amount_paid_cents ?? 0,
@@ -56,6 +58,7 @@ async function fetchOrgProjects(): Promise<MergedProject[]> {
     client: p.client
       ? {
           company_name: p.client.companyName ?? p.client.company_name,
+          contact_email: p.client.contactEmail ?? p.client.contact_email,
           github_org_name: p.client.githubOrgName ?? p.client.github_org_name,
           brand_color_hex: p.client.brandColorHex ?? p.client.brand_color_hex,
         }

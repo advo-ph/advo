@@ -46,6 +46,7 @@ const createSchema = z.object({
   name: z.string().min(1).max(255),
   role: z.string().min(1).max(100),
   email: z.string().email().max(255).nullish(),
+  avatarUrl: z.string().url().max(500).nullish(),
   bio: z.string().max(2000).nullish(),
   linkedinUrl: z.string().url().max(500).nullish(),
   githubUrl: z.string().url().max(500).nullish(),

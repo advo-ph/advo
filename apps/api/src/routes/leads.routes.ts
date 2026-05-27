@@ -19,10 +19,10 @@ const leads = new Hono<{ Variables: Variables }>();
 const submitSchema = z.object({
   name: z.string().min(1).max(255),
   email: z.string().email().max(255),
-  company: z.string().max(255).optional(),
-  projectType: z.string().max(100).optional(),
-  budget: z.string().max(100).optional(),
-  description: z.string().max(5000).optional(),
+  company: z.string().max(255).nullish(),
+  projectType: z.string().max(100).nullish(),
+  budget: z.string().max(100).nullish(),
+  description: z.string().max(5000).nullish(),
 });
 
 leads.post("/", zValidator("json", submitSchema), async (c) => {
@@ -48,7 +48,7 @@ const updateSchema = z.object({
   status: z
     .enum(["new", "contacted", "qualified", "proposal_sent", "closed_won", "closed_lost"])
     .optional(),
-  notes: z.string().max(5000).optional(),
+  notes: z.string().max(5000).nullish(),
   assignedTo: z.number().nullable().optional(),
 });
 

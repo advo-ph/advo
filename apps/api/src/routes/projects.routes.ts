@@ -141,14 +141,15 @@ projects.get("/:id", async (c) => {
 const createSchema = z.object({
   clientId: z.number(),
   title: z.string().min(1).max(255),
-  description: z.string().max(5000).optional(),
-  repositoryName: z.string().max(100).optional(),
-  previewUrl: z.string().url().max(500).optional(),
-  contractUrl: z.string().url().max(500).optional(),
+  description: z.string().max(5000).nullish(),
+  repositoryName: z.string().max(100).nullish(),
+  previewUrl: z.string().url().max(500).nullish(),
+  contractUrl: z.string().url().max(500).nullish(),
   projectStatus: z
     .enum(["discovery", "architecture", "development", "testing", "shipped"])
     .optional(),
   totalValueCents: z.number().int().min(0).optional(),
+  amountPaidCents: z.number().int().min(0).optional(),
   techStack: z.array(z.string()).optional(),
 });
 
@@ -212,8 +213,8 @@ projects.delete("/:id", requireAdmin, async (c) => {
 
 const updateBodySchema = z.object({
   updateTitle: z.string().min(1).max(255),
-  updateBody: z.string().max(5000).optional(),
-  commitShaReference: z.string().max(40).optional(),
+  updateBody: z.string().max(5000).nullish(),
+  commitShaReference: z.string().max(40).nullish(),
 });
 
 projects.post(

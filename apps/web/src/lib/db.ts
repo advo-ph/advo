@@ -77,6 +77,7 @@ export async function createProject(project: {
   description?: string | null;
   repository_name?: string | null;
   preview_url?: string | null;
+  contract_url?: string | null;
   project_status: ProjectStatus;
   total_value_cents: number;
   amount_paid_cents: number;
@@ -88,8 +89,10 @@ export async function createProject(project: {
     description: project.description,
     repositoryName: project.repository_name,
     previewUrl: project.preview_url,
+    contractUrl: project.contract_url,
     projectStatus: project.project_status,
     totalValueCents: project.total_value_cents,
+    amountPaidCents: project.amount_paid_cents,
     techStack: project.tech_stack,
   });
   return { data: null, error: res.error };

@@ -29,7 +29,7 @@ const createSchema = z.object({
   startTime: z.string().regex(/^\d{2}:\d{2}$/),
   endTime: z.string().regex(/^\d{2}:\d{2}$/),
   blockType: z.enum(["school", "break", "work", "unavailable"]),
-  label: z.string().max(100).optional(),
+  label: z.string().max(100).nullish(),
 });
 
 availability.post("/", requireAuth, requireTeam, zValidator("json", createSchema), async (c) => {

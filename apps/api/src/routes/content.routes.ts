@@ -152,8 +152,8 @@ content.get("/social", requireAuth, requireAdmin, async (c) => {
 const socialSchema = z.object({
   platform: z.string().max(50).optional(),
   content: z.string().max(5000).optional(),
-  imageUrl: z.string().max(500).optional(),
-  scheduledFor: z.string().datetime().optional(),
+  imageUrl: z.string().max(500).nullish(),
+  scheduledFor: z.string().datetime().nullish(),
 });
 
 content.post(

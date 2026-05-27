@@ -60,13 +60,13 @@ deliverables.get("/upcoming", async (c) => {
 const createSchema = z.object({
   projectId: z.number(),
   title: z.string().min(1).max(255),
-  description: z.string().max(5000).optional(),
+  description: z.string().max(5000).nullish(),
   assignedTo: z.number().nullable().optional(),
   priority: z.number().int().min(0).max(10).optional(),
   status: z
     .enum(["not_started", "in_progress", "review", "completed", "blocked"])
     .optional(),
-  dueDate: z.string().datetime().optional(),
+  dueDate: z.string().datetime().nullish(),
 });
 
 deliverables.post("/", requireTeam, zValidator("json", createSchema), async (c) => {
