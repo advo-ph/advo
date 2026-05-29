@@ -165,10 +165,14 @@ const AdminBrandScraper = () => {
       toast({ title: "Scrape failed", description: res.error, variant: "destructive" });
     } else if (res.data) {
       setResult(res.data);
-      await post("/api/scrape/save", { url: normalizedUrl, type: "brand", data: res.data });
+      const saveRes = await post("/api/scrape/save", { url: normalizedUrl, type: "brand", data: res.data });
+      if (saveRes.error) {
+        toast({ title: "Scrape complete (not saved)", description: saveRes.error, variant: "destructive" });
+      } else {
+        toast({ title: "Scrape complete" });
+      }
       const histRes = await get<ScrapeHistoryItem[]>("/api/scrape/history?type=brand");
       if (histRes.data) setHistory(histRes.data);
-      toast({ title: "Scrape complete" });
     }
     setIsLoading(false);
   };

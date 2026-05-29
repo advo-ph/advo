@@ -40,14 +40,17 @@ export interface TeamMemberInput {
 }
 
 function toApiPayload(input: TeamMemberInput) {
+  // Preserve explicit nulls so that clearing a field on edit actually persists
+  // (the API columns are nullable and the zod schema is .nullish()). Coercing
+  // to undefined would drop the key from the JSON body and leave the old value.
   return {
     name: input.name,
     role: input.role,
-    email: input.email || undefined,
-    avatarUrl: input.avatar_url || undefined,
-    bio: input.bio || undefined,
-    linkedinUrl: input.linkedin_url || undefined,
-    githubUrl: input.github_url || undefined,
+    ...(input.email !== undefined && { email: input.email || null }),
+    ...(input.avatar_url !== undefined && { avatarUrl: input.avatar_url || null }),
+    ...(input.bio !== undefined && { bio: input.bio || null }),
+    ...(input.linkedin_url !== undefined && { linkedinUrl: input.linkedin_url || null }),
+    ...(input.github_url !== undefined && { githubUrl: input.github_url || null }),
     ...(input.is_active !== undefined && { isActive: input.is_active }),
   };
 }

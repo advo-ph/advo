@@ -550,6 +550,10 @@ const AdminFacebookScraper = () => {
                   toast({ title: "Scrape complete", description: `${data.totalPosts} posts captured` });
                   break;
 
+                case "saveError":
+                  toast({ title: "Not saved to history", description: data.message, variant: "destructive" });
+                  break;
+
                 case "error":
                   toast({ title: "Scrape error", description: data.message, variant: "destructive" });
                   setStatusText(`Error: ${data.message}`);

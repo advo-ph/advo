@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import * as db from "@/lib/db";
-import { get, patch as apiPatch, post } from "@/lib/api";
+import { get, patch as apiPatch, post, del } from "@/lib/api";
 
 interface SiteConfig {
   agency_name: string;
@@ -41,6 +41,11 @@ interface SocialLink {
   url: string;
 }
 
+interface AdminMember {
+  id: number;
+  email: string;
+}
+
 const DEFAULT_CONFIG: SiteConfig = {
   agency_name: "ADVO",
   domain_url: "advo.ph",
@@ -51,7 +56,7 @@ const DEFAULT_CONFIG: SiteConfig = {
 const AdminSettings = () => {
   const { toast } = useToast();
   const [config, setConfig] = useState<SiteConfig>(DEFAULT_CONFIG);
-  const [adminEmails, setAdminEmails] = useState<string[]>([]);
+  const [adminEmails, setAdminEmails] = useState<AdminMember[]>([]);
   const [newEmail, setNewEmail] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isAddEmailOpen, setIsAddEmailOpen] = useState(false);
@@ -77,9 +82,15 @@ const AdminSettings = () => {
   }, []);
 
   const fetchAdminEmails = async () => {
-    const res = await get<Array<{ email: string }>>("/api/team");
+    const res = await get<Array<Record<string, unknown>>>("/api/team");
     if (res.data) {
-      setAdminEmails(res.data.map((m: Record<string, unknown>) => (m.email as string) || ""));
+      // Admin list includes inactive members; only show active ones with an email
+      // and retain the team_member_id so deletes can target the row.
+      setAdminEmails(
+        res.data
+          .filter((m) => m.isActive !== false && !!m.email)
+          .map((m) => ({ id: Number(m.teamMemberId), email: m.email as string }))
+      );
     }
   };
 
@@ -103,10 +114,18 @@ const AdminSettings = () => {
 
   const handleSave = async () => {
     setIsSaving(true);
-    await apiPatch("/api/settings/agency_name", { value: config.agency_name });
-    await apiPatch("/api/settings/domain_url", { value: config.domain_url });
-    await apiPatch("/api/settings/accent_color", { value: config.accent_color });
-    toast({ title: "Settings saved", description: "Domain configuration updated" });
+    const results = await Promise.all([
+      apiPatch("/api/settings/agency_name", { value: config.agency_name }),
+      apiPatch("/api/settings/domain_url", { value: config.domain_url }),
+      apiPatch("/api/settings/accent_color", { value: config.accent_color }),
+      apiPatch("/api/settings/logo_url", { value: config.logo_url }),
+    ]);
+    const failed = results.find((r) => r.error);
+    if (failed) {
+      toast({ title: "Error", description: failed.error, variant: "destructive" });
+    } else {
+      toast({ title: "Settings saved", description: "Domain configuration updated" });
+    }
     setIsSaving(false);
   };
 
@@ -135,8 +154,12 @@ const AdminSettings = () => {
 
   const handleSaveSocial = async () => {
     setIsSavingSocial(true);
-    await apiPatch("/api/settings/social_links", { value: socialLinks });
-    toast({ title: "Social links saved" });
+    const res = await apiPatch("/api/settings/social_links", { value: socialLinks });
+    if (res.error) {
+      toast({ title: "Error", description: res.error, variant: "destructive" });
+    } else {
+      toast({ title: "Social links saved" });
+    }
     setIsSavingSocial(false);
   };
 
@@ -148,27 +171,46 @@ const AdminSettings = () => {
 
   const removeSocialLink = (idx: number) => setSocialLinks(socialLinks.filter((_, i) => i !== idx));
 
-  const addAdminEmail = () => {
+  const addAdminEmail = async () => {
     if (!newEmail || !newEmail.includes("@")) {
       toast({ title: "Invalid email", variant: "destructive" });
       return;
     }
-    if (adminEmails.includes(newEmail)) {
+    if (adminEmails.some((m) => m.email === newEmail)) {
       toast({ title: "Email already exists", variant: "destructive" });
       return;
     }
-    setAdminEmails([...adminEmails, newEmail]);
+    // team_member requires name + role (NOT NULL); derive a sensible default.
+    const res = await post<Record<string, unknown>>("/api/team", {
+      name: newEmail.split("@")[0],
+      role: "Admin",
+      email: newEmail,
+      permissionRole: "admin",
+    });
+    if (res.error || !res.data) {
+      toast({ title: "Error", description: res.error || "Failed to add admin", variant: "destructive" });
+      return;
+    }
+    setAdminEmails([
+      ...adminEmails,
+      { id: Number(res.data.teamMemberId), email: newEmail },
+    ]);
     setNewEmail("");
     setIsAddEmailOpen(false);
     toast({ title: "Admin email added" });
   };
 
-  const removeAdminEmail = (email: string) => {
+  const removeAdminEmail = async (member: AdminMember) => {
     if (adminEmails.length <= 1) {
       toast({ title: "Cannot remove last admin", variant: "destructive" });
       return;
     }
-    setAdminEmails(adminEmails.filter(e => e !== email));
+    const res = await del(`/api/team/${member.id}`);
+    if (res.error) {
+      toast({ title: "Error", description: res.error, variant: "destructive" });
+      return;
+    }
+    setAdminEmails(adminEmails.filter((m) => m.id !== member.id));
     toast({ title: "Admin email removed" });
   };
 
@@ -300,15 +342,15 @@ const AdminSettings = () => {
           </Button>
         </div>
         <div className="space-y-2">
-          {adminEmails.map((email) => (
-            <div key={email} className="flex items-center justify-between p-3 bg-secondary/30 rounded-xl">
+          {adminEmails.map((member) => (
+            <div key={member.id} className="flex items-center justify-between p-3 bg-secondary/30 rounded-xl">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
                   <Shield className="h-4 w-4 text-accent" />
                 </div>
-                <span className="text-sm font-mono">{email}</span>
+                <span className="text-sm font-mono">{member.email}</span>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => removeAdminEmail(email)} className="text-muted-foreground hover:text-destructive">
+              <Button variant="ghost" size="sm" onClick={() => removeAdminEmail(member)} className="text-muted-foreground hover:text-destructive">
                 <X className="h-4 w-4" />
               </Button>
             </div>

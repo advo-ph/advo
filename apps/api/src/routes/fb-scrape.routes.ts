@@ -1134,6 +1134,7 @@ fbScrape.post("/facebook-stream", requireAuth, requireTeam, zValidator("json", f
             });
           } catch (e) {
             console.error("[FB-Stream] Save error:", e instanceof Error ? e.message : e);
+            send("saveError", { message: "Scrape completed but failed to save to history" });
           }
 
           send("complete", {

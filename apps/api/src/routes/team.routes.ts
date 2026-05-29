@@ -88,12 +88,15 @@ team.post("/reorder", requireAuth, requireAdmin, zValidator("json", reorderSchem
 
   // Store the desired order in a site_config key for frontend consumption
   const { siteConfig } = await import("../db/schema.js");
+  // Store the raw array in the jsonb column (not a JSON-encoded string) so the
+  // value is a proper JSON array, matching how settings.routes.ts persists values.
+  // The frontend read path tolerates both shapes, so this stays backward compatible.
   await d
     .insert(siteConfig)
-    .values({ key: "team_order", value: JSON.stringify(order) })
+    .values({ key: "team_order", value: order })
     .onConflictDoUpdate({
       target: siteConfig.key,
-      set: { value: JSON.stringify(order), updatedAt: new Date() },
+      set: { value: order, updatedAt: new Date() },
     });
 
   return c.json({ data: { message: "Order saved" }, error: null });

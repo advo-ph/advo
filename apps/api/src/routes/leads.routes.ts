@@ -42,6 +42,36 @@ leads.get("/", requireAuth, requireTeam, async (c) => {
   return c.json({ data: rows, error: null });
 });
 
+// ─── Bulk Update ─────────────────────────────────────
+// NOTE: This static "/bulk" route MUST be registered before the
+// "/:id" param route below, otherwise Hono's RegExpRouter resolves
+// PATCH /api/leads/bulk to "/:id" with id="bulk" (Number("bulk")=NaN).
+
+const bulkUpdateSchema = z.object({
+  leadIds: z.array(z.number()).min(1),
+  status: z
+    .enum(["new", "contacted", "qualified", "proposal_sent", "closed_won", "closed_lost"])
+    .optional(),
+  assignedTo: z.number().nullable().optional(),
+});
+
+leads.patch("/bulk", requireAuth, requireTeam, zValidator("json", bulkUpdateSchema), async (c) => {
+  const { leadIds, status, assignedTo } = c.req.valid("json");
+  const d = db();
+  const updates: Record<string, unknown> = {};
+  if (status !== undefined) updates.status = status;
+  if (assignedTo !== undefined) updates.assignedTo = assignedTo;
+
+  if (Object.keys(updates).length === 0) {
+    throw new HTTPException(400, { message: "No fields to update" });
+  }
+
+  const { inArray } = await import("drizzle-orm");
+  await d.update(lead).set(updates).where(inArray(lead.leadId, leadIds));
+
+  return c.json({ data: { message: `Updated ${leadIds.length} leads` }, error: null });
+});
+
 // ─── Update ───────────────────────────────────────────
 
 const updateSchema = z.object({
@@ -77,33 +107,6 @@ leads.delete("/:id", requireAuth, requireAdmin, async (c) => {
 
   if (!deleted) throw new HTTPException(404, { message: "Lead not found" });
   return c.json({ data: { message: "Lead deleted" }, error: null });
-});
-
-// ─── Bulk Update ─────────────────────────────────────
-
-const bulkUpdateSchema = z.object({
-  leadIds: z.array(z.number()).min(1),
-  status: z
-    .enum(["new", "contacted", "qualified", "proposal_sent", "closed_won", "closed_lost"])
-    .optional(),
-  assignedTo: z.number().nullable().optional(),
-});
-
-leads.patch("/bulk", requireAuth, requireTeam, zValidator("json", bulkUpdateSchema), async (c) => {
-  const { leadIds, status, assignedTo } = c.req.valid("json");
-  const d = db();
-  const updates: Record<string, unknown> = {};
-  if (status !== undefined) updates.status = status;
-  if (assignedTo !== undefined) updates.assignedTo = assignedTo;
-
-  if (Object.keys(updates).length === 0) {
-    throw new HTTPException(400, { message: "No fields to update" });
-  }
-
-  const { inArray } = await import("drizzle-orm");
-  await d.update(lead).set(updates).where(inArray(lead.leadId, leadIds));
-
-  return c.json({ data: { message: `Updated ${leadIds.length} leads` }, error: null });
 });
 
 // ─── Convert Lead to Client + Project ─────────────────

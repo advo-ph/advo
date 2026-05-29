@@ -294,7 +294,11 @@ export async function addProjectAsset(asset: {
   url: string;
   caption?: string | null;
 }): Promise<DbResult<null>> {
-  const res = await post(`/api/projects/${asset.project_id}/assets`, asset);
+  const res = await post(`/api/projects/${asset.project_id}/assets`, {
+    assetType: asset.asset_type,
+    url: asset.url,
+    caption: asset.caption,
+  });
   return { data: null, error: res.error };
 }
 

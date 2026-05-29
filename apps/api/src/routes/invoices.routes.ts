@@ -54,7 +54,7 @@ const createSchema = z.object({
   amountCents: z.number().int().min(0),
   label: z.string().min(1).max(255),
   status: z.enum(["unpaid", "paid", "overdue"]).optional(),
-  dueDate: z.string().datetime().nullish(),
+  dueDate: z.union([z.string().datetime({ offset: true }), z.string().date()]).nullish(),
   notes: z.string().max(2000).nullish(),
 });
 
@@ -78,7 +78,7 @@ const updateSchema = z.object({
   notes: z.string().max(2000).nullish(),
   amountCents: z.number().int().min(0).optional(),
   label: z.string().min(1).max(255).optional(),
-  dueDate: z.string().datetime().nullish(),
+  dueDate: z.union([z.string().datetime({ offset: true }), z.string().date()]).nullish(),
 });
 
 invoices.patch("/:id", requireAdmin, zValidator("json", updateSchema), async (c) => {

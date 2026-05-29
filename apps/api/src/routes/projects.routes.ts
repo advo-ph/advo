@@ -274,4 +274,29 @@ projects.get("/:id/assets", async (c) => {
   return c.json({ data: rows, error: null });
 });
 
+const createAssetSchema = z.object({
+  assetType: z
+    .enum(["progress_photo", "completion_photo", "document"])
+    .optional(),
+  url: z.string().url().max(500),
+  caption: z.string().max(255).nullish(),
+});
+
+projects.post(
+  "/:id/assets",
+  requireTeam,
+  zValidator("json", createAssetSchema),
+  async (c) => {
+    const projectId = Number(c.req.param("id"));
+    const data = c.req.valid("json");
+
+    const [created] = await db()
+      .insert(projectAsset)
+      .values({ ...data, projectId })
+      .returning();
+
+    return c.json({ data: created, error: null }, 201);
+  }
+);
+
 export default projects;
