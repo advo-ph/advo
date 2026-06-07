@@ -38,6 +38,57 @@ jobs:
           # Production API target — same as VPS-side build
           VITE_API_URL: https://api.advo.ph
 
+      - name: Upload frontend build
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: advo-web-dist
+          path: apps/web/dist/
+          if-no-files-found: error
+          retention-days: 1
+
+  deploy-web:
+    name: Deploy web to VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    env:
+      VPS_HOST: 62.146.237.12
+      VPS_PORT: 22
+      VPS_USER: advo-deploy
+      VPS_WEB_ROOT: /var/www/advo/dist
+    steps:
+      - name: Download frontend build
+        uses: actions/download-artifact@v4
+        with:
+          name: advo-web-dist
+          path: dist
+
+      - name: Configure SSH
+        run: |
+          if [ -z "${{ secrets.VPS_SSH_KEY }}" ]; then
+            echo "::error::Missing required repository secret: VPS_SSH_KEY"
+            exit 1
+          fi
+
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/advo_deploy_key
+          chmod 600 ~/.ssh/advo_deploy_key
+          ssh-keyscan -p "$VPS_PORT" -H "$VPS_HOST" >> ~/.ssh/known_hosts
+
+      - name: Sync frontend build
+        run: |
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/advo_deploy_key -p $VPS_PORT" \
+            dist/ "$VPS_USER@$VPS_HOST:$VPS_WEB_ROOT/"
+
+      - name: Verify live deploy
+        run: |
+          ssh -i ~/.ssh/advo_deploy_key -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+            "test -f $VPS_WEB_ROOT/index.html"
+          curl --fail --silent --show-error --location --max-time 20 https://advo.ph >/dev/null
+
   audit:
     name: Security audit
     runs-on: ubuntu-latest
