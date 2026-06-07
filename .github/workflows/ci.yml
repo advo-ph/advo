@@ -27,7 +27,9 @@ jobs:
         run: npm ci
 
       - name: Type check
-        run: npx tsc --noEmit
+        run: |
+          npm --workspace apps/web exec tsc -- --noEmit
+          npm --workspace apps/api exec tsc -- --noEmit
 
       - name: Lint
         run: npm run lint
