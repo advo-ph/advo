@@ -71,23 +71,26 @@ export function EdgeGlow({
 
   return (
     <div ref={ref} className={cn("relative", className)}>
-      {/* Content sits above the frame layers. */}
+      {/* Content. */}
       <div className="relative z-10">{children}</div>
 
-      {/* Static horizontal frame lines (verticals are the global rails). */}
+      {/* Static horizontal frame lines, extended to the full viewport width via
+          a centered 100vw breakout (the content column is centered, so this
+          spans edge to edge). Verticals are the global rails. */}
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 z-0 h-px bg-border/60"
+        className="pointer-events-none absolute top-0 left-1/2 z-0 h-px w-screen -translate-x-1/2 bg-border/60"
       />
       <span
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-px bg-border/60"
+        className="pointer-events-none absolute bottom-0 left-1/2 z-0 h-px w-screen -translate-x-1/2 bg-border/60"
       />
 
-      {/* Four-edge glow, brightening as the comet sweeps past. */}
+      {/* Four-edge glow on TOP of the content, so cards near the frame light up
+          from their inner edge as the comet sweeps past. */}
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute inset-0 z-0"
+        className="pointer-events-none absolute inset-0 z-20"
         style={{ opacity: glow, boxShadow }}
       />
     </div>
