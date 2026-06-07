@@ -63,10 +63,10 @@ export function EdgeGlow({
 
   // Inset accent glow on all four inner edges — completes the framed box.
   const boxShadow = [
-    "inset 22px 0 44px -24px hsl(var(--accent) / 0.95)",
-    "inset -22px 0 44px -24px hsl(var(--accent) / 0.95)",
-    "inset 0 22px 44px -24px hsl(var(--accent) / 0.95)",
-    "inset 0 -22px 44px -24px hsl(var(--accent) / 0.95)",
+    "inset 22px 0 44px -24px hsl(var(--accent) / 0.4)",
+    "inset -22px 0 44px -24px hsl(var(--accent) / 0.4)",
+    "inset 0 22px 44px -24px hsl(var(--accent) / 0.4)",
+    "inset 0 -22px 44px -24px hsl(var(--accent) / 0.4)",
   ].join(", ");
 
   return (
