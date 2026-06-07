@@ -4,7 +4,7 @@ import { ArrowRight, ArrowDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { get } from "@/lib/api";
 import { EASE } from "@/lib/motion";
-import { ScrambleText, WordReveal } from "@/components/motion/AnimatedText";
+import { SpreadText, WordReveal } from "@/components/motion/AnimatedText";
 
 interface HeroContent {
   headline: string;
@@ -71,12 +71,12 @@ const Hero = () => {
       {/* Content overlay */}
       <div className="relative w-full max-w-6xl mx-auto px-6 pb-14 pt-8 md:pb-16 md:pt-32 lg:pb-24">
         <div className="max-w-2xl">
-          <ScrambleText
+          <SpreadText
             as="h1"
             text={content.headline}
-            delay={150}
-            duration={1300}
-            className="text-4xl sm:text-6xl lg:text-7xl font-semibold tracking-tight leading-[1.02] mb-8 text-balance [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]"
+            spreadMs={450}
+            decodeMs={850}
+            className="text-4xl sm:text-6xl lg:text-7xl font-semibold tracking-tight leading-[1.02] mb-8 [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]"
           />
 
           <WordReveal

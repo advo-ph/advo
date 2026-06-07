@@ -114,12 +114,12 @@ export function EdgeGlow({
     sweep(r.bottom, posBottom, opBottom);
   });
 
-  // Soft inset accent glow on all four inner edges — completes the framed box.
+  // Soft inset white glow on all four inner edges — completes the framed box.
   const boxShadow = [
-    "inset 22px 0 44px -24px hsl(var(--accent) / 0.2)",
-    "inset -22px 0 44px -24px hsl(var(--accent) / 0.2)",
-    "inset 0 22px 44px -24px hsl(var(--accent) / 0.2)",
-    "inset 0 -22px 44px -24px hsl(var(--accent) / 0.2)",
+    "inset 22px 0 44px -24px hsl(var(--foreground) / 0.22)",
+    "inset -22px 0 44px -24px hsl(var(--foreground) / 0.22)",
+    "inset 0 22px 44px -24px hsl(var(--foreground) / 0.22)",
+    "inset 0 -22px 44px -24px hsl(var(--foreground) / 0.22)",
   ].join(", ");
 
   return (

@@ -108,6 +108,163 @@ export function ScrambleText({
   );
 }
 
+/** Split a phrase into two roughly balanced lines (by word count). */
+function splitTwoLines(text: string): string[] {
+  const words = text.trim().split(/\s+/);
+  if (words.length <= 1) return [text];
+  const mid = Math.ceil(words.length / 2);
+  return [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
+}
+
+interface SpreadTextProps {
+  text: string;
+  as?: ElementType;
+  className?: string;
+  /** Override the line breaks instead of the auto midpoint split. */
+  lines?: string[];
+  /** How fast the random glyphs flood out from the first letter (ms). */
+  spreadMs?: number;
+  /** How long the flooded glyphs take to resolve into real text (ms). */
+  decodeMs?: number;
+}
+
+/**
+ * SpreadText — a 2D "flood + decode" headline effect.
+ *
+ * Phase 1 (spread): starts as a single random glyph at the top-left, then
+ * floods outward one cell at a time — to the right and downward (Manhattan
+ * wavefront) — until the whole two-line grid is full of constantly-randomizing
+ * glyphs. Phase 2 (decode): those glyphs resolve, outward in the same order,
+ * into the real words.
+ *
+ * Layout-safe: an invisible copy of the final lines reserves the exact height;
+ * the animated copy is overlaid with `whitespace-pre` so cell positions never
+ * shift. Reduced motion → plain text.
+ */
+export function SpreadText({
+  text,
+  as: Tag = "span",
+  className,
+  lines: linesProp,
+  spreadMs = 450,
+  decodeMs = 850,
+}: SpreadTextProps): ReactElement {
+  const reduced = useReducedMotion();
+  const lines = linesProp ?? splitTwoLines(text);
+
+  // Per-cell timeline: when it floods in, and when it finishes decoding.
+  const schedule = useRef(
+    lines.map((line, r) =>
+      [...line].map((ch, c) => {
+        const dist = r + c;
+        return { ch, dist };
+      }),
+    ),
+  );
+  // Recompute when the text changes.
+  schedule.current = lines.map((line, r) =>
+    [...line].map((ch, c) => ({ ch, dist: r + c })),
+  );
+
+  const maxDist = Math.max(
+    1,
+    ...schedule.current.flatMap((row) => row.map((cell) => cell.dist)),
+  );
+
+  const [display, setDisplay] = useState<string[]>(() =>
+    reduced ? lines : lines.map((l) => " ".repeat(l.length)),
+  );
+  const rafRef = useRef(0);
+
+  useEffect(() => {
+    if (reduced) {
+      setDisplay(lines);
+      return;
+    }
+    const perDist = spreadMs / maxDist;
+    const decodeStart = spreadMs + 120;
+
+    // Stable per-cell decode end time so resolution doesn't jitter frame to frame.
+    const decodeEnd = schedule.current.map((row) =>
+      row.map((cell) => {
+        const lead = (cell.dist / maxDist) * decodeMs * 0.55;
+        const tail = decodeMs * 0.25 + Math.random() * decodeMs * 0.3;
+        return decodeStart + lead + tail;
+      }),
+    );
+
+    let startTs = 0;
+    const tick = (ts: number) => {
+      if (!startTs) startTs = ts;
+      const t = ts - startTs;
+      let done = true;
+      const out = schedule.current.map((row, r) => {
+        let line = "";
+        for (let c = 0; c < row.length; c++) {
+          const { ch, dist } = row[c];
+          if (ch === " ") {
+            line += " ";
+            continue;
+          }
+          const appear = dist * perDist;
+          if (t < appear) {
+            line += " "; // not yet flooded in
+            done = false;
+          } else if (t < decodeEnd[r][c]) {
+            line += rnd(); // flooded — keep randomizing
+            done = false;
+          } else {
+            line += ch; // resolved
+          }
+        }
+        return line;
+      });
+      setDisplay(out);
+      if (done) {
+        setDisplay(lines);
+      } else {
+        rafRef.current = requestAnimationFrame(tick);
+      }
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [text, spreadMs, decodeMs, reduced]);
+
+  if (reduced) {
+    return (
+      <Tag className={className}>
+        {lines.map((l, i) => (
+          <span key={i} className="block">
+            {l}
+          </span>
+        ))}
+      </Tag>
+    );
+  }
+
+  return (
+    <Tag className={cn("relative", className)} aria-label={text}>
+      {/* Reserve final layout so the page never reflows while it floods. */}
+      <span aria-hidden className="invisible">
+        {lines.map((l, i) => (
+          <span key={i} className="block whitespace-pre">
+            {l}
+          </span>
+        ))}
+      </span>
+      {/* Overlaid flooding/decoding text. whitespace-pre keeps cells aligned. */}
+      <span aria-hidden className="absolute inset-0">
+        {display.map((l, i) => (
+          <span key={i} className="block whitespace-pre">
+            {l}
+          </span>
+        ))}
+      </span>
+    </Tag>
+  );
+}
+
 interface WordRevealProps {
   text: string;
   as?: ElementType;
