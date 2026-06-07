@@ -95,30 +95,48 @@ const AdminLeads = () => {
     if (action === "status" && value) body.status = value;
     if (action === "assign") body.assignedTo = value ?? null;
 
-    const res = await patch("/api/leads/bulk", body);
-    if (res.error) {
-      toast({ title: "Error", description: res.error, variant: "destructive" });
-    } else {
-      toast({ title: `Updated ${leadIds.length} leads` });
-      setSelectedLeads(new Set());
-      // Force refetch by updating each in the cache
-      leadIds.forEach((id) => {
-        if (action === "status" && value) updateStatus(id, value as string);
-        if (action === "assign") assignTo(id, value as number | null);
+    try {
+      const res = await patch("/api/leads/bulk", body);
+      if (res.error) {
+        toast({ title: "Error", description: res.error, variant: "destructive" });
+      } else {
+        toast({ title: `Updated ${leadIds.length} leads` });
+        setSelectedLeads(new Set());
+        // Force refetch by updating each in the cache
+        leadIds.forEach((id) => {
+          if (action === "status" && value) updateStatus(id, value as string);
+          if (action === "assign") assignTo(id, value as number | null);
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Unable to update leads",
+        variant: "destructive",
       });
+    } finally {
+      setIsBulkUpdating(false);
     }
-    setIsBulkUpdating(false);
   };
 
   const handleConvert = async (leadId: number) => {
     setIsConverting(leadId);
-    const res = await post(`/api/leads/${leadId}/convert`, {});
-    if (res.error) {
-      toast({ title: "Conversion failed", description: res.error, variant: "destructive" });
-    } else {
-      toast({ title: "Lead converted", description: "Client account and project created. Welcome email sent." });
+    try {
+      const res = await post(`/api/leads/${leadId}/convert`, {});
+      if (res.error) {
+        toast({ title: "Conversion failed", description: res.error, variant: "destructive" });
+      } else {
+        toast({ title: "Lead converted", description: "Client account and project created. Welcome email sent." });
+      }
+    } catch (err) {
+      toast({
+        title: "Conversion failed",
+        description: err instanceof Error ? err.message : "Unable to convert lead",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConverting(null);
     }
-    setIsConverting(null);
   };
 
   const handleNotesBlur = (leadId: number) => {

@@ -118,15 +118,23 @@ const AdminTeam = () => {
     }
 
     setIsUploading(true);
-    const result = await upload(file, "avatars");
-    if (result.error) {
-      toast({ title: "Upload failed", description: result.error, variant: "destructive" });
+    try {
+      const result = await upload(file, "avatars");
+      if (result.error) {
+        toast({ title: "Upload failed", description: result.error, variant: "destructive" });
+        return;
+      }
+      setFormData({ ...formData, avatar_url: result.url });
+      toast({ title: "Uploaded", description: "Photo uploaded successfully" });
+    } catch (err) {
+      toast({
+        title: "Upload failed",
+        description: err instanceof Error ? err.message : "Unable to upload photo",
+        variant: "destructive",
+      });
+    } finally {
       setIsUploading(false);
-      return;
     }
-    setFormData({ ...formData, avatar_url: result.url });
-    setIsUploading(false);
-    toast({ title: "Uploaded", description: "Photo uploaded successfully" });
   };
 
   const handleSave = async () => {

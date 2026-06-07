@@ -76,13 +76,22 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
 
   const handleInvite = async (client: Client) => {
     setInvitingClient(client.client_id);
-    const res = await post(`/api/clients/${client.client_id}/invite`, {});
-    if (res.error) {
-      toast({ title: "Error", description: res.error, variant: "destructive" });
-    } else {
-      toast({ title: "Invite sent", description: `Welcome email sent to ${client.contact_email}` });
+    try {
+      const res = await post(`/api/clients/${client.client_id}/invite`, {});
+      if (res.error) {
+        toast({ title: "Error", description: res.error, variant: "destructive" });
+      } else {
+        toast({ title: "Invite sent", description: `Welcome email sent to ${client.contact_email}` });
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Unable to invite client",
+        variant: "destructive",
+      });
+    } finally {
+      setInvitingClient(null);
     }
-    setInvitingClient(null);
   };
 
   const openCreateDialog = () => {
@@ -162,15 +171,23 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
   const handleDelete = async () => {
     if (!deletingClient) return;
 
-    const { error } = await db.deleteClient(deletingClient.client_id);
+    try {
+      const { error } = await db.deleteClient(deletingClient.client_id);
 
-    if (error) {
-      toast({ title: "Error", description: error, variant: "destructive" });
-    } else {
-      toast({ title: "Deleted", description: "Client deleted" });
-      setIsDeleteDialogOpen(false);
-      setDeletingClient(null);
-      onRefresh();
+      if (error) {
+        toast({ title: "Error", description: error, variant: "destructive" });
+      } else {
+        toast({ title: "Deleted", description: "Client deleted" });
+        setIsDeleteDialogOpen(false);
+        setDeletingClient(null);
+        onRefresh();
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Unable to delete client",
+        variant: "destructive",
+      });
     }
   };
 

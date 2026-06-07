@@ -275,20 +275,28 @@ const AdminPortfolio = () => {
 
     setIsUploading(true);
 
-    const result = await upload(file, "portfolio");
+    try {
+      const result = await upload(file, "portfolio");
 
-    if (result.error) {
-      toast({ title: "Upload failed", description: result.error, variant: "destructive" });
+      if (result.error) {
+        toast({ title: "Upload failed", description: result.error, variant: "destructive" });
+        return;
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        image_urls: [...prev.image_urls, result.url],
+      }));
+      toast({ title: "Uploaded", description: file.type.startsWith("video/") ? "Video added" : "Image added" });
+    } catch (err) {
+      toast({
+        title: "Upload failed",
+        description: err instanceof Error ? err.message : "Unable to upload media",
+        variant: "destructive",
+      });
+    } finally {
       setIsUploading(false);
-      return;
     }
-
-    setFormData((prev) => ({
-      ...prev,
-      image_urls: [...prev.image_urls, result.url],
-    }));
-    setIsUploading(false);
-    toast({ title: "Uploaded", description: file.type.startsWith("video/") ? "Video added" : "Image added" });
   };
 
   const handleSave = async () => {

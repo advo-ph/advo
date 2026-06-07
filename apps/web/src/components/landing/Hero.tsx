@@ -60,24 +60,24 @@ const Hero = () => {
   }, []);
 
   return (
-    <section className="relative min-h-svh flex flex-col justify-end overflow-hidden border-b border-border">
-      {/* Full-bleed team photo */}
-      <div className="absolute inset-0">
+    <section className="relative overflow-hidden border-b border-border bg-background md:min-h-svh md:flex md:flex-col md:justify-end">
+      {/* Team photo: full image on phones, full-bleed crop on larger screens */}
+      <div className="relative md:absolute md:inset-0">
         <img
           src="/team/group.jpg"
           alt="The ADVO team"
-          className="w-full h-full object-cover"
+          className="block h-auto w-full md:h-full md:object-cover"
           style={{ objectPosition: "center 35%" }}
           loading="eager"
         />
         {/* Overall darkening for contrast */}
-        <div className="absolute inset-0 bg-black/45" />
+        <div className="absolute inset-0 bg-black/20 md:bg-black/45" />
         {/* Vertical gradient: heavier at the bottom where text sits */}
-        <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-background via-background/75 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-background via-background/55 to-transparent md:h-3/4 md:via-background/75" />
       </div>
 
       {/* Content overlay */}
-      <div className="relative w-full max-w-6xl mx-auto px-6 pb-16 lg:pb-24 pt-32">
+      <div className="relative w-full max-w-6xl mx-auto px-6 pb-14 pt-8 md:pb-16 md:pt-32 lg:pb-24">
         <motion.div
           variants={stagger}
           initial="hidden"
@@ -87,7 +87,7 @@ const Hero = () => {
           <motion.h1
             variants={fadeUp}
             transition={{ duration: 0.6, ease: EASE }}
-            className="text-5xl sm:text-6xl lg:text-7xl font-semibold tracking-tight leading-[1.02] mb-8 text-balance [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]"
+            className="text-4xl sm:text-6xl lg:text-7xl font-semibold tracking-tight leading-[1.02] mb-8 text-balance [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]"
           >
             {content.headline}
           </motion.h1>

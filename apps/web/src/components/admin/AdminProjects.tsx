@@ -152,27 +152,36 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
       tech_stack: formData.tech_stack.split(",").map(s => s.trim()).filter(Boolean),
     };
 
-    if (editingProject) {
-      const { error } = await db.updateProject(editingProject.project_id, projectData);
-      if (error) {
-        toast({ title: "Error", description: error, variant: "destructive" });
+    try {
+      let error: string | null;
+      if (editingProject) {
+        ({ error } = await db.updateProject(editingProject.project_id, projectData));
+        if (error) {
+          toast({ title: "Error", description: error, variant: "destructive" });
+        } else {
+          toast({ title: "Success", description: "Project updated" });
+          setIsDialogOpen(false);
+          onRefresh();
+        }
       } else {
-        toast({ title: "Success", description: "Project updated" });
-        setIsDialogOpen(false);
-        onRefresh();
+        ({ error } = await db.createProject(projectData));
+        if (error) {
+          toast({ title: "Error", description: error, variant: "destructive" });
+        } else {
+          toast({ title: "Success", description: "Project created" });
+          setIsDialogOpen(false);
+          onRefresh();
+        }
       }
-    } else {
-      const { error } = await db.createProject(projectData);
-      if (error) {
-        toast({ title: "Error", description: error, variant: "destructive" });
-      } else {
-        toast({ title: "Success", description: "Project created" });
-        setIsDialogOpen(false);
-        onRefresh();
-      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Unable to save project",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
     }
-
-    setIsSaving(false);
   };
 
   const handlePostUpdate = async () => {
@@ -183,36 +192,52 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
 
     setIsSaving(true);
 
-    const { error } = await db.createProgressUpdate({
-      project_id: updatingProject.project_id,
-      update_title: updateFormData.update_title,
-      update_body: updateFormData.update_body || null,
-      commit_sha_reference: updateFormData.commit_sha_reference || null,
-    });
+    try {
+      const { error } = await db.createProgressUpdate({
+        project_id: updatingProject.project_id,
+        update_title: updateFormData.update_title,
+        update_body: updateFormData.update_body || null,
+        commit_sha_reference: updateFormData.commit_sha_reference || null,
+      });
 
-    if (error) {
-      toast({ title: "Error", description: error, variant: "destructive" });
-    } else {
-      toast({ title: "Update posted", description: "The update is now visible to the client" });
-      setIsUpdateDialogOpen(false);
-      onRefresh();
+      if (error) {
+        toast({ title: "Error", description: error, variant: "destructive" });
+      } else {
+        toast({ title: "Update posted", description: "The update is now visible to the client" });
+        setIsUpdateDialogOpen(false);
+        onRefresh();
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Unable to post update",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
     }
-
-    setIsSaving(false);
   };
 
   const handleDelete = async () => {
     if (!deletingProject) return;
 
-    const { error } = await db.deleteProject(deletingProject.project_id);
+    try {
+      const { error } = await db.deleteProject(deletingProject.project_id);
 
-    if (error) {
-      toast({ title: "Error", description: error, variant: "destructive" });
-    } else {
-      toast({ title: "Deleted", description: "Project deleted" });
-      setIsDeleteDialogOpen(false);
-      setDeletingProject(null);
-      onRefresh();
+      if (error) {
+        toast({ title: "Error", description: error, variant: "destructive" });
+      } else {
+        toast({ title: "Deleted", description: "Project deleted" });
+        setIsDeleteDialogOpen(false);
+        setDeletingProject(null);
+        onRefresh();
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Unable to delete project",
+        variant: "destructive",
+      });
     }
   };
 
@@ -519,20 +544,28 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
                       | "completion_photo"
                       | "document";
 
-                    const { error } = await db.addProjectAsset({
-                      project_id: editingProject.project_id,
-                      asset_type: assetType,
-                      url: assetUrl,
-                      caption: captionEl?.value?.trim() || null,
-                    });
+                    try {
+                      const { error } = await db.addProjectAsset({
+                        project_id: editingProject.project_id,
+                        asset_type: assetType,
+                        url: assetUrl,
+                        caption: captionEl?.value?.trim() || null,
+                      });
 
-                    if (error) {
-                      toast({ title: "Error", description: error, variant: "destructive" });
-                    } else {
-                      toast({ title: "Added", description: "Asset uploaded" });
-                      if (urlEl) urlEl.value = "";
-                      if (captionEl) captionEl.value = "";
-                      onRefresh();
+                      if (error) {
+                        toast({ title: "Error", description: error, variant: "destructive" });
+                      } else {
+                        toast({ title: "Added", description: "Asset uploaded" });
+                        if (urlEl) urlEl.value = "";
+                        if (captionEl) captionEl.value = "";
+                        onRefresh();
+                      }
+                    } catch (err) {
+                      toast({
+                        title: "Error",
+                        description: err instanceof Error ? err.message : "Unable to add asset",
+                        variant: "destructive",
+                      });
                     }
                   }}
                 >

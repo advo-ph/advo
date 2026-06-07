@@ -114,19 +114,28 @@ const AdminSettings = () => {
 
   const handleSave = async () => {
     setIsSaving(true);
-    const results = await Promise.all([
-      apiPatch("/api/settings/agency_name", { value: config.agency_name }),
-      apiPatch("/api/settings/domain_url", { value: config.domain_url }),
-      apiPatch("/api/settings/accent_color", { value: config.accent_color }),
-      apiPatch("/api/settings/logo_url", { value: config.logo_url }),
-    ]);
-    const failed = results.find((r) => r.error);
-    if (failed) {
-      toast({ title: "Error", description: failed.error, variant: "destructive" });
-    } else {
-      toast({ title: "Settings saved", description: "Domain configuration updated" });
+    try {
+      const results = await Promise.all([
+        apiPatch("/api/settings/agency_name", { value: config.agency_name }),
+        apiPatch("/api/settings/domain_url", { value: config.domain_url }),
+        apiPatch("/api/settings/accent_color", { value: config.accent_color }),
+        apiPatch("/api/settings/logo_url", { value: config.logo_url }),
+      ]);
+      const failed = results.find((r) => r.error);
+      if (failed) {
+        toast({ title: "Error", description: failed.error, variant: "destructive" });
+      } else {
+        toast({ title: "Settings saved", description: "Domain configuration updated" });
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Unable to save settings",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
   };
 
   const handlePasswordChange = async () => {
@@ -139,28 +148,46 @@ const AdminSettings = () => {
       return;
     }
     setIsChangingPassword(true);
-    const res = await post("/api/auth/change-password", { currentPassword, newPassword });
-    if (res.error) {
-      toast({ title: "Error", description: res.error, variant: "destructive" });
-    } else {
-      toast({ title: "Password changed successfully" });
-      setIsPasswordOpen(false);
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
+    try {
+      const res = await post("/api/auth/change-password", { currentPassword, newPassword });
+      if (res.error) {
+        toast({ title: "Error", description: res.error, variant: "destructive" });
+      } else {
+        toast({ title: "Password changed successfully" });
+        setIsPasswordOpen(false);
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Unable to change password",
+        variant: "destructive",
+      });
+    } finally {
+      setIsChangingPassword(false);
     }
-    setIsChangingPassword(false);
   };
 
   const handleSaveSocial = async () => {
     setIsSavingSocial(true);
-    const res = await apiPatch("/api/settings/social_links", { value: socialLinks });
-    if (res.error) {
-      toast({ title: "Error", description: res.error, variant: "destructive" });
-    } else {
-      toast({ title: "Social links saved" });
+    try {
+      const res = await apiPatch("/api/settings/social_links", { value: socialLinks });
+      if (res.error) {
+        toast({ title: "Error", description: res.error, variant: "destructive" });
+      } else {
+        toast({ title: "Social links saved" });
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Unable to save social links",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSavingSocial(false);
     }
-    setIsSavingSocial(false);
   };
 
   const addSocialLink = () => setSocialLinks([...socialLinks, { platform: "", url: "" }]);
@@ -181,23 +208,31 @@ const AdminSettings = () => {
       return;
     }
     // team_member requires name + role (NOT NULL); derive a sensible default.
-    const res = await post<Record<string, unknown>>("/api/team", {
-      name: newEmail.split("@")[0],
-      role: "Admin",
-      email: newEmail,
-      permissionRole: "admin",
-    });
-    if (res.error || !res.data) {
-      toast({ title: "Error", description: res.error || "Failed to add admin", variant: "destructive" });
-      return;
+    try {
+      const res = await post<Record<string, unknown>>("/api/team", {
+        name: newEmail.split("@")[0],
+        role: "Admin",
+        email: newEmail,
+        permissionRole: "admin",
+      });
+      if (res.error || !res.data) {
+        toast({ title: "Error", description: res.error || "Failed to add admin", variant: "destructive" });
+        return;
+      }
+      setAdminEmails([
+        ...adminEmails,
+        { id: Number(res.data.teamMemberId), email: newEmail },
+      ]);
+      setNewEmail("");
+      setIsAddEmailOpen(false);
+      toast({ title: "Admin email added" });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Unable to add admin",
+        variant: "destructive",
+      });
     }
-    setAdminEmails([
-      ...adminEmails,
-      { id: Number(res.data.teamMemberId), email: newEmail },
-    ]);
-    setNewEmail("");
-    setIsAddEmailOpen(false);
-    toast({ title: "Admin email added" });
   };
 
   const removeAdminEmail = async (member: AdminMember) => {
@@ -205,13 +240,21 @@ const AdminSettings = () => {
       toast({ title: "Cannot remove last admin", variant: "destructive" });
       return;
     }
-    const res = await del(`/api/team/${member.id}`);
-    if (res.error) {
-      toast({ title: "Error", description: res.error, variant: "destructive" });
-      return;
+    try {
+      const res = await del(`/api/team/${member.id}`);
+      if (res.error) {
+        toast({ title: "Error", description: res.error, variant: "destructive" });
+        return;
+      }
+      setAdminEmails(adminEmails.filter((m) => m.id !== member.id));
+      toast({ title: "Admin email removed" });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Unable to remove admin",
+        variant: "destructive",
+      });
     }
-    setAdminEmails(adminEmails.filter((m) => m.id !== member.id));
-    toast({ title: "Admin email removed" });
   };
 
   return (

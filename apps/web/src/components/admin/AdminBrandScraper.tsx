@@ -160,21 +160,30 @@ const AdminBrandScraper = () => {
       body.compareUrl = normCompare;
     }
 
-    const res = await post<BrandData>(endpoint, body);
-    if (res.error) {
-      toast({ title: "Scrape failed", description: res.error, variant: "destructive" });
-    } else if (res.data) {
-      setResult(res.data);
-      const saveRes = await post("/api/scrape/save", { url: normalizedUrl, type: "brand", data: res.data });
-      if (saveRes.error) {
-        toast({ title: "Scrape complete (not saved)", description: saveRes.error, variant: "destructive" });
-      } else {
-        toast({ title: "Scrape complete" });
+    try {
+      const res = await post<BrandData>(endpoint, body);
+      if (res.error) {
+        toast({ title: "Scrape failed", description: res.error, variant: "destructive" });
+      } else if (res.data) {
+        setResult(res.data);
+        const saveRes = await post("/api/scrape/save", { url: normalizedUrl, type: "brand", data: res.data });
+        if (saveRes.error) {
+          toast({ title: "Scrape complete (not saved)", description: saveRes.error, variant: "destructive" });
+        } else {
+          toast({ title: "Scrape complete" });
+        }
+        const histRes = await get<ScrapeHistoryItem[]>("/api/scrape/history?type=brand");
+        if (histRes.data) setHistory(histRes.data);
       }
-      const histRes = await get<ScrapeHistoryItem[]>("/api/scrape/history?type=brand");
-      if (histRes.data) setHistory(histRes.data);
+    } catch (err) {
+      toast({
+        title: "Scrape failed",
+        description: err instanceof Error ? err.message : "Unable to run scrape",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const screenshots = result?.screenshots as { viewport: string; width: number; height: number; dataUrl: string }[] | undefined;

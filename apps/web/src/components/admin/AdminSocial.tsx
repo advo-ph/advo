@@ -68,17 +68,25 @@ const AdminSocial = () => {
 
     setIsUploading(true);
 
-    const result = await upload(file, "assets");
+    try {
+      const result = await upload(file, "assets");
 
-    if (result.error) {
-      toast({ title: "Upload failed", description: result.error, variant: "destructive" });
+      if (result.error) {
+        toast({ title: "Upload failed", description: result.error, variant: "destructive" });
+        return;
+      }
+
+      setFormData(prev => ({ ...prev, image_url: result.url }));
+      toast({ title: "Image uploaded", description: "Ready to use" });
+    } catch (err) {
+      toast({
+        title: "Upload failed",
+        description: err instanceof Error ? err.message : "Unable to upload image",
+        variant: "destructive",
+      });
+    } finally {
       setIsUploading(false);
-      return;
     }
-
-    setFormData(prev => ({ ...prev, image_url: result.url }));
-    setIsUploading(false);
-    toast({ title: "Image uploaded", description: "Ready to use" });
   };
 
   const openCreateDialog = () => {
