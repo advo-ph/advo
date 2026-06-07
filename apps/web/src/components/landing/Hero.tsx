@@ -71,9 +71,10 @@ const Hero = () => {
           loading="eager"
         />
         {/* Overall darkening for contrast */}
-        <div className="absolute inset-0 bg-black/20 md:bg-black/45" />
+        <div className="absolute inset-0 bg-black/40 md:bg-black/45" />
+        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/45 to-transparent md:hidden" />
         {/* Vertical gradient: heavier at the bottom where text sits */}
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-background via-background/55 to-transparent md:h-3/4 md:via-background/75" />
+        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-background via-background/70 to-transparent md:h-3/4 md:via-background/75" />
       </div>
 
       {/* Content overlay */}
