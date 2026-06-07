@@ -16,23 +16,29 @@ import {
 
 /**
  * Resolve a `motion`-wrapped element for an arbitrary tag.
- * The framer-motion `motion` proxy exposes every intrinsic tag as a key.
  *
- * For custom components we must memoize `motion(Component)`: the factory returns
- * a NEW component identity on each call, and React treats a changed element type
- * as a full unmount/remount (state loss, broken animations). The cache keeps one
- * stable wrapper per component so re-renders reuse the same type.
+ * String tags ("div", "section", …) go through the `motion` proxy's getter,
+ * which returns the corresponding motion component for any intrinsic tag. NOTE:
+ * `"div" in motion` is false (the proxy has no `has` trap), so we must branch on
+ * `typeof as === "string"` rather than the `in` operator.
+ *
+ * Custom components are wrapped with `motion.create()` and memoized in a WeakMap:
+ * the factory returns a NEW component identity on each call, and React treats a
+ * changed element type as a full unmount/remount (state loss, broken
+ * animations). WeakMap keys must be objects — never pass a string here.
  */
-type MotionTagMap = typeof motion;
-const motionComponentCache = new WeakMap<React.ComponentType, ElementType>();
+const motionProxy = motion as unknown as Record<string, ElementType> & {
+  create: (component: React.ComponentType) => ElementType;
+};
+const motionComponentCache = new WeakMap<object, ElementType>();
 function motionTag(as: ElementType): ElementType {
-  if (typeof as === "string" && as in motion) {
-    return motion[as as keyof MotionTagMap] as ElementType;
+  if (typeof as === "string") {
+    return motionProxy[as];
   }
-  const component = as as React.ComponentType;
+  const component = as as unknown as object;
   let wrapped = motionComponentCache.get(component);
   if (!wrapped) {
-    wrapped = motion(component) as ElementType;
+    wrapped = motionProxy.create(as as React.ComponentType);
     motionComponentCache.set(component, wrapped);
   }
   return wrapped;
