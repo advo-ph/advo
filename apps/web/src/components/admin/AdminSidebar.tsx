@@ -22,6 +22,10 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const appVersion = import.meta.env.VITE_APP_VERSION || "1.0.0";
+const appCommit = import.meta.env.VITE_APP_COMMIT || "local";
+const versionLabel = `v${appVersion} · ${appCommit}`;
+
 export type AdminSection =
   | "dashboard"
   | "projects"
@@ -186,8 +190,19 @@ const AdminSidebar = ({
           })()}
         </nav>
 
-        {/* Theme toggle, Settings & Collapse */}
+        {/* Version, Theme toggle, Settings & Collapse */}
         <div className="p-3 border-t border-border space-y-1">
+          {!isCollapsed && (
+            <div className="px-3 pb-2 mb-2 border-b border-border/60">
+              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+                Version
+              </div>
+              <div className="mt-1 font-mono text-xs text-muted-foreground">
+                {versionLabel}
+              </div>
+            </div>
+          )}
+
           <button
             onClick={onToggleTheme}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
