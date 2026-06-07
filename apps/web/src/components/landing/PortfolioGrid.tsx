@@ -3,6 +3,7 @@ import { Loader2 } from "lucide-react";
 import PortfolioCard from "./PortfolioCard";
 import { get } from "@/lib/api";
 import { Section, SectionHeader } from "@/components/ui/section";
+import { Reveal, RevealGroup } from "@/components/motion/Reveal";
 
 interface PortfolioProject {
   portfolio_project_id: number;
@@ -37,19 +38,21 @@ const PortfolioGrid = () => {
 
   return (
     <Section id="portfolio" divided>
-      <SectionHeader
-        number="04"
-        eyebrow="Portfolio"
-        title="Recent Work"
-        subtitle="A selection of projects we've delivered for startups and enterprises."
-      />
+      <Reveal>
+        <SectionHeader
+          number="04"
+          eyebrow="Portfolio"
+          title="Recent Work"
+          subtitle="A selection of projects we've delivered for startups and enterprises."
+        />
+      </Reveal>
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <RevealGroup stagger={0.08} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((project, index) => (
             <PortfolioCard
               key={project.portfolio_project_id}
@@ -62,7 +65,7 @@ const PortfolioGrid = () => {
               index={index}
             />
           ))}
-        </div>
+        </RevealGroup>
       )}
     </Section>
   );

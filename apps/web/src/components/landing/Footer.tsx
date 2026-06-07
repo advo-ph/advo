@@ -12,6 +12,7 @@ import {
   MapPin,
 } from "lucide-react";
 import { get } from "@/lib/api";
+import { Reveal, RevealGroup } from "@/components/motion/Reveal";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Facebook,
@@ -69,9 +70,9 @@ const Footer = () => {
     <footer className="border-t border-border bg-background">
       <div className="max-w-6xl mx-auto px-6">
         {/* Top — 4 columns */}
-        <div className="grid grid-cols-2 md:grid-cols-12 gap-10 py-16">
+        <RevealGroup stagger={0.08} className="grid grid-cols-2 md:grid-cols-12 gap-10 py-16">
           {/* Brand */}
-          <div className="col-span-2 md:col-span-5">
+          <Reveal as="div" className="col-span-2 md:col-span-5">
             <Link to="/" className="inline-block mb-4">
               <img
                 src="/advo-logo-black.png"
@@ -86,10 +87,10 @@ const Footer = () => {
               <MapPin className="h-3.5 w-3.5" />
               Makati, Philippines
             </div>
-          </div>
+          </Reveal>
 
           {/* Company */}
-          <div className="md:col-span-3">
+          <Reveal as="div" className="md:col-span-3">
             <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-muted-foreground/60 mb-5">
               Company
             </p>
@@ -104,10 +105,10 @@ const Footer = () => {
                 </Link>
               ))}
             </nav>
-          </div>
+          </Reveal>
 
           {/* Services */}
-          <div className="md:col-span-2">
+          <Reveal as="div" className="md:col-span-2">
             <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-muted-foreground/60 mb-5">
               Services
             </p>
@@ -118,10 +119,10 @@ const Footer = () => {
                 </li>
               ))}
             </ul>
-          </div>
+          </Reveal>
 
           {/* Contact */}
-          <div className="md:col-span-2">
+          <Reveal as="div" className="md:col-span-2">
             <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-muted-foreground/60 mb-5">
               Contact
             </p>
@@ -150,11 +151,11 @@ const Footer = () => {
                 );
               })}
             </nav>
-          </div>
-        </div>
+          </Reveal>
+        </RevealGroup>
 
         {/* Bottom — copyright + meta */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 py-6 border-t border-border text-[11px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">
+        <Reveal as="div" className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 py-6 border-t border-border text-[11px] font-mono uppercase tracking-[0.15em] text-muted-foreground/60">
           <span>© {new Date().getFullYear()} ADVO · All rights reserved</span>
           <div className="flex items-center gap-4">
             <span>Built with care in Manila</span>
@@ -163,7 +164,7 @@ const Footer = () => {
               Start a project →
             </Link>
           </div>
-        </div>
+        </Reveal>
       </div>
     </footer>
   );

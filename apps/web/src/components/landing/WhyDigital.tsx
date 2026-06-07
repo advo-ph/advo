@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Globe, TrendingUp, Clock, Users } from "lucide-react";
 import { get } from "@/lib/api";
 import { Section, SectionHeader } from "@/components/ui/section";
+import { Reveal, RevealGroup } from "@/components/motion/Reveal";
+import CornerBrackets from "@/components/motion/CornerBrackets";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Globe,
@@ -45,18 +47,25 @@ const WhyDigital = () => {
 
   return (
     <Section divided>
-      <SectionHeader
-        number="01"
-        eyebrow="Why Go Digital"
-        title={content.heading}
-        subtitle={content.subtitle || undefined}
-      />
+      <Reveal>
+        <SectionHeader
+          number="01"
+          eyebrow="Why Go Digital"
+          title={content.heading}
+          subtitle={content.subtitle || undefined}
+        />
+      </Reveal>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-border border border-border rounded-xl overflow-hidden">
+      <RevealGroup
+        stagger={0.08}
+        className="grid grid-cols-1 md:grid-cols-2 gap-px bg-border border border-border rounded-xl overflow-hidden relative"
+      >
+        <CornerBrackets />
         {content.benefits.map((benefit) => {
           const Icon = ICON_MAP[benefit.icon] || Globe;
           return (
-            <div
+            <Reveal
+              as="div"
               key={benefit.title}
               className="group flex gap-4 p-6 bg-background hover:bg-card transition-colors"
             >
@@ -69,10 +78,10 @@ const WhyDigital = () => {
                   {benefit.description}
                 </p>
               </div>
-            </div>
+            </Reveal>
           );
         })}
-      </div>
+      </RevealGroup>
     </Section>
   );
 };

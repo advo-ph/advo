@@ -10,6 +10,7 @@ import ContactCTA from "@/components/landing/ContactCTA";
 import Footer from "@/components/landing/Footer";
 import FloatingNav from "@/components/landing/FloatingNav";
 import TechTicker from "@/components/landing/TechTicker";
+import FramingSpine from "@/components/motion/FramingSpine";
 import { get } from "@/lib/api";
 
 const InfrastructureDiagram = lazy(
@@ -69,6 +70,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
+      <FramingSpine />
       <FloatingNav />
 
       {isVisible("hero") && <Hero />}

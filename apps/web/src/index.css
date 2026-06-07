@@ -49,6 +49,14 @@
     --sidebar-accent-foreground: 0 0% 98%;
     --sidebar-border: 0 0% 14%;
     --sidebar-ring: 0 0% 98%;
+
+    /* ── Framing system (spine rail + travelling comet + brackets) ── */
+    --spine-width: 1px;
+    --spine-col: 72rem;        /* mirrors max-w-6xl */
+    --spine-gutter: 1.5rem;    /* mirrors px-6 */
+    --light-length: 5rem;      /* ~80px comet */
+    --bracket-size: 24px;
+    --bracket-weight: 1px;
   }
 
   .admin-light {
@@ -198,5 +206,34 @@
   /* Press feedback */
   .btn-press {
     @apply transition-transform active:scale-[0.98];
+  }
+
+  /* ── Reduced-motion guard (belt-and-suspenders for the framing system) ──
+   * JS (framer's useReducedMotion) is the primary control. This CSS catches the
+   * case where markup paints before JS resolves the preference. */
+  @media (prefers-reduced-motion: reduce) {
+    .spine-light {
+      transition: none !important;
+      animation: none !important;
+      transform: none !important;
+      opacity: 0.6;
+    }
+    .reveal-fallback {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+
+    /* Optional, additive page-wide consistency: quiet the pre-existing ambient
+     * CSS animations (TechTicker marquee, Hero/ContactCTA blobs, scroll cue).
+     * Not part of the framing primitives; safe to remove without regressing
+     * them. */
+    .animate-marquee,
+    .animate-blob-1,
+    .animate-blob-2,
+    .animate-blob-3,
+    .animate-blob-4,
+    .animate-bounce {
+      animation: none !important;
+    }
   }
 }

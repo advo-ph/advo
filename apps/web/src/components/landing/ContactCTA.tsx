@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { ArrowRight, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
 import { get } from "@/lib/api";
+import { Reveal, RevealGroup } from "@/components/motion/Reveal";
 
 interface ContactContent {
   heading: string;
@@ -70,20 +71,20 @@ const ContactCTA = () => {
         }}
       />
 
-      <div className="relative max-w-4xl mx-auto">
-        <span className="text-xs font-medium text-background/80 uppercase tracking-[0.18em] mb-6 block">
+      <RevealGroup stagger={0.09} className="relative max-w-4xl mx-auto">
+        <Reveal as="span" className="text-xs font-medium text-background/80 uppercase tracking-[0.18em] mb-6 block">
           Let's Build
-        </span>
+        </Reveal>
 
-        <h2 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-semibold tracking-tight leading-[1.0] mb-8 text-balance text-background">
+        <Reveal as="h2" className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-semibold tracking-tight leading-[1.0] mb-8 text-balance text-background">
           {content.heading}
-        </h2>
+        </Reveal>
 
-        <p className="text-background/85 mb-14 max-w-lg mx-auto leading-relaxed text-lg">
+        <Reveal as="p" className="text-background/85 mb-14 max-w-lg mx-auto leading-relaxed text-lg">
           {content.subtext}
-        </p>
+        </Reveal>
 
-        <div className="flex flex-wrap items-center justify-center gap-3 mb-10">
+        <Reveal as="div" className="flex flex-wrap items-center justify-center gap-3 mb-10">
           <Link
             to={content.cta_url}
             className="group inline-flex items-center gap-2.5 px-8 py-4 bg-background text-foreground rounded-full text-base font-medium hover:bg-background/90 btn-press shadow-[0_12px_40px_-8px_rgba(0,0,0,0.4)]"
@@ -98,12 +99,12 @@ const ContactCTA = () => {
             <Mail className="w-4 h-4" />
             contact@advo.ph
           </a>
-        </div>
+        </Reveal>
 
-        <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-background/75">
-          No sales calls · Reply within 24h · Free consultation
-        </p>
-      </div>
+        <Reveal as="p" className="text-[11px] font-mono uppercase tracking-[0.2em] text-background/75">
+          Reply within 24h · Free consultation
+        </Reveal>
+      </RevealGroup>
     </section>
   );
 };

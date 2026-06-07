@@ -1,3 +1,5 @@
+import { Reveal } from "@/components/motion/Reveal";
+
 const TECH = [
   { name: "React", slug: "react" },
   { name: "TypeScript", slug: "typescript" },
@@ -45,7 +47,7 @@ const Row = () => (
 
 const TechTicker = () => {
   return (
-    <section className="relative border-y border-border py-10 overflow-hidden bg-card/30">
+    <Reveal as="section" className="relative border-y border-border py-10 overflow-hidden bg-card/30">
       <div className="relative flex overflow-hidden">
         <Row />
         <Row />
@@ -54,7 +56,7 @@ const TechTicker = () => {
       {/* Edge fades */}
       <div className="pointer-events-none absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-background to-transparent" />
       <div className="pointer-events-none absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-background to-transparent" />
-    </section>
+    </Reveal>
   );
 };
 

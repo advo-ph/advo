@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { get } from "@/lib/api";
 import { Section, SectionHeader } from "@/components/ui/section";
+import { Reveal, RevealGroup } from "@/components/motion/Reveal";
 
 const ICON_MAP: Record<string, LucideIcon> = {
   Code2,
@@ -62,24 +63,27 @@ const ServiceTiers = () => {
 
   return (
     <Section divided>
-      <SectionHeader
-        number="03"
-        eyebrow="Services"
-        title="What We Build"
-        subtitle="End-to-end software engineering with a focus on quality, speed, and user experience."
-      />
+      <Reveal>
+        <SectionHeader
+          number="03"
+          eyebrow="Services"
+          title="What We Build"
+          subtitle="End-to-end software engineering with a focus on quality, speed, and user experience."
+        />
+      </Reveal>
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <RevealGroup stagger={0.1} className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {services.map((service) => {
             const Icon = ICON_MAP[service.icon] || Code2;
             const features = FALLBACK_FEATURES[service.title] || [];
             return (
-              <div
+              <Reveal
+                as="div"
                 key={service.title}
                 className="group flex flex-col p-6 border border-border rounded-xl bg-card hover:border-foreground/30 transition-colors"
               >
@@ -110,10 +114,10 @@ const ServiceTiers = () => {
                   Learn more
                   <ArrowRight className="ml-1.5 h-3.5 w-3.5 group-hover/btn:translate-x-0.5 transition-transform" />
                 </button>
-              </div>
+              </Reveal>
             );
           })}
-        </div>
+        </RevealGroup>
       )}
     </Section>
   );

@@ -1,6 +1,7 @@
 import { ExternalLink } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { Reveal } from "@/components/motion/Reveal";
 
 const isVideoUrl = (url: string) => /\.(mp4|webm|mov|ogg|ogv|m4v)(\?|$)/i.test(url);
 
@@ -20,12 +21,13 @@ const PortfolioCard = ({
   techStack,
   previewUrl,
   imageUrl,
+  index,
   slug,
 }: PortfolioCardProps) => {
   const projectSlug = slug || title.toLowerCase().replace(/\s+/g, "-");
 
   return (
-    <div className="group relative bg-card border border-border rounded-xl overflow-hidden hover:border-foreground/30 transition-colors">
+    <Reveal as="div" className="group relative bg-card border border-border rounded-xl overflow-hidden hover:border-foreground/30 transition-colors">
       <Link to={`/project/${projectSlug}`} className="block">
         <div className="aspect-video bg-secondary/40 flex items-center justify-center relative overflow-hidden">
           {imageUrl ? (
@@ -84,7 +86,7 @@ const PortfolioCard = ({
           </div>
         </div>
       </Link>
-    </div>
+    </Reveal>
   );
 };
 

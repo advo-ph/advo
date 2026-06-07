@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Minus } from "lucide-react";
 import { get } from "@/lib/api";
 import { Section, SectionHeader } from "@/components/ui/section";
+import { Reveal, RevealGroup } from "@/components/motion/Reveal";
+import CornerBrackets from "@/components/motion/CornerBrackets";
 
 interface FAQItem {
   question: string;
@@ -14,7 +16,7 @@ const DEFAULTS: { heading: string; subtitle: string; items: FAQItem[] } = {
   subtitle: "Everything you need to know about working with us.",
   items: [
     { question: "What services do you offer?", answer: "We specialize in web applications, mobile solutions, and cloud architecture. From MVPs to enterprise-scale systems, we handle the full development lifecycle." },
-    { question: "How long does a typical project take?", answer: "Project timelines vary based on scope. A simple website might take 2-4 weeks, while a full web application could take 2-3 months. We'll provide a detailed timeline during discovery." },
+    { question: "How long does a typical project take?", answer: "Project timelines vary based on scope. A simple website might take 1-2 weeks, while a full web application could take 2-4 weeks. We'll provide a detailed timeline during discovery." },
     { question: "What's your pricing structure?", answer: "We offer flexible pricing based on project scope. We can work on fixed-price projects for well-defined requirements, or time & materials for ongoing development." },
     { question: "Do you offer ongoing support?", answer: "Yes! We provide maintenance packages and can continue as your development partner after launch. We believe in long-term relationships, not just one-off projects." },
     { question: "What technologies do you work with?", answer: "Our core stack includes React, Next.js, Node.js, Python, PostgreSQL, and modern cloud platforms. We choose the best tools for each project." },
@@ -40,17 +42,20 @@ const FAQ = () => {
 
   return (
     <Section narrow divided>
-      <SectionHeader
-        number="05"
-        eyebrow="FAQ"
-        title={content.heading}
-        subtitle={content.subtitle}
-        align="center"
-      />
+      <Reveal>
+        <SectionHeader
+          number="05"
+          eyebrow="FAQ"
+          title={content.heading}
+          subtitle={content.subtitle}
+          align="center"
+        />
+      </Reveal>
 
-      <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
+      <RevealGroup stagger={0.06} className="relative border border-border rounded-xl overflow-hidden divide-y divide-border">
+        <CornerBrackets />
         {content.items.map((faq, index) => (
-          <div key={index} className="bg-card">
+          <Reveal as="div" key={index} className="bg-card">
             <button
               onClick={() => setOpenIndex(openIndex === index ? null : index)}
               className="w-full flex items-center justify-between p-5 text-left hover:bg-secondary/50 transition-colors"
@@ -79,9 +84,9 @@ const FAQ = () => {
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
+          </Reveal>
         ))}
-      </div>
+      </RevealGroup>
     </Section>
   );
 };

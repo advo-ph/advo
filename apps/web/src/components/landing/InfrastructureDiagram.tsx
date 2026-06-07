@@ -283,7 +283,7 @@ export default function InfrastructureDiagram() {
             orthographic
             camera={{
               position: [9, 7, 10],
-              zoom: isMobile ? 44 : 58,
+              zoom: isMobile ? 60 : 82,
               near: 0.1,
               far: 100,
             }}

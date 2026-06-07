@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Search, Palette, Code, Rocket } from "lucide-react";
 import { get } from "@/lib/api";
 import { Section, SectionHeader } from "@/components/ui/section";
+import { Reveal, RevealGroup } from "@/components/motion/Reveal";
+import CornerBrackets from "@/components/motion/CornerBrackets";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Search,
@@ -45,19 +47,23 @@ const ProcessSteps = () => {
 
   return (
     <Section divided>
-      <SectionHeader
-        number="02"
-        eyebrow="Our Process"
-        title={content.heading}
-        subtitle={content.subtitle || undefined}
-      />
+      <Reveal>
+        <SectionHeader
+          number="02"
+          eyebrow="Our Process"
+          title={content.heading}
+          subtitle={content.subtitle || undefined}
+        />
+      </Reveal>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <RevealGroup stagger={0.12} className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <CornerBrackets />
         {content.steps.map((step, index) => {
           const Icon = ICON_MAP[step.icon] || Code;
           const num = String(index + 1).padStart(2, "0");
           return (
-            <div
+            <Reveal
+              as="div"
               key={step.title}
               className="group relative p-6 border border-border rounded-xl bg-card hover:border-foreground/30 transition-colors"
             >
@@ -71,10 +77,10 @@ const ProcessSteps = () => {
               <p className="text-sm text-muted-foreground leading-relaxed">
                 {step.description}
               </p>
-            </div>
+            </Reveal>
           );
         })}
-      </div>
+      </RevealGroup>
     </Section>
   );
 };

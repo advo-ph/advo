@@ -1,20 +1,9 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, ArrowDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { get } from "@/lib/api";
-
-const EASE = [0.32, 0.72, 0, 1] as const;
-const fadeUp = {
-  hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0 },
-};
-const stagger = {
-  hidden: {},
-  show: {
-    transition: { staggerChildren: 0.1, delayChildren: 0.15 },
-  },
-};
+import { EASE, fadeUp, staggerParent } from "@/lib/motion";
 
 interface HeroContent {
   headline: string;
@@ -28,7 +17,7 @@ interface HeroContent {
 const DEFAULTS: HeroContent = {
   headline: "We digitalize for you.",
   subtext:
-    "Web apps, client portals, and digital systems — designed, built, and shipped by a small team that gives a damn.",
+    "Business websites, operations, and digital systems. Designed, built, and shipped by a small team that gives a damn.",
   cta_primary_label: "Start a Project",
   cta_primary_url: "/start",
   status_badge_text: "Accepting Clients",
@@ -43,6 +32,7 @@ const STATS = [
 
 const Hero = () => {
   const [content, setContent] = useState<HeroContent>(DEFAULTS);
+  const reduced = useReducedMotion();
 
   useEffect(() => {
     (async () => {
@@ -80,8 +70,8 @@ const Hero = () => {
       {/* Content overlay */}
       <div className="relative w-full max-w-6xl mx-auto px-6 pb-14 pt-8 md:pb-16 md:pt-32 lg:pb-24">
         <motion.div
-          variants={stagger}
-          initial="hidden"
+          variants={staggerParent(0.1, 0.15)}
+          initial={reduced ? false : "hidden"}
           animate="show"
           className="max-w-2xl"
         >
