@@ -7,11 +7,7 @@ import { motion, useMotionValue, useMotionValueEvent } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useSpineGlowY } from "@/components/motion/FramingSpine";
 
-type Side = "left" | "right";
-
 interface EdgeGlowProps {
-  /** Which inner edges glow as the spine comet passes. Defaults to both. */
-  sides?: Side[];
   /**
    * Vertical reach (px) above/below the element over which the comet's
    * proximity fades the glow in and out. Larger = softer, longer-lived glow.
@@ -22,19 +18,20 @@ interface EdgeGlowProps {
 }
 
 /**
- * EdgeGlow — inner-edge glow synced to the FramingSpine comet.
+ * EdgeGlow — a framed content box that lights up as the FramingSpine comet
+ * passes.
  *
- * Wraps an element whose left/right edges sit on the spine rails (e.g. a
- * `max-w-6xl` content column). As the comet sweeps to this element's vertical
- * band, an inset glow fades in on the rail-facing edge(s), making the component
- * appear lit from the line. Pure opacity animation on a pointer-events-none
- * overlay — no layout impact.
+ * Wraps a content column whose left/right edges sit on the spine rails. It
+ * draws static top + bottom hairlines (matching the rail color) so the box is
+ * fully framed — the vertical sides are the global rails, the horizontal sides
+ * are these lines. As the comet sweeps to this box's vertical band, an inset
+ * glow fades in on ALL FOUR inner edges, so the whole frame appears lit.
  *
- * When the spine is inactive (mobile / reduced motion / pre-mount) the context
- * value is null, the glow stays at 0, and this renders as a plain wrapper.
+ * Pure opacity animation on pointer-events-none layers; no layout impact. When
+ * the spine is inactive (mobile / reduced motion / pre-mount) the context value
+ * is null, the glow stays at 0, and only the static frame lines remain.
  */
 export function EdgeGlow({
-  sides = ["left", "right"],
   radius = 220,
   className,
   children,
@@ -64,20 +61,33 @@ export function EdgeGlow({
     glow.set(intensity);
   });
 
-  const boxShadow = sides
-    .map((s) =>
-      s === "left"
-        ? "inset 22px 0 44px -24px hsl(var(--accent) / 0.95)"
-        : "inset -22px 0 44px -24px hsl(var(--accent) / 0.95)",
-    )
-    .join(", ");
+  // Inset accent glow on all four inner edges — completes the framed box.
+  const boxShadow = [
+    "inset 22px 0 44px -24px hsl(var(--accent) / 0.95)",
+    "inset -22px 0 44px -24px hsl(var(--accent) / 0.95)",
+    "inset 0 22px 44px -24px hsl(var(--accent) / 0.95)",
+    "inset 0 -22px 44px -24px hsl(var(--accent) / 0.95)",
+  ].join(", ");
 
   return (
     <div ref={ref} className={cn("relative", className)}>
-      {children}
+      {/* Content sits above the frame layers. */}
+      <div className="relative z-10">{children}</div>
+
+      {/* Static horizontal frame lines (verticals are the global rails). */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 z-0 h-px bg-border/60"
+      />
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-px bg-border/60"
+      />
+
+      {/* Four-edge glow, brightening as the comet sweeps past. */}
       <motion.div
         aria-hidden
-        className="pointer-events-none absolute inset-0 z-[1] rounded-[inherit]"
+        className="pointer-events-none absolute inset-0 z-0"
         style={{ opacity: glow, boxShadow }}
       />
     </div>
