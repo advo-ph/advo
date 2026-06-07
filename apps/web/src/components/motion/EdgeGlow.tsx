@@ -18,28 +18,30 @@ import { useSpineGlowY } from "@/components/motion/FramingSpine";
 interface EdgeGlowProps {
   /**
    * Vertical reach (px) above/below the element over which the comet's
-   * proximity fades the glow in and out. Larger = softer, longer-lived glow.
+   * proximity fades the frame glow in and out.
    */
   radius?: number;
   className?: string;
   children?: ReactNode;
 }
 
+// How far (in px of comet↔line distance) the horizontal sweep runs.
+const APPROACH = 350; // ends → rail intersection as the comet nears the line
+const AFTER = 250; //    intersection → center as the comet passes the line
+
 /**
- * EdgeGlow — a framed content box that lights up as the FramingSpine comet
- * passes.
+ * EdgeGlow — a framed content box wired to the FramingSpine comet.
  *
  * Static frame: vertical sides are the global rails; horizontal sides are
- * full-viewport-width hairlines drawn here. As the comet sweeps to this box's
- * vertical band, two things animate, driven by the comet's proximity:
- *  - a soft inset glow on all four inner edges (on top of the content), and
- *  - a bright light on each horizontal line that starts at both far ends,
- *    sweeps inward through the rail intersections, and converges/fades at the
- *    center.
+ * full-viewport-width hairlines drawn here. As the comet sweeps to this box,
+ * two things animate:
+ *  - a soft inset glow on all four inner edges, and
+ *  - a bright streak on each horizontal line that comes in from both far ends
+ *    and reaches the rail intersections exactly as the vertical comet crosses
+ *    that line — so they converge — then continues to the center and fades.
  *
- * Pure opacity/transform on pointer-events-none layers; no layout impact. When
- * the spine is inactive (mobile / reduced motion / pre-mount) the context value
- * is null and everything stays dark.
+ * Pure opacity/transform on pointer-events-none layers. Inactive (mobile /
+ * reduced motion / pre-mount) → context null → everything stays dark.
  */
 export function EdgeGlow({
   radius = 220,
@@ -52,9 +54,16 @@ export function EdgeGlow({
   const cometY = ctxY ?? fallback;
 
   const ref = useRef<HTMLDivElement>(null);
-  const glow = useMotionValue(0);
 
-  // Viewport width — drives how far the horizontal sweeps travel from the edges.
+  // Frame inset-glow intensity (comet proximity to the box center).
+  const glow = useMotionValue(0);
+  // Per-line sweep: distance of each streak from center (px) + its opacity.
+  const posTop = useMotionValue(0);
+  const opTop = useMotionValue(0);
+  const posBottom = useMotionValue(0);
+  const opBottom = useMotionValue(0);
+
+  // Viewport width — the streaks start at ±vw/2 (the far ends).
   const [vw, setVw] = useState(0);
   useEffect(() => {
     const measure = () => setVw(window.innerWidth);
@@ -65,27 +74,52 @@ export function EdgeGlow({
 
   useMotionValueEvent(cometY, "change", (cy) => {
     const el = ref.current;
-    if (!el || cy < -9000) {
+    const clear = () => {
       glow.set(0);
-      return;
-    }
+      opTop.set(0);
+      opBottom.set(0);
+    };
+    if (!el || cy < -9000) return clear();
     const r = el.getBoundingClientRect();
-    if (r.height === 0) {
-      glow.set(0);
-      return;
-    }
+    if (r.height === 0) return clear();
+
+    // Frame glow: proximity of the comet to the box center.
     const center = r.top + r.height / 2;
     const reach = r.height / 2 + radius;
-    const intensity = Math.max(0, Math.min(1, 1 - Math.abs(cy - center) / reach));
-    glow.set(intensity);
+    glow.set(Math.max(0, Math.min(1, 1 - Math.abs(cy - center) / reach)));
+
+    // Horizontal sweep, per line. `pos` is distance from center: the far end
+    // (vw/2) → the rail intersection (box half-width) → the center (0). It hits
+    // the intersection at d = 0, i.e. exactly when the comet center is on the
+    // line — converging with the vertical comet there.
+    const end = vw / 2;
+    const railHalf = r.width / 2;
+    const sweep = (lineY: number, pos: MotionValue<number>, op: MotionValue<number>) => {
+      const d = cy - lineY;
+      if (d <= -APPROACH || d >= AFTER) {
+        op.set(0);
+        return;
+      }
+      if (d < 0) {
+        const f = (d + APPROACH) / APPROACH; // 0 (far) → 1 (at line)
+        pos.set(end + (railHalf - end) * f);
+        op.set(f);
+      } else {
+        const f = d / AFTER; // 0 (at line) → 1 (gone at center)
+        pos.set(railHalf * (1 - f));
+        op.set(1 - f);
+      }
+    };
+    sweep(r.top, posTop, opTop);
+    sweep(r.bottom, posBottom, opBottom);
   });
 
-  // Inset accent glow on all four inner edges — completes the framed box.
+  // Soft inset accent glow on all four inner edges — completes the framed box.
   const boxShadow = [
-    "inset 22px 0 44px -24px hsl(var(--accent) / 0.4)",
-    "inset -22px 0 44px -24px hsl(var(--accent) / 0.4)",
-    "inset 0 22px 44px -24px hsl(var(--accent) / 0.4)",
-    "inset 0 -22px 44px -24px hsl(var(--accent) / 0.4)",
+    "inset 22px 0 44px -24px hsl(var(--accent) / 0.2)",
+    "inset -22px 0 44px -24px hsl(var(--accent) / 0.2)",
+    "inset 0 22px 44px -24px hsl(var(--accent) / 0.2)",
+    "inset 0 -22px 44px -24px hsl(var(--accent) / 0.2)",
   ].join(", ");
 
   return (
@@ -93,8 +127,8 @@ export function EdgeGlow({
       {/* Content. */}
       <div className="relative z-10">{children}</div>
 
-      {/* Static horizontal frame lines, extended to the full viewport width via
-          a centered 100vw breakout. Verticals are the global rails. */}
+      {/* Static horizontal frame lines, full viewport width (centered 100vw
+          breakout). Verticals are the global rails. */}
       <span
         aria-hidden
         className="pointer-events-none absolute top-0 left-1/2 z-0 h-px w-screen -translate-x-1/2 bg-border/60"
@@ -104,54 +138,43 @@ export function EdgeGlow({
         className="pointer-events-none absolute bottom-0 left-1/2 z-0 h-px w-screen -translate-x-1/2 bg-border/60"
       />
 
-      {/* Four-edge glow on TOP of the content. */}
+      {/* Soft four-edge glow on top of the content. */}
       <motion.div
         aria-hidden
         className="pointer-events-none absolute inset-0 z-20"
         style={{ opacity: glow, boxShadow }}
       />
 
-      {/* Bright sweeps riding the horizontal lines (ends → center). */}
-      <LineSweep glow={glow} vw={vw} edge="top" />
-      <LineSweep glow={glow} vw={vw} edge="bottom" />
+      {/* Bright sweeps riding the horizontal lines. */}
+      <LineSweep pos={posTop} op={opTop} edge="top" />
+      <LineSweep pos={posBottom} op={opBottom} edge="bottom" />
     </div>
   );
 }
 
 /**
- * Two bright streaks on one horizontal line. They begin at the far viewport
- * ends, travel inward (passing the rail intersections), and converge at the
- * center where they fade out — position and brightness both driven by the
- * comet-proximity value `glow` (0 = far → at the ends; 1 = centered → gone).
+ * Two bright streaks on one horizontal line, mirrored about the center. Styling
+ * matches the vertical comet: a solid near-white bar faded at its ends by a
+ * gradient mask — no colored glow.
  */
 function LineSweep({
-  glow,
-  vw,
+  pos,
+  op,
   edge,
 }: {
-  glow: MotionValue<number>;
-  vw: number;
+  pos: MotionValue<number>;
+  op: MotionValue<number>;
   edge: "top" | "bottom";
 }): ReactElement {
-  const STREAK_W = 180;
-  const travel = Math.max(0, vw / 2 - STREAK_W / 2);
-
-  // glow 0 → at the far end; glow 1 → at the center (x = 0).
-  const xLeft = useTransform(glow, (v) => -(1 - v) * travel);
-  const xRight = useTransform(glow, (v) => (1 - v) * travel);
-  // Appear from the ends, brightest mid-sweep, gone by the center.
-  const opacity = useTransform(glow, (v) =>
-    Math.sin(Math.max(0, Math.min(1, v)) * Math.PI) * 0.9,
-  );
+  const xLeft = useTransform(pos, (v) => -v);
 
   const base: React.CSSProperties = {
-    width: STREAK_W,
+    width: "var(--light-length)",
     height: 2,
-    marginLeft: -STREAK_W / 2,
-    background:
-      "linear-gradient(90deg, transparent, hsl(var(--foreground) / 0.95), transparent)",
-    boxShadow:
-      "0 0 10px 2px hsl(var(--accent) / 0.6), 0 0 20px 4px hsl(var(--accent) / 0.3)",
+    marginLeft: "calc(var(--light-length) / -2)",
+    background: "hsl(var(--foreground) / 0.85)",
+    WebkitMaskImage: "linear-gradient(90deg, transparent, #000, transparent)",
+    maskImage: "linear-gradient(90deg, transparent, #000, transparent)",
     ...(edge === "top" ? { top: -1 } : { bottom: -1 }),
   };
 
@@ -160,12 +183,12 @@ function LineSweep({
       <motion.span
         aria-hidden
         className="pointer-events-none absolute left-1/2 z-20"
-        style={{ ...base, x: xLeft, opacity }}
+        style={{ ...base, x: xLeft, opacity: op }}
       />
       <motion.span
         aria-hidden
         className="pointer-events-none absolute left-1/2 z-20"
-        style={{ ...base, x: xRight, opacity }}
+        style={{ ...base, x: pos, opacity: op }}
       />
     </>
   );
