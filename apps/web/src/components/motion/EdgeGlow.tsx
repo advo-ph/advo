@@ -1,9 +1,17 @@
 import {
+  useEffect,
   useRef,
+  useState,
   type ReactElement,
   type ReactNode,
 } from "react";
-import { motion, useMotionValue, useMotionValueEvent } from "framer-motion";
+import {
+  motion,
+  useMotionValue,
+  useMotionValueEvent,
+  useTransform,
+  type MotionValue,
+} from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useSpineGlowY } from "@/components/motion/FramingSpine";
 
@@ -21,15 +29,17 @@ interface EdgeGlowProps {
  * EdgeGlow — a framed content box that lights up as the FramingSpine comet
  * passes.
  *
- * Wraps a content column whose left/right edges sit on the spine rails. It
- * draws static top + bottom hairlines (matching the rail color) so the box is
- * fully framed — the vertical sides are the global rails, the horizontal sides
- * are these lines. As the comet sweeps to this box's vertical band, an inset
- * glow fades in on ALL FOUR inner edges, so the whole frame appears lit.
+ * Static frame: vertical sides are the global rails; horizontal sides are
+ * full-viewport-width hairlines drawn here. As the comet sweeps to this box's
+ * vertical band, two things animate, driven by the comet's proximity:
+ *  - a soft inset glow on all four inner edges (on top of the content), and
+ *  - a bright light on each horizontal line that starts at both far ends,
+ *    sweeps inward through the rail intersections, and converges/fades at the
+ *    center.
  *
- * Pure opacity animation on pointer-events-none layers; no layout impact. When
+ * Pure opacity/transform on pointer-events-none layers; no layout impact. When
  * the spine is inactive (mobile / reduced motion / pre-mount) the context value
- * is null, the glow stays at 0, and only the static frame lines remain.
+ * is null and everything stays dark.
  */
 export function EdgeGlow({
   radius = 220,
@@ -43,6 +53,15 @@ export function EdgeGlow({
 
   const ref = useRef<HTMLDivElement>(null);
   const glow = useMotionValue(0);
+
+  // Viewport width — drives how far the horizontal sweeps travel from the edges.
+  const [vw, setVw] = useState(0);
+  useEffect(() => {
+    const measure = () => setVw(window.innerWidth);
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
 
   useMotionValueEvent(cometY, "change", (cy) => {
     const el = ref.current;
@@ -75,8 +94,7 @@ export function EdgeGlow({
       <div className="relative z-10">{children}</div>
 
       {/* Static horizontal frame lines, extended to the full viewport width via
-          a centered 100vw breakout (the content column is centered, so this
-          spans edge to edge). Verticals are the global rails. */}
+          a centered 100vw breakout. Verticals are the global rails. */}
       <span
         aria-hidden
         className="pointer-events-none absolute top-0 left-1/2 z-0 h-px w-screen -translate-x-1/2 bg-border/60"
@@ -86,14 +104,70 @@ export function EdgeGlow({
         className="pointer-events-none absolute bottom-0 left-1/2 z-0 h-px w-screen -translate-x-1/2 bg-border/60"
       />
 
-      {/* Four-edge glow on TOP of the content, so cards near the frame light up
-          from their inner edge as the comet sweeps past. */}
+      {/* Four-edge glow on TOP of the content. */}
       <motion.div
         aria-hidden
         className="pointer-events-none absolute inset-0 z-20"
         style={{ opacity: glow, boxShadow }}
       />
+
+      {/* Bright sweeps riding the horizontal lines (ends → center). */}
+      <LineSweep glow={glow} vw={vw} edge="top" />
+      <LineSweep glow={glow} vw={vw} edge="bottom" />
     </div>
+  );
+}
+
+/**
+ * Two bright streaks on one horizontal line. They begin at the far viewport
+ * ends, travel inward (passing the rail intersections), and converge at the
+ * center where they fade out — position and brightness both driven by the
+ * comet-proximity value `glow` (0 = far → at the ends; 1 = centered → gone).
+ */
+function LineSweep({
+  glow,
+  vw,
+  edge,
+}: {
+  glow: MotionValue<number>;
+  vw: number;
+  edge: "top" | "bottom";
+}): ReactElement {
+  const STREAK_W = 180;
+  const travel = Math.max(0, vw / 2 - STREAK_W / 2);
+
+  // glow 0 → at the far end; glow 1 → at the center (x = 0).
+  const xLeft = useTransform(glow, (v) => -(1 - v) * travel);
+  const xRight = useTransform(glow, (v) => (1 - v) * travel);
+  // Appear from the ends, brightest mid-sweep, gone by the center.
+  const opacity = useTransform(glow, (v) =>
+    Math.sin(Math.max(0, Math.min(1, v)) * Math.PI) * 0.9,
+  );
+
+  const base: React.CSSProperties = {
+    width: STREAK_W,
+    height: 2,
+    marginLeft: -STREAK_W / 2,
+    background:
+      "linear-gradient(90deg, transparent, hsl(var(--foreground) / 0.95), transparent)",
+    boxShadow:
+      "0 0 10px 2px hsl(var(--accent) / 0.6), 0 0 20px 4px hsl(var(--accent) / 0.3)",
+    ...(edge === "top" ? { top: -1 } : { bottom: -1 }),
+  };
+
+  return (
+    <>
+      <motion.span
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 z-20"
+        style={{ ...base, x: xLeft, opacity }}
+      />
+      <motion.span
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 z-20"
+        style={{ ...base, x: xRight, opacity }}
+      />
+    </>
   );
 }
 
