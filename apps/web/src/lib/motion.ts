@@ -28,8 +28,16 @@ export const staggerParent = (stagger = 0.08, delayChildren = 0): Variants => ({
   },
 });
 
-/** whileInView viewport config: fire once when 20% visible, never replay. */
-export const REVEAL_VIEWPORT = { once: true, amount: 0.2 } as const;
+/**
+ * whileInView viewport config: fire once, as soon as the element enters — and
+ * 200px BEFORE it reaches the viewport (positive bottom margin), so reveals
+ * start early instead of waiting for the element to be well into view.
+ */
+export const REVEAL_VIEWPORT = {
+  once: true,
+  amount: 0,
+  margin: "0px 0px 200px 0px",
+} as const;
 
 /** Reveal durations: standard cards vs. large section headlines. */
 export const DURATION = { reveal: 0.5, headline: 0.6 } as const;

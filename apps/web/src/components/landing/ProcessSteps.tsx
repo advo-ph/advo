@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Palette, Code, Rocket } from "lucide-react";
+import { Search, Palette, Code, Rocket, MessageCircle } from "lucide-react";
 import { get } from "@/lib/api";
 import { Section, SectionHeader } from "@/components/ui/section";
 import { Reveal, RevealGroup } from "@/components/motion/Reveal";
@@ -10,6 +10,7 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Palette,
   Code,
   Rocket,
+  MessageCircle,
 };
 
 interface Step {
@@ -22,10 +23,10 @@ const DEFAULTS: { heading: string; subtitle: string; steps: Step[] } = {
   heading: "How We Work",
   subtitle: "",
   steps: [
-    { icon: "Search", title: "Discovery", description: "Understanding your needs, goals, and vision for the project." },
-    { icon: "Palette", title: "Design", description: "Crafting intuitive interfaces and user experiences." },
-    { icon: "Code", title: "Build", description: "Developing with modern tech and iterating based on feedback." },
-    { icon: "Rocket", title: "Launch", description: "Deploying your product and providing ongoing support." },
+    { icon: "Palette", title: "Branding", description: "We get to know your brand, your needs, and your vision. Then we design — drawing inspiration from your social posts and any assets you share — to build the best-looking website in your field. Boring is not our specialty." },
+    { icon: "Code", title: "Development", description: "We develop fully responsive websites with rich interactivity and animations that bring your brand to life." },
+    { icon: "MessageCircle", title: "Feedback", description: "We listen closely to your requests and refine until you have a website you genuinely love." },
+    { icon: "Rocket", title: "Launch", description: "We publish your website to last — built to run for 10+ years, backed by ongoing maintenance and support." },
   ],
 };
 

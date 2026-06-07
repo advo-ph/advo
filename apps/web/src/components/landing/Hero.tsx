@@ -3,7 +3,8 @@ import { motion, useReducedMotion } from "framer-motion";
 import { ArrowRight, ArrowDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { get } from "@/lib/api";
-import { EASE, fadeUp, staggerParent } from "@/lib/motion";
+import { EASE } from "@/lib/motion";
+import { ScrambleText, WordReveal } from "@/components/motion/AnimatedText";
 
 interface HeroContent {
   headline: string;
@@ -69,31 +70,27 @@ const Hero = () => {
 
       {/* Content overlay */}
       <div className="relative w-full max-w-6xl mx-auto px-6 pb-14 pt-8 md:pb-16 md:pt-32 lg:pb-24">
-        <motion.div
-          variants={staggerParent(0.1, 0.15)}
-          initial={reduced ? false : "hidden"}
-          animate="show"
-          className="max-w-2xl"
-        >
-          <motion.h1
-            variants={fadeUp}
-            transition={{ duration: 0.6, ease: EASE }}
+        <div className="max-w-2xl">
+          <ScrambleText
+            as="h1"
+            text={content.headline}
+            delay={150}
+            duration={1300}
             className="text-4xl sm:text-6xl lg:text-7xl font-semibold tracking-tight leading-[1.02] mb-8 text-balance [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]"
-          >
-            {content.headline}
-          </motion.h1>
+          />
 
-          <motion.p
-            variants={fadeUp}
-            transition={{ duration: 0.5, ease: EASE }}
+          <WordReveal
+            as="p"
+            text={content.subtext}
+            delay={1.0}
+            stagger={0.045}
             className="text-lg text-foreground/80 max-w-xl mb-10 leading-relaxed [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]"
-          >
-            {content.subtext}
-          </motion.p>
+          />
 
           <motion.div
-            variants={fadeUp}
-            transition={{ duration: 0.5, ease: EASE }}
+            initial={reduced ? false : { opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: EASE, delay: 1.5 }}
             className="flex flex-wrap items-center gap-3 mb-12"
           >
             <Link
@@ -113,8 +110,9 @@ const Hero = () => {
 
           {/* Stats */}
           <motion.div
-            variants={fadeUp}
-            transition={{ duration: 0.5, ease: EASE }}
+            initial={reduced ? false : { opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: EASE, delay: 1.75 }}
             className="grid grid-cols-3 gap-6 max-w-md pt-8 border-t border-border/60"
           >
             {STATS.map((stat) => (
@@ -128,7 +126,7 @@ const Hero = () => {
               </div>
             ))}
           </motion.div>
-        </motion.div>
+        </div>
       </div>
 
       {/* Scroll cue */}

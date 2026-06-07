@@ -54,7 +54,7 @@
     --spine-width: 1px;
     --spine-col: 72rem;        /* mirrors max-w-6xl */
     --spine-gutter: 1.5rem;    /* mirrors px-6 */
-    --light-length: 5rem;      /* ~80px comet */
+    --light-length: 9rem;      /* ~144px comet / sweep streak */
     --bracket-size: 24px;
     --bracket-weight: 1px;
   }

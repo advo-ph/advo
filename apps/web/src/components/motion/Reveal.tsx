@@ -104,6 +104,7 @@ export function Reveal({
       viewport={{
         once: once ?? REVEAL_VIEWPORT.once,
         amount: amount ?? REVEAL_VIEWPORT.amount,
+        margin: REVEAL_VIEWPORT.margin,
       }}
       transition={{ duration: DURATION.reveal, ease: EASE, delay }}
     >
@@ -162,6 +163,7 @@ export function RevealGroup({
       viewport={{
         once: once ?? REVEAL_VIEWPORT.once,
         amount: amount ?? REVEAL_VIEWPORT.amount,
+        margin: REVEAL_VIEWPORT.margin,
       }}
     >
       {children}
