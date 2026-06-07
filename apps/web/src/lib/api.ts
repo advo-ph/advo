@@ -87,18 +87,47 @@ export async function api<T>(
     headers["Authorization"] = `Bearer ${accessToken}`;
   }
 
-  let res = await fetch(`${API_URL}${path}`, { ...options, headers });
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, { ...options, headers });
+  } catch (err) {
+    return {
+      data: null as T,
+      error: err instanceof Error ? err.message : "Network request failed",
+    };
+  }
 
   // Auto-refresh on 401
   if (res.status === 401 && refreshToken) {
     const refreshed = await refreshAccessToken();
     if (refreshed) {
       headers["Authorization"] = `Bearer ${accessToken}`;
-      res = await fetch(`${API_URL}${path}`, { ...options, headers });
+      try {
+        res = await fetch(`${API_URL}${path}`, { ...options, headers });
+      } catch (err) {
+        return {
+          data: null as T,
+          error: err instanceof Error ? err.message : "Network request failed",
+        };
+      }
     }
   }
 
-  const json = await res.json();
+  let json: ApiResponse<T> | { message?: string; error?: string | { message?: string } } = {
+    data: null as T,
+    error: null,
+  };
+  const text = await res.text();
+  if (text) {
+    try {
+      json = JSON.parse(text);
+    } catch {
+      return {
+        data: null as T,
+        error: res.ok ? "Invalid API response" : text,
+      };
+    }
+  }
 
   if (!res.ok) {
     const errMsg = typeof json.error === "string" ? json.error : json.error?.message || json.message || `HTTP ${res.status}`;

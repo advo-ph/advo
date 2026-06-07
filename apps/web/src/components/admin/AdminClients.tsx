@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -37,7 +38,6 @@ import {
 import * as db from "@/lib/db";
 import { post } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
 import type { Client } from "@/types/admin";
 
 interface AdminClientsProps {
@@ -48,7 +48,6 @@ interface AdminClientsProps {
 
 const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
   const { toast } = useToast();
-  const { user } = useAuth();
 
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -115,42 +114,49 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
     }
 
     setIsSaving(true);
+    try {
+      let error: string | null;
 
-    if (editingClient) {
-      const { error } = await db.updateClient(editingClient.client_id, {
+      if (editingClient) {
+        ({ error } = await db.updateClient(editingClient.client_id, {
           company_name: formData.company_name,
           contact_email: formData.contact_email || undefined,
           github_org_name: formData.github_org_name || null,
           brand_color_hex: formData.brand_color_hex,
-        });
+        }));
 
-      if (error) {
-        toast({ title: "Error", description: error, variant: "destructive" });
+        if (error) {
+          toast({ title: "Error", description: error, variant: "destructive" });
+        } else {
+          toast({ title: "Success", description: "Client updated" });
+          setIsDialogOpen(false);
+          onRefresh();
+        }
       } else {
-        toast({ title: "Success", description: "Client updated" });
-        setIsDialogOpen(false);
-        onRefresh();
+        ({ error } = await db.createClient({
+          company_name: formData.company_name,
+          contact_email: formData.contact_email || undefined,
+          github_org_name: formData.github_org_name || null,
+          brand_color_hex: formData.brand_color_hex,
+        }));
+
+        if (error) {
+          toast({ title: "Error", description: error, variant: "destructive" });
+        } else {
+          toast({ title: "Success", description: "Client created" });
+          setIsDialogOpen(false);
+          onRefresh();
+        }
       }
-    } else {
-      // Creating a new client — associate with current user
-      const { error } = await db.createClient({
-        user_id: user?.id,
-        company_name: formData.company_name,
-        contact_email: formData.contact_email || undefined,
-        github_org_name: formData.github_org_name || null,
-        brand_color_hex: formData.brand_color_hex,
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Unable to save client",
+        variant: "destructive",
       });
-
-      if (error) {
-        toast({ title: "Error", description: error, variant: "destructive" });
-      } else {
-        toast({ title: "Success", description: "Client created" });
-        setIsDialogOpen(false);
-        onRefresh();
-      }
+    } finally {
+      setIsSaving(false);
     }
-
-    setIsSaving(false);
   };
 
   const handleDelete = async () => {
@@ -303,6 +309,9 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
             <DialogTitle>
               {editingClient ? "Edit Client" : "New Client"}
             </DialogTitle>
+            <DialogDescription>
+              Save the client details used across admin projects, notifications, and invites.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
@@ -312,6 +321,7 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
                 value={formData.company_name}
                 onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
                 placeholder="Acme Corp"
+                autoComplete="organization"
               />
             </div>
 
@@ -322,6 +332,7 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
                 value={formData.contact_email}
                 onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
                 placeholder="contact@company.com"
+                autoComplete="email"
               />
             </div>
 

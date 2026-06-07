@@ -176,7 +176,6 @@ export async function getClients(): Promise<DbResult<Client[]>> {
 }
 
 export async function createClient(client: {
-  user_id?: string;
   company_name: string;
   contact_email?: string;
   github_org_name?: string | null;
