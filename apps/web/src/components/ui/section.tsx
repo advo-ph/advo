@@ -1,27 +1,39 @@
 import { cn } from "@/lib/utils";
 import { forwardRef } from "react";
+import { EdgeGlow } from "@/components/motion/EdgeGlow";
 
 type SectionProps = React.HTMLAttributes<HTMLElement> & {
   narrow?: boolean;
   divided?: boolean;
+  /**
+   * Glow the content column's edges as the spine comet sweeps past. Defaults to
+   * on for full-width sections (whose edges sit on the rails). Auto-disabled for
+   * `narrow` sections, whose edges don't reach the rails.
+   */
+  glow?: boolean;
 };
 
 export const Section = forwardRef<HTMLElement, SectionProps>(
-  ({ className, narrow, divided, children, ...props }, ref) => (
-    <section
-      ref={ref}
-      className={cn(
-        "py-24 px-6",
-        divided && "border-t border-border",
-        className,
-      )}
-      {...props}
-    >
-      <div className={cn("mx-auto w-full", narrow ? "max-w-3xl" : "max-w-6xl")}>
-        {children}
-      </div>
-    </section>
-  ),
+  ({ className, narrow, divided, glow = true, children, ...props }, ref) => {
+    const inner = cn("mx-auto w-full", narrow ? "max-w-3xl" : "max-w-6xl");
+    return (
+      <section
+        ref={ref}
+        className={cn(
+          "py-24 px-6",
+          divided && "border-t border-border",
+          className,
+        )}
+        {...props}
+      >
+        {glow && !narrow ? (
+          <EdgeGlow className={inner}>{children}</EdgeGlow>
+        ) : (
+          <div className={inner}>{children}</div>
+        )}
+      </section>
+    );
+  },
 );
 Section.displayName = "Section";
 

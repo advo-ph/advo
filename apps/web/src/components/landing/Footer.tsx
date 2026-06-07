@@ -67,7 +67,7 @@ const Footer = () => {
   }, []);
 
   return (
-    <footer className="border-t border-border bg-background">
+    <footer className="relative z-40 border-t border-border bg-background">
       <div className="max-w-6xl mx-auto px-6">
         {/* Top — 4 columns */}
         <RevealGroup stagger={0.08} className="grid grid-cols-2 md:grid-cols-12 gap-10 py-16">

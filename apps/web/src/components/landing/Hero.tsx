@@ -50,7 +50,7 @@ const Hero = () => {
   }, []);
 
   return (
-    <section className="relative overflow-hidden border-b border-border bg-background md:min-h-svh md:flex md:flex-col md:justify-end">
+    <section className="relative z-40 overflow-hidden border-b border-border bg-background md:min-h-svh md:flex md:flex-col md:justify-end">
       {/* Team photo: full image on phones, full-bleed crop on larger screens */}
       <div className="relative md:absolute md:inset-0">
         <img

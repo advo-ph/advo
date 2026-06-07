@@ -47,15 +47,15 @@ const Row = () => (
 
 const TechTicker = () => {
   return (
-    <Reveal as="section" className="relative border-y border-border py-10 overflow-hidden bg-card/30">
+    <Reveal as="section" className="relative z-40 border-y border-border py-10 overflow-hidden bg-card">
       <div className="relative flex overflow-hidden">
         <Row />
         <Row />
       </div>
 
       {/* Edge fades */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-background to-transparent" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-background to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-card to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-card to-transparent" />
     </Reveal>
   );
 };

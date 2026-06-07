@@ -37,7 +37,7 @@ const ContactCTA = () => {
   }, []);
 
   return (
-    <section className="relative py-48 lg:py-56 px-6 text-center overflow-hidden bg-[#6b2a12]">
+    <section className="relative z-40 py-48 lg:py-56 px-6 text-center overflow-hidden bg-[#6b2a12]">
       {/* Organic blob gradient — warm orange palette blended via blur */}
       {/* Blobs are oversized and overlap the section edges so there is no
          dark halo along the top/bottom where the base shows through. */}

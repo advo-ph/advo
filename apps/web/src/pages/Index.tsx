@@ -69,9 +69,9 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <FramingSpine />
-      <FloatingNav />
+    <FramingSpine>
+      <div className="min-h-screen flex flex-col">
+        <FloatingNav />
 
       {isVisible("hero") && <Hero />}
       <WhyDigital />
@@ -83,10 +83,11 @@ const Index = () => {
       {isVisible("services") && <ServiceTiers />}
       {isVisible("portfolio") && <PortfolioGrid />}
       <FAQ />
-      {isVisible("contact") && <ContactCTA />}
+        {isVisible("contact") && <ContactCTA />}
 
-      <Footer />
-    </div>
+        <Footer />
+      </div>
+    </FramingSpine>
   );
 };
 
