@@ -29,7 +29,7 @@ const Row = () => (
         title={t.name}
       >
         <img
-          src={`https://cdn.simpleicons.org/${t.slug}`}
+          src={`https://cdn.simpleicons.org/${t.slug}/white`}
           alt={t.name}
           className="h-8 w-8 md:h-10 md:w-10 opacity-90 hover:opacity-100 transition-opacity"
           loading="eager"
