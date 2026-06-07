@@ -32,7 +32,8 @@ const Row = () => (
           src={`https://cdn.simpleicons.org/${t.slug}`}
           alt={t.name}
           className="h-8 w-8 md:h-10 md:w-10 opacity-90 hover:opacity-100 transition-opacity"
-          loading="lazy"
+          loading="eager"
+          decoding="async"
         />
         <span className="text-sm font-mono text-muted-foreground/50 tracking-wide">
           {t.name}
