@@ -63,7 +63,7 @@ const RisingGradient = () => {
       }
       initial={{ "--cta-grad-r": GRAD_R_START }}
       whileInView={{ "--cta-grad-r": GRAD_R_END }}
-      viewport={{ once: true, amount: 0.25 }}
+      viewport={{ once: true, amount: 0.55, margin: "0px 0px -160px 0px" }}
       transition={{ duration: 2.6, ease: EASE }}
     />
   );
