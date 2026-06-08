@@ -74,9 +74,9 @@ const Hero = () => {
           <Typewriter
             as="h1"
             text={content.headline}
-            speed={62}
-            linePause={480}
-            startDelay={250}
+            speed={32}
+            linePause={260}
+            startDelay={180}
             className="text-4xl sm:text-6xl lg:text-7xl font-semibold tracking-tight leading-[1.02] mb-8 [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]"
           />
 

@@ -116,8 +116,14 @@ function splitTwoLines(text: string): string[] {
   return [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
 }
 
-/** Blinking digital caret: solid while typing, blinks once idle. */
-function Caret({ blink }: { blink: boolean }): ReactElement {
+/**
+ * Blinking digital caret: solid while typing, then blinks 3 times once idle and
+ * disappears. `repeat: 2` plays the blink cycle 3 times total; once the whole
+ * animation completes, the caret unmounts.
+ */
+function Caret({ blink }: { blink: boolean }): ReactElement | null {
+  const [hidden, setHidden] = useState(false);
+  if (hidden) return null;
   return (
     <motion.span
       aria-hidden
@@ -131,9 +137,12 @@ function Caret({ blink }: { blink: boolean }): ReactElement {
       animate={blink ? { opacity: [1, 1, 0, 0] } : { opacity: 1 }}
       transition={
         blink
-          ? { duration: 1.05, repeat: Infinity, ease: "linear", times: [0, 0.5, 0.5, 1] }
+          ? { duration: 1.05, repeat: 2, ease: "linear", times: [0, 0.5, 0.5, 1] }
           : { duration: 0.12 }
       }
+      onAnimationComplete={() => {
+        if (blink) setHidden(true);
+      }}
     />
   );
 }
