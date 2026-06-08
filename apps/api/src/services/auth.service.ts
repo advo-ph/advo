@@ -9,7 +9,7 @@ import { env } from "../utils/env.js";
 const encoder = new TextEncoder();
 const SALT_ROUNDS = 12;
 const ACCESS_TOKEN_EXPIRY = "15m";
-const REFRESH_TOKEN_DAYS = 30;
+const REFRESH_TOKEN_DAYS = 365;
 
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, SALT_ROUNDS);
