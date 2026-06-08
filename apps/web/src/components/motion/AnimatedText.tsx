@@ -116,136 +116,116 @@ function splitTwoLines(text: string): string[] {
   return [words.slice(0, mid).join(" "), words.slice(mid).join(" ")];
 }
 
-interface SpreadTextProps {
+/** Blinking digital caret: solid while typing, blinks once idle. */
+function Caret({ blink }: { blink: boolean }): ReactElement {
+  return (
+    <motion.span
+      aria-hidden
+      className="inline-block bg-foreground"
+      style={{
+        width: "0.07em",
+        height: "0.82em",
+        marginLeft: "0.04em",
+        transform: "translateY(0.1em)",
+      }}
+      animate={blink ? { opacity: [1, 1, 0, 0] } : { opacity: 1 }}
+      transition={
+        blink
+          ? { duration: 1.05, repeat: Infinity, ease: "linear", times: [0, 0.5, 0.5, 1] }
+          : { duration: 0.12 }
+      }
+    />
+  );
+}
+
+interface TypewriterProps {
   text: string;
   as?: ElementType;
   className?: string;
   /** Override the line breaks instead of the auto midpoint split. */
   lines?: string[];
-  /** How fast the random glyphs flood out from the first letter (ms). */
-  spreadMs?: number;
-  /** How long the flooded glyphs take to resolve into real text (ms). */
-  decodeMs?: number;
+  /** Base ms per character (jittered slightly for a natural feel). */
+  speed?: number;
+  /** Natural pause between finishing one line and starting the next (ms). */
+  linePause?: number;
+  /** Delay before typing begins (ms). */
+  startDelay?: number;
 }
 
 /**
- * SpreadText — a 2D "flood + decode" headline effect.
+ * Typewriter — a digital typing effect: characters appear one at a time with a
+ * lightly jittered cadence, the line splits with a natural pause between them,
+ * and a blinking line cursor trails the text — solid while typing, blinking
+ * once the headline is complete. Reduced motion → full text, static caret.
  *
- * Phase 1 (spread): starts as a single random glyph at the top-left, then
- * floods outward one cell at a time — to the right and downward (Manhattan
- * wavefront) — until the whole two-line grid is full of constantly-randomizing
- * glyphs. Phase 2 (decode): those glyphs resolve, outward in the same order,
- * into the real words.
- *
- * Layout-safe: an invisible copy of the final lines reserves the exact height;
- * the animated copy is overlaid with `whitespace-pre` so cell positions never
- * shift. Reduced motion → plain text.
+ * Layout-safe: an invisible copy of the final lines reserves the exact height
+ * so the page below never reflows as the text types in.
  */
-export function SpreadText({
+export function Typewriter({
   text,
   as: Tag = "span",
   className,
   lines: linesProp,
-  spreadMs = 450,
-  decodeMs = 850,
-}: SpreadTextProps): ReactElement {
+  speed = 62,
+  linePause = 480,
+  startDelay = 250,
+}: TypewriterProps): ReactElement {
   const reduced = useReducedMotion();
   const lines = linesProp ?? splitTwoLines(text);
+  const total = lines.reduce((n, l) => n + l.length, 0);
 
-  // Per-cell timeline: when it floods in, and when it finishes decoding.
-  const schedule = useRef(
-    lines.map((line, r) =>
-      [...line].map((ch, c) => {
-        const dist = r + c;
-        return { ch, dist };
-      }),
-    ),
-  );
-  // Recompute when the text changes.
-  schedule.current = lines.map((line, r) =>
-    [...line].map((ch, c) => ({ ch, dist: r + c })),
-  );
-
-  const maxDist = Math.max(
-    1,
-    ...schedule.current.flatMap((row) => row.map((cell) => cell.dist)),
-  );
-
-  const [display, setDisplay] = useState<string[]>(() =>
-    reduced ? lines : lines.map((l) => " ".repeat(l.length)),
-  );
-  const rafRef = useRef(0);
+  const [typed, setTyped] = useState(reduced ? total : 0);
+  const timer = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     if (reduced) {
-      setDisplay(lines);
+      setTyped(total);
       return;
     }
-    const perDist = spreadMs / maxDist;
-    const decodeStart = spreadMs + 120;
+    setTyped(0);
+    let count = 0;
+    let cancelled = false;
 
-    // Stable per-cell decode end time so resolution doesn't jitter frame to frame.
-    const decodeEnd = schedule.current.map((row) =>
-      row.map((cell) => {
-        const lead = (cell.dist / maxDist) * decodeMs * 0.55;
-        const tail = decodeMs * 0.25 + Math.random() * decodeMs * 0.3;
-        return decodeStart + lead + tail;
-      }),
-    );
+    // Cumulative char index at which each line ends — used to insert the pause.
+    const lineEnds: number[] = [];
+    let acc = 0;
+    for (const l of lines) {
+      acc += l.length;
+      lineEnds.push(acc);
+    }
 
-    let startTs = 0;
-    const tick = (ts: number) => {
-      if (!startTs) startTs = ts;
-      const t = ts - startTs;
-      let done = true;
-      const out = schedule.current.map((row, r) => {
-        let line = "";
-        for (let c = 0; c < row.length; c++) {
-          const { ch, dist } = row[c];
-          if (ch === " ") {
-            line += " ";
-            continue;
-          }
-          const appear = dist * perDist;
-          if (t < appear) {
-            line += " "; // not yet flooded in
-            done = false;
-          } else if (t < decodeEnd[r][c]) {
-            line += rnd(); // flooded — keep randomizing
-            done = false;
-          } else {
-            line += ch; // resolved
-          }
-        }
-        return line;
-      });
-      setDisplay(out);
-      if (done) {
-        setDisplay(lines);
-      } else {
-        rafRef.current = requestAnimationFrame(tick);
-      }
+    const step = () => {
+      if (cancelled) return;
+      count += 1;
+      setTyped(count);
+      if (count >= total) return;
+      const atLineBreak = lineEnds.includes(count) && count < total;
+      const jitter = (Math.random() - 0.5) * speed * 0.7;
+      const delay = atLineBreak ? linePause : Math.max(22, speed + jitter);
+      timer.current = setTimeout(step, delay);
     };
-    rafRef.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(rafRef.current);
+    timer.current = setTimeout(step, startDelay);
+    return () => {
+      cancelled = true;
+      if (timer.current) clearTimeout(timer.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [text, spreadMs, decodeMs, reduced]);
+  }, [text, speed, linePause, startDelay, reduced]);
 
-  if (reduced) {
-    return (
-      <Tag className={className}>
-        {lines.map((l, i) => (
-          <span key={i} className="block">
-            {l}
-          </span>
-        ))}
-      </Tag>
-    );
-  }
+  // Slice each line to its typed length; track which line the cursor sits on.
+  let remaining = typed;
+  let cursorLine = 0;
+  const visible = lines.map((l, i) => {
+    const take = Math.min(l.length, Math.max(0, remaining));
+    if (take > 0) cursorLine = i;
+    remaining -= l.length;
+    return l.slice(0, take);
+  });
+  const done = typed >= total;
 
   return (
     <Tag className={cn("relative", className)} aria-label={text}>
-      {/* Reserve final layout so the page never reflows while it floods. */}
+      {/* Reserve final layout so the page never reflows while it types. */}
       <span aria-hidden className="invisible">
         {lines.map((l, i) => (
           <span key={i} className="block whitespace-pre">
@@ -253,11 +233,12 @@ export function SpreadText({
           </span>
         ))}
       </span>
-      {/* Overlaid flooding/decoding text. whitespace-pre keeps cells aligned. */}
+      {/* Overlaid typing text with a trailing caret. */}
       <span aria-hidden className="absolute inset-0">
-        {display.map((l, i) => (
+        {visible.map((l, i) => (
           <span key={i} className="block whitespace-pre">
             {l}
+            {i === cursorLine && <Caret blink={done || reduced} />}
           </span>
         ))}
       </span>
