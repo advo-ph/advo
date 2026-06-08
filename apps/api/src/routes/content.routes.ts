@@ -8,6 +8,7 @@ import { siteContent, portfolioProject, socialPost } from "../db/schema.js";
 import { requireAuth, optionalAuth } from "../middleware/auth.js";
 import { requireAdmin } from "../middleware/rbac.js";
 import type { Variables } from "../types/context.js";
+import { flexibleDateTime, looseUrl } from "../utils/validators.js";
 
 const content = new Hono<{ Variables: Variables }>();
 
@@ -157,8 +158,8 @@ content.get("/social", requireAuth, requireAdmin, async (c) => {
 const socialSchema = z.object({
   platform: z.string().max(50).optional(),
   content: z.string().max(5000).optional(),
-  imageUrl: z.string().max(500).nullish(),
-  scheduledFor: z.string().datetime().nullish(),
+  imageUrl: looseUrl(),
+  scheduledFor: flexibleDateTime(),
 });
 
 content.post(

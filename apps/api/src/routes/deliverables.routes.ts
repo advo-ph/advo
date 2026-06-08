@@ -8,6 +8,7 @@ import { deliverable, project, teamMember } from "../db/schema.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireTeam } from "../middleware/rbac.js";
 import type { Variables } from "../types/context.js";
+import { flexibleDateTime } from "../utils/validators.js";
 
 const deliverables = new Hono<{ Variables: Variables }>();
 
@@ -66,7 +67,7 @@ const createSchema = z.object({
   status: z
     .enum(["not_started", "in_progress", "review", "completed", "blocked"])
     .optional(),
-  dueDate: z.string().datetime().nullish(),
+  dueDate: flexibleDateTime(),
 });
 
 deliverables.post("/", requireTeam, zValidator("json", createSchema), async (c) => {

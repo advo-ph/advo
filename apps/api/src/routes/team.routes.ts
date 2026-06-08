@@ -8,6 +8,7 @@ import { teamMember } from "../db/schema.js";
 import { requireAuth, optionalAuth } from "../middleware/auth.js";
 import { requireAdmin } from "../middleware/rbac.js";
 import type { Variables } from "../types/context.js";
+import { looseUrl } from "../utils/validators.js";
 
 const team = new Hono<{ Variables: Variables }>();
 
@@ -46,10 +47,10 @@ const createSchema = z.object({
   name: z.string().min(1).max(255),
   role: z.string().min(1).max(100),
   email: z.string().email().max(255).nullish(),
-  avatarUrl: z.string().url().max(500).nullish(),
+  avatarUrl: looseUrl(),
   bio: z.string().max(2000).nullish(),
-  linkedinUrl: z.string().url().max(500).nullish(),
-  githubUrl: z.string().url().max(500).nullish(),
+  linkedinUrl: looseUrl(),
+  githubUrl: looseUrl(),
   permissionRole: z.enum(["admin", "developer", "designer", "manager"]).optional(),
   isActive: z.boolean().optional(),
 });

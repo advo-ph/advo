@@ -17,6 +17,7 @@ import {
 import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin, requireTeam } from "../middleware/rbac.js";
 import { sendNotificationEmail } from "../services/email.service.js";
+import { looseUrl, requiredUrl } from "../utils/validators.js";
 import type { Variables } from "../types/context.js";
 
 const projects = new Hono<{ Variables: Variables }>();
@@ -143,8 +144,8 @@ const createSchema = z.object({
   title: z.string().min(1).max(255),
   description: z.string().max(5000).nullish(),
   repositoryName: z.string().max(100).nullish(),
-  previewUrl: z.string().url().max(500).nullish(),
-  contractUrl: z.string().url().max(500).nullish(),
+  previewUrl: looseUrl(),
+  contractUrl: looseUrl(),
   projectStatus: z
     .enum(["discovery", "architecture", "development", "testing", "shipped"])
     .optional(),
@@ -278,7 +279,7 @@ const createAssetSchema = z.object({
   assetType: z
     .enum(["progress_photo", "completion_photo", "document"])
     .optional(),
-  url: z.string().url().max(500),
+  url: requiredUrl(),
   caption: z.string().max(255).nullish(),
 });
 
