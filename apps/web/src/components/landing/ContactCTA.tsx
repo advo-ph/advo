@@ -21,18 +21,23 @@ const DEFAULTS: ContactContent = {
 };
 
 /**
- * Warm radial gradient — bright orange core fading to the section's dark base.
- * Ends at #6b2a12 (the section bg) so the scaled layer blends seamlessly into
- * the surrounding area with no hard edge.
+ * Warm radial gradient whose RADIUS is driven by the `--cta-grad-r` CSS custom
+ * property. Bright #FFBA85 core fades through warm oranges into the section's
+ * dark base #6b2a12 at 100% of the radius — so anything past the radius is pure
+ * base, blending seamlessly with no hard edge.
  */
 const RADIAL =
-  "radial-gradient(circle at 50% 55%, #FFBA85 0%, #F59E5B 18%, #E67A3A 38%, #C94820 60%, #6b2a12 82%)";
+  "radial-gradient(circle var(--cta-grad-r) at 50% 58%, #FFBA85 0%, #F59E5B 18%, #E67A3A 38%, #C94820 60%, #6b2a12 100%)";
+
+const GRAD_R_START = "40px";
+const GRAD_R_END = "1400px";
 
 /**
- * RisingGradient — a one-time, on-view reveal: the radial gradient starts as a
- * small core pushed down, then rises and scales up to fill the section the first
- * time it enters the viewport. Runs once (not scroll-linked). Reduced motion →
- * static full gradient.
+ * RisingGradient — a one-time, on-view reveal: the radial gradient's circle
+ * literally grows by animating its radius variable from a tight bright core
+ * (40px) to a section-filling 1400px the first time it enters the viewport.
+ * Runs once (not scroll-linked). Reduced motion → static gradient at full
+ * radius, no animation.
  */
 const RisingGradient = () => {
   const reduced = useReducedMotion();
@@ -42,7 +47,9 @@ const RisingGradient = () => {
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
-        style={{ background: RADIAL }}
+        style={
+          { background: RADIAL, "--cta-grad-r": GRAD_R_END } as React.CSSProperties
+        }
       />
     );
   }
@@ -50,12 +57,14 @@ const RisingGradient = () => {
   return (
     <motion.div
       aria-hidden
-      className="pointer-events-none absolute inset-0 will-change-transform"
-      style={{ background: RADIAL, transformOrigin: "50% 60%" }}
-      initial={{ scale: 0.35, y: 130, opacity: 0 }}
-      whileInView={{ scale: 1, y: 0, opacity: 1 }}
+      className="pointer-events-none absolute inset-0"
+      style={
+        { background: RADIAL, "--cta-grad-r": GRAD_R_START } as React.CSSProperties
+      }
+      initial={{ "--cta-grad-r": GRAD_R_START }}
+      whileInView={{ "--cta-grad-r": GRAD_R_END }}
       viewport={{ once: true, amount: 0.25 }}
-      transition={{ duration: 1.1, ease: EASE }}
+      transition={{ duration: 1.2, ease: EASE }}
     />
   );
 };

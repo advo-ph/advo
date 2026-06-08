@@ -53,13 +53,28 @@ const Hero = () => {
   return (
     <section className="relative z-40 overflow-hidden border-b border-border bg-background md:min-h-svh md:flex md:flex-col md:justify-end">
       {/* Team photo: full image on phones, full-bleed crop on larger screens */}
-      <div className="relative md:absolute md:inset-0">
-        <img
+      <div className="relative overflow-hidden md:absolute md:inset-0">
+        <motion.img
           src="/team/group.jpg"
           alt="The ADVO team"
           className="block h-auto w-full md:h-full md:object-cover"
           style={{ objectPosition: "center 35%" }}
           loading="eager"
+          initial={reduced ? false : { scale: 1.12 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 1.6, ease: EASE }}
+        />
+        {/* Vignette: strong on load, fades out */}
+        <motion.div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse at center, transparent 35%, rgba(0,0,0,0.85) 100%)",
+          }}
+          initial={reduced ? false : { opacity: 1 }}
+          animate={{ opacity: 0 }}
+          transition={{ duration: 1.8, ease: EASE }}
         />
         {/* Overall darkening for contrast */}
         <div className="absolute inset-0 bg-black/40 md:bg-black/45" />

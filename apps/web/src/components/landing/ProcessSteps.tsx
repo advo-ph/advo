@@ -23,10 +23,10 @@ const DEFAULTS: { heading: string; subtitle: string; steps: Step[] } = {
   heading: "How We Work",
   subtitle: "",
   steps: [
-    { icon: "Palette", title: "Branding", description: "We get to know your brand, your needs, and your vision. Then we design — drawing inspiration from your social posts and any assets you share — to build the best-looking website in your field. Boring is not our specialty." },
+    { icon: "Palette", title: "Branding", description: "We get to know your brand, your needs, and your vision. Then we design, drawing inspiration from your social posts and any assets you share, to build the best-looking website in your field. Boring is not our specialty." },
     { icon: "Code", title: "Development", description: "We develop fully responsive websites with rich interactivity and animations that bring your brand to life." },
     { icon: "MessageCircle", title: "Feedback", description: "We listen closely to your requests and refine until you have a website you genuinely love." },
-    { icon: "Rocket", title: "Launch", description: "We publish your website to last — built to run for 10+ years, backed by ongoing maintenance and support." },
+    { icon: "Rocket", title: "Launch", description: "We publish your website to last, built to run for 10+ years, backed by ongoing maintenance and support." },
   ],
 };
 
