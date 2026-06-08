@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Linkedin, Mail, Loader2 } from "lucide-react";
+import { Linkedin, Loader2 } from "lucide-react";
 import FloatingNav from "@/components/landing/FloatingNav";
 import Footer from "@/components/landing/Footer";
 import { get } from "@/lib/api";
@@ -108,14 +108,6 @@ const Team = () => {
                           className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors"
                         >
                           <Linkedin className="h-4 w-4" />
-                        </a>
-                      )}
-                      {member.email && (
-                        <a
-                          href={`mailto:${member.email}`}
-                          className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          <Mail className="h-4 w-4" />
                         </a>
                       )}
                     </div>
