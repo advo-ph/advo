@@ -29,8 +29,8 @@ const DEFAULTS: ContactContent = {
 const RADIAL =
   "radial-gradient(circle var(--cta-grad-r) at 50% 58%, #FFBA85 0%, #F59E5B 18%, #E67A3A 38%, #C94820 60%, #6b2a12 100%)";
 
-const GRAD_R_START = "40px";
-const GRAD_R_END = "1400px";
+const GRAD_R_START = "760px";
+const GRAD_R_END = "1500px";
 
 /**
  * RisingGradient — a one-time, on-view reveal: the radial gradient's circle

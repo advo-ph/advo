@@ -81,11 +81,11 @@ const Team = () => {
                     )}
                   </div>
 
-                  {/* Gradient fade — image merges into card */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-card via-card/85 via-40% to-transparent" />
+                  {/* Gradient fade — concentrated at the bottom, fading upward */}
+                  <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-card via-card/90 via-30% to-transparent" />
 
                   {/* Content overlaid at bottom */}
-                  <div className="absolute inset-x-0 bottom-0 p-6">
+                  <div className="absolute inset-x-0 bottom-0 px-6 pb-5 pt-6">
                     <h3 className="text-xl font-semibold tracking-tight mb-1">
                       {member.name}
                     </h3>
