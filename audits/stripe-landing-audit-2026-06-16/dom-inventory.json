@@ -1,0 +1,768 @@
+{
+  "inventory": {
+    "title": "Stripe | Financial Infrastructure to Grow Your Revenue",
+    "url": "https://stripe.com/",
+    "headings": [
+      {
+        "tag": "H1",
+        "text": "Financial infrastructure to grow your revenue. Accept payments, offer financial services, and implement custom revenue models—from your first transaction to your billionth."
+      },
+      {
+        "tag": "H1",
+        "text": "Financial infrastructure to grow your revenue. Accept payments, offer financial services, and implement custom revenue models—from your first transaction to your billionth."
+      },
+      {
+        "tag": "H2",
+        "text": "Flexible solutions for every business model."
+      },
+      {
+        "tag": "H3",
+        "text": "Accept and optimize payments globally—online and in person"
+      },
+      {
+        "tag": "H3",
+        "text": "Enable any billing model"
+      },
+      {
+        "tag": "H3",
+        "text": "Monetize through agentic commerce"
+      },
+      {
+        "tag": "H3",
+        "text": "Create a card issuing program"
+      },
+      {
+        "tag": "H3",
+        "text": "Access borderless money movement with stablecoins and crypto"
+      },
+      {
+        "tag": "H3",
+        "text": "Embed payments in your platform"
+      },
+      {
+        "tag": "H2",
+        "text": "The backbone of global commerce"
+      },
+      {
+        "tag": "H2",
+        "text": "Powering businesses of all sizes."
+      },
+      {
+        "tag": "H3",
+        "text": "Transform your enterprise with agile financial infrastructure"
+      },
+      {
+        "tag": "H3",
+        "text": "Hertz unifies commerce with Stripe."
+      },
+      {
+        "tag": "H3",
+        "text": "URBN consolidates $5 billion in online and in-store revenue onto Stripe."
+      },
+      {
+        "tag": "H3",
+        "text": "Instacart powers online grocery delivery with Stripe."
+      },
+      {
+        "tag": "H3",
+        "text": "Le Monde improves local and international payments with Stripe."
+      },
+      {
+        "tag": "H3",
+        "text": "Build a foundation for your startup that enables faster growth"
+      },
+      {
+        "tag": "H3",
+        "text": "Make your SaaS platform a complete financial operating system"
+      },
+      {
+        "tag": "H2",
+        "text": "Reliable, extensible infrastructure for every stack."
+      },
+      {
+        "tag": "H3",
+        "text": "Connect to existing systems."
+      },
+      {
+        "tag": "H3",
+        "text": "Scale with confidence."
+      },
+      {
+        "tag": "H3",
+        "text": "Choose an integration path."
+      },
+      {
+        "tag": "H2",
+        "text": "What’s happening"
+      },
+      {
+        "tag": "H3",
+        "text": "Businesses on Stripe generated $1.9T in 2025."
+      },
+      {
+        "tag": "H3",
+        "text": "150K+ users have their best day ever on Stripe."
+      },
+      {
+        "tag": "H3",
+        "text": "Tidemark’s vertical and SMB SaaS benchmark report."
+      },
+      {
+        "tag": "H3",
+        "text": "Shopify’s Tobi Lütke sits down with John Collison."
+      },
+      {
+        "tag": "H3",
+        "text": "New tools to process payments outside app stores."
+      },
+      {
+        "tag": "H3",
+        "text": "Crypto.com partners with Stripe to enable better crypto payments."
+      },
+      {
+        "tag": "H3",
+        "text": "Make your products shoppable through AI platforms."
+      },
+      {
+        "tag": "H3",
+        "text": "How leading retailers unify customer experiences and drive growth."
+      },
+      {
+        "tag": "H3",
+        "text": "Book of the week"
+      }
+    ],
+    "navLinks": [
+      {
+        "text": "",
+        "href": "https://stripe.com/"
+      },
+      {
+        "text": "Pricing",
+        "href": "https://stripe.com/pricing"
+      },
+      {
+        "text": "Sign in",
+        "href": "https://dashboard.stripe.com/login"
+      },
+      {
+        "text": "Start now",
+        "href": "https://dashboard.stripe.com/register"
+      },
+      {
+        "text": "Contact sales",
+        "href": "https://stripe.com/contact/sales"
+      },
+      {
+        "text": "Sign inSign in",
+        "href": "https://dashboard.stripe.com/login"
+      },
+      {
+        "text": "Contact sales",
+        "href": "https://stripe.com/contact/sales"
+      },
+      {
+        "text": "Stripe for enterprises",
+        "href": "https://stripe.com/enterprise"
+      },
+      {
+        "text": "Stripe for startups",
+        "href": "https://stripe.com/startups"
+      },
+      {
+        "text": "Stripe for platforms",
+        "href": "https://stripe.com/use-cases/platforms"
+      }
+    ],
+    "buttons": [
+      {
+        "text": "Products",
+        "aria": null,
+        "expanded": "false"
+      },
+      {
+        "text": "Solutions",
+        "aria": null,
+        "expanded": "false"
+      },
+      {
+        "text": "Developers",
+        "aria": null,
+        "expanded": "false"
+      },
+      {
+        "text": "Resources",
+        "aria": null,
+        "expanded": "false"
+      },
+      {
+        "text": "Back",
+        "aria": null,
+        "expanded": null
+      },
+      {
+        "text": "",
+        "aria": "Toggle navigation menu",
+        "expanded": "false"
+      },
+      {
+        "text": "Accept and optimize payments globally—online and in personPay RoasteryCartsy bezahlenShowflix に支払うPa",
+        "aria": null,
+        "expanded": "false"
+      },
+      {
+        "text": "Enable any billing modelPro PlanBilled monthlyTokens$0.01 per 1,000 unitsUsage meterTokens used in t",
+        "aria": null,
+        "expanded": "false"
+      },
+      {
+        "text": "Monetize through agentic commerceI’m refreshing my wardrobe. Can you recommend some cozy, comfortabl",
+        "aria": null,
+        "expanded": "false"
+      },
+      {
+        "text": "Create a card issuing program",
+        "aria": null,
+        "expanded": "false"
+      },
+      {
+        "text": "Access borderless money movement with stablecoins and crypto",
+        "aria": null,
+        "expanded": "false"
+      },
+      {
+        "text": "Embed payments in your platform",
+        "aria": null,
+        "expanded": "false"
+      },
+      {
+        "text": "135+",
+        "aria": null,
+        "expanded": null
+      },
+      {
+        "text": "$1.9T",
+        "aria": null,
+        "expanded": null
+      },
+      {
+        "text": "99.999%",
+        "aria": null,
+        "expanded": null
+      },
+      {
+        "text": "200M+",
+        "aria": null,
+        "expanded": null
+      },
+      {
+        "text": "Hertz unifies commerce with Stripe.",
+        "aria": null,
+        "expanded": "true"
+      },
+      {
+        "text": "URBN consolidates $5 billion in online and in-store revenue onto Stripe.",
+        "aria": null,
+        "expanded": "false"
+      },
+      {
+        "text": "Instacart powers online grocery delivery with Stripe.",
+        "aria": null,
+        "expanded": "false"
+      },
+      {
+        "text": "Le Monde improves local and international payments with Stripe.",
+        "aria": null,
+        "expanded": "false"
+      },
+      {
+        "text": "",
+        "aria": "Previous customer story",
+        "expanded": null
+      },
+      {
+        "text": "",
+        "aria": "Next customer story",
+        "expanded": null
+      },
+      {
+        "text": "",
+        "aria": "Show testimonial from Mindbody",
+        "expanded": null
+      },
+      {
+        "text": "",
+        "aria": "Show testimonial from Jobber",
+        "expanded": null
+      },
+      {
+        "text": "",
+        "aria": "Show testimonial from Substack",
+        "expanded": null
+      },
+      {
+        "text": "",
+        "aria": "Show testimonial from Lightspeed",
+        "expanded": null
+      },
+      {
+        "text": "",
+        "aria": "Previous slide",
+        "expanded": null
+      },
+      {
+        "text": "",
+        "aria": "Next slide",
+        "expanded": null
+      },
+      {
+        "text": "United States(English)",
+        "aria": "United States. Choose your country",
+        "expanded": "false"
+      }
+    ],
+    "ctas": [
+      {
+        "text": "Pricing",
+        "href": "https://stripe.com/pricing",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Start now",
+        "href": "https://dashboard.stripe.com/register",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Contact sales",
+        "href": "https://stripe.com/contact/sales",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Contact sales",
+        "href": "https://stripe.com/contact/sales",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Get started",
+        "href": "https://dashboard.stripe.com/register",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Sign up with Google",
+        "href": "https://dashboard.stripe.com/login/oauth/google/init",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Monetize through agentic commerceI’m refreshing my wardrobe. Can you recommend some cozy, comfortable basics in size M?A",
+        "href": null,
+        "tag": "BUTTON",
+        "aria": null
+      },
+      {
+        "text": "Watch now",
+        "href": "https://stripe.com/sessions/2026?utm_medium=owned-surfaces&utm_source=9cb9&utm_campaign=GLOBAL_4301&utm_content=8a70&utm_term=5a728d3d167c",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Read the story",
+        "href": "https://stripe.com/customers/hertz",
+        "tag": "A",
+        "aria": "Read Hertz's story"
+      },
+      {
+        "text": "Read the story",
+        "href": "https://stripe.com/customers/hertz",
+        "tag": "A",
+        "aria": "Read Hertz's story"
+      },
+      {
+        "text": "Read the story",
+        "href": "https://stripe.com/customers/urbn",
+        "tag": "A",
+        "aria": "Read URBN's story"
+      },
+      {
+        "text": "Read the story",
+        "href": "https://stripe.com/customers/urbn",
+        "tag": "A",
+        "aria": "Read URBN's story"
+      },
+      {
+        "text": "Read the story",
+        "href": "https://stripe.com/customers/instacart",
+        "tag": "A",
+        "aria": "Read Instacart's story"
+      },
+      {
+        "text": "Read the story",
+        "href": "https://stripe.com/customers/instacart",
+        "tag": "A",
+        "aria": "Read Instacart's story"
+      },
+      {
+        "text": "Read the story",
+        "href": "https://stripe.com/customers/le-monde",
+        "tag": "A",
+        "aria": "Read LeMonde's story"
+      },
+      {
+        "text": "Read the story",
+        "href": "https://stripe.com/customers/le-monde",
+        "tag": "A",
+        "aria": "Read LeMonde's story"
+      },
+      {
+        "text": "Stripe for startups",
+        "href": "https://stripe.com/startups",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Lovable grows into a vibe-coding juggernaut with Stripe.Read Lovable’s story",
+        "href": "https://stripe.com/customers/lovable",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Runway protects developer time with no-code solutions from Stripe.Read Runway’s story",
+        "href": "https://stripe.com/customers/runway",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Supabase delivers its backend-as-a-service to 150 countries with Stripe.Read Supabase’s story",
+        "href": "https://stripe.com/customers/supabase",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Linear partners with Stripe to handle billing and payments.Read Linear’s story",
+        "href": "https://stripe.com/customers/linear",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "ElevenLabs grows into a $3B AI audio leader with Stripe.Watch the video",
+        "href": "https://stripe.com/customers/elevenlabs",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Browserbase offers usage-based billing for an AI agent browser with Stripe.Read Browserbase’s story",
+        "href": "https://stripe.com/customers/browserbase",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Decagon decreases support costs by 65% with Stripe-integrated agents.Read Decagon’s story",
+        "href": "https://stripe.com/customers/decagon",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Stripe Startups program.Access financial benefits, a focused community, and expert resources to help you grow your busin",
+        "href": "https://stripe.com/startups#application",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Stripe Atlas.Incorporate and get everything you need to fundraise, bank, and accept payments in two business days.Start ",
+        "href": "https://stripe.com/atlas",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Read the guide",
+        "href": "https://stripe.com/guides/best-practices-for-launching-and-scaling-platform-payments",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Read the guide",
+        "href": "https://stripe.com/guides/introduction-to-monetizing-payments",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Read the guide",
+        "href": "https://stripe.com/guides/introduction-to-risk-management",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Read the story",
+        "href": "https://stripe.com/customers/mindbody",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Read the story",
+        "href": "https://stripe.com/customers/jobber",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Read the story",
+        "href": "https://stripe.com/customers/substack",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Read the story",
+        "href": "https://stripe.com/customers/lightspeed-terminal",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "View developer docs",
+        "href": "https://docs.stripe.com/development",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "View Stripe’s GitHub",
+        "href": "https://github.com/stripe",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Explore no-code",
+        "href": "https://docs.stripe.com/no-code",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Get started",
+        "href": "https://docs.stripe.com/development",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Read the letter",
+        "href": "https://stripe.com/annual-updates/2025",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Watch video",
+        "href": "https://www.youtube.com/watch?v=eMSqlQMk480",
+        "tag": "A",
+        "aria": "Watch Tobi Lütke and John Collison conversation"
+      },
+      {
+        "text": "Read more",
+        "href": "https://stripe.com/blog/introducing-our-agentic-commerce-solutions",
+        "tag": "A",
+        "aria": "Read more about agentic commerce solutions"
+      },
+      {
+        "text": "Read the letter",
+        "href": "https://stripe.com/annual-updates/2025",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Watch video",
+        "href": "https://www.youtube.com/watch?v=eMSqlQMk480",
+        "tag": "A",
+        "aria": "Watch Tobi Lütke and John Collison conversation"
+      },
+      {
+        "text": "Read more",
+        "href": "https://stripe.com/blog/introducing-our-agentic-commerce-solutions",
+        "tag": "A",
+        "aria": "Read more about agentic commerce solutions"
+      },
+      {
+        "text": "Start now",
+        "href": "https://dashboard.stripe.com/register",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Contact sales",
+        "href": "https://stripe.com/contact/sales",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Pricing details",
+        "href": "https://stripe.com/pricing",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Pricing",
+        "href": "https://stripe.com/pricing",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Startups",
+        "href": "https://stripe.com/startups",
+        "tag": "A",
+        "aria": null
+      },
+      {
+        "text": "Contact sales",
+        "href": "https://stripe.com/contact/sales",
+        "tag": "A",
+        "aria": null
+      }
+    ],
+    "imageCount": 41,
+    "videoCount": 0,
+    "canvasCount": 5,
+    "sectionCount": 15
+  },
+  "sectionResults": [
+    {
+      "name": "06-logo-strip-flexible-solutions.png",
+      "text": "Flexible solutions for every business model",
+      "result": {
+        "ok": true,
+        "y": 0,
+        "found": "Flexible solutions for every business model.Grow your business with a comprehensive set of payments and financial tools⁠—⁠designed to work individually or toget"
+      }
+    },
+    {
+      "name": "07-payments-billing-grid.png",
+      "text": "Accept and optimize payments",
+      "result": {
+        "ok": true,
+        "y": 0,
+        "found": "Flexible solutions for every business model.Grow your business with a comprehensive set of payments and financial tools⁠—⁠designed to work individually or toget"
+      }
+    },
+    {
+      "name": "08-agentic-commerce-card.png",
+      "text": "Monetize through agentic commerce",
+      "result": {
+        "ok": true,
+        "y": 0,
+        "found": "Flexible solutions for every business model.Grow your business with a comprehensive set of payments and financial tools⁠—⁠designed to work individually or toget"
+      }
+    },
+    {
+      "name": "09-global-commerce-metrics.png",
+      "text": "The backbone",
+      "result": {
+        "ok": true,
+        "y": 0,
+        "found": "The backbone of global commerce135+currencies and payment methods supported$1.9Tin payments volume processed in 202599.999%historical uptime for Stripe services"
+      }
+    },
+    {
+      "name": "10-business-size-proof.png",
+      "text": "Powering businesses of all sizes",
+      "result": {
+        "ok": true,
+        "y": 0,
+        "found": "Powering businesses of all sizes.Run your business on a reliable platform that adapts to your needs.Transform your enterprise with agile financial infrastructur"
+      }
+    },
+    {
+      "name": "11-enterprise-hertz-case.png",
+      "text": "Hertz unifies commerce",
+      "result": {
+        "ok": true,
+        "y": 0,
+        "found": "Powering businesses of all sizes.Run your business on a reliable platform that adapts to your needs.Transform your enterprise with agile financial infrastructur"
+      }
+    },
+    {
+      "name": "12-startups-program.png",
+      "text": "Stripe Startups program",
+      "result": {
+        "ok": true,
+        "y": 0,
+        "found": "Powering businesses of all sizes.Run your business on a reliable platform that adapts to your needs.Transform your enterprise with agile financial infrastructur"
+      }
+    },
+    {
+      "name": "13-platforms-section.png",
+      "text": "Make your SaaS platform",
+      "result": {
+        "ok": true,
+        "y": 0,
+        "found": "Powering businesses of all sizes.Run your business on a reliable platform that adapts to your needs.Transform your enterprise with agile financial infrastructur"
+      }
+    },
+    {
+      "name": "14-developers-section.png",
+      "text": "Designed for developers",
+      "result": {
+        "ok": false,
+        "text": "Designed for developers"
+      }
+    },
+    {
+      "name": "15-integration-paths.png",
+      "text": "Use a pre-integrated platform",
+      "result": {
+        "ok": true,
+        "y": 0,
+        "found": "Reliable, extensible infrastructure for every stack.Adapt Stripe to your business needs with flexible integration options.View developer docsView Stripe’s GitHu"
+      }
+    },
+    {
+      "name": "16-whats-happening.png",
+      "text": "What’s happening at Stripe",
+      "result": {
+        "ok": false,
+        "text": "What’s happening at Stripe"
+      }
+    },
+    {
+      "name": "17-final-cta-footer-entry.png",
+      "text": "Ready to get started",
+      "result": {
+        "ok": true,
+        "y": 0,
+        "found": "Ready to get started?Create an account instantly, or contact us to design a custom package for your business.Start nowContact salesSee what you’ll payIntegrated"
+      }
+    },
+    {
+      "name": "18-footer.png",
+      "text": "Products used",
+      "result": {
+        "ok": true,
+        "y": 0,
+        "found": "Powering businesses of all sizes.Run your business on a reliable platform that adapts to your needs.Transform your enterprise with agile financial infrastructur"
+      }
+    }
+  ],
+  "shots": [
+    "01-desktop-hero.png",
+    "02-nav-products-hover.png",
+    "03-nav-solutions-hover.png",
+    "04-nav-developers-hover.png",
+    "05-nav-resources-hover.png",
+    "06-logo-strip-flexible-solutions.png",
+    "07-payments-billing-grid.png",
+    "08-agentic-commerce-card.png",
+    "09-global-commerce-metrics.png",
+    "10-business-size-proof.png",
+    "11-enterprise-hertz-case.png",
+    "12-startups-program.png",
+    "13-platforms-section.png",
+    "14-developers-section.png",
+    "15-integration-paths.png",
+    "16-whats-happening.png",
+    "17-final-cta-footer-entry.png",
+    "18-footer.png",
+    "19-mobile-hero.png",
+    "20-mobile-menu-open.png",
+    "21-mobile-flexible-solutions.png",
+    "22-mobile-metrics.png",
+    "23-mobile-developers.png",
+    "24-mobile-footer-cta.png"
+  ]
+}

@@ -25,6 +25,12 @@ build/
 # Media (raw photos/videos — too large for git)
 media/
 
+# Planning artifacts: keep text + JSON, drop reference screenshots
+audits/**/*.png
+audits/**/*.jpg
+bench/**/*.png
+bench/**/*.jpg
+
 # Logs
 *.log
 npm-debug.log*

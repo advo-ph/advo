@@ -1,0 +1,42 @@
+{
+  "benchmark": "landing-stripe-audit",
+  "date": "2026-06-16",
+  "passed": false,
+  "counts": {
+    "passed": 4,
+    "failed": 1,
+    "total": 5
+  },
+  "checks": [
+    {
+      "id": "product-surfaces",
+      "title": "Services are ADVO product surfaces",
+      "passed": true,
+      "expected": "Service section exposes Website, Client Hub, Admin, and Care Plan surfaces instead of generic agency services."
+    },
+    {
+      "id": "proof-metrics",
+      "title": "Portfolio carries case-study proof",
+      "passed": true,
+      "expected": "Portfolio/case-study components expose outcomes, before/after, products used, or launch timeline data."
+    },
+    {
+      "id": "mobile-drawer",
+      "title": "Mobile nav is a full-screen route drawer",
+      "passed": true,
+      "expected": "Mobile nav exposes aria-expanded, occupies the viewport, and bottom-pins Start a Project / Client Hub actions."
+    },
+    {
+      "id": "reduced-motion",
+      "title": "Landing animations respect reduced motion",
+      "passed": true,
+      "expected": "Landing animation code has a reduced-motion path before more scroll/motion effects are shipped."
+    },
+    {
+      "id": "docs-current-design",
+      "title": "README describes current design system",
+      "passed": false,
+      "expected": "README no longer documents stale 3D/orange design work and describes the current rail/grid direction."
+    }
+  ]
+}

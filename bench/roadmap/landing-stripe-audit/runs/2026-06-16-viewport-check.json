@@ -1,0 +1,868 @@
+{
+  "benchmark": "landing-stripe-audit-viewport",
+  "baseUrl": "http://127.0.0.1:6100/",
+  "date": "2026-06-16",
+  "passed": true,
+  "counts": {
+    "passed": 63,
+    "failed": 0,
+    "total": 63
+  },
+  "screenshots": "bench/roadmap/landing-stripe-audit/screenshots/2026-06-16",
+  "results": [
+    {
+      "viewport": {
+        "width": 360,
+        "height": 780,
+        "name": "mobile-360"
+      },
+      "passed": true,
+      "checks": [
+        {
+          "id": "no-horizontal-overflow",
+          "passed": true,
+          "details": {
+            "maxScrollWidth": 360,
+            "viewportWidth": 360
+          }
+        },
+        {
+          "id": "document-scrolls-full-landing",
+          "passed": true,
+          "details": {
+            "maxScrollHeight": 16548,
+            "viewportHeight": 780
+          }
+        },
+        {
+          "id": "hero-cta-visible",
+          "passed": true,
+          "details": {
+            "expected": "Hero primary CTA is visible without relying on scroll."
+          }
+        },
+        {
+          "id": "hero-system-rail-visible",
+          "passed": true,
+          "details": {
+            "expected": "Hero exposes the Website / Client Hub / Admin / VPS system rail in the first viewport flow."
+          }
+        },
+        {
+          "id": "product-surfaces-visible",
+          "passed": true,
+          "details": {
+            "labelsPresent": [
+              {
+                "label": "Website",
+                "visible": true
+              },
+              {
+                "label": "Client Hub",
+                "visible": true
+              },
+              {
+                "label": "Admin",
+                "visible": true
+              },
+              {
+                "label": "Care Plan",
+                "visible": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "product-section-centered",
+          "passed": true,
+          "details": {
+            "productRect": {
+              "left": 0,
+              "right": 360,
+              "width": 360
+            }
+          }
+        },
+        {
+          "id": "proof-section-visible",
+          "passed": true,
+          "details": {
+            "proofRect": {
+              "left": 0,
+              "right": 360,
+              "width": 360
+            }
+          }
+        },
+        {
+          "id": "fixed-header-fits",
+          "passed": true,
+          "details": {
+            "headerRect": {
+              "left": 0,
+              "right": 360,
+              "top": 0,
+              "width": 360,
+              "height": 76
+            }
+          }
+        },
+        {
+          "id": "footer-wordmark-present",
+          "passed": true,
+          "details": {
+            "footerLogoRect": {
+              "left": 13.125,
+              "right": 346.875,
+              "width": 333.75,
+              "height": 120
+            }
+          }
+        },
+        {
+          "id": "footer-system-continuity",
+          "passed": true,
+          "details": {
+            "footerTextIncludesSystemCopy": true
+          }
+        },
+        {
+          "id": "section-headings-visible",
+          "passed": true,
+          "details": {
+            "serviceHeadingVisible": true,
+            "proofHeadingVisible": true
+          }
+        },
+        {
+          "id": "mobile-drawer-expanded",
+          "passed": true,
+          "details": {
+            "expanded": "true",
+            "panelBackground": "rgb(14, 15, 17)",
+            "drawerRect": {
+              "left": 0,
+              "right": 360,
+              "top": 0,
+              "bottom": 780,
+              "width": 360,
+              "height": 780
+            },
+            "startRect": {
+              "top": 630.61767578125,
+              "bottom": 694.61767578125,
+              "width": 326,
+              "height": 64
+            },
+            "hubRect": {
+              "top": 695.61767578125,
+              "bottom": 759.61767578125,
+              "width": 326,
+              "height": 64
+            }
+          }
+        },
+        {
+          "id": "mobile-drawer-panel-opaque",
+          "passed": true,
+          "details": {
+            "expanded": "true",
+            "panelBackground": "rgb(14, 15, 17)",
+            "drawerRect": {
+              "left": 0,
+              "right": 360,
+              "top": 0,
+              "bottom": 780,
+              "width": 360,
+              "height": 780
+            },
+            "startRect": {
+              "top": 630.61767578125,
+              "bottom": 694.61767578125,
+              "width": 326,
+              "height": 64
+            },
+            "hubRect": {
+              "top": 695.61767578125,
+              "bottom": 759.61767578125,
+              "width": 326,
+              "height": 64
+            }
+          }
+        },
+        {
+          "id": "mobile-drawer-fills-viewport",
+          "passed": true,
+          "details": {
+            "expanded": "true",
+            "panelBackground": "rgb(14, 15, 17)",
+            "drawerRect": {
+              "left": 0,
+              "right": 360,
+              "top": 0,
+              "bottom": 780,
+              "width": 360,
+              "height": 780
+            },
+            "startRect": {
+              "top": 630.61767578125,
+              "bottom": 694.61767578125,
+              "width": 326,
+              "height": 64
+            },
+            "hubRect": {
+              "top": 695.61767578125,
+              "bottom": 759.61767578125,
+              "width": 326,
+              "height": 64
+            }
+          }
+        },
+        {
+          "id": "mobile-drawer-actions-bottom-pinned",
+          "passed": true,
+          "details": {
+            "expanded": "true",
+            "panelBackground": "rgb(14, 15, 17)",
+            "drawerRect": {
+              "left": 0,
+              "right": 360,
+              "top": 0,
+              "bottom": 780,
+              "width": 360,
+              "height": 780
+            },
+            "startRect": {
+              "top": 630.61767578125,
+              "bottom": 694.61767578125,
+              "width": 326,
+              "height": 64
+            },
+            "hubRect": {
+              "top": 695.61767578125,
+              "bottom": 759.61767578125,
+              "width": 326,
+              "height": 64
+            }
+          }
+        }
+      ]
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "name": "mobile-390"
+      },
+      "passed": true,
+      "checks": [
+        {
+          "id": "no-horizontal-overflow",
+          "passed": true,
+          "details": {
+            "maxScrollWidth": 390,
+            "viewportWidth": 390
+          }
+        },
+        {
+          "id": "document-scrolls-full-landing",
+          "passed": true,
+          "details": {
+            "maxScrollHeight": 16223,
+            "viewportHeight": 844
+          }
+        },
+        {
+          "id": "hero-cta-visible",
+          "passed": true,
+          "details": {
+            "expected": "Hero primary CTA is visible without relying on scroll."
+          }
+        },
+        {
+          "id": "hero-system-rail-visible",
+          "passed": true,
+          "details": {
+            "expected": "Hero exposes the Website / Client Hub / Admin / VPS system rail in the first viewport flow."
+          }
+        },
+        {
+          "id": "product-surfaces-visible",
+          "passed": true,
+          "details": {
+            "labelsPresent": [
+              {
+                "label": "Website",
+                "visible": true
+              },
+              {
+                "label": "Client Hub",
+                "visible": true
+              },
+              {
+                "label": "Admin",
+                "visible": true
+              },
+              {
+                "label": "Care Plan",
+                "visible": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "product-section-centered",
+          "passed": true,
+          "details": {
+            "productRect": {
+              "left": 0,
+              "right": 390,
+              "width": 390
+            }
+          }
+        },
+        {
+          "id": "proof-section-visible",
+          "passed": true,
+          "details": {
+            "proofRect": {
+              "left": 0,
+              "right": 390,
+              "width": 390
+            }
+          }
+        },
+        {
+          "id": "fixed-header-fits",
+          "passed": true,
+          "details": {
+            "headerRect": {
+              "left": 0,
+              "right": 390,
+              "top": 0,
+              "width": 390,
+              "height": 76
+            }
+          }
+        },
+        {
+          "id": "footer-wordmark-present",
+          "passed": true,
+          "details": {
+            "footerLogoRect": {
+              "left": 21.4453125,
+              "right": 368.5546875,
+              "width": 347.109375,
+              "height": 124.796875
+            }
+          }
+        },
+        {
+          "id": "footer-system-continuity",
+          "passed": true,
+          "details": {
+            "footerTextIncludesSystemCopy": true
+          }
+        },
+        {
+          "id": "section-headings-visible",
+          "passed": true,
+          "details": {
+            "serviceHeadingVisible": true,
+            "proofHeadingVisible": true
+          }
+        },
+        {
+          "id": "mobile-drawer-expanded",
+          "passed": true,
+          "details": {
+            "expanded": "true",
+            "panelBackground": "rgb(14, 15, 17)",
+            "drawerRect": {
+              "left": 0,
+              "right": 390,
+              "top": 0,
+              "bottom": 844,
+              "width": 390,
+              "height": 844
+            },
+            "startRect": {
+              "top": 694.47802734375,
+              "bottom": 758.47802734375,
+              "width": 356,
+              "height": 64
+            },
+            "hubRect": {
+              "top": 759.47802734375,
+              "bottom": 823.47802734375,
+              "width": 356,
+              "height": 64
+            }
+          }
+        },
+        {
+          "id": "mobile-drawer-panel-opaque",
+          "passed": true,
+          "details": {
+            "expanded": "true",
+            "panelBackground": "rgb(14, 15, 17)",
+            "drawerRect": {
+              "left": 0,
+              "right": 390,
+              "top": 0,
+              "bottom": 844,
+              "width": 390,
+              "height": 844
+            },
+            "startRect": {
+              "top": 694.47802734375,
+              "bottom": 758.47802734375,
+              "width": 356,
+              "height": 64
+            },
+            "hubRect": {
+              "top": 759.47802734375,
+              "bottom": 823.47802734375,
+              "width": 356,
+              "height": 64
+            }
+          }
+        },
+        {
+          "id": "mobile-drawer-fills-viewport",
+          "passed": true,
+          "details": {
+            "expanded": "true",
+            "panelBackground": "rgb(14, 15, 17)",
+            "drawerRect": {
+              "left": 0,
+              "right": 390,
+              "top": 0,
+              "bottom": 844,
+              "width": 390,
+              "height": 844
+            },
+            "startRect": {
+              "top": 694.47802734375,
+              "bottom": 758.47802734375,
+              "width": 356,
+              "height": 64
+            },
+            "hubRect": {
+              "top": 759.47802734375,
+              "bottom": 823.47802734375,
+              "width": 356,
+              "height": 64
+            }
+          }
+        },
+        {
+          "id": "mobile-drawer-actions-bottom-pinned",
+          "passed": true,
+          "details": {
+            "expanded": "true",
+            "panelBackground": "rgb(14, 15, 17)",
+            "drawerRect": {
+              "left": 0,
+              "right": 390,
+              "top": 0,
+              "bottom": 844,
+              "width": 390,
+              "height": 844
+            },
+            "startRect": {
+              "top": 694.47802734375,
+              "bottom": 758.47802734375,
+              "width": 356,
+              "height": 64
+            },
+            "hubRect": {
+              "top": 759.47802734375,
+              "bottom": 823.47802734375,
+              "width": 356,
+              "height": 64
+            }
+          }
+        }
+      ]
+    },
+    {
+      "viewport": {
+        "width": 768,
+        "height": 900,
+        "name": "tablet-768"
+      },
+      "passed": true,
+      "checks": [
+        {
+          "id": "no-horizontal-overflow",
+          "passed": true,
+          "details": {
+            "maxScrollWidth": 768,
+            "viewportWidth": 768
+          }
+        },
+        {
+          "id": "document-scrolls-full-landing",
+          "passed": true,
+          "details": {
+            "maxScrollHeight": 11154,
+            "viewportHeight": 900
+          }
+        },
+        {
+          "id": "hero-cta-visible",
+          "passed": true,
+          "details": {
+            "expected": "Hero primary CTA is visible without relying on scroll."
+          }
+        },
+        {
+          "id": "hero-system-rail-visible",
+          "passed": true,
+          "details": {
+            "expected": "Hero exposes the Website / Client Hub / Admin / VPS system rail in the first viewport flow."
+          }
+        },
+        {
+          "id": "product-surfaces-visible",
+          "passed": true,
+          "details": {
+            "labelsPresent": [
+              {
+                "label": "Website",
+                "visible": true
+              },
+              {
+                "label": "Client Hub",
+                "visible": true
+              },
+              {
+                "label": "Admin",
+                "visible": true
+              },
+              {
+                "label": "Care Plan",
+                "visible": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "product-section-centered",
+          "passed": true,
+          "details": {
+            "productRect": {
+              "left": 0,
+              "right": 768,
+              "width": 768
+            }
+          }
+        },
+        {
+          "id": "proof-section-visible",
+          "passed": true,
+          "details": {
+            "proofRect": {
+              "left": 0,
+              "right": 768,
+              "width": 768
+            }
+          }
+        },
+        {
+          "id": "fixed-header-fits",
+          "passed": true,
+          "details": {
+            "headerRect": {
+              "left": 0,
+              "right": 768,
+              "top": 0,
+              "width": 768,
+              "height": 76
+            }
+          }
+        },
+        {
+          "id": "footer-wordmark-present",
+          "passed": true,
+          "details": {
+            "footerLogoRect": {
+              "left": 42.2421875,
+              "right": 725.7578125,
+              "width": 683.515625,
+              "height": 245.765625
+            }
+          }
+        },
+        {
+          "id": "footer-system-continuity",
+          "passed": true,
+          "details": {
+            "footerTextIncludesSystemCopy": true
+          }
+        },
+        {
+          "id": "section-headings-visible",
+          "passed": true,
+          "details": {
+            "serviceHeadingVisible": true,
+            "proofHeadingVisible": true
+          }
+        }
+      ]
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900,
+        "name": "desktop-1280"
+      },
+      "passed": true,
+      "checks": [
+        {
+          "id": "no-horizontal-overflow",
+          "passed": true,
+          "details": {
+            "maxScrollWidth": 1280,
+            "viewportWidth": 1280
+          }
+        },
+        {
+          "id": "document-scrolls-full-landing",
+          "passed": true,
+          "details": {
+            "maxScrollHeight": 9213,
+            "viewportHeight": 900
+          }
+        },
+        {
+          "id": "hero-cta-visible",
+          "passed": true,
+          "details": {
+            "expected": "Hero primary CTA is visible without relying on scroll."
+          }
+        },
+        {
+          "id": "hero-system-rail-visible",
+          "passed": true,
+          "details": {
+            "expected": "Hero exposes the Website / Client Hub / Admin / VPS system rail in the first viewport flow."
+          }
+        },
+        {
+          "id": "product-surfaces-visible",
+          "passed": true,
+          "details": {
+            "labelsPresent": [
+              {
+                "label": "Website",
+                "visible": true
+              },
+              {
+                "label": "Client Hub",
+                "visible": true
+              },
+              {
+                "label": "Admin",
+                "visible": true
+              },
+              {
+                "label": "Care Plan",
+                "visible": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "product-section-centered",
+          "passed": true,
+          "details": {
+            "productRect": {
+              "left": 0,
+              "right": 1280,
+              "width": 1280
+            }
+          }
+        },
+        {
+          "id": "proof-section-visible",
+          "passed": true,
+          "details": {
+            "proofRect": {
+              "left": 0,
+              "right": 1280,
+              "width": 1280
+            }
+          }
+        },
+        {
+          "id": "fixed-header-fits",
+          "passed": true,
+          "details": {
+            "headerRect": {
+              "left": 0,
+              "right": 1280,
+              "top": 0,
+              "width": 1280,
+              "height": 76
+            }
+          }
+        },
+        {
+          "id": "footer-wordmark-present",
+          "passed": true,
+          "details": {
+            "footerLogoRect": {
+              "left": 70.40625,
+              "right": 1209.59375,
+              "width": 1139.1875,
+              "height": 409.59375
+            }
+          }
+        },
+        {
+          "id": "footer-system-continuity",
+          "passed": true,
+          "details": {
+            "footerTextIncludesSystemCopy": true
+          }
+        },
+        {
+          "id": "section-headings-visible",
+          "passed": true,
+          "details": {
+            "serviceHeadingVisible": true,
+            "proofHeadingVisible": true
+          }
+        }
+      ]
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 960,
+        "name": "desktop-1440"
+      },
+      "passed": true,
+      "checks": [
+        {
+          "id": "no-horizontal-overflow",
+          "passed": true,
+          "details": {
+            "maxScrollWidth": 1440,
+            "viewportWidth": 1440
+          }
+        },
+        {
+          "id": "document-scrolls-full-landing",
+          "passed": true,
+          "details": {
+            "maxScrollHeight": 9319,
+            "viewportHeight": 960
+          }
+        },
+        {
+          "id": "hero-cta-visible",
+          "passed": true,
+          "details": {
+            "expected": "Hero primary CTA is visible without relying on scroll."
+          }
+        },
+        {
+          "id": "hero-system-rail-visible",
+          "passed": true,
+          "details": {
+            "expected": "Hero exposes the Website / Client Hub / Admin / VPS system rail in the first viewport flow."
+          }
+        },
+        {
+          "id": "product-surfaces-visible",
+          "passed": true,
+          "details": {
+            "labelsPresent": [
+              {
+                "label": "Website",
+                "visible": true
+              },
+              {
+                "label": "Client Hub",
+                "visible": true
+              },
+              {
+                "label": "Admin",
+                "visible": true
+              },
+              {
+                "label": "Care Plan",
+                "visible": true
+              }
+            ]
+          }
+        },
+        {
+          "id": "product-section-centered",
+          "passed": true,
+          "details": {
+            "productRect": {
+              "left": 0,
+              "right": 1440,
+              "width": 1440
+            }
+          }
+        },
+        {
+          "id": "proof-section-visible",
+          "passed": true,
+          "details": {
+            "proofRect": {
+              "left": 0,
+              "right": 1440,
+              "width": 1440
+            }
+          }
+        },
+        {
+          "id": "fixed-header-fits",
+          "passed": true,
+          "details": {
+            "headerRect": {
+              "left": 0,
+              "right": 1440,
+              "top": 0,
+              "width": 1440,
+              "height": 76
+            }
+          }
+        },
+        {
+          "id": "footer-wordmark-present",
+          "passed": true,
+          "details": {
+            "footerLogoRect": {
+              "left": 97.0078125,
+              "right": 1342.9921875,
+              "width": 1245.984375,
+              "height": 448
+            }
+          }
+        },
+        {
+          "id": "footer-system-continuity",
+          "passed": true,
+          "details": {
+            "footerTextIncludesSystemCopy": true
+          }
+        },
+        {
+          "id": "section-headings-visible",
+          "passed": true,
+          "details": {
+            "serviceHeadingVisible": true,
+            "proofHeadingVisible": true
+          }
+        }
+      ]
+    }
+  ]
+}
