@@ -6,8 +6,12 @@ import {
   ArrowRight,
   Loader2,
   Globe,
+  Globe2,
   Database,
   Shield,
+  LockKeyhole,
+  LayoutDashboard,
+  Wrench,
   type LucideIcon,
 } from "lucide-react";
 import { get } from "@/lib/api";
@@ -19,20 +23,26 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Smartphone,
   Cloud,
   Globe,
+  Globe2,
   Database,
   Shield,
+  LockKeyhole,
+  LayoutDashboard,
+  Wrench,
 };
 
 const FALLBACK_FEATURES: Record<string, string[]> = {
-  "Web App Development": ["React / Next.js", "Node.js / Python", "PostgreSQL / MongoDB", "CI/CD Pipelines"],
-  "Mobile Solutions": ["React Native", "iOS / Android", "Push Notifications", "Offline Support"],
-  "Cloud Architecture": ["AWS / GCP / Azure", "Kubernetes", "Serverless", "DevOps"],
+  Website: ["Landing", "SEO", "CMS", "Analytics"],
+  "Client Hub": ["Login", "Timeline", "Invoices", "Files"],
+  Admin: ["Leads", "Content", "Finance", "Team"],
+  "Care Plan": ["Hosting", "Edits", "Monitor", "Growth"],
 };
 
 const DEFAULT_SERVICES = [
-  { icon: "Code2", title: "Web App Development", description: "Full-stack applications built with modern frameworks. From MVP to enterprise scale." },
-  { icon: "Smartphone", title: "Mobile Solutions", description: "Native and cross-platform mobile experiences that users love." },
-  { icon: "Cloud", title: "Cloud Architecture", description: "Infrastructure that scales with your business. Secure, reliable, cost-optimized." },
+  { icon: "Globe2", title: "Website", description: "A conversion-focused public site with offer, proof, SEO structure, analytics, and a content system ready to grow." },
+  { icon: "LockKeyhole", title: "Client Hub", description: "A logged-in space for project timelines, approvals, invoices, files, and the client-side delivery rhythm." },
+  { icon: "LayoutDashboard", title: "Admin", description: "Internal controls for leads, content, clients, team capacity, finance, delivery, and launch operations." },
+  { icon: "Wrench", title: "Care Plan", description: "Hosting, monitoring, small edits, support, experiments, and steady improvements after the first release ships." },
 ];
 
 interface ServiceItem {
@@ -66,9 +76,9 @@ const ServiceTiers = () => {
       <Reveal>
         <SectionHeader
           number="03"
-          eyebrow="Services"
-          title="What We Build"
-          subtitle="End-to-end software engineering with a focus on quality, speed, and user experience."
+          eyebrow="Product Surfaces"
+          title="One system, not just a website."
+          subtitle="We build the public front door and the private tools behind it: client login, admin controls, launch operations, and the care layer after shipping."
         />
       </Reveal>
 
@@ -77,7 +87,7 @@ const ServiceTiers = () => {
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : (
-        <RevealGroup stagger={0.1} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <RevealGroup stagger={0.1} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {services.map((service) => {
             const Icon = ICON_MAP[service.icon] || Code2;
             const features = FALLBACK_FEATURES[service.title] || [];

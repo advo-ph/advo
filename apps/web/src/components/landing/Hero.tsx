@@ -16,9 +16,9 @@ interface HeroContent {
 }
 
 const DEFAULTS: HeroContent = {
-  headline: "We digitalize for you.",
+  headline: "Websites with the system behind them.",
   subtext:
-    "Business websites, operations, and digital systems. Designed, built, and shipped by a small team that gives a damn.",
+    "ADVO builds the public site, client hub, admin console, and private stack ambitious businesses need to operate online.",
   cta_primary_label: "Start a Project",
   cta_primary_url: "/start",
   status_badge_text: "Accepting Clients",
