@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import {
   ExternalLink,
   GitBranch,
@@ -17,7 +16,6 @@ import {
 } from "lucide-react";
 import { useRequestPreview } from "@/hooks/usePreviewLink";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -28,6 +26,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import StatusStepper from "./StatusStepper";
 import FundingBar from "./FundingBar";
+import { Panel, Empty, Dot } from "@/components/admin/_ui";
 import { useGitHub } from "@/hooks/useGitHub";
 import { cloudflare, DeploymentStatus } from "@/lib/cloudflare";
 import { formatDistanceToNow } from "date-fns";
@@ -58,32 +57,37 @@ interface FeedItem {
 
 const statusConfig: Record<
   DeliverableStatus,
-  { label: string; color: string; icon: React.ElementType }
+  { label: string; dot: string; icon: React.ElementType; iconColor: string }
 > = {
   not_started: {
-    label: "Not Started",
-    color: "bg-secondary text-muted-foreground",
+    label: "Not started",
+    dot: "bg-muted-foreground",
     icon: Circle,
+    iconColor: "text-muted-foreground",
   },
   in_progress: {
-    label: "In Progress",
-    color: "bg-blue-500/10 text-blue-500",
+    label: "In progress",
+    dot: "bg-blue-500",
     icon: Clock,
+    iconColor: "text-blue-400",
   },
   review: {
-    label: "In Review",
-    color: "bg-purple-500/10 text-purple-500",
+    label: "In review",
+    dot: "bg-purple-500",
     icon: AlertCircle,
+    iconColor: "text-purple-400",
   },
   completed: {
     label: "Completed",
-    color: "bg-green-500/10 text-green-500",
+    dot: "bg-green-500",
     icon: CheckCircle2,
+    iconColor: "text-green-400",
   },
   blocked: {
     label: "Blocked",
-    color: "bg-red-500/10 text-red-500",
+    dot: "bg-red-500",
     icon: AlertCircle,
+    iconColor: "text-red-400",
   },
 };
 
@@ -188,158 +192,130 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
   ).length;
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      className="space-y-6"
-    >
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">
-            {project.title}
-          </h1>
+      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-lg font-semibold tracking-tight">{project.title}</h1>
           {project.description && (
-            <p className="text-muted-foreground">{project.description}</p>
+            <p className="text-sm text-muted-foreground mt-1">{project.description}</p>
           )}
 
           {/* Tech Stack - Auto-detected from GitHub */}
           {displayTechStack.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-4">
+            <div className="flex flex-wrap items-center gap-1.5 mt-3">
               {displayTechStack.map((tech) => (
-                <Badge key={tech} variant="outline" className="font-mono text-xs">
+                <span
+                  key={tech}
+                  className="px-2 py-0.5 rounded-md border border-border text-xs text-muted-foreground"
+                >
                   {tech}
-                </Badge>
+                </span>
               ))}
               {safeTechStack.length > 0 && (
-                <Badge
-                  variant="secondary"
-                  className="text-xs text-green-500 border-green-500/30"
-                >
-                  Auto-detected
-                </Badge>
+                <span className="text-xs text-muted-foreground/70">Auto-detected</span>
               )}
             </div>
           )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           {project.repository_name && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="font-mono"
-              asChild
+            <a
+              href={`https://github.com/advo-ph/${project.repository_name}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
             >
-              <a
-                href={`https://github.com/advo-ph/${project.repository_name}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <GitBranch className="h-4 w-4 mr-2" />
-                {project.repository_name}
-              </a>
-            </Button>
+              <GitBranch className="h-3.5 w-3.5" />
+              {project.repository_name}
+            </a>
           )}
           {safeOpenPRs > 0 && (
-            <Badge variant="secondary" className="flex items-center gap-1">
+            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-secondary text-xs text-muted-foreground">
               <GitPullRequest className="h-3 w-3" />
               {safeOpenPRs} open PR{safeOpenPRs > 1 ? "s" : ""}
-            </Badge>
+            </span>
           )}
           {project.preview_url && (
-            <Button size="sm" asChild>
-              <a
-                href={project.preview_url}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {deployment && (
-                  <span className="mr-2">
-                    {cloudflare.getStatusBadge(deployment.state).icon}
-                  </span>
-                )}
-                Live Preview
-                <ExternalLink className="h-4 w-4 ml-2" />
-              </a>
-            </Button>
+            <a
+              href={project.preview_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
+            >
+              {deployment && (
+                <span>{cloudflare.getStatusBadge(deployment.state).icon}</span>
+              )}
+              Live preview
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
           )}
-          <Button
-            size="sm"
-            variant="outline"
+          <button
             onClick={() => requestPreview(project.project_id)}
             disabled={isRequesting}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent text-accent-foreground rounded-md text-sm font-medium hover:bg-accent/90 disabled:opacity-60 transition-colors"
           >
             {isRequesting ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <Send className="h-3.5 w-3.5 mr-2" />
+              <Send className="h-3.5 w-3.5" />
             )}
             Request a preview
-          </Button>
+          </button>
         </div>
       </div>
 
       {/* Status Stepper */}
-      <div className="p-6 bg-card border border-border rounded-xl shadow-card">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4 block">
-          Project Status
-        </span>
-        <StatusStepper
-          currentStatus={
-            project.project_status as
-              | "discovery"
-              | "architecture"
-              | "development"
-              | "testing"
-              | "shipped"
-          }
-        />
-      </div>
+      <Panel title="Project status">
+        <div className="p-4">
+          <StatusStepper
+            currentStatus={
+              project.project_status as
+                | "discovery"
+                | "architecture"
+                | "development"
+                | "testing"
+                | "shipped"
+            }
+          />
+        </div>
+      </Panel>
 
       {/* Grid: Funding + Deliverables */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <FundingBar
           totalCents={project.total_value_cents}
           paidCents={project.amount_paid_cents}
         />
 
         {/* Deliverables Tracker */}
-        <div className="p-6 bg-card border border-border rounded-xl shadow-card">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Deliverables
-            </span>
-            {totalDeliverables > 0 && (
-              <Badge variant="outline" className="text-xs">
-                {completedDeliverables}/{totalDeliverables} done
-              </Badge>
-            )}
-          </div>
-
+        <Panel
+          title="Deliverables"
+          meta={totalDeliverables > 0 ? `${completedDeliverables}/${totalDeliverables} done` : undefined}
+        >
           {totalDeliverables === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              No deliverables yet
-            </p>
+            <Empty text="No deliverables yet" />
           ) : (
-            <div className="space-y-3">
+            <div>
               {/* Progress bar */}
-              <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-accent rounded-full transition-all"
-                  style={{
-                    width: `${
-                      totalDeliverables > 0
-                        ? (completedDeliverables / totalDeliverables) * 100
-                        : 0
-                    }%`,
-                  }}
-                />
+              <div className="px-4 pt-4">
+                <div className="w-full h-1 bg-secondary rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-accent rounded-full transition-all"
+                    style={{
+                      width: `${
+                        totalDeliverables > 0
+                          ? (completedDeliverables / totalDeliverables) * 100
+                          : 0
+                      }%`,
+                    }}
+                  />
+                </div>
               </div>
 
               {/* Deliverable list */}
-              <div className="space-y-2 max-h-64 overflow-y-auto">
+              <div className="mt-3 divide-y divide-border max-h-64 overflow-y-auto">
                 {deliverables.map((d) => {
                   const cfg = statusConfig[d.status];
                   const StatusIcon = cfg.icon;
@@ -351,19 +327,9 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
                   return (
                     <div
                       key={d.deliverable_id}
-                      className="flex items-center gap-3 py-2"
+                      className="flex items-center gap-3 px-4 py-2.5"
                     >
-                      <StatusIcon
-                        className={`h-4 w-4 flex-shrink-0 ${
-                          d.status === "completed"
-                            ? "text-green-500"
-                            : d.status === "blocked"
-                            ? "text-red-500"
-                            : d.status === "in_progress"
-                            ? "text-blue-500"
-                            : "text-muted-foreground"
-                        }`}
-                      />
+                      <StatusIcon className={`h-4 w-4 shrink-0 ${cfg.iconColor}`} />
                       <div className="flex-1 min-w-0">
                         <p
                           className={`text-sm truncate ${
@@ -393,73 +359,75 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
                           {d.due_date && (
                             <span
                               className={`text-xs ${
-                                isPastDue
-                                  ? "text-red-500"
-                                  : "text-muted-foreground"
+                                isPastDue ? "text-red-400" : "text-muted-foreground"
                               }`}
                             >
                               {isPastDue ? "Overdue · " : ""}
-                              {new Date(d.due_date).toLocaleDateString(
-                                "en-US",
-                                { month: "short", day: "numeric" }
-                              )}
+                              {new Date(d.due_date).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                              })}
                             </span>
                           )}
                         </div>
                       </div>
-                      <Badge className={`text-[10px] ${cfg.color}`}>
-                        {cfg.label}
-                      </Badge>
+                      <span className="inline-flex items-center gap-1.5 shrink-0">
+                        <Dot className={cfg.dot} />
+                        <span className="text-xs text-muted-foreground">{cfg.label}</span>
+                      </span>
                     </div>
                   );
                 })}
               </div>
             </div>
           )}
-        </div>
+        </Panel>
       </div>
 
       {/* Invoices */}
       {invoices.length > 0 && (
-        <div className="p-6 bg-card border border-border rounded-xl shadow-card">
-          <div className="flex items-center justify-between mb-4">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Invoices
-            </span>
-            <Badge variant="outline" className="text-xs">
-              {invoices.filter((i) => i.status === "paid").length}/
-              {invoices.length} paid
-            </Badge>
-          </div>
-          <div className="space-y-2">
+        <Panel
+          title="Invoices"
+          meta={`${invoices.filter((i) => i.status === "paid").length}/${invoices.length} paid`}
+        >
+          <div className="divide-y divide-border">
             {invoices.map((inv) => {
               const isPaid = inv.status === "paid";
               const isOverdue = inv.status === "overdue";
+              const statusColor = isPaid
+                ? "bg-green-500"
+                : isOverdue
+                ? "bg-red-500"
+                : "bg-yellow-500";
               return (
                 <div
                   key={inv.invoice_id}
-                  className="flex items-center justify-between py-2 px-3 rounded-lg bg-secondary/30"
+                  className="flex items-center justify-between gap-3 px-4 py-2.5"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <Receipt
-                      className={`h-4 w-4 ${
+                      className={`h-4 w-4 shrink-0 ${
                         isPaid
-                          ? "text-green-500"
+                          ? "text-green-400"
                           : isOverdue
-                          ? "text-red-500"
+                          ? "text-red-400"
                           : "text-muted-foreground"
                       }`}
                     />
-                    <span className={`text-sm font-medium ${
-                      isPaid ? "text-muted-foreground" : ""
-                    }`}>
+                    <span
+                      className={`text-sm truncate ${
+                        isPaid ? "text-muted-foreground" : ""
+                      }`}
+                    >
                       {inv.label}
                     </span>
                     {inv.due_date && (
-                      <span className={`text-xs ${
-                        isOverdue ? "text-red-500" : "text-muted-foreground"
-                      }`}>
-                        Due:{" "}
+                      <span
+                        className={`text-xs shrink-0 ${
+                          isOverdue ? "text-red-400" : "text-muted-foreground"
+                        }`}
+                      >
+                        Due{" "}
                         {new Date(inv.due_date).toLocaleDateString("en-US", {
                           month: "short",
                           day: "numeric",
@@ -467,63 +435,53 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-mono font-medium">
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-sm font-medium tabular-nums">
                       ₱{(inv.amount_cents / 100).toLocaleString("en-PH", {
                         minimumFractionDigits: 2,
                       })}
                     </span>
-                    <Badge
-                      variant="outline"
-                      className={`text-[10px] ${
-                        isPaid
-                          ? "bg-green-500/10 text-green-500 border-green-500/30"
-                          : isOverdue
-                          ? "bg-red-500/10 text-red-500 border-red-500/30"
-                          : "bg-yellow-500/10 text-yellow-500 border-yellow-500/30"
-                      }`}
-                    >
-                      {inv.status.charAt(0).toUpperCase() + inv.status.slice(1)}
-                    </Badge>
+                    <span className="inline-flex items-center gap-1.5 w-20 justify-end">
+                      <Dot className={statusColor} />
+                      <span className="text-xs text-muted-foreground">
+                        {inv.status.charAt(0).toUpperCase() + inv.status.slice(1)}
+                      </span>
+                    </span>
                   </div>
                 </div>
               );
             })}
           </div>
-        </div>
+        </Panel>
       )}
 
       {/* Contract */}
-      <div className="p-6 bg-card border border-border rounded-xl shadow-card">
-        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4 block">
-          Contract
-        </span>
-        {project.contract_url ? (
-          <a
-            href={project.contract_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-accent/10 text-accent border border-accent/30 rounded-lg text-sm font-medium hover:bg-accent/20 transition-colors"
-          >
-            <FileEdit className="h-4 w-4" />
-            View Contract
-            <ExternalLink className="h-3 w-3 ml-1" />
-          </a>
-        ) : (
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
-            <Clock className="h-4 w-4" />
-            Contract pending
-          </div>
-        )}
-      </div>
+      <Panel title="Contract">
+        <div className="p-4">
+          {project.contract_url ? (
+            <a
+              href={project.contract_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-border text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
+            >
+              <FileEdit className="h-3.5 w-3.5" />
+              View contract
+              <ExternalLink className="h-3 w-3" />
+            </a>
+          ) : (
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <Clock className="h-4 w-4" />
+              Contract pending
+            </div>
+          )}
+        </div>
+      </Panel>
 
       {/* Progress Photos */}
       {assets.filter((a) => a.asset_type === "progress_photo").length > 0 && (
-        <div className="p-6 bg-card border border-border rounded-xl shadow-card">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4 block">
-            Progress Photos
-          </span>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <Panel title="Progress photos">
+          <div className="p-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
             {assets
               .filter((a) => a.asset_type === "progress_photo")
               .map((asset) => (
@@ -532,7 +490,7 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
                   href={asset.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group block overflow-hidden rounded-lg border border-border hover:border-accent/50 transition-colors"
+                  className="group block overflow-hidden rounded-md border border-border hover:border-accent/50 transition-colors"
                 >
                   <div className="aspect-video bg-secondary/50 overflow-hidden">
                     <img
@@ -556,22 +514,19 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
                 </a>
               ))}
           </div>
-        </div>
+        </Panel>
       )}
 
       {/* Contact — Assigned Team Members */}
       {contacts.length > 0 && (
-        <div className="p-6 bg-card border border-border rounded-xl shadow-card">
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4 block">
-            Your Team
-          </span>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Panel title="Your team">
+          <div className="divide-y divide-border">
             {contacts.map((contact) => (
               <div
                 key={contact.team_member_id}
-                className="flex items-center gap-3 p-3 bg-secondary/30 rounded-lg"
+                className="flex items-center gap-3 px-4 py-3"
               >
-                <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center shrink-0 overflow-hidden">
                   {contact.avatar_url ? (
                     <img
                       src={contact.avatar_url}
@@ -579,63 +534,56 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
                       className="w-full h-full object-cover rounded-full"
                     />
                   ) : (
-                    <span className="text-sm font-semibold text-accent">
+                    <span className="text-xs font-semibold text-muted-foreground">
                       {contact.name.charAt(0)}
                     </span>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold">{contact.name}</p>
-                  <p className="text-xs text-muted-foreground">{contact.role}</p>
-                  <div className="flex items-center gap-3 mt-1">
-                    {contact.email && (
-                      <a
-                        href={`mailto:${contact.email}`}
-                        className="text-[10px] text-accent hover:underline"
-                      >
-                        {contact.email}
-                      </a>
-                    )}
-                    {contact.linkedin_url && (
-                      <a
-                        href={contact.linkedin_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[10px] text-accent hover:underline"
-                      >
-                        LinkedIn ↗
-                      </a>
-                    )}
-                  </div>
+                  <p className="text-sm font-medium truncate">{contact.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{contact.role}</p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  {contact.email && (
+                    <a
+                      href={`mailto:${contact.email}`}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      Email
+                    </a>
+                  )}
+                  {contact.linkedin_url && (
+                    <a
+                      href={contact.linkedin_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      LinkedIn
+                    </a>
+                  )}
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </Panel>
       )}
 
       {/* Engineering Feed */}
-      <div className="p-6 bg-card border border-border rounded-xl shadow-card">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Engineering Feed
-            </span>
-
+      <Panel
+        title="Engineering feed"
+        action={
+          <div className="flex items-center gap-2">
             {/* Branch Selector */}
             {safeBranches.length > 0 && (
               <Select value={currentBranch} onValueChange={setBranch}>
-                <SelectTrigger className="w-[140px] h-8 text-xs font-mono">
+                <SelectTrigger className="w-[140px] h-8 text-xs">
                   <GitBranch className="h-3 w-3 mr-1" />
                   <SelectValue placeholder="Branch" />
                 </SelectTrigger>
                 <SelectContent>
                   {safeBranches.map((branch) => (
-                    <SelectItem
-                      key={branch.name}
-                      value={branch.name}
-                      className="font-mono text-xs"
-                    >
+                    <SelectItem key={branch.name} value={branch.name} className="text-xs">
                       {branch.name}
                       {branch.protected && (
                         <span className="ml-2 text-muted-foreground">🔒</span>
@@ -645,67 +593,55 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
                 </SelectContent>
               </Select>
             )}
+
+            {project.repository_name && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={refetch}
+                disabled={isLoading}
+                className="h-8 w-8 p-0"
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+              </Button>
+            )}
           </div>
-
-          {project.repository_name && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={refetch}
-              disabled={isLoading}
-              className="h-8 w-8 p-0"
-            >
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-            </Button>
-          )}
-        </div>
-
-        <div className="space-y-4">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : feed.length > 0 ? (
-            feed.slice(0, 5).map((item) => (
-              <div key={item.id} className="flex gap-3 group">
-                <div className="flex flex-col items-center">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center overflow-hidden ${
-                      item.type === "update" ? "bg-accent/20" : "bg-secondary"
-                    }`}
-                  >
-                    {item.type === "commit" && item.avatar_url ? (
-                      <img
-                        src={item.avatar_url}
-                        alt={item.author}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : item.type === "update" ? (
-                      <FileEdit className="h-4 w-4 text-accent" />
-                    ) : (
-                      <GitCommit className="h-4 w-4 text-muted-foreground" />
-                    )}
-                  </div>
-                  <div className="w-px flex-1 bg-border mt-2" />
+        }
+      >
+        {isLoading ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : feed.length > 0 ? (
+          <div className="divide-y divide-border">
+            {feed.slice(0, 5).map((item) => (
+              <div key={item.id} className="flex gap-3 px-4 py-3 group">
+                <div className="w-6 h-6 rounded-full flex items-center justify-center overflow-hidden shrink-0 bg-secondary">
+                  {item.type === "commit" && item.avatar_url ? (
+                    <img
+                      src={item.avatar_url}
+                      alt={item.author}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : item.type === "update" ? (
+                    <FileEdit className="h-3 w-3 text-accent" />
+                  ) : (
+                    <GitCommit className="h-3 w-3 text-muted-foreground" />
+                  )}
                 </div>
-                <div className="pb-4 flex-1">
-                  <div className="flex items-center gap-2 mb-1">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
                     {item.sha && (
-                      <code className="text-xs text-accent font-mono bg-accent/10 px-1.5 py-0.5 rounded">
+                      <span className="text-xs text-accent tabular-nums bg-accent/10 px-1.5 py-0.5 rounded">
                         {item.sha}
-                      </code>
+                      </span>
                     )}
                     {item.type === "update" && (
-                      <Badge
-                        variant="outline"
-                        className="text-xs text-accent border-accent/30"
-                      >
-                        Update
-                      </Badge>
+                      <span className="text-xs text-accent">Update</span>
                     )}
                     <span className="text-xs text-muted-foreground">
                       {formatDistanceToNow(new Date(item.date), {
@@ -726,47 +662,37 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
                     <span className="font-medium text-sm">{item.title}</span>
                   )}
                   {item.body && (
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                       {item.body}
                     </p>
                   )}
-                  <p className="text-xs text-muted-foreground mt-1">
-                    by {item.author}
-                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">by {item.author}</p>
                 </div>
               </div>
-            ))
-          ) : (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              No updates yet
-            </p>
-          )}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <Empty text="No updates yet" />
+        )}
 
-        <div className="mt-4 pt-4 border-t border-border flex items-center gap-2">
-          {safeCommits.length > 0 && (
-            <Badge
-              variant="outline"
-              className="text-xs text-green-500 border-green-500/30"
-            >
-              <GitCommit className="h-3 w-3 mr-1" />
-              Live from GitHub
-            </Badge>
-          )}
-          {deployment && (
-            <Badge
-              variant="outline"
-              className={`text-xs ${
-                cloudflare.getStatusBadge(deployment.state).color
-              }`}
-            >
-              {cloudflare.getStatusBadge(deployment.state).icon} CF:{" "}
-              {cloudflare.getStatusBadge(deployment.state).label}
-            </Badge>
-          )}
-        </div>
-      </div>
-    </motion.div>
+        {(safeCommits.length > 0 || deployment) && (
+          <div className="px-4 h-9 border-t border-border flex items-center gap-3">
+            {safeCommits.length > 0 && (
+              <span className="inline-flex items-center gap-1.5 text-xs text-green-400">
+                <GitCommit className="h-3 w-3" />
+                Live from GitHub
+              </span>
+            )}
+            {deployment && (
+              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                {cloudflare.getStatusBadge(deployment.state).icon} CF:{" "}
+                {cloudflare.getStatusBadge(deployment.state).label}
+              </span>
+            )}
+          </div>
+        )}
+      </Panel>
+    </div>
   );
 };
 

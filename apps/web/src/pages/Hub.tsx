@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { LogOut, Briefcase, ChevronRight, User, Bell, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useClientData, type ClientProject } from "@/hooks/useClientData";
 import { useClientNotifications } from "@/hooks/useNotifications";
@@ -42,33 +41,30 @@ const Hub = () => {
       <main className="pt-24 pb-16 px-6 flex-1">
         <div className="max-w-7xl mx-auto">
           {isLoading ? (
-            <div className="space-y-6">
-              <div className="h-8 w-48 bg-secondary animate-pulse rounded" />
+            <div className="space-y-4">
+              <div className="h-6 w-48 bg-secondary animate-pulse rounded" />
               <div className="h-64 bg-secondary animate-pulse rounded-lg" />
             </div>
           ) : projects.length === 0 ? (
-            <div className="text-center py-24">
-              <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center mx-auto mb-6">
-                <Briefcase className="h-7 w-7 text-muted-foreground" />
-              </div>
-              <h2 className="text-xl font-medium mb-2">No Projects Yet</h2>
-              <p className="text-muted-foreground max-w-sm mx-auto mb-6">
+            <div className="border border-border rounded-lg bg-card px-4 py-12 text-center max-w-md mx-auto">
+              <Briefcase className="h-7 w-7 text-muted-foreground/40 mx-auto mb-3" />
+              <p className="text-sm text-muted-foreground mb-4">
                 Your projects will appear here once we begin working together.
               </p>
-              <Button asChild className="btn-press bg-foreground text-background hover:bg-foreground/90">
-                <Link to="/start">Start a Project</Link>
+              <Button asChild className="btn-press bg-accent text-accent-foreground hover:bg-accent/90">
+                <Link to="/start">Start a project</Link>
               </Button>
             </div>
           ) : (
-            <div className="flex flex-col lg:flex-row gap-8">
+            <div className="flex flex-col lg:flex-row gap-6">
               {/* Sidebar - Project List + User Info (Sticky) */}
               <div className="lg:w-72 flex-shrink-0">
-                <div className="lg:sticky lg:top-24 space-y-6">
+                <div className="lg:sticky lg:top-24 space-y-4">
                   {/* User Card */}
-                  <div className="p-4 bg-card border border-border rounded-xl">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
-                        <User className="h-5 w-5 text-accent" />
+                  <div className="bg-card border border-border rounded-lg overflow-hidden">
+                    <div className="flex items-center gap-2.5 px-3 h-12 border-b border-border">
+                      <div className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center shrink-0">
+                        <User className="h-4 w-4 text-muted-foreground" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{user?.email}</p>
@@ -78,11 +74,11 @@ const Hub = () => {
                       <div className="relative">
                         <button
                           onClick={() => setBellOpen(!bellOpen)}
-                          className="relative p-2 rounded-lg hover:bg-secondary/50 transition-colors"
+                          className="relative p-1.5 rounded-md hover:bg-secondary/50 transition-colors"
                         >
                           <Bell className="h-4 w-4 text-muted-foreground" />
                           {unreadCount > 0 && (
-                            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-accent text-white text-[10px] flex items-center justify-center font-bold">
+                            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-accent text-accent-foreground text-[10px] flex items-center justify-center font-semibold tabular-nums">
                               {unreadCount}
                             </span>
                           )}
@@ -90,25 +86,23 @@ const Hub = () => {
 
                         {/* Notification Dropdown */}
                         {bellOpen && (
-                          <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-xl shadow-xl z-50 overflow-hidden">
-                            <div className="p-3 border-b border-border flex items-center justify-between">
-                              <span className="text-xs font-semibold uppercase tracking-wider">Notifications</span>
+                          <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden">
+                            <div className="px-3 h-11 border-b border-border flex items-center justify-between">
+                              <span className="text-sm font-medium">Notifications</span>
                               {unreadCount > 0 && (
-                                <Badge className="text-[10px] bg-accent text-white">
-                                  {unreadCount} new
-                                </Badge>
+                                <span className="text-xs text-accent tabular-nums">{unreadCount} new</span>
                               )}
                             </div>
-                            <div className="max-h-64 overflow-y-auto">
+                            <div className="max-h-64 overflow-y-auto divide-y divide-border">
                               {notifications.length === 0 ? (
-                                <p className="p-4 text-sm text-muted-foreground text-center">
+                                <p className="px-4 py-10 text-sm text-muted-foreground text-center">
                                   No notifications yet
                                 </p>
                               ) : (
                                 notifications.map((n) => (
                                   <div
                                     key={n.notification_id}
-                                    className={`p-3 border-b border-border last:border-0 ${!n.is_read ? "bg-accent/5" : ""}`}
+                                    className={`px-3 py-2.5 ${!n.is_read ? "bg-accent/[0.06]" : ""}`}
                                   >
                                     <div className="flex items-start justify-between gap-2">
                                       <div className="flex-1 min-w-0">
@@ -150,33 +144,41 @@ const Hub = () => {
                     </div>
                     <button
                       onClick={handleSignOut}
-                      className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-lg transition-colors"
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"
                     >
-                      <LogOut className="h-4 w-4" />
+                      <LogOut className="h-3.5 w-3.5" />
                       Sign out
                     </button>
                   </div>
 
                   {/* Projects List */}
-                  <div>
-                    <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4 block">
-                      Your Projects
-                    </span>
-                    <nav className="space-y-2">
-                      {projects.map((project) => (
-                        <button
-                          key={project.project_id}
-                          onClick={() => setSelectedProject(project)}
-                          className={`w-full text-left p-3 rounded-xl border transition-colors flex items-center justify-between ${
-                            selectedProject?.project_id === project.project_id
-                              ? "bg-card border-foreground/40"
-                              : "border-border hover:bg-card hover:border-foreground/20"
-                          }`}
-                        >
-                          <span className="text-sm font-medium truncate">{project.title}</span>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        </button>
-                      ))}
+                  <div className="bg-card border border-border rounded-lg overflow-hidden">
+                    <div className="px-3 h-9 border-b border-border flex items-center">
+                      <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/70">
+                        Your projects
+                      </span>
+                    </div>
+                    <nav className="divide-y divide-border">
+                      {projects.map((project) => {
+                        const isActive = selectedProject?.project_id === project.project_id;
+                        return (
+                          <button
+                            key={project.project_id}
+                            onClick={() => setSelectedProject(project)}
+                            className={`relative w-full text-left flex items-center justify-between gap-2 px-3 h-11 text-sm transition-colors ${
+                              isActive
+                                ? "bg-accent/[0.06] text-foreground"
+                                : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
+                            }`}
+                          >
+                            {isActive && (
+                              <span className="absolute left-0 top-0 bottom-0 w-0.5 bg-accent" />
+                            )}
+                            <span className="font-medium truncate">{project.title}</span>
+                            <ChevronRight className="h-4 w-4 shrink-0 opacity-60" />
+                          </button>
+                        );
+                      })}
                     </nav>
                   </div>
                 </div>
