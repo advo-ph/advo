@@ -11,6 +11,23 @@ Cross-links:
 
 ---
 
+## 2026-06-20 — B1: Deliverables CRUD UI (admin)
+
+> Branch merged to `main`. Build + typecheck clean; full vitest suite 75/75; CRUD verified end-to-end in a real browser. **Not yet deployed** (frontend — needs VPS `build:web` + rsync).
+
+Closed the audit's biggest functional gap (B1): the Deliverables panel (`AdminSchedule`) was entirely read-only despite a ready backend. Now full CRUD:
+- [useAdminDeliverables.ts](apps/web/src/hooks/useAdminDeliverables.ts) — added create/update/delete mutations + an optimistic inline status mutation, `toApiPayload` (snake→camel), react-query invalidation to re-pull the joined list.
+- [AdminSchedule.tsx](apps/web/src/components/admin/AdminSchedule.tsx) — Add/Edit dialog (project, title, description, assignee, status, priority, due date), per-card inline status quick-change, delete (dialog footer), empty-state CTA. Matches the `AdminAvailability` dialog pattern.
+
+Verified in-browser (logged in as admin, local API): created "Gate Verify" deliverable → appeared with correct project/assignee/status; inline status → Completed persisted with `completedAt` set; edited title → persisted; deleted → removed from DB. Each step confirmed against `GET /api/deliverables`.
+
+### Honest open-items
+- **Not deployed yet** — frontend change; live admin still read-only until VPS `npm run build:web` + `rsync apps/web/dist/ /var/www/advo/dist/`.
+- No automated UI test for the CRUD (verified manually in-browser). The API endpoints it uses are covered by the wiring suite.
+- Remaining Tier 2: B2 (health-badge envelope), B3 (no-op dashboard button), the write-only Settings/notification items, S4 (browser tokens).
+
+---
+
 ## 2026-06-20 — Tier 1 security fixes shipped + deployed
 
 > Merged to `main` (`0e42f13`). Build: api+web typecheck clean; api-wiring suite 30/30 local. Prod: **deployed to api.advo.ph** (PM2 `advo-api` rebuilt + restarted from `0e42f13`).

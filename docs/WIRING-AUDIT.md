@@ -15,7 +15,7 @@ Cross-links: [ROADMAP.md](ROADMAP.md) (forward work) · [SCHEMA.md](SCHEMA.md) (
 | Bucket | Count | Severity |
 |---|---|---|
 | 🔴 Security — cross-tenant data exposure | 4 | ✅ S1–S3 fixed + deployed (`0e42f13`, 2026-06-20) · S4 open |
-| 🔴 Genuinely broken in the admin UI | 3 | high |
+| 🔴 Genuinely broken in the admin UI | 3 | ✅ B1 (Deliverables CRUD) fixed 2026-06-20 · B2/B3 open |
 | 🟡 Looks done but isn't (write-only / stub / mock) | 8 | medium |
 | 🟡 Correctness edges | 4 | medium-low |
 | ⚪ Dead backend code (orphaned endpoints) | ~14 | cleanup |
@@ -46,7 +46,11 @@ These were cross-tenant data-exposure bugs on a multi-client platform. The corre
 
 ## 🔴 Genuinely broken in the admin UI
 
-### B1 — 🔴 Deliverables (AdminSchedule) is entirely read-only
+### B1 — ✅ FIXED (2026-06-20) — Deliverables (AdminSchedule) was entirely read-only
+
+> Shipped full CRUD: `useAdminDeliverables` now has create/update/delete + an optimistic inline status mutation; `AdminSchedule.tsx` has an Add/Edit dialog (project, title, description, assignee, status, priority, due date), per-card inline status quick-change, and delete. Verified end-to-end in a browser (create → inline status → edit → delete, each persisted to the API). Backend was already ready. Original finding below for history.
+
+#### (original) Deliverables (AdminSchedule) is entirely read-only
 [AdminSchedule.tsx](../apps/web/src/components/admin/AdminSchedule.tsx) renders deliverables + a member filter but has **zero** create/edit/assign/status/delete controls; [useAdminDeliverables.ts](../apps/web/src/hooks/useAdminDeliverables.ts) exposes only a `get` query. Meanwhile [deliverables.routes.ts:73,88,110](../apps/api/src/routes/deliverables.routes.ts#L73) fully implements `POST`/`PATCH`/`DELETE` (requireTeam). **An admin cannot create, assign, re-prioritize, change status of, or delete any deliverable from the panel** — the only way deliverables enter the system is direct DB/API. This is the single biggest functional gap and the backbone of "project management."
 **Fix:** add an "Add deliverable" dialog + per-card status `<Select>`/assignee picker/delete; extend the hook with create/update/delete mutations posting camelCase `{ projectId, title, assignedTo, priority, status, dueDate }`. Backend is ready.
 
@@ -107,7 +111,7 @@ Legend: ✅ wired end-to-end · ⚠️ partial/risk · 🔴 broken/missing.
 | AdminProjects | list ✅ · create ✅ · edit ✅ · delete ✅ · progress update ✅ · add asset ⚠️ (R2) | mostly ✅ |
 | AdminClients | list ✅ · create ✅ · edit ✅ · delete ✅ · invite ✅ · project-count badge ✅ | ✅ clean |
 | AdminTeam | list ⚠️ (R4) · create ✅ · edit ✅ · reorder ⚠️ (R3) · avatar upload ✅ · toggle active ✅ | ⚠️ |
-| AdminSchedule (Deliverables) | list ✅ · filter ✅ · **create/edit/assign/status/delete 🔴 (B1, no UI)** | 🔴 read-only |
+| AdminSchedule (Deliverables) | list ✅ · filter ✅ · create ✅ · edit ✅ · assign ✅ · inline status ✅ · delete ✅ (B1 fixed) | ✅ full CRUD |
 | AdminAvailability | list ✅ · create ✅ · edit ✅ · delete ✅ · find-free-time ✅ | ✅ clean |
 | AdminFinance | list ✅ · create ✅ · status change ⚠️ (R1) · delete ✅ | mostly ✅ |
 
@@ -159,7 +163,7 @@ Legend: ✅ wired end-to-end · ⚠️ partial/risk · 🔴 broken/missing.
 ## Prioritized action plan
 
 - **Tier 1 — security:** ✅ S1, S2, S3 done + deployed (`0e42f13`). ⏳ S4 (route the engineering feed through the backend so the GitHub/Cloudflare tokens leave the browser bundle) still open.
-- **Tier 2 — broken features (~half day):** B1 (Deliverables CRUD UI — biggest functional win), B2 (health envelope), B3 (no-op button).
+- **Tier 2 — broken features (~half day):** ✅ B1 (Deliverables CRUD UI) done. ⏳ B2 (health envelope), B3 (no-op button) open.
 - **Tier 3 — finish the half-built (~1 day):** W1, W2, W3, W7 + the W8 test; R1–R4 correctness edges.
 - **Tier 4 — cleanup + build:** prune/wire the orphaned GitHub + brand-analysis routes; then start a new system (CRM / proposal pipeline / AI prompt management).
 
