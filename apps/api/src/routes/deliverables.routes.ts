@@ -1,10 +1,10 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { eq, desc, asc, ne } from "drizzle-orm";
+import { eq, desc, asc, ne, inArray } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { db } from "../db/connection.js";
-import { deliverable, project, teamMember } from "../db/schema.js";
+import { deliverable, project, teamMember, client, projectAccess } from "../db/schema.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireTeam } from "../middleware/rbac.js";
 import type { Variables } from "../types/context.js";
@@ -17,21 +17,66 @@ deliverables.use("*", requireAuth);
 // ─── List ─────────────────────────────────────────────
 
 deliverables.get("/", async (c) => {
-  const rows = await db()
+  const user = c.get("user");
+  const d = db();
+
+  const mapRow = (r: {
+    deliverable: typeof deliverable.$inferSelect;
+    project: typeof project.$inferSelect | null;
+    team_member: typeof teamMember.$inferSelect | null;
+  }) => ({ ...r.deliverable, project: r.project, assignee: r.team_member });
+
+  // Admin: every deliverable.
+  if (user.role === "admin") {
+    const rows = await d
+      .select()
+      .from(deliverable)
+      .leftJoin(project, eq(deliverable.projectId, project.projectId))
+      .leftJoin(teamMember, eq(deliverable.assignedTo, teamMember.teamMemberId))
+      .orderBy(asc(deliverable.dueDate));
+
+    return c.json({ data: rows.map(mapRow), error: null });
+  }
+
+  // Client: only deliverables on their own projects.
+  if (user.role === "client") {
+    const rows = await d
+      .select()
+      .from(deliverable)
+      .leftJoin(project, eq(deliverable.projectId, project.projectId))
+      .leftJoin(teamMember, eq(deliverable.assignedTo, teamMember.teamMemberId))
+      .leftJoin(client, eq(project.clientId, client.clientId))
+      .where(eq(client.userId, user.userId))
+      .orderBy(asc(deliverable.dueDate));
+
+    return c.json({ data: rows.map(mapRow), error: null });
+  }
+
+  // Team: only deliverables on projects they have access to.
+  const [tm] = await d
+    .select({ teamMemberId: teamMember.teamMemberId })
+    .from(teamMember)
+    .where(eq(teamMember.userId, user.userId))
+    .limit(1);
+
+  if (!tm) return c.json({ data: [], error: null });
+
+  const accessRows = await d
+    .select({ projectId: projectAccess.projectId })
+    .from(projectAccess)
+    .where(eq(projectAccess.teamMemberId, tm.teamMemberId));
+
+  if (!accessRows.length) return c.json({ data: [], error: null });
+
+  const rows = await d
     .select()
     .from(deliverable)
     .leftJoin(project, eq(deliverable.projectId, project.projectId))
     .leftJoin(teamMember, eq(deliverable.assignedTo, teamMember.teamMemberId))
+    .where(inArray(deliverable.projectId, accessRows.map((r) => r.projectId)))
     .orderBy(asc(deliverable.dueDate));
 
-  return c.json({
-    data: rows.map((r) => ({
-      ...r.deliverable,
-      project: r.project,
-      assignee: r.team_member,
-    })),
-    error: null,
-  });
+  return c.json({ data: rows.map(mapRow), error: null });
 });
 
 // ─── Upcoming Deadlines ──────────────────────────────

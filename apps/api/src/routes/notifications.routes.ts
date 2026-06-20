@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { db } from "../db/connection.js";
 import { notification, client } from "../db/schema.js";
@@ -149,10 +149,28 @@ notifications.post(
 
 notifications.patch("/:id/read", async (c) => {
   const id = Number(c.req.param("id"));
-  const [updated] = await db()
+  const user = c.get("user");
+  const d = db();
+
+  // Admins can mark any notification read; everyone else only their own.
+  let where = eq(notification.notificationId, id);
+  if (user.role !== "admin") {
+    const [clientRow] = await d
+      .select({ clientId: client.clientId })
+      .from(client)
+      .where(eq(client.userId, user.userId))
+      .limit(1);
+    if (!clientRow) throw new HTTPException(404, { message: "Notification not found" });
+    where = and(
+      eq(notification.notificationId, id),
+      eq(notification.clientId, clientRow.clientId),
+    )!;
+  }
+
+  const [updated] = await d
     .update(notification)
     .set({ isRead: true })
-    .where(eq(notification.notificationId, id))
+    .where(where)
     .returning();
 
   if (!updated) throw new HTTPException(404, { message: "Notification not found" });

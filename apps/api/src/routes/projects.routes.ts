@@ -18,12 +18,54 @@ import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin, requireTeam } from "../middleware/rbac.js";
 import { sendNotificationEmail } from "../services/email.service.js";
 import { looseUrl, requiredUrl } from "../utils/validators.js";
-import type { Variables } from "../types/context.js";
+import type { Variables, AuthUser } from "../types/context.js";
 
 const projects = new Hono<{ Variables: Variables }>();
 
 // All routes require auth
 projects.use("*", requireAuth);
+
+// Throw 404 unless `user` may access `projectId`: admins always; clients only
+// their own projects; team only projects they have an access grant to. 404 (not
+// 403) so a client can't probe which project IDs exist.
+async function assertProjectAccess(
+  d: ReturnType<typeof db>,
+  user: AuthUser,
+  projectId: number,
+) {
+  if (user.role === "admin") return;
+
+  if (user.role === "client") {
+    const [own] = await d
+      .select({ projectId: project.projectId })
+      .from(project)
+      .leftJoin(client, eq(project.clientId, client.clientId))
+      .where(and(eq(project.projectId, projectId), eq(client.userId, user.userId)))
+      .limit(1);
+    if (!own) throw new HTTPException(404, { message: "Project not found" });
+    return;
+  }
+
+  // team
+  const [tm] = await d
+    .select({ teamMemberId: teamMember.teamMemberId })
+    .from(teamMember)
+    .where(eq(teamMember.userId, user.userId))
+    .limit(1);
+  if (!tm) throw new HTTPException(404, { message: "Project not found" });
+
+  const [access] = await d
+    .select({ projectId: projectAccess.projectId })
+    .from(projectAccess)
+    .where(
+      and(
+        eq(projectAccess.teamMemberId, tm.teamMemberId),
+        eq(projectAccess.projectId, projectId),
+      ),
+    )
+    .limit(1);
+  if (!access) throw new HTTPException(404, { message: "Project not found" });
+}
 
 // ─── List Projects ────────────────────────────────────
 
@@ -93,6 +135,8 @@ projects.get("/", async (c) => {
 projects.get("/:id", async (c) => {
   const id = Number(c.req.param("id"));
   const d = db();
+
+  await assertProjectAccess(d, c.get("user"), id);
 
   const [row] = await d
     .select()
@@ -237,6 +281,7 @@ projects.post(
 
 projects.get("/:id/updates", async (c) => {
   const projectId = Number(c.req.param("id"));
+  await assertProjectAccess(db(), c.get("user"), projectId);
   const rows = await db()
     .select()
     .from(progressUpdate)
@@ -250,6 +295,7 @@ projects.get("/:id/updates", async (c) => {
 
 projects.get("/:id/github", async (c) => {
   const projectId = Number(c.req.param("id"));
+  await assertProjectAccess(db(), c.get("user"), projectId);
   const limit = Math.min(Number(c.req.query("limit") || 50), 200);
 
   const rows = await db()
@@ -266,6 +312,7 @@ projects.get("/:id/github", async (c) => {
 
 projects.get("/:id/assets", async (c) => {
   const projectId = Number(c.req.param("id"));
+  await assertProjectAccess(db(), c.get("user"), projectId);
   const rows = await db()
     .select()
     .from(projectAsset)

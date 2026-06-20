@@ -1,7 +1,16 @@
 import "dotenv/config";
+import { eq } from "drizzle-orm";
 import { loadEnv } from "../utils/env.js";
 import { initDb, closeDb, db } from "./connection.js";
-import { user, siteContent, siteConfig } from "./schema.js";
+import {
+  user,
+  siteContent,
+  siteConfig,
+  client,
+  project,
+  deliverable,
+  notification,
+} from "./schema.js";
 import { hashPassword } from "../services/auth.service.js";
 
 loadEnv();
@@ -60,6 +69,59 @@ async function seed() {
       .insert(siteConfig)
       .values({ key, value })
       .onConflictDoNothing();
+  }
+
+  // ─── Client fixture ──────────────────────────────────
+  // A known client login (client@advo.ph / changeme) that owns exactly one
+  // project, deliverable, and notification. Used by the data-scoping tests in
+  // api-wiring.test.ts to prove a client cannot read another client's rows.
+  const clientPasswordHash = await hashPassword("changeme");
+  await d
+    .insert(user)
+    .values({ email: "client@advo.ph", passwordHash: clientPasswordHash, role: "client" })
+    .onConflictDoNothing();
+
+  const [clientUser] = await d
+    .select()
+    .from(user)
+    .where(eq(user.email, "client@advo.ph"))
+    .limit(1);
+
+  if (clientUser) {
+    const [existingClient] = await d
+      .select()
+      .from(client)
+      .where(eq(client.userId, clientUser.userId))
+      .limit(1);
+
+    if (!existingClient) {
+      const [clientRow] = await d
+        .insert(client)
+        .values({
+          userId: clientUser.userId,
+          companyName: "Seed Client Co",
+          contactEmail: "client@advo.ph",
+        })
+        .returning();
+
+      const [projectRow] = await d
+        .insert(project)
+        .values({
+          clientId: clientRow.clientId,
+          title: "Seed Client Project",
+          description: "Owned by client@advo.ph — used by data-scoping tests.",
+          projectStatus: "development",
+        })
+        .returning();
+
+      await d
+        .insert(deliverable)
+        .values({ projectId: projectRow.projectId, title: "Seed deliverable", status: "in_progress" });
+
+      await d
+        .insert(notification)
+        .values({ clientId: clientRow.clientId, title: "Seed notification", body: "Owned by client@advo.ph." });
+    }
   }
 
   console.log("Seed complete");

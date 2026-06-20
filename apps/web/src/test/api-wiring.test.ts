@@ -6,7 +6,7 @@
  * can be overridden via VITE_API_URL (e.g. https://api.advo.ph).
  */
 
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
 
 const API = process.env.VITE_API_URL || "http://localhost:6107";
 
@@ -319,6 +319,93 @@ describe("Response Envelope", () => {
       expect(body).toHaveProperty("data");
       expect(body).toHaveProperty("error");
     }
+  });
+});
+
+// ─── Authorization — cross-tenant data scoping ────────
+// Regression for WIRING-AUDIT.md S1/S2/S3: a logged-in client must not be able
+// to read another client's deliverables, project detail, or notifications.
+// Requires the client@advo.ph seed fixture (apps/api/src/db/seed.ts).
+
+describe("Authorization — cross-tenant data scoping", () => {
+  let clientToken: string | undefined;
+  let otherClientId: number;
+  let otherProjectId: number;
+  let otherDeliverableId: number;
+  let otherNotificationId: number;
+
+  beforeAll(async () => {
+    // Log in as the seeded client (owns only "Seed Client Co" data).
+    const login = await apiPost("/api/auth/login", {
+      email: "client@advo.ph",
+      password: "changeme",
+    });
+    clientToken = login.body?.data?.accessToken;
+
+    // As admin, create a SECOND client's project + deliverable + notification.
+    const other = await apiPost(
+      "/api/clients",
+      { companyName: "Isolation Test Co", contactEmail: "isolation@test.com" },
+      adminToken
+    );
+    otherClientId = other.body.data.clientId;
+
+    const proj = await apiPost(
+      "/api/projects",
+      { clientId: otherClientId, title: "Other Client Project", totalValueCents: 999999 },
+      adminToken
+    );
+    otherProjectId = proj.body.data.projectId;
+
+    const dlv = await apiPost(
+      "/api/deliverables",
+      { projectId: otherProjectId, title: "Other client deliverable" },
+      adminToken
+    );
+    otherDeliverableId = dlv.body.data.deliverableId;
+
+    const notif = await apiPost(
+      "/api/notifications",
+      { clientId: otherClientId, title: "Other client notification", sendEmail: false },
+      adminToken
+    );
+    otherNotificationId = notif.body.data.notificationId;
+  });
+
+  afterAll(async () => {
+    // Deleting the client cascades to its project/deliverable/notification
+    // (FK ON DELETE CASCADE, migration 002).
+    if (otherClientId) await apiDelete(`/api/clients/${otherClientId}`, adminToken);
+  });
+
+  it("seed client fixture is present (login succeeds)", () => {
+    expect(clientToken).toBeTruthy();
+  });
+
+  it("S2: client cannot read another client's project by id (IDOR → 404)", async () => {
+    const { status } = await apiGet(`/api/projects/${otherProjectId}`, clientToken);
+    expect(status).toBe(404);
+  });
+
+  it("S2: GET /api/projects lists only the client's own projects", async () => {
+    const { body } = await apiGet("/api/projects", clientToken);
+    const ids = body.data.map((p: { projectId: number }) => p.projectId);
+    expect(ids).not.toContain(otherProjectId);
+  });
+
+  it("S1: GET /api/deliverables does not leak another client's deliverables", async () => {
+    const { body } = await apiGet("/api/deliverables", clientToken);
+    const ids = body.data.map((d: { deliverableId: number }) => d.deliverableId);
+    expect(ids).not.toContain(otherDeliverableId);
+  });
+
+  it("S3: client cannot mark another client's notification read (→ 404)", async () => {
+    const { status } = await apiPatch(
+      `/api/notifications/${otherNotificationId}/read`,
+      {},
+      clientToken as string
+    );
+    expect(status).toBe(404);
   });
 });
 
