@@ -6,10 +6,11 @@
  * leaked revenue on Fourlinq + Felici: the contract was *silent* on
  * downpayment floor, revision caps, and change orders.
  *
- * This is intentionally a presence/heuristic check, NOT legal analysis. The
- * shape of the return value is LLM-ready: swapping `reviewContract` to call a
- * model later is a one-function change — the route + UI stay the same.
+ * If ANTHROPIC_API_KEY is set, reviewContract() runs a Claude review first and
+ * falls back to this heuristic on any error, invalid output, or missing key.
+ * The heuristic is a presence check, NOT legal analysis.
  */
+import Anthropic from "@anthropic-ai/sdk";
 
 export type FlagSeverity = "red" | "amber" | "green";
 
@@ -24,7 +25,7 @@ export interface ContractReview {
   verdict: "good_to_go" | "needs_work" | "high_risk";
   summary: string;
   flags: ContractFlag[];
-  method: "heuristic";
+  method: "heuristic" | "ai";
   disclaimer: string;
 }
 
@@ -161,7 +162,7 @@ const POLICIES: PolicyCheck[] = [
   },
 ];
 
-export async function reviewContract(text: string): Promise<ContractReview> {
+function reviewHeuristic(text: string): ContractReview {
   const t = text.toLowerCase();
   const flags: ContractFlag[] = POLICIES.map((p) => {
     const r = p.check(t);
@@ -193,4 +194,97 @@ export async function reviewContract(text: string): Promise<ContractReview> {
     disclaimer:
       "Heuristic presence check against ADVO's own contract policy — not a legal review. Always have a lawyer review before signing.",
   };
+}
+
+// ---------------------------------------------------------------------------
+// AI path (Claude). Activates only when ANTHROPIC_API_KEY is set; on any error
+// or malformed output it returns null and reviewContract() uses the heuristic.
+// ---------------------------------------------------------------------------
+
+const AI_SYSTEM = `You are a contract risk reviewer for ADVO, a Philippine web/design agency. Review the supplied contract or statement of work against ADVO's own contract policy and surface red flags.
+
+ADVO's five policy areas:
+1. Downpayment floor — at least 40% of total value OR PHP 30,000 (whichever is higher), due before work begins, non-refundable once design starts.
+2. Revision limits — 2 rounds of revisions per phase (discovery / design / build); anything beyond is billed hourly. A "round" is one batched feedback list within 5 business days of a preview.
+3. Change orders — new scope (a new page or feature, or competitor-inspired requests mid-build) requires a written, signed change order before work proceeds.
+4. Late payment — invoices due within 15 days; interest accrues after 30; ADVO may pause work on overdue accounts.
+5. Termination — either party may terminate with 15 days' written notice; client pays for completed work plus work-in-progress; the downpayment is non-refundable.
+
+For EACH of the five areas, assign a severity:
+- "green" = adequately addressed
+- "amber" = present but weak, ambiguous, or below policy (e.g. a downpayment is named but under the floor)
+- "red" = missing or clearly inadequate
+
+Respond with ONLY a JSON object (no prose, no markdown code fences) of exactly this shape:
+{"verdict":"good_to_go|needs_work|high_risk","summary":"<one or two sentences>","flags":[{"policy":"<area name>","severity":"red|amber|green","present":true|false,"note":"<what was found or is missing, with the policy reference>"}]}
+
+Verdict rule: "high_risk" if two or more reds; "needs_work" if exactly one red or two or more ambers; otherwise "good_to_go". Include all five policy areas in "flags", in the order listed above.`;
+
+const VALID_VERDICTS = new Set<ContractReview["verdict"]>(["good_to_go", "needs_work", "high_risk"]);
+const VALID_SEVERITIES = new Set<FlagSeverity>(["red", "amber", "green"]);
+
+interface RawAIReview {
+  verdict?: string;
+  summary?: string;
+  flags?: Array<{ policy?: string; severity?: string; present?: boolean; note?: string }>;
+}
+
+async function reviewWithClaude(text: string): Promise<ContractReview | null> {
+  if (!process.env.ANTHROPIC_API_KEY) return null;
+  try {
+    const client = new Anthropic();
+    const res = await client.messages.create({
+      model: "claude-opus-4-8",
+      max_tokens: 2048,
+      system: AI_SYSTEM,
+      messages: [
+        { role: "user", content: `Review this contract / SOW:\n\n${text.slice(0, 100_000)}` },
+      ],
+    });
+
+    const block = res.content.find((b) => b.type === "text");
+    if (!block || block.type !== "text") return null;
+
+    const raw = block.text
+      .trim()
+      .replace(/^```(?:json)?/i, "")
+      .replace(/```$/i, "")
+      .trim();
+    const parsed = JSON.parse(raw) as RawAIReview;
+
+    if (!parsed.verdict || !VALID_VERDICTS.has(parsed.verdict as ContractReview["verdict"])) return null;
+    if (!Array.isArray(parsed.flags)) return null;
+
+    const flags: ContractFlag[] = parsed.flags
+      .filter((f) => f && typeof f.severity === "string" && VALID_SEVERITIES.has(f.severity as FlagSeverity))
+      .map((f) => ({
+        policy: String(f.policy ?? "Policy"),
+        severity: f.severity as FlagSeverity,
+        present: Boolean(f.present),
+        note: String(f.note ?? ""),
+      }));
+    if (flags.length === 0) return null;
+
+    return {
+      verdict: parsed.verdict as ContractReview["verdict"],
+      summary: String(parsed.summary ?? ""),
+      flags,
+      method: "ai",
+      disclaimer:
+        "AI-assisted review against ADVO's contract policy — a first-pass aid, not a legal review. Always have a lawyer review before signing.",
+    };
+  } catch (err) {
+    console.error("[contract-review] AI path failed; falling back to heuristic:", err);
+    return null;
+  }
+}
+
+/**
+ * Review a contract / SOW. Uses Claude when ANTHROPIC_API_KEY is configured,
+ * otherwise (or on any AI error) falls back to the heuristic presence check.
+ */
+export async function reviewContract(text: string): Promise<ContractReview> {
+  const ai = await reviewWithClaude(text);
+  if (ai) return ai;
+  return reviewHeuristic(text);
 }
