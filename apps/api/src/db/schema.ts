@@ -116,7 +116,7 @@ export const client = pgTable(
   "client",
   {
     clientId: bigserial("client_id", { mode: "number" }).primaryKey(),
-    userId: integer("user_id").references(() => user.userId),
+    userId: integer("user_id").references(() => user.userId, { onDelete: "set null" }),
     companyName: varchar("company_name", { length: 255 }).notNull(),
     contactEmail: varchar("contact_email", { length: 255 }),
     githubOrgName: varchar("github_org_name", { length: 100 }),
@@ -174,7 +174,7 @@ export const teamMember = pgTable(
   "team_member",
   {
     teamMemberId: bigserial("team_member_id", { mode: "number" }).primaryKey(),
-    userId: integer("user_id").references(() => user.userId),
+    userId: integer("user_id").references(() => user.userId, { onDelete: "set null" }),
     name: varchar("name", { length: 255 }).notNull(),
     role: varchar("role", { length: 100 }).notNull(),
     email: varchar("email", { length: 255 }),
@@ -217,7 +217,7 @@ export const deliverable = pgTable(
     projectId: integer("project_id")
       .notNull()
       .references(() => project.projectId, { onDelete: "cascade" }),
-    assignedTo: integer("assigned_to").references(() => teamMember.teamMemberId),
+    assignedTo: integer("assigned_to").references(() => teamMember.teamMemberId, { onDelete: "set null" }),
     title: varchar("title", { length: 255 }).notNull(),
     description: text("description"),
     priority: integer("priority").default(0),
@@ -265,7 +265,7 @@ export const lead = pgTable(
     budget: varchar("budget", { length: 100 }),
     description: text("description"),
     status: leadStatusEnum("status").notNull().default("new"),
-    assignedTo: integer("assigned_to").references(() => teamMember.teamMemberId),
+    assignedTo: integer("assigned_to").references(() => teamMember.teamMemberId, { onDelete: "set null" }),
     notes: text("notes"),
     submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -389,7 +389,7 @@ export const activityLog = pgTable(
   "activity_log",
   {
     activityId: bigserial("activity_id", { mode: "number" }).primaryKey(),
-    userId: integer("user_id").references(() => user.userId),
+    userId: integer("user_id").references(() => user.userId, { onDelete: "set null" }),
     action: varchar("action", { length: 50 }).notNull(),
     entityType: varchar("entity_type", { length: 50 }).notNull(),
     entityId: integer("entity_id"),
@@ -434,7 +434,7 @@ export const scrapeResult = pgTable(
     url: varchar("url", { length: 2000 }).notNull(),
     type: varchar("type", { length: 50 }).notNull(), // "brand" | "facebook"
     data: jsonb("data").notNull(),
-    scrapedBy: integer("scraped_by").references(() => user.userId),
+    scrapedBy: integer("scraped_by").references(() => user.userId, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

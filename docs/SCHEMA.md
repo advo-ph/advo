@@ -41,7 +41,7 @@ Migration log: [`apps/api/migrations/`](../apps/api/migrations/) — raw SQL app
 | Column | Type | Description |
 |--------|------|-------------|
 | `client_id` | BIGSERIAL (PK) | |
-| `user_id` | BIGINT (FK) | → `user` (nullable) |
+| `user_id` | BIGINT (FK) | → `user` ON DELETE SET NULL (nullable) |
 | `company_name` | VARCHAR(255) | |
 | `contact_email` | VARCHAR(255) | |
 | `github_org_name` | VARCHAR(100) | |
@@ -72,7 +72,7 @@ Migration log: [`apps/api/migrations/`](../apps/api/migrations/) — raw SQL app
 | Column | Type | Description |
 |--------|------|-------------|
 | `team_member_id` | BIGSERIAL (PK) | |
-| `user_id` | BIGINT (FK) | → `user` (nullable) |
+| `user_id` | BIGINT (FK) | → `user` ON DELETE SET NULL (nullable) |
 | `name` | VARCHAR(255) | |
 | `role` | VARCHAR(100) | Display role/title |
 | `email` | VARCHAR(255) | |
@@ -103,7 +103,7 @@ Unique constraint on (`team_member_id`, `project_id`).
 |--------|------|-------------|
 | `deliverable_id` | BIGSERIAL (PK) | |
 | `project_id` | BIGINT (FK) | → `project` |
-| `assigned_to` | BIGINT (FK) | → `team_member` (nullable) |
+| `assigned_to` | BIGINT (FK) | → `team_member` ON DELETE SET NULL (nullable) |
 | `title` | VARCHAR(255) | |
 | `description` | TEXT | |
 | `priority` | INTEGER | 0-10 |
@@ -140,7 +140,7 @@ Unique constraint on (`team_member_id`, `project_id`).
 | `budget` | VARCHAR(100) | |
 | `description` | TEXT | |
 | `status` | ENUM | `new`, `contacted`, `qualified`, `proposal_sent`, `closed_won`, `closed_lost` |
-| `assigned_to` | BIGINT (FK) | → `team_member` (nullable) |
+| `assigned_to` | BIGINT (FK) | → `team_member` ON DELETE SET NULL (nullable) |
 | `notes` | TEXT | |
 | `submitted_at` | TIMESTAMPTZ | |
 
@@ -253,7 +253,7 @@ Key-value config table. Most keys are admin-only via `/api/settings/*`. The allo
 | Column | Type | Description |
 |--------|------|-------------|
 | `activity_id` | BIGSERIAL (PK) | |
-| `user_id` | BIGINT (FK) | → `user` (nullable) |
+| `user_id` | BIGINT (FK) | → `user` ON DELETE SET NULL (nullable) |
 | `action` | VARCHAR(50) | `create`, `update`, `delete`, `login` |
 | `entity_type` | VARCHAR(50) | `project`, `invoice`, `lead`, etc. |
 | `entity_id` | BIGINT | |
@@ -288,7 +288,7 @@ Output of the admin Brand Scraper + FB Scraper, keyed by URL. Append-only from t
 | `url` | TEXT | Source URL scraped |
 | `type` | VARCHAR(50) | `brand`, `brand-full`, `fb-page` |
 | `data` | JSONB | Full scrape payload (colors, fonts, screenshots base64, etc.) |
-| `scraped_by` | BIGINT (FK) | → `user` (nullable, set when an admin triggered it) |
+| `scraped_by` | BIGINT (FK) | → `user` ON DELETE SET NULL (nullable, set when an admin triggered it) |
 | `created_at` | TIMESTAMPTZ | |
 
 ---
@@ -300,3 +300,4 @@ Drizzle-kit `push` syncs `schema.ts` → Postgres. For schema changes that need 
 | Migration | Date | What it did |
 |---|---|---|
 | `001_audit_tier1.sql` | 2026-06-20 | Added 3 missing FK indexes (`idx_lead_assigned_to`, `idx_scrape_result_scraped_by`, `idx_notification_project_id`); added `created_at` to `site_config` + `site_content`; added retention COMMENT on `scrape_result`. Source: database-conventions audit (docs/ROADMAP.md). |
+| `002_audit_tier2.sql` | 2026-06-20 | Set explicit `ON DELETE` on the 8 FKs that had drifted to `NO ACTION` (drizzle-kit `push` never alters existing FK actions). **CASCADE** (drift-repair, already declared in schema.ts): `github_event.project_id`, `notification.project_id`. **SET NULL** (detach, don't erase/block): `activity_log.user_id`, `deliverable.assigned_to`, `lead.assigned_to`, `scrape_result.scraped_by`, `client.user_id`, `team_member.user_id`. Unblocks `DELETE /api/team/:id` (was failing when a member had assigned deliverables/leads) and client-delete cascade through projects. Source: database-conventions audit Tier 2, per-FK policy confirmed with owner. |
