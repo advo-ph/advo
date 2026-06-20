@@ -31,6 +31,7 @@ import availabilityRoutes from "./routes/availability.routes.js";
 import brandRoutes from "./routes/brand-analysis.routes.js";
 import contractRoutes from "./routes/contracts.routes.js";
 import previewRoutes from "./routes/preview.routes.js";
+import calendarRoutes from "./routes/calendar.routes.js";
 
 import type { Variables } from "./types/context.js";
 
@@ -102,6 +103,7 @@ app.route("/api/leads", leadRoutes);
 app.route("/api/invoices", invoiceRoutes);
 app.route("/api/deliverables", deliverableRoutes);
 app.route("/api/availability", availabilityRoutes);
+app.route("/api/calendar", calendarRoutes);
 app.route("/api/notifications", notificationRoutes);
 
 // Content

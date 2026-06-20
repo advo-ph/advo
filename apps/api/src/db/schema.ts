@@ -254,6 +254,27 @@ export const invoice = pgTable(
   ]
 );
 
+export const calendarEvent = pgTable(
+  "calendar_event",
+  {
+    calendarEventId: bigserial("calendar_event_id", { mode: "number" }).primaryKey(),
+    projectId: integer("project_id").references(() => project.projectId, { onDelete: "set null" }),
+    title: varchar("title", { length: 255 }).notNull(),
+    category: varchar("category", { length: 50 }).notNull().default("event"),
+    description: text("description"),
+    location: varchar("location", { length: 255 }),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }),
+    isAllDay: boolean("is_all_day").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_calendar_event_starts").on(t.startsAt),
+    index("idx_calendar_event_project").on(t.projectId),
+  ]
+);
+
 export const lead = pgTable(
   "lead",
   {
