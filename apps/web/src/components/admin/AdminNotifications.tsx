@@ -263,6 +263,13 @@ const AdminNotifications = () => {
         <div className="text-center py-12 bg-card border border-border rounded-xl">
           <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-muted-foreground">No notifications sent yet</p>
+          <p className="text-sm text-muted-foreground mt-2 mb-5">
+            Send a notification to a client or broadcast to everyone
+          </p>
+          <Button onClick={() => setComposeOpen(true)} className="rounded-full bg-foreground text-background hover:bg-foreground/90">
+            <Bell className="h-4 w-4 mr-2" />
+            Compose Notification
+          </Button>
         </div>
       ) : (
         <div className="space-y-3">

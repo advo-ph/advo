@@ -72,7 +72,7 @@ const Hub = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{user?.email}</p>
-                        <p className="text-xs text-muted-foreground">Client</p>
+                        <p className="text-xs text-muted-foreground capitalize">{user?.role ?? "Client"}</p>
                       </div>
                       {/* Notification Bell */}
                       <div className="relative">

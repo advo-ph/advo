@@ -253,6 +253,11 @@ const AdminLeads = () => {
         <div className="text-center py-12 bg-card border border-border rounded-xl">
           <Inbox className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-muted-foreground">{searchQuery || filterStatus !== "all" ? "No leads match your filters" : "No leads yet"}</p>
+          {!searchQuery && filterStatus === "all" && (
+            <p className="text-sm text-muted-foreground mt-2">
+              New inquiries from the contact form on <a href="https://advo.ph/start" target="_blank" rel="noreferrer" className="underline hover:text-foreground">advo.ph/start</a> land here.
+            </p>
+          )}
         </div>
       ) : (
         <div className="space-y-3">

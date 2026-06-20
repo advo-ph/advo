@@ -227,9 +227,13 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
         <div className="text-center py-12 bg-card border border-border rounded-xl">
           <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-muted-foreground">No clients yet</p>
-          <p className="text-sm text-muted-foreground mt-2">
+          <p className="text-sm text-muted-foreground mt-2 mb-5">
             Add your first client to get started
           </p>
+          <Button onClick={openCreateDialog} className="rounded-full bg-foreground text-background hover:bg-foreground/90">
+            <Plus className="h-4 w-4 mr-2" />
+            New Client
+          </Button>
         </div>
       ) : (
         <div className="grid gap-4">

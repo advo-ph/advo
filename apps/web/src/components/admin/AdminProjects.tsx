@@ -13,6 +13,7 @@ import {
   GitCommitHorizontal,
   GitPullRequest,
   Clock,
+  FolderKanban,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -257,6 +258,18 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : projects.length === 0 ? (
+        <div className="text-center py-12 bg-card border border-border rounded-xl">
+          <FolderKanban className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground">No projects yet</p>
+          <p className="text-sm text-muted-foreground mt-2 mb-5">
+            Spin up your first project to track work, post updates, and share with clients
+          </p>
+          <Button onClick={openCreateDialog} className="rounded-full bg-foreground text-background hover:bg-foreground/90">
+            <Plus className="h-4 w-4 mr-2" />
+            New Project
+          </Button>
         </div>
       ) : (
         <div className="space-y-4">
