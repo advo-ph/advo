@@ -5,6 +5,7 @@ Unified, forward-looking roadmap for the ADVO platform and the business that run
 Treat this as the **canonical roadmap**. Two existing sub-roadmaps stay where they are and are referenced from here:
 - **Landing design** — see [/ROADMAP.md](../ROADMAP.md) (Stripe-audit-driven; most items implemented in the `codex/linear-design-system` stash, only the hero+services copy port shipped to main so far).
 - **Platform feature backlog** — see [FEATURES.md → Roadmap](FEATURES.md#roadmap) (Internal Library, Admin UX cleanup, monorepo).
+- **Feature wiring audit** — see [WIRING-AUDIT.md](WIRING-AUDIT.md) (2026-06-20 end-to-end audit of every admin + client feature). **Contains verified 🔴 cross-tenant data-leak bugs (S1/S2) that should be treated as top priority — fix before new feature work.**
 
 ## Status snapshot
 
