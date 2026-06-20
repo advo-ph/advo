@@ -5,6 +5,7 @@ import { eq, and, gte, lte } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { db } from "../db/connection.js";
 import { calendarEvent, contract, deliverable, invoice, project, socialPost } from "../db/schema.js";
+import { COMPLIANCE_DEADLINES } from "../data/compliance-deadlines.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireTeam } from "../middleware/rbac.js";
 import type { Variables } from "../types/context.js";
@@ -24,28 +25,21 @@ const MANUAL_CATEGORIES = [
   "event",
 ] as const;
 
-// Recurring statutory BIR filing deadlines (calendar-year filers). Dates are
-// the STATUTORY date — if one lands on a weekend/holiday the actual deadline
-// moves to the next working day (NOT computed here). Conservative + editable;
-// surfaced as read-only reference events the team can filter off. Verify the
-// exact set with an accountant before relying on it.
-const BIR_RULES: { month: number; day: number; key: string; label: string }[] = [
-  { month: 0, day: 31, key: "1604c", label: "1604-C — Annual withholding (compensation)" },
-  { month: 2, day: 1, key: "1604e", label: "1604-E — Annual withholding (expanded)" },
-  { month: 3, day: 15, key: "itr", label: "1701/1702 — Annual income tax return" },
-  { month: 0, day: 25, key: "vat-q4", label: "2550Q — Quarterly VAT (Q4)" },
-  { month: 3, day: 25, key: "vat-q1", label: "2550Q — Quarterly VAT (Q1)" },
-  { month: 6, day: 25, key: "vat-q2", label: "2550Q — Quarterly VAT (Q2)" },
-  { month: 9, day: 25, key: "vat-q3", label: "2550Q — Quarterly VAT (Q3)" },
-  { month: 4, day: 15, key: "it-q1", label: "1701Q — Quarterly income tax (Q1)" },
-  { month: 7, day: 15, key: "it-q2", label: "1701Q — Quarterly income tax (Q2)" },
-  { month: 10, day: 15, key: "it-q3", label: "1701Q — Quarterly income tax (Q3)" },
-];
+// Recurring PH compliance deadlines (BIR/SSS/PhilHealth/Pag-IBIG/DOLE) are
+// generated from COMPLIANCE_DEADLINES at read time — see ../data/compliance-deadlines.ts.
+
+const AGENCY_TAG: Record<string, string> = {
+  bir: "BIR",
+  sss: "SSS",
+  philhealth: "PhilHealth",
+  pagibig: "Pag-IBIG",
+  dole: "DOLE",
+};
 
 // Unified event shape returned to the client. Derived events are read-only.
 interface CalEvent {
   id: string;
-  source: "manual" | "deliverable" | "invoice" | "project" | "social" | "contract" | "bir";
+  source: "manual" | "deliverable" | "invoice" | "project" | "social" | "contract" | "compliance";
   category: string;
   title: string;
   start: string; // ISO
@@ -284,15 +278,16 @@ calendar.get("/", requireTeam, zValidator("query", rangeSchema), async (c) => {
     }
   }
 
-  // BIR filing deadlines — generated per year in range (no DB rows).
-  const pushBir = (y: number, month: number, day: number, key: string, label: string) => {
-    const dt = new Date(Date.UTC(y, month, day));
+  // Compliance deadlines (BIR/SSS/PhilHealth/Pag-IBIG/DOLE) — generated per year
+  // in range from COMPLIANCE_DEADLINES (no DB rows). Statutory dates only; not
+  // adjusted for weekends/holidays.
+  const pushCompliance = (dt: Date, key: string, agency: string, name: string) => {
     if (dt >= start && dt <= end) {
       events.push({
-        id: `bir-${key}-${y}`,
-        source: "bir",
-        category: "bir_deadline",
-        title: `BIR: ${label}`,
+        id: `compliance-${key}`,
+        source: "compliance",
+        category: "compliance_deadline",
+        title: `${AGENCY_TAG[agency] ?? agency.toUpperCase()}: ${name}`,
         start: dt.toISOString(),
         end: null,
         allDay: true,
@@ -305,10 +300,20 @@ calendar.get("/", requireTeam, zValidator("query", rangeSchema), async (c) => {
     }
   };
   for (let y = start.getUTCFullYear(); y <= end.getUTCFullYear(); y++) {
-    for (const r of BIR_RULES) pushBir(y, r.month, r.day, r.key, r.label);
-    // 1601-C — monthly withholding on compensation, due the 10th.
-    for (let m = 0; m < 12; m++) {
-      pushBir(y, m, 10, `1601c-${m}`, "1601-C — Monthly withholding (compensation)");
+    for (const d of COMPLIANCE_DEADLINES) {
+      if (d.frequency === "monthly" && d.dueDay != null) {
+        for (let m = 0; m < 12; m++) {
+          // Clamp month-end filings (e.g. SSS day 30) to the month's last day.
+          const lastDay = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+          const day = Math.min(d.dueDay, lastDay);
+          pushCompliance(new Date(Date.UTC(y, m, day)), `${d.id}-${y}-${m}`, d.agency, d.name);
+        }
+      } else if (d.dueDates) {
+        for (const md of d.dueDates) {
+          const [mm, dd] = md.split("-").map(Number);
+          pushCompliance(new Date(Date.UTC(y, mm - 1, dd)), `${d.id}-${y}-${md}`, d.agency, d.name);
+        }
+      }
     }
   }
 
