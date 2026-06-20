@@ -254,7 +254,7 @@ Key-value config table. Most keys are admin-only via `/api/settings/*`. The allo
 |--------|------|-------------|
 | `activity_id` | BIGSERIAL (PK) | |
 | `user_id` | BIGINT (FK) | → `user` ON DELETE SET NULL (nullable) |
-| `action` | VARCHAR(50) | `create`, `update`, `delete`, `login` |
+| `action` | VARCHAR(50) | `create`, `update`, `delete`, `login`, `preview_requested` (client asked for a Show-Client-Now preview) |
 | `entity_type` | VARCHAR(50) | `project`, `invoice`, `lead`, etc. |
 | `entity_id` | BIGINT | |
 | `metadata` | JSONB | |

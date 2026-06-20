@@ -34,6 +34,12 @@ Live GitHub commits merged with admin-posted progress updates. Supports branch s
 
 **Files**: `ProjectDashboard.tsx`, `useOrgProjects.ts`, `lib/github.ts`
 
+### Request a Preview
+
+A **"Request a preview"** button on the client's project (shipped `fbcc8a7`) → `POST /api/projects/:id/preview-request` (ownership-scoped) logs the ask to `activity_log`; the team sees it in the project's Command Center → Dev & Deploy panel and replies with a Show-Client-Now link.
+
+**Files**: `ProjectDashboard.tsx`, `usePreviewLink.ts` (`useRequestPreview`)
+
 ### Invoice Tracker
 
 View issued invoices with amount, status (unpaid/paid/overdue), due dates. API enforces clients only see their own project invoices.
@@ -98,9 +104,32 @@ Time-aware greeting ("Good morning, {name}"), today's date in mono caps, and qui
 
 ### Projects
 
-Full CRUD. Form includes: client, title, description, GitHub repo, preview URL, contract URL, status, value/paid, tech stack. Edit mode shows asset upload. Auto-notifies client on project status change.
+Full CRUD. Form includes: client, title, description, GitHub repo, preview URL, contract URL, status, value/paid, tech stack. Edit mode shows asset upload. Auto-notifies client on project status change. Each card has an **Open** button → the Project Command Center (below).
 
 **Files**: `AdminProjects.tsx`, `useOrgProjects.ts`, `db.ts`
+
+### Project Command Center
+
+A per-project hub opened from the **Open** button on each project card (shipped `dea17b6` shell + `97b213a` Contracts + `fbcc8a7` Show-Client-Now). One page, role-aware, with a header (title/status/client/value/repo/preview + a **Show Client Now** button) and six tabs:
+
+- **Overview** — KPIs (paid %, outstanding + invoice count, open/total deliverables, stage), payment-progress bar, brief, tech stack. Real data from the project.
+- **Deliverables** — this project's deliverables (status/assignee/due), filtered from `useAdminDeliverables`.
+- **Files** — scaffold ("Project Drive" — coming next; the third pillar).
+- **Dev & Deploy** — GitHub repo link + latest commit, plus the **Show Client Now** flow.
+- **Contracts** — the agreement link + the **red-flag review** (below).
+- **Finance** — payment summary + this project's invoices (filtered from `useInvoices`).
+
+#### Contract red-flag review
+
+Paste a contract / SOW into the Contracts tab → `POST /api/contracts/review` (requireTeam) scores it against ADVO's [CONTRACTS.md](CONTRACTS.md) policies (downpayment floor 40%/₱30k · 2 revisions/phase · change-order clause · late-payment · termination) and returns a **verdict** (good_to_go / needs_work / high_risk) + per-policy **red/amber/green** flags + a disclaimer. Catches the "contract was silent" gap that leaked revenue on Fourlinq + Felici.
+
+**Heuristic, not AI** — there is no LLM configured for the ADVO API (no Vertex/Anthropic creds anywhere); the existing Gemini brand-analysis service is non-functional for the same reason. The review's return shape is LLM-ready: swapping `reviewContract()` to call a model later is a one-function change once a key (e.g. `ANTHROPIC_API_KEY`) is added.
+
+#### Show Client Now (expiring preview links)
+
+Generate a private, **20-minute** link to the project's `preview_url` to drop to a client mid-build. `POST /api/projects/:id/preview-link` (requireTeam) mints a signed HS256 token (reuses `JWT_SECRET`); the **public** `GET /api/preview/:token` verifies it and **302-redirects** to the preview, or shows a branded 410 gate page when expired. Host-agnostic (Vercel / Cloudflare Pages / here.now / VPS — ADVO just stores the URL and controls the link's lifetime). Clients can also **request** a preview from their Hub (see Client Portal) → logged to `activity_log` → the team sees it in this panel.
+
+**Files**: `ProjectCommandCenter.tsx`, `useContractReview.ts`, `usePreviewLink.ts`, `apps/api/src/services/contract-review.service.ts`, `apps/api/src/routes/contracts.routes.ts`, `apps/api/src/services/preview.service.ts`, `apps/api/src/routes/preview.routes.ts`
 
 ### Clients
 
@@ -116,9 +145,9 @@ Team member profiles with name, role, email, bio, social links (LinkedIn, GitHub
 
 ### Deliverables (Schedule)
 
-List of deliverables per project with status badges, priority, due dates, assignee.
+Full CRUD (shipped `3a622af`, closing audit finding B1 — was previously read-only). Add/Edit dialog (project, title, description, assignee, status, priority, due date), a per-card **inline status quick-change** (optimistic), delete (dialog footer), team-member filter, and an empty-state CTA. Mirrors the `AdminAvailability` dialog pattern. Backend `POST/PATCH/DELETE /api/deliverables` already existed; this added the missing UI.
 
-**Files**: `AdminSchedule.tsx`
+**Files**: `AdminSchedule.tsx`, `useAdminDeliverables.ts`
 
 ### Finance
 
@@ -288,11 +317,13 @@ All data fetching uses React Query (`@tanstack/react-query` v5). Each admin CRUD
 | `useAdminSocial` | Social post CRUD |
 | `useAdminTeam` | Team member CRUD + drag-reorder |
 | `useAdminAvailability` | Team availability blocks CRUD |
-| `useAdminDeliverables` | Read-only deliverables list |
+| `useAdminDeliverables` | Deliverables CRUD + optimistic inline status |
 | `useInvoices` | Invoice CRUD with optimistic status toggle |
 | `useNotifications` | Admin: fetch all + send/broadcast. Client: fetch + mark-read |
 | `useLeads` | Lead management with status updates, assignment, bulk actions, conversion |
 | `useSiteContent` | CMS sections: toggle visibility, update content |
+| `useContractReview` | Command Center: heuristic contract red-flag review |
+| `usePreviewLink` | Command Center: mint expiring preview links + list client requests (`useProjectPreview`); client request-a-preview (`useRequestPreview`) |
 
 ### Client portal
 
