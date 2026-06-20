@@ -56,7 +56,7 @@ const Footer = () => {
 
   useEffect(() => {
     (async () => {
-      const { data } = await get<{ key: string; value: unknown }[]>("/api/settings");
+      const { data } = await get<{ key: string; value: unknown }[]>("/api/settings/public");
       if (data) {
         const setting = data.find((s) => s.key === "social_links");
         if (setting?.value && Array.isArray(setting.value) && setting.value.length > 0) {
