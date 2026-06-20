@@ -47,8 +47,10 @@ const fmtDate = (iso: string | null) =>
   iso
     ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
     : "—";
+// Date-only fields: store as UTC midnight so the input round-trips without a
+// timezone skew (dateInput reads the UTC date back; both stay on the same day).
 const dateInput = (iso: string | null) => (iso ? new Date(iso).toISOString().split("T")[0] : "");
-const toIso = (d: string) => (d ? new Date(`${d}T00:00:00`).toISOString() : null);
+const toIso = (d: string) => (d ? new Date(`${d}T00:00:00Z`).toISOString() : null);
 
 interface FormState {
   id: number | null; // null = create
