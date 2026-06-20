@@ -5,6 +5,7 @@ import {
   Users,
   Users2,
   Calendar,
+  CalendarDays,
   CalendarClock,
   Instagram,
   FileText,
@@ -32,6 +33,7 @@ export type AdminSection =
   | "clients"
   | "team"
   | "schedule"
+  | "calendar"
   | "availability"
   | "social"
   | "content"
@@ -66,6 +68,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { id: "clients", label: "Clients", icon: Users },
       { id: "team", label: "Team", icon: Users2 },
       { id: "schedule", label: "Deliverables", icon: Calendar },
+      { id: "calendar", label: "Calendar", icon: CalendarDays },
       { id: "availability", label: "Availability", icon: CalendarClock },
       { id: "finance", label: "Finance", icon: Banknote },
     ],
