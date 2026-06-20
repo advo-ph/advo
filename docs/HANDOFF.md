@@ -25,6 +25,7 @@ Four open items from prior handoffs, shipped together:
 ### Honest open-items
 - **AI contract path is untestable without a key** — prod has no `ANTHROPIC_API_KEY`, so live contract review still runs the **heuristic** (correct fallback). To activate the AI path: add `ANTHROPIC_API_KEY` to the VPS `.env` + `pm2 restart advo-api`. The heuristic stays covered by the existing contract tests.
 - VPS `/opt/advo` had a drifted tracked `package-lock.json` (prior `npm install`); resolved with `git checkout -- package-lock.json` before the pull (**not** `stash -u`). Future pulls may hit the same — discard the lock, never sweep untracked.
+- **Test-coverage gaps (low severity, verified manually this/prior session):** `DELETE /api/projects/:id/assets/:assetId` has no dedicated test (the GET-assets list is exercised in `e2e-flow.test.ts`); the fire-and-forget email side-effect on `POST /api/leads` isn't asserted (the lead-create path is). Both were proven live earlier (asset add→delete; leadId 154 email fired). Add an asset-delete + a lead-email-trigger assertion when convenient.
 - Still open from prior: pretty `advo.ph/p/<token>` preview route; here.now fresh-deploy path; import the metro-manila clinic leads from the Messenger archive.
 
 ---
