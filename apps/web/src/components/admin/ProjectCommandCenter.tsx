@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -23,6 +23,8 @@ import {
   Copy,
   Check,
   Send,
+  Trash2,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +39,7 @@ import {
 import { useInvoices } from "@/hooks/useInvoices";
 import { useContractReview, type FlagSeverity } from "@/hooks/useContractReview";
 import { useProjectPreview } from "@/hooks/usePreviewLink";
+import { useProjectAssets } from "@/hooks/useProjectAssets";
 
 interface ProjectCommandCenterProps {
   project: MergedProject;
@@ -69,53 +72,6 @@ const severityConfig: Record<FlagSeverity, { color: string; icon: React.ElementT
   red: { color: "text-red-500", icon: XCircle },
 };
 
-// A scaffold panel for features that aren't built yet — communicates intent
-// (this is the "shell first" half of the command center).
-const ComingNext = ({
-  icon: Icon,
-  title,
-  blurb,
-  bullets,
-  serves,
-  preview,
-}: {
-  icon: React.ElementType;
-  title: string;
-  blurb: string;
-  bullets: string[];
-  serves: string;
-  preview?: React.ReactNode;
-}) => (
-  <div className="rounded-2xl border border-dashed border-border bg-card/60 p-8">
-    <div className="flex items-start gap-4">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-accent/10 text-accent">
-        <Icon className="h-6 w-6" />
-      </div>
-      <div className="flex-1">
-        <div className="mb-1 flex items-center gap-2">
-          <h3 className="text-lg font-semibold">{title}</h3>
-          <Badge variant="outline" className="text-[10px] uppercase tracking-wider text-muted-foreground">
-            Coming next
-          </Badge>
-        </div>
-        <p className="mb-4 max-w-2xl text-sm text-muted-foreground">{blurb}</p>
-        <ul className="mb-4 space-y-1.5">
-          {bullets.map((b) => (
-            <li key={b} className="flex items-start gap-2 text-sm text-muted-foreground">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent/60" />
-              {b}
-            </li>
-          ))}
-        </ul>
-        {preview}
-        <p className="mt-4 text-xs text-muted-foreground/70">
-          <span className="font-medium">Serves:</span> {serves}
-        </p>
-      </div>
-    </div>
-  </div>
-);
-
 const SectionLabel = ({ children }: { children: React.ReactNode }) => (
   <p className="mb-3 text-[11px] font-mono uppercase tracking-[0.18em] text-muted-foreground">
     {children}
@@ -134,8 +90,13 @@ const ProjectCommandCenter = ({ project, onBack }: ProjectCommandCenterProps) =>
     error: previewError,
     requests: previewRequests,
   } = useProjectPreview(project.project_id);
+  const { assets, uploadFile, deleteAsset, isUploading } = useProjectAssets(project.project_id);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState("overview");
   const [copied, setCopied] = useState(false);
+
+  const isImageAsset = (a: { url: string; asset_type: string }) =>
+    a.asset_type !== "document" || /\.(png|jpe?g|gif|webp|svg|avif|heic)$/i.test(a.url);
 
   const copyPreview = () => {
     if (!previewLink) return;
@@ -307,24 +268,93 @@ const ProjectCommandCenter = ({ project, onBack }: ProjectCommandCenterProps) =>
           )}
         </TabsContent>
 
-        {/* ── Files (scaffold) ── */}
-        <TabsContent value="files" className="pt-4">
-          <ComingNext
-            icon={FolderOpen}
-            title="Project Drive"
-            blurb="A Google-Drive-style file space scoped to this project — one source of truth for designs, documents, deliverable assets, and signed contracts."
-            bullets={[
-              "Browse, upload, preview, download and delete files per project",
-              "Reuses the existing project_asset table + file upload API; object storage (Cloudflare R2) for scale",
-              "Folders + client-shareable links in a later pass",
-            ]}
-            serves="Everyone — shared source of truth"
-            preview={
-              <Button variant="outline" size="sm" disabled className="rounded-full">
-                <Upload className="mr-2 h-4 w-4" /> Upload file
-              </Button>
-            }
-          />
+        {/* ── Files (Project Drive) ── */}
+        <TabsContent value="files" className="space-y-4 pt-4">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <SectionLabel>Project Drive</SectionLabel>
+              <p className="text-sm text-muted-foreground">
+                Designs, documents, and deliverable assets — one place per project. Images, PDFs, video (≤25 MB).
+              </p>
+            </div>
+            <Button
+              size="sm"
+              className="shrink-0 rounded-full"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+            >
+              {isUploading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Upload className="mr-2 h-4 w-4" />
+              )}
+              Upload
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              accept="image/*,application/pdf,video/*"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) uploadFile(f);
+                e.target.value = "";
+              }}
+            />
+          </div>
+
+          {assets.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border bg-card/60 p-10 text-center">
+              <FolderOpen className="mx-auto mb-3 h-10 w-10 text-muted-foreground/50" />
+              <p className="text-sm text-muted-foreground">
+                No files yet. Upload designs, documents, or deliverable assets.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {assets.map((a) => (
+                <div key={a.asset_id} className="overflow-hidden rounded-xl border border-border bg-card">
+                  <a href={a.url} target="_blank" rel="noopener noreferrer" className="block">
+                    {isImageAsset(a) ? (
+                      <img src={a.url} alt={a.caption || "asset"} className="h-32 w-full object-cover" />
+                    ) : (
+                      <div className="flex h-32 w-full items-center justify-center bg-secondary/40">
+                        <FileText className="h-10 w-10 text-muted-foreground" />
+                      </div>
+                    )}
+                  </a>
+                  <div className="flex items-center justify-between gap-2 p-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{a.caption || a.url.split("/").pop()}</p>
+                      {a.uploaded_at && (
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(a.uploaded_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <a
+                        href={a.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-md p-1.5 text-muted-foreground hover:text-foreground"
+                        aria-label="Open file"
+                      >
+                        <Download className="h-4 w-4" />
+                      </a>
+                      <button
+                        onClick={() => deleteAsset(a.asset_id)}
+                        className="rounded-md p-1.5 text-muted-foreground hover:text-destructive"
+                        aria-label="Delete file"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         {/* ── Dev & Deploy (partial real + scaffold) ── */}

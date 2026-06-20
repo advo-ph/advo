@@ -349,6 +349,19 @@ projects.post(
   }
 );
 
+// ─── Delete a project asset (Files / Drive) ─────────
+
+projects.delete("/:id/assets/:assetId", requireTeam, async (c) => {
+  const projectId = Number(c.req.param("id"));
+  const assetId = Number(c.req.param("assetId"));
+  const [deleted] = await db()
+    .delete(projectAsset)
+    .where(and(eq(projectAsset.projectAssetId, assetId), eq(projectAsset.projectId, projectId)))
+    .returning();
+  if (!deleted) throw new HTTPException(404, { message: "Asset not found" });
+  return c.json({ data: { message: "Asset deleted" }, error: null });
+});
+
 // ─── Show Client Now — signed expiring preview link ──
 
 // Team mints a short-lived link to the project's stored preview_url.
