@@ -179,7 +179,7 @@ const FloatingNav = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 1 }}
             transition={{ duration: 0 }}
-            className="fixed inset-0 z-40 min-h-svh bg-background pt-[5.5rem] md:hidden"
+            className="fixed inset-0 z-50 min-h-svh bg-background pt-[5.5rem] md:hidden"
             role="dialog"
             aria-modal="true"
             aria-label="Mobile navigation"
