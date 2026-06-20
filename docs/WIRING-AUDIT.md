@@ -82,6 +82,7 @@ These were cross-tenant data-exposure bugs on a multi-client platform. The corre
 | R2 | AdminProjects "Add Asset" | AdminProjects.tsx:533-583 | Asset-type `<Select>` is uncontrolled; handler reads `typeEl.textContent`; URL/caption read via `getElementById`. Works today but fragile. Make controlled with `useState`. |
 | R3 | AdminTeam drag-reorder | AdminTeam.tsx:51-80 | Operates on the **filtered** (visible) list, so reordering while inactive members are hidden writes a `team_order` omitting them → scrambles their positions. Compute order against the full member list, or disable drag while filtered. |
 | R4 | AdminTeam order read | useAdminTeam.ts:63 | Reads order from `GET /api/settings/team_order` (admin-only). For a `team`-role user this 403s (tolerated, but inconsistent). Point at `GET /api/settings/public` which already allowlists `team_order`. |
+| R5 | Broadcast notification TOCTOU | notifications.routes.ts:112-146 | `SELECT all clients` then a per-client `INSERT` loop with no transaction — if a client is deleted between the select and its insert, the whole broadcast 500s (FK violation) and partially completes. Found during the 2026-06-20 verification gate (surfaced as a flaky parallel-test failure). Fix: wrap each insert in try/catch and skip vanished clients, or run the select+inserts in one transaction. Test-side mitigation already shipped: `fileParallelism: false` in `vitest.config.ts` so shared-DB suites don't race. |
 
 ---
 
