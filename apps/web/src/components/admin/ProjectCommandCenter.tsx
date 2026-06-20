@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -10,16 +11,19 @@ import {
   ListChecks,
   LayoutDashboard,
   Eye,
-  ShieldCheck,
   Sparkles,
   Clock,
   CheckCircle2,
   Circle,
   AlertCircle,
+  AlertTriangle,
+  XCircle,
+  Loader2,
   Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatCurrency } from "@/types/admin";
 import type { MergedProject } from "@/hooks/useOrgProjects";
@@ -28,6 +32,7 @@ import {
   type DeliverableStatus,
 } from "@/hooks/useAdminDeliverables";
 import { useInvoices } from "@/hooks/useInvoices";
+import { useContractReview, type FlagSeverity } from "@/hooks/useContractReview";
 
 interface ProjectCommandCenterProps {
   project: MergedProject;
@@ -46,6 +51,18 @@ const invoiceStatusColor: Record<string, string> = {
   paid: "bg-green-500/10 text-green-500",
   unpaid: "bg-secondary text-muted-foreground",
   overdue: "bg-red-500/10 text-red-500",
+};
+
+const verdictConfig: Record<string, { label: string; color: string }> = {
+  good_to_go: { label: "Good to go", color: "bg-green-500/10 text-green-500" },
+  needs_work: { label: "Needs work", color: "bg-amber-500/10 text-amber-500" },
+  high_risk: { label: "High risk", color: "bg-red-500/10 text-red-500" },
+};
+
+const severityConfig: Record<FlagSeverity, { color: string; icon: React.ElementType }> = {
+  green: { color: "text-green-500", icon: CheckCircle2 },
+  amber: { color: "text-amber-500", icon: AlertTriangle },
+  red: { color: "text-red-500", icon: XCircle },
 };
 
 // A scaffold panel for features that aren't built yet — communicates intent
@@ -104,6 +121,8 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
 const ProjectCommandCenter = ({ project, onBack }: ProjectCommandCenterProps) => {
   const { deliverables } = useAdminDeliverables();
   const { invoices } = useInvoices();
+  const { review, result: contractReview, isReviewing, error: reviewError, reset: resetReview } = useContractReview();
+  const [contractText, setContractText] = useState("");
 
   const projDeliverables = deliverables.filter((d) => d.project_id === project.project_id);
   const projInvoices = invoices.filter((i) => i.project_id === project.project_id);
@@ -350,23 +369,76 @@ const ProjectCommandCenter = ({ project, onBack }: ProjectCommandCenterProps) =>
             )}
           </div>
 
-          <ComingNext
-            icon={ShieldCheck}
-            title="Contract status + AI red-flag review"
-            blurb="Track the agreement from draft → sent → signed → active, and run a first-pass AI risk review against ADVO's own contract policy — surfacing red flags before money or scope leaks."
-            bullets={[
-              "Status badge + a clear 'good to go' gate before work starts",
-              "AI review checks the CONTRACTS.md policies: revision cap, ₱30k/40% downpayment floor, change-order clause",
-              "Red-flag panel highlights gaps (e.g. 'no revision limit found')",
-              "First-pass check, not legal advice — clauses still need a real lawyer",
-            ]}
-            serves="Manager + Finance"
-            preview={
-              <Button variant="outline" size="sm" disabled className="rounded-full">
-                <Sparkles className="mr-2 h-4 w-4" /> Run risk review
+          <div className="space-y-4 rounded-2xl border border-border bg-card p-5">
+            <div>
+              <SectionLabel>Red-flag review</SectionLabel>
+              <p className="text-sm text-muted-foreground">
+                Paste the contract or SOW text to check it against ADVO's policy — downpayment floor, revision cap,
+                change orders, late payment, termination. Catches the exact gaps that leaked revenue on past projects.
+              </p>
+            </div>
+
+            <Textarea
+              value={contractText}
+              onChange={(e) => setContractText(e.target.value)}
+              placeholder="Paste the contract / SOW text here…"
+              rows={6}
+              className="font-mono text-xs"
+            />
+
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => review(contractText)}
+                disabled={isReviewing || contractText.trim().length < 20}
+              >
+                {isReviewing ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-2 h-4 w-4" />
+                )}
+                Check contract
               </Button>
-            }
-          />
+              {(contractReview || reviewError) && (
+                <Button variant="ghost" onClick={resetReview}>
+                  Clear
+                </Button>
+              )}
+            </div>
+
+            {reviewError && <p className="text-sm text-destructive">{reviewError}</p>}
+
+            {contractReview && (
+              <div className="space-y-4 border-t border-border pt-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <Badge className={`${verdictConfig[contractReview.verdict]?.color} text-sm`}>
+                    {verdictConfig[contractReview.verdict]?.label}
+                  </Badge>
+                  <p className="flex-1 text-sm text-muted-foreground">{contractReview.summary}</p>
+                </div>
+
+                <div className="space-y-2">
+                  {contractReview.flags.map((f) => {
+                    const sev = severityConfig[f.severity];
+                    const SevIcon = sev.icon;
+                    return (
+                      <div
+                        key={f.policy}
+                        className="flex items-start gap-3 rounded-xl border border-border bg-background/40 p-3"
+                      >
+                        <SevIcon className={`mt-0.5 h-4 w-4 shrink-0 ${sev.color}`} />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium">{f.policy}</p>
+                          <p className="text-xs text-muted-foreground">{f.note}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <p className="text-xs text-muted-foreground/70">{contractReview.disclaimer}</p>
+              </div>
+            )}
+          </div>
         </TabsContent>
 
         {/* ── Finance (real) ── */}

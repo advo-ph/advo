@@ -322,6 +322,42 @@ describe("Response Envelope", () => {
   });
 });
 
+// ─── Contracts — red-flag review ──────────────────────
+
+describe("Contracts red-flag review", () => {
+  it("flags a contract silent on all policies as high_risk", async () => {
+    const { status, body } = await apiPost(
+      "/api/contracts/review",
+      {
+        contractText:
+          "This agreement is between ADVO and the Client for a website build. The total cost is one hundred thousand pesos. Work begins when both parties agree.",
+      },
+      adminToken,
+    );
+    expect(status).toBe(200);
+    expect(body.data.verdict).toBe("high_risk");
+    expect(body.data.flags.every((f: { severity: string }) => f.severity === "red")).toBe(true);
+  });
+
+  it("passes a contract that covers all five policies", async () => {
+    const { status, body } = await apiPost(
+      "/api/contracts/review",
+      {
+        contractText:
+          "Client shall pay a non-refundable downpayment of forty percent (40%) of the Total Project Value before any work begins. Each phase includes two (2) revision rounds; additional revisions are billed at the then-current hourly rate. Any change order adding new scope must be signed before work commences. Invoices are due within fifteen (15) days; amounts unpaid after thirty (30) days accrue interest at 2% per month and ADVO may pause work. Either party may terminate with fifteen (15) days written notice.",
+      },
+      adminToken,
+    );
+    expect(status).toBe(200);
+    expect(body.data.verdict).toBe("good_to_go");
+  });
+
+  it("requires auth", async () => {
+    const { status } = await apiPost("/api/contracts/review", { contractText: "x".repeat(40) });
+    expect(status).toBe(401);
+  });
+});
+
 // ─── Authorization — cross-tenant data scoping ────────
 // Regression for WIRING-AUDIT.md S1/S2/S3: a logged-in client must not be able
 // to read another client's deliverables, project detail, or notifications.

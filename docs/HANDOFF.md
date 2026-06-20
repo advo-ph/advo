@@ -11,6 +11,26 @@ Cross-links:
 
 ---
 
+## 2026-06-20 — Command Center: Contracts pillar (red-flag review)
+
+> Merged to `main`. typecheck 0/0, lint clean, build ✓, full suite 78/78 (+3), browser-verified. **Deployed (API + web).**
+
+First real pillar filled into the command center: the Contracts tab now runs a **heuristic red-flag review** of a pasted contract/SOW against ADVO's own [CONTRACTS.md](CONTRACTS.md) policies.
+- Backend: [contract-review.service.ts](apps/api/src/services/contract-review.service.ts) (pure function, LLM-ready shape) + `POST /api/contracts/review` ([contracts.routes.ts](apps/api/src/routes/contracts.routes.ts), requireTeam) mounted at `/api/contracts`.
+- Checks 5 policies (downpayment floor 40%/₱30k · 2 revisions/phase · change-order clause · late-payment · termination) → per-policy red/amber/green + verdict (good_to_go / needs_work / high_risk) + summary + disclaimer.
+- Frontend: [useContractReview.ts](apps/web/src/hooks/useContractReview.ts) + the Contracts tab (paste → Check → verdict badge + flag list + disclaimer).
+- Verified: silent contract → **high_risk (5 red)**; complete contract → **good_to_go (5 green)** — both in tests + a live browser run.
+
+**Why heuristic, not AI:** there is **NO LLM configured anywhere** — no Vertex/Google/Anthropic env keys, no GCP creds, `GOOGLE_APPLICATION_CREDENTIALS` unset on local + VPS. The existing Gemini brand-analysis service is non-functional for this reason (hence orphaned). The review's return shape is LLM-ready: swapping `reviewContract()` to call a model later is a one-function change — needs a key (owner chose heuristic-only for now; recommended upgrade = add `ANTHROPIC_API_KEY` and use Claude).
+
+### Honest open-items
+- Heuristic = presence check, not legal analysis (disclaimer says so). Upgrade to real AI when a key is added.
+- No PDF auto-extract yet — user pastes text (contract_url is just a link). PDF→text extraction is a follow-up.
+- No persistence — the review is stateless (not saved per project). Status tracking (draft/sent/signed) is future.
+- **Dev/Deploy pillar still to build** — incl. owner's new ask: clients should be able to **request** a temporary preview from their Hub. Owner's "here-dot-now" = **here.now** (instant web hosting for agents) — the intended mechanism for Show-Client-Now.
+
+---
+
 ## 2026-06-20 — Project Command Center (shell)
 
 > Branch merged to `main`. typecheck 0/0, lint clean, build ✓; walked through in a real browser. Web-only — **not yet deployed**. New feature, not an audit item.
