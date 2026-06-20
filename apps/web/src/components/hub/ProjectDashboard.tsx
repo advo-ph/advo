@@ -13,7 +13,9 @@ import {
   Clock,
   AlertCircle,
   Receipt,
+  Send,
 } from "lucide-react";
+import { useRequestPreview } from "@/hooks/usePreviewLink";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -104,6 +106,8 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
     refetch,
     setBranch,
   } = useGitHub(project.repository_name || null);
+
+  const { requestPreview, isRequesting } = useRequestPreview();
 
   // Safe defaults for optional nested arrays
   const deliverables = project.deliverables || [];
@@ -261,6 +265,19 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
               </a>
             </Button>
           )}
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => requestPreview(project.project_id)}
+            disabled={isRequesting}
+          >
+            {isRequesting ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Send className="h-3.5 w-3.5 mr-2" />
+            )}
+            Request a preview
+          </Button>
         </div>
       </div>
 

@@ -11,6 +11,30 @@ Cross-links:
 
 ---
 
+## 2026-06-20 — Command Center: Dev/Deploy pillar (Show Client Now)
+
+> Merged to `main`. typecheck 0/0, lint clean, build ✓, full suite 81/81 (+3). Backend flow proven end-to-end via curl. **Deployed (API + web).**
+
+Second pillar: the "Show Client Now" preview flow + client-initiated requests. Owner chose the **expiring-link-to-stored-preview** approach (no external dep / key) over a full here.now integration.
+
+- Backend:
+  - [preview.service.ts](apps/api/src/services/preview.service.ts) — signs a short-lived (20 min) HS256 token bound to a projectId (reuses `JWT_SECRET`/jose).
+  - `POST /api/projects/:id/preview-link` (requireTeam) → mints `{ url, expiresAt, ttlMinutes }` where url is `…/api/preview/<token>`.
+  - `GET /api/preview/:token` (**public**, [preview.routes.ts](apps/api/src/routes/preview.routes.ts)) → verifies + **302-redirects** to the project's `preview_url`; bad/expired token → branded 410 gate page. Host-agnostic.
+  - `POST /api/projects/:id/preview-request` (auth + `assertProjectAccess`) → logs to `activity_log` (action `preview_requested`). `GET /api/projects/:id/preview-requests` (requireTeam) → team sees them.
+- Frontend:
+  - Command-center Dev tab: real **Show Client Now** card (Generate link → copyable, "expires in 20 min") + a "Client requests" list. Header button now jumps to the Dev tab (controlled tabs).
+  - **Client Hub** ([ProjectDashboard.tsx](apps/web/src/components/hub/ProjectDashboard.tsx)): a **"Request a preview"** button → notifies the team (owner's ask).
+- Verified: curl proved mint→302→request→list; 3 new endpoint tests (mint 200, bad token 410, request logged) pass in the 81/81 suite; typecheck + build clean.
+
+### Honest open-items
+- Admin generate-link **UI** verified via backend + build + the rendered Dev panel, but the final on-screen link render wasn't browser-clicked this run (MCP browser flaked on lock contention). Low risk — thin React-Query render over a proven endpoint.
+- **S4 NOT closed** — this pillar added the preview flow but did not route the GitHub feed through the backend; `VITE_GITHUB_TOKEN`/`VITE_CLOUDFLARE_TOKEN` are still in the bundle. Separate task.
+- Preview link is `api.advo.ph/api/preview/<token>` (functional, slightly unbranded) — a pretty `advo.ph/p/<token>` frontend route is a polish follow-up.
+- here.now fresh-deploy path deferred (needs a here.now API key + per-project build artifacts) — the link approach is host-agnostic and works today.
+
+---
+
 ## 2026-06-20 — Command Center: Contracts pillar (red-flag review)
 
 > Merged to `main`. typecheck 0/0, lint clean, build ✓, full suite 78/78 (+3), browser-verified. **Deployed (API + web).**

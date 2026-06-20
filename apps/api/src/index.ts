@@ -30,6 +30,7 @@ import fbScrapeRoutes from "./routes/fb-scrape.routes.js";
 import availabilityRoutes from "./routes/availability.routes.js";
 import brandRoutes from "./routes/brand-analysis.routes.js";
 import contractRoutes from "./routes/contracts.routes.js";
+import previewRoutes from "./routes/preview.routes.js";
 
 import type { Variables } from "./types/context.js";
 
@@ -117,6 +118,9 @@ app.route("/api/settings", settingRoutes);
 
 // Contracts (red-flag review)
 app.route("/api/contracts", contractRoutes);
+
+// Preview links (public redirect for "Show Client Now")
+app.route("/api/preview", previewRoutes);
 
 // Scrapers
 app.route("/api/scrape", scrapeRoutes);

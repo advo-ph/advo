@@ -358,6 +358,59 @@ describe("Contracts red-flag review", () => {
   });
 });
 
+// ─── Preview links (Show Client Now) ──────────────────
+
+describe("Preview links", () => {
+  let previewClientId: number;
+  let previewProjectId: number;
+
+  beforeAll(async () => {
+    const c = await apiPost(
+      "/api/clients",
+      { companyName: "Preview Co", contactEmail: "preview@test.com" },
+      adminToken,
+    );
+    previewClientId = c.body.data.clientId;
+    const p = await apiPost(
+      "/api/projects",
+      { clientId: previewClientId, title: "Preview Project", previewUrl: "https://example.com/staging" },
+      adminToken,
+    );
+    previewProjectId = p.body.data.projectId;
+  });
+
+  afterAll(async () => {
+    if (previewClientId) await apiDelete(`/api/clients/${previewClientId}`, adminToken);
+  });
+
+  it("mints an expiring preview link", async () => {
+    const { status, body } = await apiPost(
+      `/api/projects/${previewProjectId}/preview-link`,
+      {},
+      adminToken,
+    );
+    expect(status).toBe(200);
+    expect(body.data.url).toContain("/api/preview/");
+    expect(body.data.ttlMinutes).toBe(20);
+  });
+
+  it("an invalid preview token returns 410", async () => {
+    const res = await fetch(`${API}/api/preview/not-a-valid-token`, { redirect: "manual" });
+    expect(res.status).toBe(410);
+  });
+
+  it("logs a client preview request the team can see", async () => {
+    const { status } = await apiPost(
+      `/api/projects/${previewProjectId}/preview-request`,
+      {},
+      adminToken,
+    );
+    expect(status).toBe(201);
+    const reqs = await apiGet(`/api/projects/${previewProjectId}/preview-requests`, adminToken);
+    expect(reqs.body.data.length).toBeGreaterThan(0);
+  });
+});
+
 // ─── Authorization — cross-tenant data scoping ────────
 // Regression for WIRING-AUDIT.md S1/S2/S3: a logged-in client must not be able
 // to read another client's deliverables, project detail, or notifications.

@@ -20,6 +20,9 @@ import {
   XCircle,
   Loader2,
   Upload,
+  Copy,
+  Check,
+  Send,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +36,7 @@ import {
 } from "@/hooks/useAdminDeliverables";
 import { useInvoices } from "@/hooks/useInvoices";
 import { useContractReview, type FlagSeverity } from "@/hooks/useContractReview";
+import { useProjectPreview } from "@/hooks/usePreviewLink";
 
 interface ProjectCommandCenterProps {
   project: MergedProject;
@@ -123,6 +127,22 @@ const ProjectCommandCenter = ({ project, onBack }: ProjectCommandCenterProps) =>
   const { invoices } = useInvoices();
   const { review, result: contractReview, isReviewing, error: reviewError, reset: resetReview } = useContractReview();
   const [contractText, setContractText] = useState("");
+  const {
+    generateLink,
+    link: previewLink,
+    isGenerating,
+    error: previewError,
+    requests: previewRequests,
+  } = useProjectPreview(project.project_id);
+  const [tab, setTab] = useState("overview");
+  const [copied, setCopied] = useState(false);
+
+  const copyPreview = () => {
+    if (!previewLink) return;
+    navigator.clipboard?.writeText(previewLink.url);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1500);
+  };
 
   const projDeliverables = deliverables.filter((d) => d.project_id === project.project_id);
   const projInvoices = invoices.filter((i) => i.project_id === project.project_id);
@@ -187,11 +207,10 @@ const ProjectCommandCenter = ({ project, onBack }: ProjectCommandCenterProps) =>
             </div>
           </div>
 
-          {/* Flagship action (scaffold) */}
+          {/* Flagship action — jumps to the Dev & Deploy panel */}
           <Button
-            disabled
+            onClick={() => setTab("dev")}
             className="shrink-0 rounded-full bg-foreground text-background hover:bg-foreground/90"
-            title="Coming next — generates an expiring share link to the latest preview"
           >
             <Eye className="mr-2 h-4 w-4" /> Show Client Now
           </Button>
@@ -199,7 +218,7 @@ const ProjectCommandCenter = ({ project, onBack }: ProjectCommandCenterProps) =>
       </div>
 
       {/* Panels */}
-      <Tabs defaultValue="overview">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="flex w-full flex-wrap justify-start gap-1 bg-secondary/50">
           <TabsTrigger value="overview"><LayoutDashboard className="mr-1.5 h-4 w-4" /> Overview</TabsTrigger>
           <TabsTrigger value="deliverables"><ListChecks className="mr-1.5 h-4 w-4" /> Deliverables</TabsTrigger>
@@ -337,18 +356,66 @@ const ProjectCommandCenter = ({ project, onBack }: ProjectCommandCenterProps) =>
             )}
           </div>
 
-          <ComingNext
-            icon={Eye}
-            title="Show Client Now"
-            blurb="A one-click, time-limited preview link you can drop to a client mid-build — instant because it reveals the latest already-built preview, ephemeral because the link expires (≈20 min)."
-            bullets={[
-              "Host-agnostic: stores a preview URL + provider per project (Vercel / Cloudflare Pages / VPS)",
-              "Signed, expiring share link — no permanent client URL",
-              "Live deploy status (commit → build → deployed) routed through the backend cache",
-              "Also closes the S4 security gap (GitHub token leaves the browser bundle)",
-            ]}
-            serves="Developer (status) + Manager (client-facing demo)"
-          />
+          <div className="space-y-4 rounded-2xl border border-border bg-card p-5">
+            <div>
+              <SectionLabel>Show Client Now</SectionLabel>
+              <p className="text-sm text-muted-foreground">
+                Generate a private, expiring link to this project's live preview — instant to share, auto-expires
+                (~20 min). Host-agnostic: it points at whatever preview URL is set (Vercel / Cloudflare / here.now / VPS).
+              </p>
+            </div>
+
+            {!project.preview_url ? (
+              <p className="text-sm text-muted-foreground">
+                Set a <span className="font-medium">Preview URL</span> on the project (Edit) to enable this.
+              </p>
+            ) : (
+              <>
+                <Button onClick={() => generateLink()} disabled={isGenerating}>
+                  {isGenerating ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Eye className="mr-2 h-4 w-4" />
+                  )}
+                  Generate preview link
+                </Button>
+                {previewError && <p className="text-sm text-destructive">{previewError}</p>}
+                {previewLink && (
+                  <div className="space-y-2 rounded-xl border border-border bg-background/40 p-3">
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 truncate text-xs text-accent">{previewLink.url}</code>
+                      <Button size="sm" variant="outline" onClick={copyPreview} aria-label="Copy link">
+                        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Expires in {previewLink.ttlMinutes} min — share it with the client now.
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+
+            {previewRequests.length > 0 && (
+              <div className="border-t border-border pt-3">
+                <SectionLabel>Client requests</SectionLabel>
+                <ul className="space-y-1">
+                  {previewRequests.slice(0, 3).map((r) => (
+                    <li key={r.activityId} className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Send className="h-3.5 w-3.5 text-accent" />
+                      Client requested a preview ·{" "}
+                      {new Date(r.createdAt).toLocaleString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         </TabsContent>
 
         {/* ── Contracts (partial real + scaffold) ── */}

@@ -13,10 +13,12 @@ import {
   teamMember,
   githubEvent,
   notification,
+  activityLog,
 } from "../db/schema.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin, requireTeam } from "../middleware/rbac.js";
 import { sendNotificationEmail } from "../services/email.service.js";
+import { signPreviewToken, PREVIEW_TTL_MINUTES } from "../services/preview.service.js";
 import { looseUrl, requiredUrl } from "../utils/validators.js";
 import type { Variables, AuthUser } from "../types/context.js";
 
@@ -346,5 +348,69 @@ projects.post(
     return c.json({ data: created, error: null }, 201);
   }
 );
+
+// ─── Show Client Now — signed expiring preview link ──
+
+// Team mints a short-lived link to the project's stored preview_url.
+projects.post("/:id/preview-link", requireTeam, async (c) => {
+  const id = Number(c.req.param("id"));
+  const [row] = await db()
+    .select({ previewUrl: project.previewUrl })
+    .from(project)
+    .where(eq(project.projectId, id))
+    .limit(1);
+
+  if (!row) throw new HTTPException(404, { message: "Project not found" });
+  if (!row.previewUrl) {
+    throw new HTTPException(400, { message: "Set a preview URL on the project first." });
+  }
+
+  const { token, expiresAt } = await signPreviewToken(id);
+  const origin = new URL(c.req.url).origin;
+  return c.json({
+    data: { url: `${origin}/api/preview/${token}`, expiresAt, ttlMinutes: PREVIEW_TTL_MINUTES },
+    error: null,
+  });
+});
+
+// Client (or team) requests a fresh preview from their Hub — logged for the team.
+projects.post("/:id/preview-request", async (c) => {
+  const id = Number(c.req.param("id"));
+  const user = c.get("user");
+  const d = db();
+  await assertProjectAccess(d, user, id);
+
+  await d.insert(activityLog).values({
+    userId: user.userId,
+    action: "preview_requested",
+    entityType: "project",
+    entityId: id,
+  });
+
+  return c.json({ data: { message: "Preview requested" }, error: null }, 201);
+});
+
+// Team sees recent client preview requests for a project.
+projects.get("/:id/preview-requests", requireTeam, async (c) => {
+  const id = Number(c.req.param("id"));
+  const rows = await db()
+    .select({
+      activityId: activityLog.activityId,
+      userId: activityLog.userId,
+      createdAt: activityLog.createdAt,
+    })
+    .from(activityLog)
+    .where(
+      and(
+        eq(activityLog.entityType, "project"),
+        eq(activityLog.entityId, id),
+        eq(activityLog.action, "preview_requested"),
+      ),
+    )
+    .orderBy(desc(activityLog.createdAt))
+    .limit(10);
+
+  return c.json({ data: rows, error: null });
+});
 
 export default projects;
