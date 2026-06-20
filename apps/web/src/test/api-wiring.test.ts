@@ -353,6 +353,27 @@ describe("Calendar", () => {
     const del = await apiDelete(`/api/content/social/${socialId}`, adminToken);
     expect(del.status).toBe(200);
   });
+
+  it("generates BIR filing deadlines into the union (read-only, no DB rows)", async () => {
+    // April 2026 range → catches the annual ITR (Apr 15) + monthly 1601-C (Apr 10).
+    const from = new Date(Date.UTC(2026, 3, 1)).toISOString();
+    const to = new Date(Date.UTC(2026, 3, 30)).toISOString();
+    const { status, body } = await apiGet(
+      `/api/calendar?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+      adminToken,
+    );
+    expect(status).toBe(200);
+    const itr = body.data.find((e: { id: string }) => e.id === "bir-itr-2026");
+    expect(itr).toBeTruthy();
+    expect(itr.source).toBe("bir");
+    expect(itr.category).toBe("bir_deadline");
+    expect(itr.editable).toBe(false);
+    expect(itr.title).toContain("Annual income tax");
+    // Monthly 1601-C withholding (Apr 10).
+    const monthly = body.data.find((e: { id: string }) => e.id === "bir-1601c-3-2026");
+    expect(monthly).toBeTruthy();
+    expect(monthly.category).toBe("bir_deadline");
+  });
 });
 
 // ─── Content / CMS ────────────────────────────────────

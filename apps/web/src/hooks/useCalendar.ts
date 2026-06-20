@@ -2,7 +2,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { get, post, patch, del } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
-export type CalSource = "manual" | "deliverable" | "invoice" | "project" | "social" | "contract";
+export type CalSource =
+  | "manual"
+  | "deliverable"
+  | "invoice"
+  | "project"
+  | "social"
+  | "contract"
+  | "bir";
 
 export interface CalEvent {
   id: string;

@@ -24,10 +24,28 @@ const MANUAL_CATEGORIES = [
   "event",
 ] as const;
 
+// Recurring statutory BIR filing deadlines (calendar-year filers). Dates are
+// the STATUTORY date — if one lands on a weekend/holiday the actual deadline
+// moves to the next working day (NOT computed here). Conservative + editable;
+// surfaced as read-only reference events the team can filter off. Verify the
+// exact set with an accountant before relying on it.
+const BIR_RULES: { month: number; day: number; key: string; label: string }[] = [
+  { month: 0, day: 31, key: "1604c", label: "1604-C — Annual withholding (compensation)" },
+  { month: 2, day: 1, key: "1604e", label: "1604-E — Annual withholding (expanded)" },
+  { month: 3, day: 15, key: "itr", label: "1701/1702 — Annual income tax return" },
+  { month: 0, day: 25, key: "vat-q4", label: "2550Q — Quarterly VAT (Q4)" },
+  { month: 3, day: 25, key: "vat-q1", label: "2550Q — Quarterly VAT (Q1)" },
+  { month: 6, day: 25, key: "vat-q2", label: "2550Q — Quarterly VAT (Q2)" },
+  { month: 9, day: 25, key: "vat-q3", label: "2550Q — Quarterly VAT (Q3)" },
+  { month: 4, day: 15, key: "it-q1", label: "1701Q — Quarterly income tax (Q1)" },
+  { month: 7, day: 15, key: "it-q2", label: "1701Q — Quarterly income tax (Q2)" },
+  { month: 10, day: 15, key: "it-q3", label: "1701Q — Quarterly income tax (Q3)" },
+];
+
 // Unified event shape returned to the client. Derived events are read-only.
 interface CalEvent {
   id: string;
-  source: "manual" | "deliverable" | "invoice" | "project" | "social" | "contract";
+  source: "manual" | "deliverable" | "invoice" | "project" | "social" | "contract" | "bir";
   category: string;
   title: string;
   start: string; // ISO
@@ -263,6 +281,34 @@ calendar.get("/", requireTeam, zValidator("query", rangeSchema), async (c) => {
         location: null,
         description: null,
       });
+    }
+  }
+
+  // BIR filing deadlines — generated per year in range (no DB rows).
+  const pushBir = (y: number, month: number, day: number, key: string, label: string) => {
+    const dt = new Date(Date.UTC(y, month, day));
+    if (dt >= start && dt <= end) {
+      events.push({
+        id: `bir-${key}-${y}`,
+        source: "bir",
+        category: "bir_deadline",
+        title: `BIR: ${label}`,
+        start: dt.toISOString(),
+        end: null,
+        allDay: true,
+        projectId: null,
+        projectTitle: null,
+        editable: false,
+        location: null,
+        description: null,
+      });
+    }
+  };
+  for (let y = start.getUTCFullYear(); y <= end.getUTCFullYear(); y++) {
+    for (const r of BIR_RULES) pushBir(y, r.month, r.day, r.key, r.label);
+    // 1601-C — monthly withholding on compensation, due the 10th.
+    for (let m = 0; m < 12; m++) {
+      pushBir(y, m, 10, `1601c-${m}`, "1601-C — Monthly withholding (compensation)");
     }
   }
 

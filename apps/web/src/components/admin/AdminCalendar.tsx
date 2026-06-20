@@ -38,8 +38,18 @@ const CATEGORY: Record<string, { label: string; dot: string }> = {
   social_published: { label: "Post published", dot: "bg-fuchsia-600" },
   contract_signed: { label: "Contract signed", dot: "bg-teal-500" },
   contract_expires: { label: "Contract expires", dot: "bg-rose-500" },
+  bir_deadline: { label: "BIR (auto)", dot: "bg-amber-600" },
 };
 const cat = (k: string) => CATEGORY[k] ?? { label: k, dot: "bg-muted-foreground" };
+
+// Read-only detail hint: source → the page that owns the underlying record.
+const SOURCE_NOUN: Record<string, string> = {
+  deliverable: "deliverables",
+  invoice: "invoices",
+  project: "projects",
+  social: "social posts",
+  contract: "contracts",
+};
 
 // Manual categories selectable in the dialog (must match the API enum).
 const MANUAL_CATS = ["meeting", "deadline", "moa", "bir", "content", "social", "cold_email", "event"];
@@ -486,7 +496,9 @@ const AdminCalendar = () => {
                 )}
               </div>
               <p className="text-xs text-muted-foreground">
-                Pulled automatically from {detail.source}s — edit it on its own page.
+                {detail.source === "bir"
+                  ? "Auto-generated BIR filing deadline — statutory date, not adjusted for weekends/holidays. Verify with your accountant."
+                  : `Pulled automatically from ${SOURCE_NOUN[detail.source] ?? `${detail.source}s`} — manage it on its own page.`}
               </p>
             </>
           )}
