@@ -1,8 +1,12 @@
-// GitHub API Service for fetching commits and repo data
-// This service integrates with the advo-ph organization
+// GitHub service — routes through the ADVO backend so no token ever lives in
+// the browser bundle (closes audit S4). Commits come from the backend's
+// github_event webhook cache; branches from the backend (server-side token).
+// Repo/tech-stack/PR enrichment has no backend endpoint yet → returns empty
+// (the UI already degrades gracefully). Previously this called api.github.com
+// directly with VITE_GITHUB_TOKEN — a public-bundle leak waiting to happen.
+import { get } from "@/lib/api";
 
-const GITHUB_TOKEN = import.meta.env.VITE_GITHUB_TOKEN;
-const GITHUB_ORG = 'advo-ph';
+const GITHUB_ORG = "advo-ph";
 
 export interface GitHubCommit {
   sha: string;
@@ -42,193 +46,55 @@ export interface GitHubRepo {
 export interface TechStackItem {
   name: string;
   icon?: string;
-  category: 'frontend' | 'backend' | 'database' | 'infrastructure' | 'other';
+  category: "frontend" | "backend" | "database" | "infrastructure" | "other";
 }
 
-// Known dependency to tech stack mappings
-const TECH_MAPPINGS: Record<string, TechStackItem> = {
-  'next': { name: 'Next.js', category: 'frontend' },
-  'react': { name: 'React', category: 'frontend' },
-  'vue': { name: 'Vue.js', category: 'frontend' },
-  'svelte': { name: 'Svelte', category: 'frontend' },
-  '@supabase/supabase-js': { name: 'Supabase', category: 'backend' },
-  'stripe': { name: 'Stripe', category: 'backend' },
-  'tailwindcss': { name: 'TailwindCSS', category: 'frontend' },
-  '@prisma/client': { name: 'Prisma', category: 'database' },
-  'drizzle-orm': { name: 'Drizzle', category: 'database' },
-  'express': { name: 'Express', category: 'backend' },
-  'hono': { name: 'Hono', category: 'backend' },
-  'typescript': { name: 'TypeScript', category: 'frontend' },
-  'vite': { name: 'Vite', category: 'infrastructure' },
-  'framer-motion': { name: 'Framer Motion', category: 'frontend' },
-  'zod': { name: 'Zod', category: 'other' },
-  '@tanstack/react-query': { name: 'React Query', category: 'frontend' },
-};
-
 class GitHubService {
-  private headers: HeadersInit;
-  
-  constructor() {
-    this.headers = {
-      'Accept': 'application/vnd.github+json',
-      'X-GitHub-Api-Version': '2022-11-28',
-      ...(GITHUB_TOKEN && { 'Authorization': `Bearer ${GITHUB_TOKEN}` }),
-    };
-  }
-
-  /**
-   * Fetch recent commits from a repository
-   * @param branch - Branch name (defaults to main/master)
-   */
+  /** Recent commits, from the backend's webhook cache (no token in the browser). */
   async getCommits(repoName: string, limit = 10, branch?: string): Promise<GitHubCommit[]> {
-    try {
-      const branchParam = branch ? `&sha=${branch}` : '';
-      const response = await fetch(
-        `https://api.github.com/repos/${GITHUB_ORG}/${repoName}/commits?per_page=${limit}${branchParam}`,
-        { headers: this.headers }
-      );
-      
-      if (!response.ok) {
-        console.error(`GitHub API error: ${response.status}`);
-        return [];
-      }
-      
-      const data = await response.json();
-      
-      return data.map((commit: Record<string, unknown>) => ({
-        sha: (commit.sha as string).substring(0, 7),
-        message: String((commit.commit as Record<string, Record<string, string>>).message).split('\n')[0],
+    const qs = new URLSearchParams({ limit: String(limit) });
+    if (branch) qs.set("branch", branch);
+    const res = await get<Record<string, unknown>[]>(
+      `/api/github/repos/${encodeURIComponent(repoName)}/commits?${qs.toString()}`,
+    );
+    return (res.data || []).map((r) => {
+      const sha = String(r.commitSha ?? r.commit_sha ?? "");
+      return {
+        sha: sha.substring(0, 7),
+        message: String(r.message ?? "").split("\n")[0],
         author: {
-          name: (commit.commit as Record<string, Record<string, string>>).author.name,
-          email: (commit.commit as Record<string, Record<string, string>>).author.email,
-          date: (commit.commit as Record<string, Record<string, string>>).author.date,
-          avatar_url: (commit.author as Record<string, string> | null)?.avatar_url,
+          name: String(r.author ?? "unknown"),
+          email: "",
+          date: String(r.createdAt ?? r.created_at ?? ""),
         },
-        html_url: commit.html_url,
-        branch: branch || 'main',
-      }));
-    } catch (error) {
-      console.error('Failed to fetch commits:', error);
-      return [];
-    }
+        html_url: sha
+          ? `https://github.com/${GITHUB_ORG}/${repoName}/commit/${sha}`
+          : `https://github.com/${GITHUB_ORG}/${repoName}`,
+        branch: String(r.branch ?? branch ?? "main"),
+      } as GitHubCommit;
+    });
   }
 
-  /**
-   * Fetch all branches for a repository
-   */
+  /** Branches, fetched server-side by the backend. */
   async getBranches(repoName: string): Promise<GitHubBranch[]> {
-    try {
-      const response = await fetch(
-        `https://api.github.com/repos/${GITHUB_ORG}/${repoName}/branches`,
-        { headers: this.headers }
-      );
-      
-      if (!response.ok) return [];
-      
-      const data = await response.json();
-      return data.map((branch: Record<string, unknown>) => ({
-        name: branch.name,
-        protected: branch.protected,
-      }));
-    } catch (error) {
-      console.error('Failed to fetch branches:', error);
-      return [];
-    }
+    const res = await get<GitHubBranch[]>(
+      `/api/github/repos/${encodeURIComponent(repoName)}/branches`,
+    );
+    return res.data || [];
   }
 
-  /**
-   * Fetch repository info
-   */
-  async getRepository(repoName: string): Promise<GitHubRepo | null> {
-    try {
-      const response = await fetch(
-        `https://api.github.com/repos/${GITHUB_ORG}/${repoName}`,
-        { headers: this.headers }
-      );
-      
-      if (!response.ok) return null;
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Failed to fetch repository:', error);
-      return null;
-    }
+  // No backend endpoints yet — enrichment-only, degrade to empty.
+  async getRepository(_repoName: string): Promise<GitHubRepo | null> {
+    return null;
   }
-
-  /**
-   * Auto-detect tech stack from package.json
-   */
-  async detectTechStack(repoName: string, branch?: string): Promise<TechStackItem[]> {
-    try {
-      const branchParam = branch ? `?ref=${branch}` : '';
-      const response = await fetch(
-        `https://api.github.com/repos/${GITHUB_ORG}/${repoName}/contents/package.json${branchParam}`,
-        { headers: this.headers }
-      );
-      
-      if (!response.ok) return [];
-      
-      const data = await response.json();
-      const content = atob(data.content);
-      const packageJson = JSON.parse(content);
-      
-      const allDeps = {
-        ...packageJson.dependencies,
-        ...packageJson.devDependencies,
-      };
-      
-      const detected: TechStackItem[] = [];
-      
-      for (const dep of Object.keys(allDeps)) {
-        if (TECH_MAPPINGS[dep]) {
-          detected.push(TECH_MAPPINGS[dep]);
-        }
-      }
-      
-      return detected;
-    } catch (error) {
-      console.error('Failed to detect tech stack:', error);
-      return [];
-    }
+  async detectTechStack(_repoName: string, _branch?: string): Promise<TechStackItem[]> {
+    return [];
   }
-
-  /**
-   * Get open pull requests
-   */
-  async getOpenPullRequests(repoName: string): Promise<number> {
-    try {
-      const response = await fetch(
-        `https://api.github.com/repos/${GITHUB_ORG}/${repoName}/pulls?state=open`,
-        { headers: this.headers }
-      );
-      
-      if (!response.ok) return 0;
-      
-      const data = await response.json();
-      return data.length;
-    } catch (error) {
-      console.error('Failed to fetch PRs:', error);
-      return 0;
-    }
+  async getOpenPullRequests(_repoName: string): Promise<number> {
+    return 0;
   }
-
-  /**
-   * Get all repos in the org
-   */
   async getOrgRepos(): Promise<GitHubRepo[]> {
-    try {
-      const response = await fetch(
-        `https://api.github.com/orgs/${GITHUB_ORG}/repos?sort=pushed&per_page=20`,
-        { headers: this.headers }
-      );
-      
-      if (!response.ok) return [];
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Failed to fetch org repos:', error);
-      return [];
-    }
+    return [];
   }
 }
 
