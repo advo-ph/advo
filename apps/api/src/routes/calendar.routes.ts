@@ -4,7 +4,7 @@ import { zValidator } from "@hono/zod-validator";
 import { eq, and, gte, lte } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { db } from "../db/connection.js";
-import { calendarEvent, deliverable, invoice, project } from "../db/schema.js";
+import { calendarEvent, deliverable, invoice, project, socialPost } from "../db/schema.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireTeam } from "../middleware/rbac.js";
 import type { Variables } from "../types/context.js";
@@ -27,7 +27,7 @@ const MANUAL_CATEGORIES = [
 // Unified event shape returned to the client. Derived events are read-only.
 interface CalEvent {
   id: string;
-  source: "manual" | "deliverable" | "invoice" | "project";
+  source: "manual" | "deliverable" | "invoice" | "project" | "social";
   category: string;
   title: string;
   start: string; // ISO
@@ -53,7 +53,7 @@ calendar.get("/", requireTeam, zValidator("query", rangeSchema), async (c) => {
   const end = to ? new Date(to) : new Date(now.getFullYear(), now.getMonth() + 2, 0);
   const d = db();
 
-  const [manual, delivs, invs, projs] = await Promise.all([
+  const [manual, delivs, invs, projs, socials] = await Promise.all([
     d
       .select()
       .from(calendarEvent)
@@ -84,6 +84,16 @@ calendar.get("/", requireTeam, zValidator("query", rangeSchema), async (c) => {
       .select({ id: project.projectId, title: project.title, createdAt: project.createdAt })
       .from(project)
       .where(and(gte(project.createdAt, start), lte(project.createdAt, end))),
+    // Social posts carry no FK to a range, so filter scheduled/published in JS
+    // below (mirrors the invoice due/paid pattern) rather than a SQL window.
+    d
+      .select({
+        id: socialPost.socialPostId,
+        platform: socialPost.platform,
+        scheduledFor: socialPost.scheduledFor,
+        publishedAt: socialPost.publishedAt,
+      })
+      .from(socialPost),
   ]);
 
   const events: CalEvent[] = [];
@@ -173,6 +183,42 @@ calendar.get("/", requireTeam, zValidator("query", rangeSchema), async (c) => {
       location: null,
       description: null,
     });
+  }
+
+  for (const sp of socials) {
+    const platform = sp.platform ? ` — ${sp.platform}` : "";
+    if (sp.scheduledFor && sp.scheduledFor >= start && sp.scheduledFor <= end) {
+      events.push({
+        id: `social-scheduled-${sp.id}`,
+        source: "social",
+        category: "social_scheduled",
+        title: `Post scheduled${platform}`,
+        start: sp.scheduledFor.toISOString(),
+        end: null,
+        allDay: false,
+        projectId: null,
+        projectTitle: null,
+        editable: false,
+        location: null,
+        description: null,
+      });
+    }
+    if (sp.publishedAt && sp.publishedAt >= start && sp.publishedAt <= end) {
+      events.push({
+        id: `social-published-${sp.id}`,
+        source: "social",
+        category: "social_published",
+        title: `Post published${platform}`,
+        start: sp.publishedAt.toISOString(),
+        end: null,
+        allDay: false,
+        projectId: null,
+        projectTitle: null,
+        editable: false,
+        location: null,
+        description: null,
+      });
+    }
   }
 
   events.sort((a, b) => a.start.localeCompare(b.start));

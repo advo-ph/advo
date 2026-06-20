@@ -153,11 +153,13 @@ Full CRUD (shipped `3a622af`, closing audit finding B1 — was previously read-o
 
 ### Calendar
 
-The all-around ADVO records calendar (Phase 1, shipped `0018c3e`/`80f076e`). A month grid that overlays **manually-created events** (meeting / deadline / MOA / BIR / content / social / cold-email / event) with **derived events computed at read time** from existing records: deliverable due dates, invoice due + paid dates, project kickoffs. Prev/today/next nav, today highlight, a category-filter legend, click-a-day to add, and an edit/delete dialog (title, category, date, all-day or start/end time, location, notes). `GET /api/calendar?from&to` returns the union; POST/PATCH/DELETE manage manual events (requireTeam). Derived events are read-only (edit them on their own page).
+The all-around ADVO records calendar (Phase 1, shipped `0018c3e`/`80f076e`). A month grid that overlays **manually-created events** (meeting / deadline / MOA / BIR / content / social / cold-email / event) with **derived events computed at read time** from existing records: deliverable due dates, invoice due + paid dates, project kickoffs, and **content/social posts** (scheduled + published — Phase 2). Prev/today/next nav, today highlight, a category-filter legend, click-a-day to add, and an edit/delete dialog (title, category, date, all-day or start/end time, location, notes). `GET /api/calendar?from&to` returns the union; POST/PATCH/DELETE manage manual events (requireTeam). Derived events are read-only (edit them on their own page).
 
-**Phase 2/3 (not built):** more record layers (contracts/MOAs, meetings, BIR, content/social posting, cold-email cadence); Google Calendar + ICS sync. `Availability` will fold into this as a team-availability layer.
+**Phase 2 (in progress):** content/social posts now derive into the union (`social_scheduled` / `social_published`, read from the existing `social_post` table — no migration). Remaining layers: contracts/MOAs, meetings, BIR deadlines, cold-email cadence (the first three need new tables). `Availability` will fold into this as a team-availability layer.
 
-**Files**: `AdminCalendar.tsx` (new), `useCalendar.ts` (new), `calendar.routes.ts` (new), `calendar_event` table (migration `003`)
+**Phase 3 (decided, not started):** Google Calendar + ICS sync — **two-way / bidirectional** (owner decision, 2026-06-20).
+
+**Files**: `AdminCalendar.tsx`, `useCalendar.ts`, `calendar.routes.ts`, `calendar_event` table (migration `003`). Endpoint coverage in `api-wiring.test.ts` (Calendar block): auth-gate, range-GET shape, manual-event CRUD lifecycle, and the derived content/social layer.
 
 ### Finance
 

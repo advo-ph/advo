@@ -247,6 +247,114 @@ describe("Notifications", () => {
   });
 });
 
+// ─── Calendar ─────────────────────────────────────────
+// Regression for the "Calendar endpoints" coverage gap (commit 0018c3e):
+// /api/calendar GET (derived ∪ manual union) + manual-event CRUD.
+
+describe("Calendar", () => {
+  it("GET /api/calendar requires auth", async () => {
+    const { status } = await apiGet("/api/calendar");
+    expect(status).toBe(401);
+  });
+
+  it("GET /api/calendar returns the unified event array for a range", async () => {
+    const from = new Date(Date.UTC(2026, 0, 1)).toISOString();
+    const to = new Date(Date.UTC(2026, 11, 31)).toISOString();
+    const { status, body } = await apiGet(
+      `/api/calendar?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+      adminToken,
+    );
+    expect(status).toBe(200);
+    expect(Array.isArray(body.data)).toBe(true);
+    expect(body.error).toBeNull();
+    // Every event — derived or manual — carries the unified CalEvent shape.
+    for (const ev of body.data) {
+      expect(ev).toHaveProperty("id");
+      expect(ev).toHaveProperty("source");
+      expect(ev).toHaveProperty("start");
+      expect(typeof ev.editable).toBe("boolean");
+    }
+  });
+
+  it("POST + GET + PATCH + DELETE manual-event lifecycle", async () => {
+    const startsAt = new Date(Date.UTC(2026, 5, 15, 9, 0, 0)).toISOString();
+
+    // Create a manual event.
+    const create = await apiPost(
+      "/api/calendar",
+      { title: "Test Calendar Event", category: "meeting", startsAt, isAllDay: false },
+      adminToken,
+    );
+    expect(create.status).toBe(201);
+    const eventId = create.body.data.calendarEventId;
+    expect(eventId).toBeTruthy();
+    expect(create.body.data.category).toBe("meeting");
+
+    // Read it back through the unified range query — manual events are editable
+    // and namespaced `manual-<id>` in the union.
+    const from = new Date(Date.UTC(2026, 5, 1)).toISOString();
+    const to = new Date(Date.UTC(2026, 5, 30)).toISOString();
+    const list = await apiGet(
+      `/api/calendar?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+      adminToken,
+    );
+    const mine = list.body.data.find((e: { id: string }) => e.id === `manual-${eventId}`);
+    expect(mine).toBeTruthy();
+    expect(mine.source).toBe("manual");
+    expect(mine.editable).toBe(true);
+    expect(mine.title).toBe("Test Calendar Event");
+
+    // Update (PATCH targets the raw numeric calendarEventId, not the namespaced id).
+    const update = await apiPatch(
+      `/api/calendar/${eventId}`,
+      { title: "Renamed Event" },
+      adminToken,
+    );
+    expect(update.status).toBe(200);
+    expect(update.body.data.title).toBe("Renamed Event");
+
+    // Delete, then confirm it's gone (a second delete 404s).
+    const del = await apiDelete(`/api/calendar/${eventId}`, adminToken);
+    expect(del.status).toBe(200);
+    const delAgain = await apiDelete(`/api/calendar/${eventId}`, adminToken);
+    expect(delAgain.status).toBe(404);
+  });
+
+  it("derives a content/social layer into the union (Phase 2, no migration)", async () => {
+    const scheduledFor = new Date(Date.UTC(2026, 7, 10, 8, 0, 0)).toISOString();
+
+    // Seed a scheduled social post via the content API.
+    const create = await apiPost(
+      "/api/content/social",
+      { platform: "Instagram", content: "Calendar layer test post", scheduledFor },
+      adminToken,
+    );
+    expect(create.status).toBe(201);
+    const socialId = create.body.data.socialPostId;
+    expect(socialId).toBeTruthy();
+
+    // It surfaces in the calendar union as a read-only derived event.
+    const from = new Date(Date.UTC(2026, 7, 1)).toISOString();
+    const to = new Date(Date.UTC(2026, 7, 31)).toISOString();
+    const list = await apiGet(
+      `/api/calendar?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+      adminToken,
+    );
+    const ev = list.body.data.find(
+      (e: { id: string }) => e.id === `social-scheduled-${socialId}`,
+    );
+    expect(ev).toBeTruthy();
+    expect(ev.source).toBe("social");
+    expect(ev.category).toBe("social_scheduled");
+    expect(ev.editable).toBe(false);
+    expect(ev.title).toContain("Instagram");
+
+    // Clean up the seeded post.
+    const del = await apiDelete(`/api/content/social/${socialId}`, adminToken);
+    expect(del.status).toBe(200);
+  });
+});
+
 // ─── Content / CMS ────────────────────────────────────
 
 describe("Content", () => {
