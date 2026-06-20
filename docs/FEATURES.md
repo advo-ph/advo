@@ -1,5 +1,31 @@
 # Features Documentation
 
+## Public Landing (`/`)
+
+The marketing site at advo.ph. Sections are CMS-driven where the React component imports defaults from a CMS section but accepts overrides from `/api/content/sections`. README.md has the in-depth section list; the entries here cover behavior the README doesn't.
+
+### Portfolio Proof Cards
+
+Each portfolio item renders as a proof card: outcome metric headline, products-used chip group, launch timeline, two result bullets, and a before/after ProofMock fallback (rendered when a project has no `image_url`). Layout is 2-column on `md+`. Pulls extended fields from `case_study` JSON: `metric` / `outcome` / `timeline` / `products_used` / `before_after`. All optional — falls back to `description`, `tech_stack`, and a hardcoded `["Website","Client Hub","Admin"]` product list when the case study is sparse. Section header: "Proof, not just screenshots."
+
+**Files**: `landing/PortfolioCard.tsx`, `landing/PortfolioGrid.tsx`
+
+### Mobile Drawer
+
+`FloatingNav` mobile menu is a full-screen overlay (not a small popover). Three numbered nav rows (01/02/03) with large `text-2xl` labels for big tap targets, ADVO badge + tagline header at top, bottom-pinned 2-column action grid (Start a Project / Client Hub). A11y: `role="dialog"`, `aria-modal`, `aria-expanded`, `aria-controls="mobile-navigation-drawer"`. Closes on Escape, on route change, and on action-row click. Body scroll lock while open. Honors `prefers-reduced-motion`. **z-50** (one above sections — drawer was originally `z-40` same as Hero, only the bottom row peeked through, fixed in `bc0ac03`).
+
+**Files**: `landing/FloatingNav.tsx`
+
+### Public Settings Endpoint
+
+`GET /api/settings/public` returns an allowlisted subset of `site_config` keys (currently `social_links`, `brand_name`, `team_order`) **without auth**. The landing Footer reads `social_links` from here. The rest of `/api/settings/*` stays admin-only.
+
+Added because the Footer was hitting the admin-only `/api/settings` and 401-ing on every anonymous visit (visible noise in console; wasted round-trip). To add a new public key: extend `PUBLIC_KEYS` in [`settings.routes.ts`](../apps/api/src/routes/settings.routes.ts).
+
+**Files**: `apps/api/src/routes/settings.routes.ts`, `landing/Footer.tsx`
+
+---
+
 ## Client Portal (`/hub`)
 
 ### Engineering Feed
@@ -37,6 +63,12 @@ Displays assigned team members with avatar, name, role, email, and LinkedIn link
 Unread count badge on bell icon. Dropdown shows last 10 notifications with mark-as-read.
 
 **Files**: `Hub.tsx`, `useNotifications.ts` (`useClientNotifications`)
+
+### Role Badge
+
+User card surfaces the actual `user.role` (capitalized) instead of a hardcoded "Client" label, so admins viewing `/hub` aren't mislabeled.
+
+**Files**: `Hub.tsx`
 
 ---
 
@@ -110,9 +142,9 @@ CMS for landing page sections. Each row shows section label + `section_id` with 
 
 ### Portfolio
 
-Manage public portfolio projects. Multi-image upload. Toggle featured. Full CRUD with case study.
+Manage public portfolio projects. Multi-image upload. Toggle featured. Full CRUD with case study. The `case_study` JSON column now also accepts proof-card fields read by the public landing — `metric` (outcome headline), `outcome` (one-line result), `timeline` (e.g. "14 days from kickoff"), `products_used` (string[]), and `before_after` (`{before, after}`). All optional; the public card falls back to existing `overview`/`challenge`/`solution`/`results` when these aren't set.
 
-**Files**: `AdminPortfolio.tsx`
+**Files**: `AdminPortfolio.tsx`, `landing/PortfolioCard.tsx`
 
 ### Leads
 
@@ -294,14 +326,27 @@ A MotionSites-style visual library at `/admin/library` — team-wide (not admin-
 
 **Estimated effort:** ~3 days (schema + API + page + upload handling).
 
-### Admin UX cleanup (planned)
+### Admin UX cleanup
 
-The admin currently has 14 ungrouped sidebar items, modal-heavy CRUD, and sparse empty states. Planned, in order:
-1. **Sidebar grouping** — bucket the 14 items into Work / Content / Growth / Settings (or similar).
-2. **Modal → page** for high-field-count CRUD (Projects, Clients).
-3. **Empty-state CTAs** — every "no data" state needs a button to the relevant create action.
-4. **Hide experimental tools** (Brand Scraper, FB Scraper) behind a "Tools" submenu.
+1. ✅ **Sidebar grouping** — shipped `ae550e3` (Operations / Marketing Site / Pipeline / Tools)
+2. ⏳ **Modal → page** for high-field-count CRUD (Projects, Clients) — not started
+3. ✅ **Empty-state CTAs** — shipped `383f90b` for Projects, Clients, Notifications; AdminFinance + AdminSocial already had inline creates; AdminLeads gets a hint instead of a button (leads are user-generated, not admin-created)
+4. ⏳ **Hide experimental tools** (Brand Scraper, FB Scraper) behind a "Tools" submenu — not started (they're in the Tools group but still always visible)
 
-### Monorepo restructure (in progress)
+### Monorepo restructure
 
-Combine `advo` (frontend) and `advo-api` (backend) into a single npm-workspaces monorepo at `advo/apps/{web,api}/`. Eliminates the two-repo split and aligns deploys.
+✅ Shipped `f024fae` (merge) + `ad06a61` (CUTOVER runbook). Repo is now `apps/web` + `apps/api` under npm workspaces. VPS cut over to the new layout; old `/opt/advo-api` kept intact as a rollback artifact (see [CUTOVER.md](CUTOVER.md)).
+
+---
+
+## Operational Docs
+
+| Doc | What it's for |
+|---|---|
+| [ROADMAP.md](ROADMAP.md) | Canonical forward-looking roadmap — synthesizes Messenger archive + landing/feature sub-roadmaps |
+| [CONTRACTS.md](CONTRACTS.md) | Draft contract policy + clauses (revision limits, downpayment floor, change orders). Needs legal review before binding use. |
+| [CUTOVER.md](CUTOVER.md) | VPS monorepo cutover runbook + rollback plan |
+| [SCHEMA.md](SCHEMA.md) | Database schema reference |
+| [SETUP.md](SETUP.md) | Dev setup + deployment commands |
+| [/ROADMAP.md](../ROADMAP.md) | Historical Stripe-landing audit roadmap (codex branch) — most items live only in the labeled stash |
+| [/.agents/workflows/advo-standard.md](../.agents/workflows/advo-standard.md) | The ADVO Standard — cross-stack naming, DB conventions, auth, file patterns |

@@ -22,12 +22,13 @@ Treat this as the **canonical roadmap**. Two existing sub-roadmaps stay where th
 
 Highest leverage: every signal in Messenger about money or scope points here. Without these, revisions are unbounded and downpayments don't cover the work.
 
-| Item | Why | Effort | Notes |
+| Item | Why | Effort | Status |
 |---|---|---|---|
-| **Revision limits in contract template** | Fourlinq + Felici both ran open-ended revisions. Quote, David (Jun 19): *"we lowk shuldv specified pala sa contract ung revisions thingy"*. | S | Add: "X rounds included, $Y per additional round." Need legal review per Prince's "we basically need an advisor to help us with cyber law related contracts." |
-| **Change-order process** | Once revisions are capped, scope changes need a paper trail. Email + signature OK to start; eventually a form in `/hub`. | S | Could live in Client Hub later — `/hub/projects/:id/change-orders`. |
-| **Proposal-to-contract pipeline** | Felici signed because of a custom PDF. Currently every proposal is a one-off Canva file. | M | Template + variable fill (client name, scope, pricing, timeline). Manual first; automate later. |
-| **Downpayment floor** | Fourlinq's 12k downpayment didn't cover the work (David: *"the 12k isnt enough as a downpayment"*). | S | Policy: 40% min upfront, or fixed ₱30k floor — whichever is higher. Document in contract template. |
+| **Revision limits in contract template** | Fourlinq + Felici both ran open-ended revisions. Quote, David (Jun 19): *"we lowk shuldv specified pala sa contract ung revisions thingy"*. | S | ✅ Draft clause in [CONTRACTS.md](CONTRACTS.md#policy-2--revision-limits) (`791a039`) — 2 rounds per phase, hourly after. **Needs legal review before binding use.** |
+| **Change-order process** | Once revisions are capped, scope changes need a paper trail. Email + signature OK to start; eventually a form in `/hub`. | S | ✅ Draft clause in [CONTRACTS.md](CONTRACTS.md#policy-3--change-orders-aka-i-saw-this-on-another-site) (`791a039`). Hub form not built. |
+| **Proposal-to-contract pipeline** | Felici signed because of a custom PDF. Currently every proposal is a one-off Canva file. | M | ⏳ Not started. CONTRACTS.md drop-in clauses ready for the SOW once policy is set. |
+| **Downpayment floor** | Fourlinq's 12k downpayment didn't cover the work (David: *"the 12k isnt enough as a downpayment"*). | S | ✅ Draft clause in [CONTRACTS.md](CONTRACTS.md#policy-1--downpayment-floor) (`791a039`) — 40% min or ₱30k floor. Needs legal review + applied to Coffee Rush proposal before signing. |
+| **Engage Philippine corporate/cyber lawyer** | All four CONTRACTS.md drafts need validation before use, and Prince explicitly flagged the need in Jun 2026. | M | ⏳ Not started. Open-questions punch list waiting in [CONTRACTS.md](CONTRACTS.md#open-questions-for-the-legal-advisor). |
 
 ## P1 — Lead generation & proposal automation
 
@@ -56,12 +57,30 @@ Mostly captured in the two sub-roadmaps; surfaced here so you don't lose them.
 
 | Item | Source | Status |
 |---|---|---|
-| Portfolio proof cards (outcome metrics, before/after, system map) | Codex stash | Stashed, not ported |
-| Full-screen mobile nav drawer | Codex stash | Stashed, not ported |
-| Reduced-motion guards on animations | Codex stash | Stashed, not ported |
+| Portfolio proof cards (outcome metrics, before/after, system map) | Codex stash | ✅ Shipped `2360771` — case_study fallbacks + ProofMock; cards 2-col |
+| Full-screen mobile nav drawer | Codex stash | ✅ Shipped `2360771` + `bc0ac03` (z-index fix). Numbered tap rows, a11y, escape, scroll lock |
+| Public landing footer 401 (admin-only `/api/settings` from anonymous footer) | Open thread | ✅ Shipped `a8a8cdc` — new `/api/settings/public` endpoint |
+| Hub.tsx hardcoded "Client" badge → use actual role | Open thread | ✅ Shipped `383f90b` |
+| Admin: empty-state CTAs | Open thread | ✅ Shipped `383f90b` (Projects, Clients, Notifications) |
+| Reduced-motion guards on all landing animations | Codex stash | ⏳ Partial — Hero + FloatingNav have it; ContactCTA, TechTicker, InfrastructureDiagram do not. Codex stash has the full pass. |
+| Mobile viewport audit (no horizontal overflow at 360 / 390 / 768 / 1280 / 1440) | Codex stash | ⏳ Codex shipped a `bench/roadmap/landing-stripe-audit/viewport-check.mjs` script that gates this; not wired into CI yet |
+| Strip "Why Go Digital" / generic FAQ → product-system framing | Codex stash | ⏳ Hero + ServiceTiers framing ported (38ff047); WhyDigital / FAQ / ContactCTA copy still generic |
+| Footer system-continuity copy + oversized wordmark | Codex stash | ⏳ Not started |
 | Internal Library at `/admin/library` | [FEATURES.md](FEATURES.md#internal-library-planned) | Spec only, no code |
-| Admin: empty-state CTAs, modal → page for Projects/Clients, hide experimental scrapers | [FEATURES.md](FEATURES.md#admin-ux-cleanup-planned) | Sidebar grouping ✅; rest open |
-| Hub.tsx hardcoded "Client" badge → use actual role | Open thread | Trivial |
+| Admin: modal → page for high-field-count CRUD (Projects, Clients) | [FEATURES.md](FEATURES.md#admin-ux-cleanup) | Not started |
+| Admin: hide experimental scrapers behind a "Tools" submenu | [FEATURES.md](FEATURES.md#admin-ux-cleanup) | Tools group exists but scrapers still always visible |
+| Capacity view in Admin (per-member project assignments + remaining capacity) | This doc, P1 | ⏳ Audit done — needs API: `GET /api/projects` to include `team_member_ids[]` OR new `GET /api/team/:id/projects` endpoint |
+
+## Open test-coverage gaps
+
+Behaviors that ship but have no automated test. Listed here so they don't get lost between sync-docs runs.
+
+| Behavior | Risk | Effort |
+|---|---|---|
+| 🔴 `GET /api/settings/public` (added in `a8a8cdc`) | New endpoint, no integration test. The existing api-wiring guard treats `/api/settings` as auth-required — the public variant wasn't added. If a future change accidentally re-protects this, the landing footer 401s again silently. | S — add one anonymous-GET test |
+| 🟡 Role-based post-login redirect (admin → `/admin`, client → `/hub`) | Two-line logic in [Login.tsx:25](apps/web/src/pages/Login.tsx#L25) + [ProtectedRoute.tsx](apps/web/src/components/ProtectedRoute.tsx). If `destinationFor()` regresses (e.g., role enum changes), admins land on the wrong page silently. | S — pure-function unit test |
+| 🟡 Portfolio proof card fallback rendering | `getProof()` in `landing/PortfolioCard.tsx` has 4 fallback paths for missing case-study fields. None exercised by tests; visual regressions would slip through. | M — snapshot or render-tree test |
+| 🟢 Mobile drawer interactions (escape close, scroll lock, route-change close) | A11y-critical but currently only verified by hand. | M — playwright e2e |
 
 ## P2 — Long-shot / parked
 
