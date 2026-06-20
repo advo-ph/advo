@@ -11,6 +11,24 @@ Cross-links:
 
 ---
 
+## 2026-06-20 — "go build these" batch: email-on-lead · S4 closed · Files pillar · AI contract review
+
+> Merged to `main` (4 commits, `8bc719f`→`fae49dd`). API + web typecheck 0/0, lint clean (0 err), both builds ✓, full suite **81/81** against the live dev API. **Deployed (API + web)** — health 200, advo.ph serves `index-Mnygn4dS.js`, new routes live (401-gated).
+
+Four open items from prior handoffs, shipped together:
+
+1. **Email-on-new-lead** (`8bc719f`) — `POST /api/leads` fire-and-forgets a notification to every admin (`user` where role='admin') via `sendLeadNotificationEmail` (HTML summary + link to `/admin`). Resend SMTP when `RESEND_API_KEY` set, else logs only; failures swallowed so they never block lead creation. ([leads.routes.ts](apps/api/src/routes/leads.routes.ts), [email.service.ts](apps/api/src/services/email.service.ts))
+2. **S4 closed** (`9574820`) — [github.ts](apps/web/src/lib/github.ts) / [cloudflare.ts](apps/web/src/lib/cloudflare.ts) no longer read `VITE_GITHUB_TOKEN`/`VITE_CLOUDFLARE_TOKEN` or call api.github.com / api.cloudflare.com from the browser. Commits + branches route through the backend (server-side token, github_event cache); enrichment with no backend endpoint degrades to null/[]/0. Tokens were never set in prod, so this removes the footgun, not an active leak. Live bundle has 0 token literals.
+3. **Files/Drive pillar** (`bdf1a8b`) — per-project file drive in the Command Center: [useProjectAssets.ts](apps/web/src/hooks/useProjectAssets.ts) (list / upload via storage+record / optimistic delete) + `DELETE /api/projects/:id/assets/:assetId` (requireTeam, scoped) + a Files tab (upload, thumbnail grid, download, delete).
+4. **AI contract review** (`fae49dd`) — `reviewContract()` now runs Claude (`claude-opus-4-8`) against ADVO's 5 contract policies when `ANTHROPIC_API_KEY` is set, and falls back to the existing heuristic on a missing key or any AI error / malformed output. Same `ContractReview` shape + route + UI; `method` is `"ai"` vs `"heuristic"` and the disclaimer reflects which ran. Adds `@anthropic-ai/sdk`. (Read the claude-api skill first: TS SDK, opus-4-8, strict-JSON prompt + parse/validate.)
+
+### Honest open-items
+- **AI contract path is untestable without a key** — prod has no `ANTHROPIC_API_KEY`, so live contract review still runs the **heuristic** (correct fallback). To activate the AI path: add `ANTHROPIC_API_KEY` to the VPS `.env` + `pm2 restart advo-api`. The heuristic stays covered by the existing contract tests.
+- VPS `/opt/advo` had a drifted tracked `package-lock.json` (prior `npm install`); resolved with `git checkout -- package-lock.json` before the pull (**not** `stash -u`). Future pulls may hit the same — discard the lock, never sweep untracked.
+- Still open from prior: pretty `advo.ph/p/<token>` preview route; here.now fresh-deploy path; import the metro-manila clinic leads from the Messenger archive.
+
+---
+
 ## 2026-06-20 — Command Center: Dev/Deploy pillar (Show Client Now)
 
 > Merged to `main`. typecheck 0/0, lint clean, build ✓, full suite 81/81 (+3). Backend flow proven end-to-end via curl. **Deployed (API + web).**

@@ -14,7 +14,7 @@ Cross-links: [ROADMAP.md](ROADMAP.md) (forward work) · [SCHEMA.md](SCHEMA.md) (
 
 | Bucket | Count | Severity |
 |---|---|---|
-| 🔴 Security — cross-tenant data exposure | 4 | ✅ S1–S3 fixed + deployed (`0e42f13`, 2026-06-20) · S4 open |
+| 🔴 Security — cross-tenant data exposure | 4 | ✅ S1–S4 all fixed + deployed (S1–S3 `0e42f13`; S4 `9574820`, 2026-06-20) |
 | 🔴 Genuinely broken in the admin UI | 3 | ✅ all fixed 2026-06-20 (B1 Deliverables CRUD · B2 health badge · B3 no-op button) |
 | 🟡 Looks done but isn't (write-only / stub / mock) | 8 | medium |
 | 🟡 Correctness edges | 4 | medium-low |
@@ -39,8 +39,8 @@ These were cross-tenant data-exposure bugs on a multi-client platform. The corre
 ### S3 — 🟡 `PATCH /api/notifications/:id/read` — no ownership check
 [notifications.routes.ts:150](../apps/api/src/routes/notifications.routes.ts#L150). `requireAuth`-only; a client can mark any notification (incl. other clients') read by guessing IDs. Low impact (tampering, no content read), trivially fixed by scoping the `WHERE` to the caller's `clientId`.
 
-### S4 — 🟡 Client-side API tokens inlined into the public bundle
-[lib/github.ts](../apps/web/src/lib/github.ts) and [lib/cloudflare.ts](../apps/web/src/lib/cloudflare.ts) read `VITE_GITHUB_TOKEN` / `VITE_CLOUDFLARE_TOKEN`, which Vite inlines into the public client bundle. If set in prod, they're exposed to every visitor. The backend already has cached/proxied equivalents (the orphaned `/api/github/*` routes + `github_event` table). **Fix:** route the engineering feed through the backend (see also W-dead below).
+### S4 — ✅ FIXED + DEPLOYED (2026-06-20, `9574820`) — Client-side API tokens inlined into the public bundle
+[lib/github.ts](../apps/web/src/lib/github.ts) and [lib/cloudflare.ts](../apps/web/src/lib/cloudflare.ts) used to read `VITE_GITHUB_TOKEN` / `VITE_CLOUDFLARE_TOKEN`, which Vite inlines into the public client bundle. **Fixed:** both now route commits + branches through the backend (server-side token, `github_event` cache); the direct api.github.com / api.cloudflare.com calls and token reads are gone, and enrichment with no backend endpoint degrades to null/[]/0. The tokens were never set in prod, so this removed the footgun, not an active leak — the live bundle (`index-Mnygn4dS.js`) has 0 token literals.
 
 ---
 
@@ -166,7 +166,7 @@ Legend: ✅ wired end-to-end · ⚠️ partial/risk · 🔴 broken/missing.
 
 ## Prioritized action plan
 
-- **Tier 1 — security:** ✅ S1, S2, S3 done + deployed (`0e42f13`). ⏳ S4 (route the engineering feed through the backend so the GitHub/Cloudflare tokens leave the browser bundle) still open.
+- **Tier 1 — security:** ✅ S1, S2, S3 done + deployed (`0e42f13`). ✅ S4 done + deployed (`9574820`) — GitHub/Cloudflare token reads removed from the browser; commits/branches route through the backend `github_event` cache.
 - **Tier 2 — broken features:** ✅ all done — B1 (Deliverables CRUD UI), B2 (health badge), B3 (no-op button).
 - **Tier 3 — finish the half-built:** ✅ R1 (invoice paid_at), W6 (leads CTA), R5 (broadcast TOCTOU) done. ⏳ remaining: W1, W2, W3, W4, W5, W7 + the W8 test; R2, R3, R4 correctness edges.
 - **Tier 4 — cleanup + build:** prune/wire the orphaned GitHub + brand-analysis routes; then start a new system (CRM / proposal pipeline / AI prompt management).

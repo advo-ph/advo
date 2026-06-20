@@ -114,7 +114,7 @@ A per-project hub opened from the **Open** button on each project card (shipped 
 
 - **Overview** — KPIs (paid %, outstanding + invoice count, open/total deliverables, stage), payment-progress bar, brief, tech stack. Real data from the project.
 - **Deliverables** — this project's deliverables (status/assignee/due), filtered from `useAdminDeliverables`.
-- **Files** — scaffold ("Project Drive" — coming next; the third pillar).
+- **Files** — **Project Drive** (shipped `bdf1a8b`): per-project file manager — upload (storage + DB record), thumbnail grid (images inline, docs/PDF as cards), download, delete. `useProjectAssets` + `DELETE /api/projects/:id/assets/:assetId` (requireTeam, scoped).
 - **Dev & Deploy** — GitHub repo link + latest commit, plus the **Show Client Now** flow.
 - **Contracts** — the agreement link + the **red-flag review** (below).
 - **Finance** — payment summary + this project's invoices (filtered from `useInvoices`).
@@ -123,7 +123,7 @@ A per-project hub opened from the **Open** button on each project card (shipped 
 
 Paste a contract / SOW into the Contracts tab → `POST /api/contracts/review` (requireTeam) scores it against ADVO's [CONTRACTS.md](CONTRACTS.md) policies (downpayment floor 40%/₱30k · 2 revisions/phase · change-order clause · late-payment · termination) and returns a **verdict** (good_to_go / needs_work / high_risk) + per-policy **red/amber/green** flags + a disclaimer. Catches the "contract was silent" gap that leaked revenue on Fourlinq + Felici.
 
-**Heuristic, not AI** — there is no LLM configured for the ADVO API (no Vertex/Anthropic creds anywhere); the existing Gemini brand-analysis service is non-functional for the same reason. The review's return shape is LLM-ready: swapping `reviewContract()` to call a model later is a one-function change once a key (e.g. `ANTHROPIC_API_KEY`) is added.
+**AI with heuristic fallback** (`fae49dd`) — `reviewContract()` runs Claude (`claude-opus-4-8`, via `@anthropic-ai/sdk`) against the 5 policies when `ANTHROPIC_API_KEY` is set, and falls back to the heuristic presence-check on a missing key or any AI error / malformed output. Same return shape; `method` is `"ai"` vs `"heuristic"` and the disclaimer reflects which ran. **Prod has no key yet**, so live review currently runs the heuristic — add `ANTHROPIC_API_KEY` to the VPS `.env` + `pm2 restart advo-api` to activate the AI path.
 
 #### Show Client Now (expiring preview links)
 
