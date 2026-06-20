@@ -1,54 +1,54 @@
-@import url("https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ADVO Design System — Dark, Minimal, Monochrome
-   Pure black background, white text, single violet accent for CTAs.
-   All colors MUST be HSL.
+/* ADVO Design System — Linear-inspired dark product surfaces
+   Cool near-black canvas, charcoal panels, ADVO orange (#E67A3A) accent/focus.
+   Monochrome white primary CTAs. All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    --background: 0 0% 4%;          /* #0A0A0A pure black */
-    --foreground: 0 0% 98%;         /* #FAFAFA near-white */
+    --background: 222 18% 5%;       /* #0a0c10 cool near-black canvas */
+    --foreground: 200 7% 97%;       /* #f6f8f8 cool ink */
 
-    --card: 0 0% 6%;                /* #0F0F0F slightly raised */
-    --card-foreground: 0 0% 98%;
+    --card: 222 14% 7%;             /* #0f1116 surface-1 */
+    --card-foreground: 200 7% 97%;
 
-    --popover: 0 0% 6%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 222 14% 8%;          /* #11131a surface-1 raised */
+    --popover-foreground: 200 7% 97%;
 
-    --primary: 0 0% 98%;            /* white CTAs */
-    --primary-foreground: 0 0% 4%;
+    --primary: 0 0% 98%;            /* monochrome white CTAs */
+    --primary-foreground: 0 0% 7%;
 
-    --secondary: 0 0% 10%;          /* #1A1A1A subtle surface */
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 222 11% 11%;       /* #181a20 surface-2 */
+    --secondary-foreground: 200 7% 97%;
 
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 60%;   /* #999 secondary text */
+    --muted: 222 10% 14%;           /* surface-3 */
+    --muted-foreground: 218 11% 62%;/* #8a909c cool gray text */
 
-    --accent: 19 77% 56%;           /* #E67A3A warm orange — CTAs only */
+    --accent: 19 77% 56%;           /* #E67A3A ADVO orange — accent + focus */
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 14%;             /* #242424 hairline */
-    --input: 0 0% 14%;
-    --ring: 0 0% 98%;
+    --border: 222 11% 16%;          /* #24272e cool hairline */
+    --input: 222 11% 18%;
+    --ring: 19 77% 56%;             /* orange focus ring */
 
-    --radius: 0.625rem;             /* 10px */
+    --radius: 0.5rem;               /* 8px Linear control radius */
 
-    --sidebar-background: 0 0% 4%;
-    --sidebar-foreground: 0 0% 98%;
+    --sidebar-background: 222 18% 5%;
+    --sidebar-foreground: 200 7% 97%;
     --sidebar-primary: 0 0% 98%;
-    --sidebar-primary-foreground: 0 0% 4%;
-    --sidebar-accent: 0 0% 10%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 0 0% 14%;
-    --sidebar-ring: 0 0% 98%;
+    --sidebar-primary-foreground: 0 0% 7%;
+    --sidebar-accent: 222 11% 11%;
+    --sidebar-accent-foreground: 200 7% 97%;
+    --sidebar-border: 222 11% 16%;
+    --sidebar-ring: 19 77% 56%;
 
     /* ── Framing system (spine rail + travelling comet + brackets) ── */
     --spine-width: 1px;
@@ -63,22 +63,22 @@
     color-scheme: light;
 
     --background: 0 0% 100%;
-    --foreground: 0 0% 9%;
+    --foreground: 222 18% 11%;      /* cool ink */
 
-    --card: 0 0% 97%;
-    --card-foreground: 0 0% 9%;
+    --card: 220 16% 98%;
+    --card-foreground: 222 18% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 9%;
+    --popover-foreground: 222 18% 11%;
 
-    --primary: 0 0% 9%;
+    --primary: 222 18% 11%;
     --primary-foreground: 0 0% 98%;
 
-    --secondary: 0 0% 94%;
-    --secondary-foreground: 0 0% 9%;
+    --secondary: 220 14% 95%;
+    --secondary-foreground: 222 18% 11%;
 
-    --muted: 0 0% 94%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 220 14% 95%;
+    --muted-foreground: 220 9% 42%;
 
     --accent: 19 77% 56%;
     --accent-foreground: 0 0% 100%;
@@ -86,18 +86,18 @@
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 89%;
-    --input: 0 0% 89%;
-    --ring: 0 0% 9%;
+    --border: 220 13% 90%;          /* cool hairline */
+    --input: 220 13% 90%;
+    --ring: 19 77% 56%;
 
-    --sidebar-background: 0 0% 97%;
-    --sidebar-foreground: 0 0% 9%;
-    --sidebar-primary: 0 0% 9%;
+    --sidebar-background: 220 16% 98%;
+    --sidebar-foreground: 222 18% 11%;
+    --sidebar-primary: 222 18% 11%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 0 0% 94%;
-    --sidebar-accent-foreground: 0 0% 9%;
-    --sidebar-border: 0 0% 89%;
-    --sidebar-ring: 0 0% 9%;
+    --sidebar-accent: 220 14% 95%;
+    --sidebar-accent-foreground: 222 18% 11%;
+    --sidebar-border: 220 13% 90%;
+    --sidebar-ring: 19 77% 56%;
   }
 }
 
@@ -125,12 +125,11 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: "Geist", system-ui, sans-serif;
-    font-feature-settings: "ss01", "cv11";
+    font-family: "Hanken Grotesk", system-ui, sans-serif;
   }
 
   .font-mono {
-    font-family: "Geist Mono", "SF Mono", "Monaco", monospace;
+    font-family: "SF Mono", "Monaco", "Menlo", monospace;
   }
 
   /* Tighter headings */
@@ -184,7 +183,7 @@
 
   .shadow-card {
     box-shadow:
-      0 1px 0 hsl(var(--border)),
+      inset 0 1px 0 hsl(var(--foreground) / 0.05),
       0 0 0 1px hsl(var(--border) / 0.5);
   }
 
@@ -206,6 +205,73 @@
   /* Press feedback */
   .btn-press {
     @apply transition-transform active:scale-[0.98];
+  }
+
+  /* ── Linear-style surfaces & framing ──────────────────────────────────
+   * Harvested from the codex/linear-design-system stash; glow recolored
+   * to ADVO orange (--accent) instead of the stash's Linear violet. */
+  .surface-panel {
+    @apply bg-card border border-border shadow-card;
+  }
+
+  .surface-panel-strong {
+    background: hsl(var(--secondary));
+    border: 1px solid hsl(var(--border) / 0.95);
+    box-shadow:
+      inset 0 1px 0 hsl(var(--foreground) / 0.06),
+      0 0 0 1px hsl(var(--border) / 0.4);
+  }
+
+  /* Hover-lift card with a faint orange top glow */
+  .interactive-surface {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    transition:
+      border-color 180ms ease,
+      background-color 180ms ease,
+      transform 180ms ease;
+  }
+  .interactive-surface::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0;
+    background: radial-gradient(
+      440px circle at 50% 0%,
+      hsl(var(--accent) / 0.14),
+      transparent 58%
+    );
+    transition: opacity 180ms ease;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .interactive-surface:hover {
+      border-color: hsl(var(--foreground) / 0.24);
+      transform: translateY(-1px);
+    }
+    .interactive-surface:hover::after {
+      opacity: 1;
+    }
+  }
+
+  /* Faint Linear grid backdrop for hero/header zones */
+  .linear-grid {
+    background-image:
+      linear-gradient(hsl(var(--border) / 0.10) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--border) / 0.10) 1px, transparent 1px);
+    background-position: center top;
+    background-size: 64px 64px;
+  }
+  .linear-grid-fade {
+    -webkit-mask-image: linear-gradient(to bottom, black, transparent);
+    mask-image: linear-gradient(to bottom, black, transparent);
+  }
+
+  /* Mono metadata label — Linear's uppercase tracked eyebrow */
+  .eyebrow {
+    @apply text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground;
   }
 
   /* ── Reduced-motion guard (belt-and-suspenders for the framing system) ──

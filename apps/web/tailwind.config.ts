@@ -20,8 +20,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Geist", "system-ui", "sans-serif"],
-        mono: ["Geist Mono", "SF Mono", "Monaco", "monospace"],
+        sans: ["Hanken Grotesk", "system-ui", "sans-serif"],
+        mono: ["SF Mono", "Monaco", "Menlo", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",
