@@ -4,7 +4,7 @@ import { zValidator } from "@hono/zod-validator";
 import { eq, and, gte, lte } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { db } from "../db/connection.js";
-import { calendarEvent, deliverable, invoice, project, socialPost } from "../db/schema.js";
+import { calendarEvent, contract, deliverable, invoice, project, socialPost } from "../db/schema.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireTeam } from "../middleware/rbac.js";
 import type { Variables } from "../types/context.js";
@@ -27,7 +27,7 @@ const MANUAL_CATEGORIES = [
 // Unified event shape returned to the client. Derived events are read-only.
 interface CalEvent {
   id: string;
-  source: "manual" | "deliverable" | "invoice" | "project" | "social";
+  source: "manual" | "deliverable" | "invoice" | "project" | "social" | "contract";
   category: string;
   title: string;
   start: string; // ISO
@@ -53,7 +53,7 @@ calendar.get("/", requireTeam, zValidator("query", rangeSchema), async (c) => {
   const end = to ? new Date(to) : new Date(now.getFullYear(), now.getMonth() + 2, 0);
   const d = db();
 
-  const [manual, delivs, invs, projs, socials] = await Promise.all([
+  const [manual, delivs, invs, projs, socials, contractRows] = await Promise.all([
     d
       .select()
       .from(calendarEvent)
@@ -94,6 +94,16 @@ calendar.get("/", requireTeam, zValidator("query", rangeSchema), async (c) => {
         publishedAt: socialPost.publishedAt,
       })
       .from(socialPost),
+    // Contracts: surface signed + expiry dates (filtered in JS, like invoices).
+    d
+      .select({
+        id: contract.contractId,
+        title: contract.title,
+        signedAt: contract.signedAt,
+        expiresAt: contract.expiresAt,
+        projectId: contract.projectId,
+      })
+      .from(contract),
   ]);
 
   const events: CalEvent[] = [];
@@ -213,6 +223,41 @@ calendar.get("/", requireTeam, zValidator("query", rangeSchema), async (c) => {
         end: null,
         allDay: false,
         projectId: null,
+        projectTitle: null,
+        editable: false,
+        location: null,
+        description: null,
+      });
+    }
+  }
+
+  for (const ct of contractRows) {
+    if (ct.signedAt && ct.signedAt >= start && ct.signedAt <= end) {
+      events.push({
+        id: `contract-signed-${ct.id}`,
+        source: "contract",
+        category: "contract_signed",
+        title: `Contract signed — ${ct.title}`,
+        start: ct.signedAt.toISOString(),
+        end: null,
+        allDay: true,
+        projectId: ct.projectId,
+        projectTitle: null,
+        editable: false,
+        location: null,
+        description: null,
+      });
+    }
+    if (ct.expiresAt && ct.expiresAt >= start && ct.expiresAt <= end) {
+      events.push({
+        id: `contract-expires-${ct.id}`,
+        source: "contract",
+        category: "contract_expires",
+        title: `Contract expires — ${ct.title}`,
+        start: ct.expiresAt.toISOString(),
+        end: null,
+        allDay: true,
+        projectId: ct.projectId,
         projectTitle: null,
         editable: false,
         location: null,

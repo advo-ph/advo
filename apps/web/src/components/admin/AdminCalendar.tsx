@@ -36,6 +36,8 @@ const CATEGORY: Record<string, { label: string; dot: string }> = {
   kickoff: { label: "Kickoff", dot: "bg-sky-400" },
   social_scheduled: { label: "Post scheduled", dot: "bg-pink-400" },
   social_published: { label: "Post published", dot: "bg-fuchsia-600" },
+  contract_signed: { label: "Contract signed", dot: "bg-teal-500" },
+  contract_expires: { label: "Contract expires", dot: "bg-rose-500" },
 };
 const cat = (k: string) => CATEGORY[k] ?? { label: k, dot: "bg-muted-foreground" };
 

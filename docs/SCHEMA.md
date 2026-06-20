@@ -309,6 +309,26 @@ Backs the ADVO records calendar (migration `003`). **Manual events only** — de
 | `created_at` | TIMESTAMPTZ | |
 | `updated_at` | TIMESTAMPTZ | |
 
+### contract
+
+First-class contracts / MOAs / SOWs / NDAs / retainers (migration `004`). Replaces the bare `project.contract_url` string. `signed_at`/`expires_at` derive into `GET /api/calendar` at read time (`contract_signed` / `contract_expires` events), not stored in `calendar_event`. CRUD at `/api/contracts` (team-only).
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `contract_id` | BIGSERIAL (PK) | |
+| `client_id` | INTEGER (FK) | → `client` ON DELETE CASCADE (the counterparty; required) |
+| `project_id` | INTEGER (FK) | → `project` ON DELETE SET NULL (nullable, optional link) |
+| `title` | VARCHAR(255) | |
+| `contract_type` | VARCHAR(50) | `contract`/`moa`/`sow`/`nda`/`retainer` — varchar (growable set → app-validated). Default `contract`. |
+| `status` | VARCHAR(50) | `draft`/`sent`/`signed`/`active`/`expired`/`terminated` — app-validated. Default `draft`. |
+| `value_cents` | INTEGER | Integer cents (matches `project.total_value_cents`). Default `0`. |
+| `signed_at` | TIMESTAMPTZ | Nullable — derives a `contract_signed` calendar event |
+| `expires_at` | TIMESTAMPTZ | Nullable — derives a `contract_expires` calendar event |
+| `document_url` | VARCHAR(500) | Nullable — link to the executed PDF |
+| `notes` | TEXT | |
+| `created_at` | TIMESTAMPTZ | |
+| `updated_at` | TIMESTAMPTZ | |
+
 ---
 
 ## Migration log
@@ -320,3 +340,4 @@ Drizzle-kit `push` syncs `schema.ts` → Postgres. For schema changes that need 
 | `001_audit_tier1.sql` | 2026-06-20 | Added 3 missing FK indexes (`idx_lead_assigned_to`, `idx_scrape_result_scraped_by`, `idx_notification_project_id`); added `created_at` to `site_config` + `site_content`; added retention COMMENT on `scrape_result`. Source: database-conventions audit (docs/ROADMAP.md). |
 | `002_audit_tier2.sql` | 2026-06-20 | Set explicit `ON DELETE` on the 8 FKs that had drifted to `NO ACTION` (drizzle-kit `push` never alters existing FK actions). **CASCADE** (drift-repair, already declared in schema.ts): `github_event.project_id`, `notification.project_id`. **SET NULL** (detach, don't erase/block): `activity_log.user_id`, `deliverable.assigned_to`, `lead.assigned_to`, `scrape_result.scraped_by`, `client.user_id`, `team_member.user_id`. Unblocks `DELETE /api/team/:id` (was failing when a member had assigned deliverables/leads) and client-delete cascade through projects. Source: database-conventions audit Tier 2, per-FK policy confirmed with owner. |
 | `003_calendar_event.sql` | 2026-06-20 | Created `calendar_event` (manual ADVO calendar events — meetings, MOAs, BIR deadlines, content/social posts, cold-email cadence). bigserial PK, `project_id` FK `ON DELETE SET NULL`, `category` varchar (growable set → app-validated, not an enum), `is_all_day` predicate boolean, TIMESTAMPTZ, `COMMENT ON TABLE`, indexes on `starts_at` + FK — per database-conventions. Applied to prod as the app DB user (so the app owns + can read it). Backs `GET /api/calendar`; derived events (deliverables/invoices/projects) are computed at read time, not stored. |
+| `004_contract.sql` | 2026-06-20 | Created `contract` (first-class contracts/MOAs/SOWs/NDAs/retainers — Phase 2 calendar layer). bigserial PK, `client_id` FK `ON DELETE CASCADE`, `project_id` FK `ON DELETE SET NULL`, `contract_type`/`status` varchar (growable → app-validated), `value_cents` integer cents, `signed_at`/`expires_at` TIMESTAMPTZ, `COMMENT ON TABLE`, indexes on both FKs + `expires_at` — per database-conventions. CRUD at `/api/contracts`; `signed_at`/`expires_at` derive into `GET /api/calendar` at read time. Apply to prod as the app DB user. |

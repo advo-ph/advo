@@ -466,6 +466,100 @@ describe("Contracts red-flag review", () => {
   });
 });
 
+// ─── Contract records (CRUD + calendar) ───────────────
+// Phase 2 calendar layer (migration 004): first-class contract/MOA records
+// whose signed/expiry dates derive into the /api/calendar union.
+
+describe("Contract records (CRUD + calendar derivation)", () => {
+  let contractClientId: number;
+
+  beforeAll(async () => {
+    const c = await apiPost(
+      "/api/clients",
+      { companyName: "Contract Test Co", contactEmail: "contract@test.com" },
+      adminToken,
+    );
+    contractClientId = c.body.data.clientId;
+  });
+
+  afterAll(async () => {
+    // Cascades any leftover contract rows (FK ON DELETE CASCADE, migration 004).
+    if (contractClientId) await apiDelete(`/api/clients/${contractClientId}`, adminToken);
+  });
+
+  it("GET /api/contracts requires auth", async () => {
+    const { status } = await apiGet("/api/contracts");
+    expect(status).toBe(401);
+  });
+
+  it("POST + GET + PATCH + DELETE + calendar derivation", async () => {
+    const signedAt = new Date(Date.UTC(2026, 8, 5)).toISOString(); // Sep 5 2026
+    const expiresAt = new Date(Date.UTC(2026, 11, 5)).toISOString(); // Dec 5 2026
+
+    // Create a contract record.
+    const create = await apiPost(
+      "/api/contracts",
+      {
+        clientId: contractClientId,
+        title: "Felici Gelato MOA",
+        contractType: "moa",
+        status: "signed",
+        valueCents: 6000000,
+        signedAt,
+        expiresAt,
+      },
+      adminToken,
+    );
+    expect(create.status).toBe(201);
+    const contractId = create.body.data.contractId;
+    expect(contractId).toBeTruthy();
+    expect(create.body.data.contractType).toBe("moa");
+
+    // It lists.
+    const list = await apiGet("/api/contracts", adminToken);
+    expect(list.status).toBe(200);
+    expect(
+      list.body.data.some((x: { contractId: number }) => x.contractId === contractId),
+    ).toBe(true);
+
+    // Both signed + expiry markers derive into the calendar union, read-only.
+    const from = new Date(Date.UTC(2026, 8, 1)).toISOString();
+    const to = new Date(Date.UTC(2026, 11, 31)).toISOString();
+    const cal = await apiGet(
+      `/api/calendar?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+      adminToken,
+    );
+    const signed = cal.body.data.find(
+      (e: { id: string }) => e.id === `contract-signed-${contractId}`,
+    );
+    const expires = cal.body.data.find(
+      (e: { id: string }) => e.id === `contract-expires-${contractId}`,
+    );
+    expect(signed).toBeTruthy();
+    expect(signed.source).toBe("contract");
+    expect(signed.category).toBe("contract_signed");
+    expect(signed.editable).toBe(false);
+    expect(signed.title).toContain("Felici Gelato MOA");
+    expect(expires).toBeTruthy();
+    expect(expires.category).toBe("contract_expires");
+
+    // Update status.
+    const update = await apiPatch(
+      `/api/contracts/${contractId}`,
+      { status: "active" },
+      adminToken,
+    );
+    expect(update.status).toBe(200);
+    expect(update.body.data.status).toBe("active");
+
+    // Delete, then confirm it's gone.
+    const del = await apiDelete(`/api/contracts/${contractId}`, adminToken);
+    expect(del.status).toBe(200);
+    const delAgain = await apiDelete(`/api/contracts/${contractId}`, adminToken);
+    expect(delAgain.status).toBe(404);
+  });
+});
+
 // ─── Preview links (Show Client Now) ──────────────────
 
 describe("Preview links", () => {

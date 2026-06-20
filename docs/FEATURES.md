@@ -153,13 +153,13 @@ Full CRUD (shipped `3a622af`, closing audit finding B1 — was previously read-o
 
 ### Calendar
 
-The all-around ADVO records calendar (Phase 1, shipped `0018c3e`/`80f076e`). A month grid that overlays **manually-created events** (meeting / deadline / MOA / BIR / content / social / cold-email / event) with **derived events computed at read time** from existing records: deliverable due dates, invoice due + paid dates, project kickoffs, and **content/social posts** (scheduled + published — Phase 2). Prev/today/next nav, today highlight, a category-filter legend, click-a-day to add, and an edit/delete dialog (title, category, date, all-day or start/end time, location, notes). `GET /api/calendar?from&to` returns the union; POST/PATCH/DELETE manage manual events (requireTeam). Derived events are read-only (edit them on their own page).
+The all-around ADVO records calendar (Phase 1, shipped `0018c3e`/`80f076e`). A month grid that overlays **manually-created events** (meeting / deadline / MOA / BIR / content / social / cold-email / event) with **derived events computed at read time** from existing records: deliverable due dates, invoice due + paid dates, project kickoffs, **content/social posts** (scheduled + published), and **contracts/MOAs** (signed + expiry) — both Phase 2. Prev/today/next nav, today highlight, a category-filter legend, click-a-day to add, and an edit/delete dialog (title, category, date, all-day or start/end time, location, notes). `GET /api/calendar?from&to` returns the union; POST/PATCH/DELETE manage manual events (requireTeam). Derived events are read-only (edit them on their own page).
 
-**Phase 2 (in progress):** content/social posts now derive into the union (`social_scheduled` / `social_published`, read from the existing `social_post` table — no migration). Remaining layers: contracts/MOAs, meetings, BIR deadlines, cold-email cadence (the first three need new tables). `Availability` will fold into this as a team-availability layer.
+**Phase 2 (in progress):** content/social posts (`social_scheduled` / `social_published`, read from the existing `social_post` table — no migration) and **contracts/MOAs** (`contract_signed` / `contract_expires`, new `contract` table + CRUD at `/api/contracts`, migration `004`) now derive into the union. Remaining layers: meetings, BIR deadlines, cold-email cadence. `Availability` will fold into this as a team-availability layer.
 
 **Phase 3 (decided, not started):** Google Calendar + ICS sync — **two-way / bidirectional** (owner decision, 2026-06-20).
 
-**Files**: `AdminCalendar.tsx`, `useCalendar.ts`, `calendar.routes.ts`, `calendar_event` table (migration `003`). Endpoint coverage in `api-wiring.test.ts` (Calendar block): auth-gate, range-GET shape, manual-event CRUD lifecycle, and the derived content/social layer.
+**Files**: `AdminCalendar.tsx`, `useCalendar.ts`, `calendar.routes.ts`, `calendar_event` table (migration `003`); `contracts.routes.ts` + `contract` table (migration `004`) for the contracts/MOA layer. Endpoint coverage in `api-wiring.test.ts`: Calendar block (auth-gate, range-GET shape, manual-event CRUD, content/social layer) + Contract records block (CRUD + signed/expiry calendar derivation).
 
 ### Finance
 

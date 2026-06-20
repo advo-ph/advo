@@ -275,6 +275,35 @@ export const calendarEvent = pgTable(
   ]
 );
 
+// Contracts / MOAs / SOWs / NDAs / retainers (migration 004). `contractType`
+// and `status` are app-validated varchar (growable sets). signed_at/expires_at
+// derive into GET /api/calendar at read time, not stored in calendar_event.
+export const contract = pgTable(
+  "contract",
+  {
+    contractId: bigserial("contract_id", { mode: "number" }).primaryKey(),
+    clientId: integer("client_id")
+      .notNull()
+      .references(() => client.clientId, { onDelete: "cascade" }),
+    projectId: integer("project_id").references(() => project.projectId, { onDelete: "set null" }),
+    title: varchar("title", { length: 255 }).notNull(),
+    contractType: varchar("contract_type", { length: 50 }).notNull().default("contract"),
+    status: varchar("status", { length: 50 }).notNull().default("draft"),
+    valueCents: integer("value_cents").notNull().default(0),
+    signedAt: timestamp("signed_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    documentUrl: varchar("document_url", { length: 500 }),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_contract_client").on(t.clientId),
+    index("idx_contract_project").on(t.projectId),
+    index("idx_contract_expires").on(t.expiresAt),
+  ]
+);
+
 export const lead = pgTable(
   "lead",
   {
