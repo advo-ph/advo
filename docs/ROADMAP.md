@@ -39,6 +39,7 @@ Currently bottlenecked: 5K scraped clinic leads but proposals are manual, so the
 | Item | Why | Effort |
 |---|---|---|
 | **Email-on-new-lead notification** ✅ | Leads come in via the contact form; you don't see them until logging into admin. Two test rows in DB are evidence nobody's monitoring it. | ✅ **Shipped** (`8bc719f`) — `POST /api/leads` emails all admins via `sendLeadNotificationEmail` (Resend SMTP when `RESEND_API_KEY` set, else logs). |
+| **Import the ~5K scraped clinic leads into the DB** | The CSV + JSON from the Messenger archive (metro-manila clinics, with digital/design/perf scores) aren't loaded yet — the pipeline below assumes they are. Precursor to everything in this section. | S — one-time importer + dedupe |
 | **Clinic-scraper → proposal-PDF pipeline** | Already have 5K leads with digital scores, design feedback, perf grades. Need: feed → AI-design proposal → send. | L — multi-stage. Start with template-fill, defer AI generation. |
 | **Proposal tracker** | Once you send 10+/month, need to know which clinics opened, replied, signed. | M — table + statuses in admin. |
 | **Targeting rule: zero/outdated systems only** | Repeating signal: *"if a company has a system/website, we can't just offer them a new one"* (Prince) — Personal Collection passed, AAPM has Inventi, etc. | S | Bake into the scraper scoring + outreach criteria. |
@@ -72,6 +73,19 @@ Mostly captured in the two sub-roadmaps; surfaced here so you don't lose them.
 | Admin: modal → page for high-field-count CRUD (Projects, Clients) | [FEATURES.md](FEATURES.md#admin-ux-cleanup) | Not started |
 | Admin: hide experimental scrapers behind a "Tools" submenu | [FEATURES.md](FEATURES.md#admin-ux-cleanup) | Tools group exists but scrapers still always visible |
 | Capacity view in Admin (per-member project assignments + remaining capacity) | This doc, P1 | ⏳ Audit done — needs API: `GET /api/projects` to include `team_member_ids[]` OR new `GET /api/team/:id/projects` endpoint |
+| Pretty preview route `advo.ph/p/<token>` | [HANDOFF.md](HANDOFF.md) (Show-Client-Now) | ⏳ Show-Client-Now hands out an `api.advo.ph/api/preview/<token>` link today — functional but unbranded. A frontend `/p/<token>` route is the polish. |
+| here.now fresh-deploy path (instant ephemeral preview) | [HANDOFF.md](HANDOFF.md) (Show-Client-Now) | ⏳ Deferred — the original "instant temp deploy" ask. Current expiring-link approach is host-agnostic + works today; here.now needs an API key + per-project build artifacts. |
+
+## Infra & Ops
+
+Operational items running live prod — none of this is tracked elsewhere despite advo.ph + api.advo.ph + Postgres all being live.
+
+| Item | Why | Effort |
+|---|---|---|
+| **VPS migration — API → company VPS** | Planned move of the ADVO API to the company VPS; keep the deploy portable (no host-specific assumptions) so cutover is a git-pull + env swap. | M — env/secrets move, DNS, smoke |
+| **Activate AI contract review in prod** | `reviewContract()` runs Claude when `ANTHROPIC_API_KEY` is set, else the heuristic; prod has no key, so live review is heuristic-only. | S — add `ANTHROPIC_API_KEY` to VPS `apps/api/.env` + `pm2 restart advo-api` |
+| **Decommission or rebuild the orphaned LLM service** | [`brand-analysis.routes.ts`](apps/api/src/routes/brand-analysis.routes.ts) + [`brand-analysis.service.ts`](apps/api/src/services/brand-analysis.service.ts) use Vertex/Gemini, which has no creds anywhere → dead code. Now that Claude is wired (contract review), decide: rebuild on Claude, or delete the route + service. | S delete · M rebuild |
+| **Monitoring / error tracking / backups** | No error tracking, uptime monitoring, or documented DB-backup cadence for live prod. A silent API crash or data loss has no alarm today. | M — uptime ping + nightly `pg_dump` + error capture |
 
 ## Open test-coverage gaps
 
@@ -83,6 +97,9 @@ Behaviors that ship but have no automated test. Listed here so they don't get lo
 | 🟡 Role-based post-login redirect (admin → `/admin`, client → `/hub`) | Two-line logic in [Login.tsx:25](apps/web/src/pages/Login.tsx#L25) + [ProtectedRoute.tsx](apps/web/src/components/ProtectedRoute.tsx). If `destinationFor()` regresses (e.g., role enum changes), admins land on the wrong page silently. | S — pure-function unit test |
 | 🟡 Portfolio proof card fallback rendering | `getProof()` in `landing/PortfolioCard.tsx` has 4 fallback paths for missing case-study fields. None exercised by tests; visual regressions would slip through. | M — snapshot or render-tree test |
 | 🟢 Mobile drawer interactions (escape close, scroll lock, route-change close) | A11y-critical but currently only verified by hand. | M — playwright e2e |
+| 🟡 `DELETE /api/projects/:id/assets/:assetId` (Files pillar, `bdf1a8b`) | No dedicated test; the GET-assets list is exercised in `e2e-flow.test.ts` but delete (incl. project-scoping) isn't. Proven live by hand. | S — one scoped-delete test |
+| 🟡 Email side-effect on `POST /api/leads` (`8bc719f`) | Lead-create is tested; the fire-and-forget admin-notification dispatch isn't asserted. Proven live (leadId 154 fired). | S — mock the mailer + assert it's called |
+| 🟢 AI contract path (`fae49dd`) | Untestable without `ANTHROPIC_API_KEY`; the heuristic fallback stays covered by the existing contract tests. Add an AI-path test once a key exists in CI. | M — needs a key / mock the SDK |
 
 ## P2 — Long-shot / parked
 
