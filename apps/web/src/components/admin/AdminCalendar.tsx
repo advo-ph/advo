@@ -221,7 +221,7 @@ const AdminCalendar = () => {
             </span>
             <Button
               size="sm"
-              className="h-8 bg-accent text-accent-foreground hover:bg-accent/90 gap-1.5"
+              className="h-9 bg-accent text-accent-foreground hover:bg-accent/90 gap-1.5"
               onClick={() => openCreate(todayKey)}
             >
               <Plus className="h-4 w-4" /> Add event

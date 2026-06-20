@@ -157,7 +157,7 @@ const AdminContracts = ({ clients }: { clients: Client[] }) => {
         action={
           <Button
             size="sm"
-            className="h-8 bg-accent text-accent-foreground hover:bg-accent/90 gap-1.5"
+            className="h-9 bg-accent text-accent-foreground hover:bg-accent/90 gap-1.5"
             onClick={openCreate}
           >
             <Plus className="h-4 w-4" /> New contract
