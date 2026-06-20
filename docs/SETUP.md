@@ -53,8 +53,8 @@ If you already have the API running on `:6107`, the script reuses it. Pass extra
 ```env
 VITE_API_URL=http://localhost:6107        # Local
 # VITE_API_URL=https://api.advo.ph       # Production
-
-VITE_GITHUB_TOKEN=ghp_...                # Optional: GitHub commit history
+# (S4, 9574820) VITE_GITHUB_TOKEN / VITE_CLOUDFLARE_TOKEN removed — the GitHub
+# feed routes through the backend now; no API tokens in the browser bundle.
 ```
 
 ### API (`apps/api/.env`)
@@ -66,7 +66,8 @@ JWT_SECRET=<64-char-random-string>
 JWT_REFRESH_SECRET=<64-char-random-string>
 
 # Optional
-RESEND_API_KEY=re_...                     # Email via Resend
+RESEND_API_KEY=re_...                     # Email via Resend (lead notifications + invites)
+ANTHROPIC_API_KEY=sk-ant-...              # AI contract review (Claude); falls back to heuristic if unset
 GITHUB_TOKEN=ghp_...                      # GitHub API (server-side)
 GITHUB_WEBHOOK_SECRET=...                 # GitHub webhook verification
 GITHUB_ORG=advo-ph

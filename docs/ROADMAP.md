@@ -5,7 +5,7 @@ Unified, forward-looking roadmap for the ADVO platform and the business that run
 Treat this as the **canonical roadmap**. Two existing sub-roadmaps stay where they are and are referenced from here:
 - **Landing design** — see [/ROADMAP.md](../ROADMAP.md) (Stripe-audit-driven; most items implemented in the `codex/linear-design-system` stash, only the hero+services copy port shipped to main so far).
 - **Platform feature backlog** — see [FEATURES.md → Roadmap](FEATURES.md#roadmap) (Internal Library, Admin UX cleanup, monorepo).
-- **Feature wiring audit** — see [WIRING-AUDIT.md](WIRING-AUDIT.md) (2026-06-20 end-to-end audit of every admin + client feature). The 🔴 cross-tenant data-leak bugs (**S1/S2/S3**) are **fixed + deployed** (`0e42f13`); B1/B2/B3 + several papercuts also fixed. **Remaining security item: S4** — `VITE_GITHUB_TOKEN`/`VITE_CLOUDFLARE_TOKEN` are still in the public browser bundle (route the GitHub feed through the backend to close it).
+- **Feature wiring audit** — see [WIRING-AUDIT.md](WIRING-AUDIT.md) (2026-06-20 end-to-end audit of every admin + client feature). The 🔴 cross-tenant data-leak bugs (**S1/S2/S3**) are **fixed + deployed** (`0e42f13`); B1/B2/B3 + several papercuts also fixed. **All security items S1–S4 are now fixed + deployed** — S4 (`9574820`) removed the `VITE_GITHUB_TOKEN`/`VITE_CLOUDFLARE_TOKEN` browser reads; the GitHub feed routes through the backend `github_event` cache.
 
 ## Status snapshot
 
@@ -15,7 +15,7 @@ Treat this as the **canonical roadmap**. Two existing sub-roadmaps stay where th
 | **API** | api.advo.ph live (`apps/api`, PM2 on VPS) |
 | **Active client engagements** | Felici Gelato (in dev), Coffee Rush (in dev) |
 | **Shipped** | Fourlinq (`fourlinq.ph`) — June 19, 2026 |
-| **Latest platform work (2026-06-20)** | Project Command Center (per-project hub) · contract red-flag review · Show-Client-Now expiring preview links + client request-from-Hub · Deliverables CRUD · Tier-1/2 security fixes + DB FK migration — all live. See [HANDOFF.md](HANDOFF.md). |
+| **Latest platform work (2026-06-20)** | Project Command Center (per-project hub) · contract red-flag review (now **AI-capable**, Claude + heuristic fallback) · Files/Drive pillar · Show-Client-Now expiring preview links + client request-from-Hub · email-on-new-lead · Deliverables CRUD · Tier-1/2 security fixes (incl. **S4 closed**) + DB FK migration — all live. See [HANDOFF.md](HANDOFF.md). |
 | **Stalled** | Daj, Ms. Imee (Inventi), Tita Imee |
 | **Passed/declined** | Personal Collection (already on Shopify) |
 | **Prospecting** | Medical City (David's cousin lead), dental clinic outreach (5K scraped leads) |
@@ -28,7 +28,7 @@ Highest leverage: every signal in Messenger about money or scope points here. Wi
 |---|---|---|---|
 | **Revision limits in contract template** | Fourlinq + Felici both ran open-ended revisions. Quote, David (Jun 19): *"we lowk shuldv specified pala sa contract ung revisions thingy"*. | S | ✅ Draft clause in [CONTRACTS.md](CONTRACTS.md#policy-2--revision-limits) (`791a039`) — 2 rounds per phase, hourly after. **Needs legal review before binding use.** |
 | **Change-order process** | Once revisions are capped, scope changes need a paper trail. Email + signature OK to start; eventually a form in `/hub`. | S | ✅ Draft clause in [CONTRACTS.md](CONTRACTS.md#policy-3--change-orders-aka-i-saw-this-on-another-site) (`791a039`). Hub form not built. |
-| **Proposal-to-contract pipeline** | Felici signed because of a custom PDF. Currently every proposal is a one-off Canva file. | M | ⏳ Pipeline not started, but a first piece shipped: a **contract red-flag review** in the Command Center (`97b213a`) checks a pasted SOW against the CONTRACTS.md policies and flags missing-clause gaps before sending. **Heuristic** for now — no LLM is configured for the API (no Vertex/Anthropic creds); upgrade to AI by adding a key. CONTRACTS.md drop-in clauses still ready for the SOW. |
+| **Proposal-to-contract pipeline** | Felici signed because of a custom PDF. Currently every proposal is a one-off Canva file. | M | ⏳ Pipeline not started, but a first piece shipped: a **contract red-flag review** in the Command Center (`97b213a`) checks a pasted SOW against the CONTRACTS.md policies and flags missing-clause gaps before sending. Now **AI-capable** (`fae49dd`): runs Claude (`claude-opus-4-8`) when `ANTHROPIC_API_KEY` is set, else falls back to the heuristic — prod has no key yet, so live review runs the heuristic until one is added. CONTRACTS.md drop-in clauses still ready for the SOW. |
 | **Downpayment floor** | Fourlinq's 12k downpayment didn't cover the work (David: *"the 12k isnt enough as a downpayment"*). | S | ✅ Draft clause in [CONTRACTS.md](CONTRACTS.md#policy-1--downpayment-floor) (`791a039`) — 40% min or ₱30k floor. Needs legal review + applied to Coffee Rush proposal before signing. |
 | **Engage Philippine corporate/cyber lawyer** | All four CONTRACTS.md drafts need validation before use, and Prince explicitly flagged the need in Jun 2026. | M | ⏳ Not started. Open-questions punch list waiting in [CONTRACTS.md](CONTRACTS.md#open-questions-for-the-legal-advisor). |
 
@@ -38,7 +38,7 @@ Currently bottlenecked: 5K scraped clinic leads but proposals are manual, so the
 
 | Item | Why | Effort |
 |---|---|---|
-| **Email-on-new-lead notification** | Leads come in via the contact form; you don't see them until logging into admin. Two test rows in DB are evidence nobody's monitoring it. | S — wire to existing Resend creds in `apps/api/.env` |
+| **Email-on-new-lead notification** ✅ | Leads come in via the contact form; you don't see them until logging into admin. Two test rows in DB are evidence nobody's monitoring it. | ✅ **Shipped** (`8bc719f`) — `POST /api/leads` emails all admins via `sendLeadNotificationEmail` (Resend SMTP when `RESEND_API_KEY` set, else logs). |
 | **Clinic-scraper → proposal-PDF pipeline** | Already have 5K leads with digital scores, design feedback, perf grades. Need: feed → AI-design proposal → send. | L — multi-stage. Start with template-fill, defer AI generation. |
 | **Proposal tracker** | Once you send 10+/month, need to know which clinics opened, replied, signed. | M — table + statuses in admin. |
 | **Targeting rule: zero/outdated systems only** | Repeating signal: *"if a company has a system/website, we can't just offer them a new one"* (Prince) — Personal Collection passed, AAPM has Inventi, etc. | S | Bake into the scraper scoring + outreach criteria. |
@@ -134,4 +134,4 @@ Other commitments from the meeting:
 - **Felici's exact open scope** — Round 1 revisions are still happening; no public list of what's left.
 - **Coffee Rush feature list** — beyond "app like Zus, no delivery," details aren't in the chat archive I scanned.
 - **Legal advisor** — Prince said one is needed; not booked.
-- **Email provider for lead notifications** — Resend creds exist in API env; the per-event template + trigger don't.
+- ~~**Email provider for lead notifications**~~ — ✅ resolved (`8bc719f`): the per-event template (`sendLeadNotificationEmail`) + trigger (`POST /api/leads`) now exist; sends via Resend when `RESEND_API_KEY` is set, else logs.
