@@ -254,19 +254,25 @@ export const invoice = pgTable(
   ]
 );
 
-export const lead = pgTable("lead", {
-  leadId: bigserial("lead_id", { mode: "number" }).primaryKey(),
-  name: varchar("name", { length: 255 }).notNull(),
-  email: varchar("email", { length: 255 }).notNull(),
-  company: varchar("company", { length: 255 }),
-  projectType: varchar("project_type", { length: 100 }),
-  budget: varchar("budget", { length: 100 }),
-  description: text("description"),
-  status: leadStatusEnum("status").notNull().default("new"),
-  assignedTo: integer("assigned_to").references(() => teamMember.teamMemberId),
-  notes: text("notes"),
-  submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const lead = pgTable(
+  "lead",
+  {
+    leadId: bigserial("lead_id", { mode: "number" }).primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+    email: varchar("email", { length: 255 }).notNull(),
+    company: varchar("company", { length: 255 }),
+    projectType: varchar("project_type", { length: 100 }),
+    budget: varchar("budget", { length: 100 }),
+    description: text("description"),
+    status: leadStatusEnum("status").notNull().default("new"),
+    assignedTo: integer("assigned_to").references(() => teamMember.teamMemberId),
+    notes: text("notes"),
+    submittedAt: timestamp("submitted_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_lead_assigned_to").on(t.assignedTo),
+  ]
+);
 
 export const notification = pgTable(
   "notification",
@@ -284,6 +290,7 @@ export const notification = pgTable(
   },
   (t) => [
     index("idx_notification_client").on(t.clientId),
+    index("idx_notification_project_id").on(t.projectId),
   ]
 );
 
@@ -312,6 +319,7 @@ export const siteContent = pgTable("site_content", {
   visiblePublic: boolean("visible_public").notNull().default(true),
   visibleClientPortal: boolean("visible_client_portal").notNull().default(true),
   content: jsonb("content"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -353,6 +361,7 @@ export const socialPost = pgTable("social_post", {
 export const siteConfig = pgTable("site_config", {
   key: varchar("key", { length: 100 }).primaryKey(),
   value: jsonb("value").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -431,5 +440,6 @@ export const scrapeResult = pgTable(
   (t) => [
     index("idx_scrape_url").on(t.url),
     index("idx_scrape_type").on(t.type),
+    index("idx_scrape_result_scraped_by").on(t.scrapedBy),
   ]
 );
