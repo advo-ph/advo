@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut, Settings, Menu } from "lucide-react";
+import { LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminData } from "@/hooks/useAdminData";
 import { useOrgProjects } from "@/hooks/useOrgProjects";
@@ -82,17 +81,15 @@ const Admin = () => {
               <img
                 src="/advo-logo-black.png"
                 alt="ADVO"
-                className={`h-5 sm:h-6 w-auto${theme === "dark" ? " invert" : ""}`}
+                className={`h-5 w-auto${theme === "dark" ? " invert" : ""}`}
               />
             </Link>
-            <Badge className="hidden sm:inline-flex font-mono text-xs bg-accent/10 text-accent border-accent/30 hover:bg-accent/20">
-              <Settings className="h-3 w-3 mr-1" />
-              Admin
-            </Badge>
+            <span className="hidden sm:block h-3.5 w-px bg-border" />
+            <span className="hidden sm:block text-sm text-muted-foreground">Console</span>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-            <span className="hidden md:inline text-sm text-muted-foreground font-mono truncate max-w-[180px]">
+            <span className="hidden md:inline text-sm text-muted-foreground truncate max-w-[180px]">
               {user?.email}
             </span>
             <Button

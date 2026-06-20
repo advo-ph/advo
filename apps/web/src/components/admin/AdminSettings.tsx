@@ -1,18 +1,10 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import {
-  Globe,
-  Palette,
-  Shield,
   Plus,
   Save,
   X,
   Loader2,
   Check,
-  Database,
-  Link as LinkIcon,
-  Lock,
-  Share2,
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,6 +20,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import * as db from "@/lib/db";
 import { get, patch as apiPatch, post, del } from "@/lib/api";
+import { PageHeader, Panel, Dot } from "@/components/admin/_ui";
 
 interface SiteConfig {
   agency_name: string;
@@ -258,216 +251,180 @@ const AdminSettings = () => {
   };
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold mb-2">Settings</h1>
-        <p className="text-muted-foreground">Domain configuration and admin preferences</p>
-      </div>
+    <div className="space-y-4">
+      <PageHeader title="Settings" meta="Domain configuration and admin preferences" />
 
       {/* Domain & Branding */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-        className="p-6 bg-card border border-border rounded-xl shadow-card space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-            <Globe className="h-5 w-5 text-accent" />
+      <Panel
+        title="Domain & branding"
+        action={
+          <Button onClick={handleSave} disabled={isSaving} size="sm" className="h-8">
+            {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1.5" />}
+            Save
+          </Button>
+        }
+      >
+        <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <label className="eyebrow block">Agency name</label>
+            <Input className="h-9" value={config.agency_name} onChange={(e) => setConfig({ ...config, agency_name: e.target.value })} />
           </div>
-          <div>
-            <h3 className="font-semibold">Domain & Branding</h3>
-            <p className="text-sm text-muted-foreground">Configure your agency identity</p>
+          <div className="space-y-1.5">
+            <label className="eyebrow block">Domain URL</label>
+            <Input className="h-9" value={config.domain_url} onChange={(e) => setConfig({ ...config, domain_url: e.target.value })} />
           </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Agency Name</label>
-            <Input value={config.agency_name} onChange={(e) => setConfig({ ...config, agency_name: e.target.value })} />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Domain URL</label>
-            <div className="relative">
-              <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input value={config.domain_url} onChange={(e) => setConfig({ ...config, domain_url: e.target.value })} className="pl-9" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Accent Color</label>
-            <div className="flex items-center gap-3">
+          <div className="space-y-1.5">
+            <label className="eyebrow block">Accent color</label>
+            <div className="flex items-center gap-2">
               <input type="color" value={config.accent_color} onChange={(e) => setConfig({ ...config, accent_color: e.target.value })}
-                className="w-10 h-10 rounded-lg border border-border cursor-pointer" />
-              <Input value={config.accent_color} onChange={(e) => setConfig({ ...config, accent_color: e.target.value })} className="font-mono" />
+                className="w-9 h-9 rounded-md border border-border cursor-pointer shrink-0" />
+              <Input className="h-9 tabular-nums" value={config.accent_color} onChange={(e) => setConfig({ ...config, accent_color: e.target.value })} />
             </div>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Logo URL</label>
-            <Input value={config.logo_url} onChange={(e) => setConfig({ ...config, logo_url: e.target.value })} />
+          <div className="space-y-1.5">
+            <label className="eyebrow block">Logo URL</label>
+            <Input className="h-9" value={config.logo_url} onChange={(e) => setConfig({ ...config, logo_url: e.target.value })} />
           </div>
         </div>
-        <Button onClick={handleSave} disabled={isSaving} className="rounded-full">
-          {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-          Save Changes
-        </Button>
-      </motion.div>
+      </Panel>
 
       {/* Social Links */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03 }}
-        className="p-6 bg-card border border-border rounded-xl shadow-card space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center">
-              <Share2 className="h-5 w-5 text-orange-500" />
-            </div>
-            <div>
-              <h3 className="font-semibold">Social Links</h3>
-              <p className="text-sm text-muted-foreground">Displayed in the footer</p>
-            </div>
-          </div>
-          <Button variant="outline" size="sm" className="rounded-full" onClick={addSocialLink}>
-            <Plus className="h-4 w-4 mr-2" /> Add Link
+      <Panel
+        title="Social links"
+        meta="Displayed in the footer"
+        action={
+          <Button variant="outline" size="sm" className="h-8" onClick={addSocialLink}>
+            <Plus className="h-3.5 w-3.5 mr-1.5" /> Add link
           </Button>
-        </div>
-        <div className="space-y-3">
-          {socialLinks.map((link, idx) => (
-            <div key={idx} className="flex items-center gap-3">
-              <Input placeholder="Platform (e.g. facebook)" value={link.platform}
-                onChange={(e) => updateSocialLink(idx, "platform", e.target.value)} className="max-w-[160px]" />
-              <Input placeholder="https://..." value={link.url}
-                onChange={(e) => updateSocialLink(idx, "url", e.target.value)} className="flex-1" />
-              <Button variant="ghost" size="sm" onClick={() => removeSocialLink(idx)} className="text-muted-foreground hover:text-destructive">
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-          {socialLinks.length === 0 && (
-            <p className="text-sm text-muted-foreground py-2">No social links configured</p>
+        }
+      >
+        <div className="p-4 space-y-3">
+          {socialLinks.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No social links configured</p>
+          ) : (
+            socialLinks.map((link, idx) => (
+              <div key={idx} className="flex items-center gap-2">
+                <Input placeholder="Platform (e.g. facebook)" value={link.platform}
+                  onChange={(e) => updateSocialLink(idx, "platform", e.target.value)} className="h-9 max-w-[160px]" />
+                <Input placeholder="https://..." value={link.url}
+                  onChange={(e) => updateSocialLink(idx, "url", e.target.value)} className="h-9 flex-1" />
+                <Button variant="ghost" size="sm" className="h-9 w-9 p-0" onClick={() => removeSocialLink(idx)}>
+                  <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                </Button>
+              </div>
+            ))
+          )}
+          {socialLinks.length > 0 && (
+            <Button onClick={handleSaveSocial} disabled={isSavingSocial} size="sm" className="h-8">
+              {isSavingSocial ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1.5" />}
+              Save social links
+            </Button>
           )}
         </div>
-        {socialLinks.length > 0 && (
-          <Button onClick={handleSaveSocial} disabled={isSavingSocial} className="rounded-full" size="sm">
-            {isSavingSocial ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
-            Save Social Links
-          </Button>
-        )}
-      </motion.div>
+      </Panel>
 
       {/* Security */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-        className="p-6 bg-card border border-border rounded-xl shadow-card space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
-              <Lock className="h-5 w-5 text-red-500" />
-            </div>
-            <div>
-              <h3 className="font-semibold">Security</h3>
-              <p className="text-sm text-muted-foreground">Account password</p>
-            </div>
-          </div>
-          <Button variant="outline" size="sm" className="rounded-full" onClick={() => setIsPasswordOpen(true)}>
-            <Lock className="h-4 w-4 mr-2" /> Change Password
+      <Panel
+        title="Security"
+        meta="Account password"
+        action={
+          <Button variant="outline" size="sm" className="h-8" onClick={() => setIsPasswordOpen(true)}>
+            Change password
           </Button>
+        }
+      >
+        <div className="px-4 py-3">
+          <p className="text-sm text-muted-foreground">
+            Update the password used to sign in to the admin console.
+          </p>
         </div>
-      </motion.div>
+      </Panel>
 
       {/* Admin Users */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.07 }}
-        className="p-6 bg-card border border-border rounded-xl shadow-card space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-              <Shield className="h-5 w-5 text-blue-500" />
-            </div>
-            <div>
-              <h3 className="font-semibold">Admin Users</h3>
-              <p className="text-sm text-muted-foreground">Manage who has admin access</p>
-            </div>
-          </div>
-          <Button variant="outline" size="sm" className="rounded-full" onClick={() => setIsAddEmailOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" /> Add Admin
+      <Panel
+        title="Admin users"
+        meta="Manage who has admin access"
+        action={
+          <Button variant="outline" size="sm" className="h-8" onClick={() => setIsAddEmailOpen(true)}>
+            <Plus className="h-3.5 w-3.5 mr-1.5" /> Add admin
           </Button>
-        </div>
-        <div className="space-y-2">
+        }
+      >
+        <div className="divide-y divide-border">
           {adminEmails.map((member) => (
-            <div key={member.id} className="flex items-center justify-between p-3 bg-secondary/30 rounded-xl">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center">
-                  <Shield className="h-4 w-4 text-accent" />
-                </div>
-                <span className="text-sm font-mono">{member.email}</span>
-              </div>
-              <Button variant="ghost" size="sm" onClick={() => removeAdminEmail(member)} className="text-muted-foreground hover:text-destructive">
-                <X className="h-4 w-4" />
+            <div key={member.id} className="flex items-center justify-between gap-3 px-4 h-11">
+              <span className="text-sm truncate">{member.email}</span>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0" onClick={() => removeAdminEmail(member)}>
+                <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
               </Button>
             </div>
           ))}
         </div>
-      </motion.div>
+      </Panel>
 
       {/* Integrations */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-        className="p-6 bg-card border border-border rounded-xl shadow-card space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
-            <Database className="h-5 w-5 text-purple-500" />
-          </div>
-          <div>
-            <h3 className="font-semibold">Integrations</h3>
-            <p className="text-sm text-muted-foreground">Connection status for services</p>
-          </div>
-        </div>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-xl">
-            <div className="flex items-center gap-3">
-              <Database className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium">API</p>
-                <p className="text-xs text-muted-foreground font-mono">{import.meta.env.VITE_API_URL || "Not configured"}</p>
-              </div>
+      <Panel title="Integrations" meta="Connection status for services">
+        <div className="divide-y divide-border">
+          <div className="flex items-center justify-between gap-3 px-4 h-11">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Dot
+                className={
+                  apiStatus === "connected"
+                    ? "bg-green-500"
+                    : apiStatus === "checking"
+                    ? "bg-yellow-500"
+                    : "bg-red-500"
+                }
+              />
+              <span className="text-sm">API</span>
+              <span className="text-xs text-muted-foreground truncate">
+                {import.meta.env.VITE_API_URL || "Not configured"}
+              </span>
             </div>
-            <Badge variant="outline" className={`gap-1 ${apiStatus === "connected" ? "text-green-500 border-green-500/30" : apiStatus === "checking" ? "text-yellow-500 border-yellow-500/30" : "text-red-500 border-red-500/30"}`}>
+            <Badge variant="outline" className={`gap-1 shrink-0 ${apiStatus === "connected" ? "text-green-500 border-green-500/30" : apiStatus === "checking" ? "text-yellow-500 border-yellow-500/30" : "text-red-500 border-red-500/30"}`}>
               {apiStatus === "connected" && <Check className="h-3 w-3" />}
               {apiStatus === "checking" && <Loader2 className="h-3 w-3 animate-spin" />}
               {apiStatus === "connected" ? "Connected" : apiStatus === "checking" ? "Checking..." : "Disconnected"}
             </Badge>
           </div>
-          <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-xl">
-            <div className="flex items-center gap-3">
-              <Palette className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="text-sm font-medium">Vercel</p>
-                <p className="text-xs text-muted-foreground">Deployment platform</p>
-              </div>
+          <div className="flex items-center justify-between gap-3 px-4 h-11">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Dot className="bg-green-500" />
+              <span className="text-sm">Vercel</span>
+              <span className="text-xs text-muted-foreground truncate">Deployment platform</span>
             </div>
-            <Badge variant="outline" className="text-green-500 border-green-500/30 gap-1">
+            <Badge variant="outline" className="text-green-500 border-green-500/30 gap-1 shrink-0">
               <Check className="h-3 w-3" /> Connected
             </Badge>
           </div>
         </div>
-      </motion.div>
+      </Panel>
 
       {/* Password Change Dialog */}
       <Dialog open={isPasswordOpen} onOpenChange={setIsPasswordOpen}>
-        <DialogContent className="bg-card border-border max-w-sm rounded-xl">
+        <DialogContent className="bg-card border-border max-w-sm rounded-lg">
           <DialogHeader>
             <DialogTitle>Change Password</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Current Password</label>
-              <Input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
+            <div className="space-y-1.5">
+              <label className="eyebrow block">Current password</label>
+              <Input className="h-9" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">New Password</label>
-              <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Min 8 characters" />
+            <div className="space-y-1.5">
+              <label className="eyebrow block">New password</label>
+              <Input className="h-9" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Min 8 characters" />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Confirm New Password</label>
-              <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+            <div className="space-y-1.5">
+              <label className="eyebrow block">Confirm new password</label>
+              <Input className="h-9" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handlePasswordChange()} />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsPasswordOpen(false)}>Cancel</Button>
             <Button onClick={handlePasswordChange} disabled={isChangingPassword}>
-              {isChangingPassword ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Lock className="h-4 w-4 mr-2" />}
+              {isChangingPassword ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
               Change
             </Button>
           </DialogFooter>
@@ -476,14 +433,14 @@ const AdminSettings = () => {
 
       {/* Add Admin Email Dialog */}
       <Dialog open={isAddEmailOpen} onOpenChange={setIsAddEmailOpen}>
-        <DialogContent className="bg-card border-border max-w-sm rounded-xl">
+        <DialogContent className="bg-card border-border max-w-sm rounded-lg">
           <DialogHeader>
             <DialogTitle>Add Admin User</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Email Address</label>
-              <Input type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)}
+            <div className="space-y-1.5">
+              <label className="eyebrow block">Email address</label>
+              <Input className="h-9" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)}
                 placeholder="admin@example.com" onKeyDown={(e) => e.key === "Enter" && addAdminEmail()} />
             </div>
           </div>

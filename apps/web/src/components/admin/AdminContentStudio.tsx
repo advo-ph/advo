@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
 import {
   Globe,
   Monitor,
-  Loader2,
   ChevronDown,
   ChevronUp,
   Save,
@@ -12,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useSiteContent, type SiteSection } from "@/hooks/useSiteContent";
+import { PageHeader, Panel } from "./_ui";
 
 /* ─── Content edit forms per section ──────────────────────── */
 
@@ -503,7 +502,7 @@ const ProcessForm = ({
     <div className="grid gap-3 pt-3">
       {steps.map((step, idx) => (
         <div key={idx} className="grid grid-cols-3 gap-2 items-center">
-          <span className="text-xs font-mono text-muted-foreground text-center">Step {idx + 1}</span>
+          <span className="text-xs text-muted-foreground text-center tabular-nums">Step {idx + 1}</span>
           <Input placeholder="Title" value={step.title} onChange={(e) => update(idx, "title", e.target.value)} />
           <Input placeholder="Description" value={step.description} onChange={(e) => update(idx, "description", e.target.value)} />
         </div>
@@ -652,7 +651,7 @@ const ToggleRow = ({
       }`}
     />
     <span
-      className={`text-[11px] font-mono uppercase tracking-wider hidden md:inline transition-colors ${
+      className={`text-[11px] uppercase tracking-wider hidden md:inline transition-colors ${
         active ? "text-foreground/80" : "text-muted-foreground/50"
       }`}
     >
@@ -680,120 +679,110 @@ const AdminContentStudio = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="space-y-4">
+        <div className="h-6 w-44 bg-secondary animate-pulse rounded" />
+        <div className="h-72 bg-secondary animate-pulse rounded-lg" />
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between flex-wrap gap-4">
-        <div>
-          <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-muted-foreground mb-2">
-            Content
-          </p>
-          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight mb-1">
-            Content Studio
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Toggle visibility and edit content per section.
-          </p>
-        </div>
-        <div className="flex items-center gap-5 text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <Globe className="h-3.5 w-3.5" />
-            advo.ph
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Monitor className="h-3.5 w-3.5" />
-            /hub
-          </span>
-        </div>
-      </div>
+    <div className="space-y-4">
+      <PageHeader
+        title="Content Studio"
+        meta="Toggle visibility and edit content per section"
+        action={
+          <div className="flex items-center gap-4 text-[11px] uppercase tracking-wider text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <Globe className="h-3.5 w-3.5" />
+              advo.ph
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Monitor className="h-3.5 w-3.5" />
+              /hub
+            </span>
+          </div>
+        }
+      />
 
-      <div className="space-y-3">
-        {sections.map((section, index) => {
-          const FormComponent = EDITABLE_SECTIONS[section.section_id];
-          const isExpanded = expanded === section.section_id;
+      <Panel title="Sections" meta={`${sections.length} total`}>
+        <div className="divide-y divide-border">
+          {sections.map((section) => {
+            const FormComponent = EDITABLE_SECTIONS[section.section_id];
+            const isExpanded = expanded === section.section_id;
 
-          return (
-            <motion.div
-              key={section.section_id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.03 }}
-              className="p-4 bg-card border border-border rounded-xl hover:border-foreground/20 transition-colors"
-            >
-              <div className="flex items-center justify-between gap-4 flex-wrap">
-                {/* Label + id */}
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{section.label}</p>
-                  <p className="text-[11px] text-muted-foreground/70 font-mono mt-0.5">
-                    {section.section_id}
-                  </p>
-                </div>
+            return (
+              <div key={section.section_id}>
+                <div className="flex items-center justify-between gap-4 flex-wrap px-4 py-3">
+                  {/* Label + id */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{section.label}</p>
+                    <p className="text-[11px] text-muted-foreground/70 mt-0.5">
+                      {section.section_id}
+                    </p>
+                  </div>
 
-                {/* Controls */}
-                <div className="flex items-center gap-4 shrink-0">
-                  <ToggleRow
-                    icon={Globe}
-                    label="Public"
-                    active={section.visible_public}
-                    onToggle={() =>
-                      toggle(
-                        section.section_id,
-                        "visible_public",
-                        !section.visible_public,
-                      )
-                    }
-                  />
-                  <ToggleRow
-                    icon={Monitor}
-                    label="Hub"
-                    active={section.visible_client_portal}
-                    onToggle={() =>
-                      toggle(
-                        section.section_id,
-                        "visible_client_portal",
-                        !section.visible_client_portal,
-                      )
-                    }
-                  />
-
-                  {FormComponent ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 rounded-full"
-                      onClick={() =>
-                        setExpanded(isExpanded ? null : section.section_id)
+                  {/* Controls */}
+                  <div className="flex items-center gap-4 shrink-0">
+                    <ToggleRow
+                      icon={Globe}
+                      label="Public"
+                      active={section.visible_public}
+                      onToggle={() =>
+                        toggle(
+                          section.section_id,
+                          "visible_public",
+                          !section.visible_public,
+                        )
                       }
-                    >
-                      {isExpanded ? (
-                        <ChevronUp className="h-4 w-4" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4" />
-                      )}
-                    </Button>
-                  ) : (
-                    <div className="w-8" />
-                  )}
-                </div>
-              </div>
+                    />
+                    <ToggleRow
+                      icon={Monitor}
+                      label="Hub"
+                      active={section.visible_client_portal}
+                      onToggle={() =>
+                        toggle(
+                          section.section_id,
+                          "visible_client_portal",
+                          !section.visible_client_portal,
+                        )
+                      }
+                    />
 
-              {isExpanded && FormComponent && (
-                <div className="mt-4 pt-4 border-t border-border">
-                  <FormComponent
-                    section={section}
-                    onSave={(c) => updateContent(section.section_id, c)}
-                  />
+                    {FormComponent ? (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 rounded-md"
+                        onClick={() =>
+                          setExpanded(isExpanded ? null : section.section_id)
+                        }
+                      >
+                        {isExpanded ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </Button>
+                    ) : (
+                      <div className="w-8" />
+                    )}
+                  </div>
                 </div>
-              )}
-            </motion.div>
-          );
-        })}
-      </div>
+
+                {isExpanded && FormComponent && (
+                  <div className="px-4 pb-4 pt-1 bg-secondary/20 border-t border-border">
+                    <FormComponent
+                      section={section}
+                      onSave={(c) => updateContent(section.section_id, c)}
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </Panel>
     </div>
   );
 };

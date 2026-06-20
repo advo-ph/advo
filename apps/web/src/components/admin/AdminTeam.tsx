@@ -1,5 +1,4 @@
 import { useState, useRef } from "react";
-import { motion } from "framer-motion";
 import {
   Plus,
   Pencil,
@@ -12,11 +11,11 @@ import {
   GripVertical,
   Eye,
   EyeOff,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
@@ -28,6 +27,7 @@ import {
 import { upload } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminTeam, type TeamMember } from "@/hooks/useAdminTeam";
+import { PageHeader, StatStrip, Stat, Empty } from "./_ui";
 
 const AdminTeam = () => {
   const { toast } = useToast();
@@ -51,6 +51,7 @@ const AdminTeam = () => {
   const allMembers = localOrder || members;
   const displayMembers = showInactive ? allMembers : allMembers.filter((m) => m.is_active);
   const inactiveCount = allMembers.filter((m) => !m.is_active).length;
+  const activeCount = allMembers.filter((m) => m.is_active).length;
 
   const [formData, setFormData] = useState({
     name: "",
@@ -170,97 +171,147 @@ const AdminTeam = () => {
     name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold mb-2">Team</h1>
-          <p className="text-muted-foreground">Manage team members — drag to reorder</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {inactiveCount > 0 && (
+    <div className="space-y-4">
+      <PageHeader
+        title="Team"
+        meta="Drag to reorder"
+        action={
+          <div className="flex items-center gap-2">
+            {inactiveCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowInactive(!showInactive)}
+                className="h-9 gap-1.5"
+              >
+                {showInactive ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                {inactiveCount} inactive
+              </Button>
+            )}
             <Button
-              variant={showInactive ? "default" : "outline"}
               size="sm"
-              onClick={() => setShowInactive(!showInactive)}
-              className="gap-1.5"
+              onClick={openCreateDialog}
+              className="h-9 gap-1.5 bg-accent text-accent-foreground hover:bg-accent/90"
             >
-              {showInactive ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-              {inactiveCount} inactive
+              <Plus className="h-4 w-4" />
+              Add member
             </Button>
-          )}
-          <Button onClick={openCreateDialog} className="rounded-full bg-foreground text-background hover:bg-foreground/90">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Member
-          </Button>
-        </div>
-      </div>
+          </div>
+        }
+      />
+
+      <StatStrip cols={3}>
+        <Stat label="Members" value={String(allMembers.length)} />
+        <Stat label="Active" value={String(activeCount)} accent />
+        <Stat label="Inactive" value={String(inactiveCount)} />
+      </StatStrip>
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : displayMembers.length === 0 ? (
+        <div className="border border-border rounded-lg bg-card">
+          <Empty text="No team members yet" icon={Users} />
         </div>
       ) : (
-        <div className="space-y-3">
-          {displayMembers.map((member, index) => (
-            <motion.div
-              key={member.team_member_id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.03 }}
-              draggable
-              onDragStart={() => handleDragStart(index)}
-              onDragOver={(e) => handleDragOver(e, index)}
-              onDragEnd={handleDragEnd}
-              className={`flex items-center justify-between p-4 bg-card border border-border rounded-xl shadow-card hover:border-accent/30 transition-colors cursor-grab active:cursor-grabbing ${
-                draggedIdx === index ? "opacity-50" : ""
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <GripVertical className="h-4 w-4 text-muted-foreground/50 flex-shrink-0" />
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={member.avatar_url || undefined} />
-                  <AvatarFallback className="bg-accent/10 text-accent text-sm font-bold">
-                    {getInitials(member.name)}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium text-sm">{member.name}</p>
-                    <Badge variant="outline" className="text-[10px] font-mono">{member.role}</Badge>
-                    {!member.is_active && (
-                      <Badge variant="secondary" className="text-[10px]">Inactive</Badge>
-                    )}
-                  </div>
-                  {member.bio && (
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1 max-w-md">{member.bio}</p>
-                  )}
-                  <div className="flex items-center gap-3 mt-0.5">
-                    {member.email && <span className="text-xs text-muted-foreground">{member.email}</span>}
-                    {member.linkedin_url && (
-                      <a href={member.linkedin_url} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-xs text-blue-500 hover:underline">
-                        <Linkedin className="h-3 w-3" /> LinkedIn
-                      </a>
-                    )}
-                    {member.github_url && (
-                      <a href={member.github_url} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline">
-                        <Github className="h-3 w-3" /> GitHub
-                      </a>
-                    )}
+        <div className="border border-border rounded-lg bg-card overflow-hidden">
+          {/* Header row */}
+          <div className="flex items-center gap-3 px-3 h-9 border-b border-border text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/70">
+            <span className="w-4 shrink-0" />
+            <span className="flex-1 min-w-0">Member</span>
+            <span className="hidden lg:block flex-1 min-w-0">Bio</span>
+            <span className="hidden md:block w-44 shrink-0">Links</span>
+            <span className="w-4 shrink-0" />
+          </div>
+
+          {/* Rows */}
+          <div className="divide-y divide-border">
+            {displayMembers.map((member, index) => (
+              <div
+                key={member.team_member_id}
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragEnd={handleDragEnd}
+                className={`flex items-center gap-3 px-3 h-14 text-sm hover:bg-secondary/40 transition-colors cursor-grab active:cursor-grabbing ${
+                  draggedIdx === index ? "opacity-50" : ""
+                }`}
+              >
+                <GripVertical className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+
+                <div className="flex-1 min-w-0 flex items-center gap-2.5">
+                  <Avatar className="h-8 w-8 shrink-0">
+                    <AvatarImage src={member.avatar_url || undefined} />
+                    <AvatarFallback className="bg-secondary text-foreground text-xs font-medium">
+                      {getInitials(member.name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium truncate">{member.name}</span>
+                      {!member.is_active && (
+                        <span className="text-[10px] text-muted-foreground border border-border rounded px-1.5 py-0.5 shrink-0">
+                          Inactive
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="truncate">{member.role}</span>
+                      {member.email && (
+                        <span className="hidden sm:inline truncate">· {member.email}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
+
+                <span className="hidden lg:block flex-1 min-w-0 text-xs text-muted-foreground truncate">
+                  {member.bio || "—"}
+                </span>
+
+                <div className="hidden md:flex w-44 shrink-0 items-center gap-3 text-xs">
+                  {member.linkedin_url ? (
+                    <a
+                      href={member.linkedin_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Linkedin className="h-3 w-3" /> LinkedIn
+                    </a>
+                  ) : null}
+                  {member.github_url ? (
+                    <a
+                      href={member.github_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Github className="h-3 w-3" /> GitHub
+                    </a>
+                  ) : null}
+                  {!member.linkedin_url && !member.github_url && (
+                    <span className="text-muted-foreground/50">—</span>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => openEditDialog(member)}
+                  className="w-4 shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                  aria-label="Edit member"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => openEditDialog(member)}>
-                <Pencil className="h-4 w-4" />
-              </Button>
-            </motion.div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-card border-border max-w-lg rounded-xl">
+        <DialogContent className="bg-card border-border max-w-lg rounded-lg">
           <DialogHeader>
             <DialogTitle>{editingMember ? "Edit Team Member" : "Add Team Member"}</DialogTitle>
           </DialogHeader>
@@ -269,7 +320,7 @@ const AdminTeam = () => {
               <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                 <Avatar className="h-16 w-16">
                   <AvatarImage src={formData.avatar_url || undefined} />
-                  <AvatarFallback className="bg-accent/10 text-accent text-lg font-bold">
+                  <AvatarFallback className="bg-secondary text-foreground text-lg font-medium">
                     {formData.name ? getInitials(formData.name) : "?"}
                   </AvatarFallback>
                 </Avatar>

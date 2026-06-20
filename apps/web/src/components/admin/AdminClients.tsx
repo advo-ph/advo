@@ -1,9 +1,6 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
 import {
   Building2,
-  Mail,
-  FolderKanban,
   ExternalLink,
   Plus,
   Pencil,
@@ -14,7 +11,6 @@ import {
   Search,
   UserPlus,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -39,6 +35,7 @@ import * as db from "@/lib/db";
 import { post } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import type { Client } from "@/types/admin";
+import { PageHeader, Table, THead, TBody, TRow, Empty } from "./_ui";
 
 interface AdminClientsProps {
   clients: Client[];
@@ -192,103 +189,113 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold mb-2">Clients</h1>
-          <p className="text-muted-foreground">Manage your client relationships</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="font-mono text-sm text-muted-foreground">
-            {clients.length} total
-          </span>
-          <Button onClick={openCreateDialog} className="rounded-full bg-foreground text-background hover:bg-foreground/90">
-            <Plus className="h-4 w-4 mr-2" />
-            New Client
+      <PageHeader
+        title="Clients"
+        meta={`${clients.length} total`}
+        action={
+          <Button
+            onClick={openCreateDialog}
+            size="sm"
+            className="h-9 bg-accent text-accent-foreground hover:bg-accent/90"
+          >
+            <Plus className="h-4 w-4 mr-1.5" />
+            New client
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Search clients..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
+        <Input
+          placeholder="Search clients…"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9 h-9"
+        />
       </div>
 
       {/* Client List */}
       {isLoading ? (
-        <div className="space-y-4">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-24 bg-secondary animate-pulse rounded-xl" />
-          ))}
+        <div className="border border-border rounded-lg bg-card overflow-hidden">
+          <div className="divide-y divide-border">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-11 bg-secondary/40 animate-pulse" />
+            ))}
+          </div>
         </div>
       ) : filteredClients.length === 0 ? (
-        <div className="text-center py-12 bg-card border border-border rounded-xl">
-          <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">No clients yet</p>
-          <p className="text-sm text-muted-foreground mt-2 mb-5">
-            Add your first client to get started
-          </p>
-          <Button onClick={openCreateDialog} className="rounded-full bg-foreground text-background hover:bg-foreground/90">
-            <Plus className="h-4 w-4 mr-2" />
-            New Client
-          </Button>
-        </div>
+        <Table>
+          <Empty
+            text={searchQuery ? "No clients match your search" : "No clients yet"}
+            icon={Building2}
+          />
+          {!searchQuery && (
+            <div className="flex justify-center pb-8">
+              <Button
+                onClick={openCreateDialog}
+                size="sm"
+                className="h-9 bg-accent text-accent-foreground hover:bg-accent/90"
+              >
+                <Plus className="h-4 w-4 mr-1.5" />
+                New client
+              </Button>
+            </div>
+          )}
+        </Table>
       ) : (
-        <div className="grid gap-4">
-          {filteredClients.map((client, index) => (
-            <motion.div
-              key={client.client_id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className="p-5 bg-card border border-border rounded-xl shadow-card hover:border-accent/30 transition-colors"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4">
-                  {/* Color Badge */}
-                  <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center"
-                    style={{ backgroundColor: `${client.brand_color_hex || '#22C55E'}20` }}
-                  >
-                    <Building2
-                      className="h-6 w-6"
-                      style={{ color: client.brand_color_hex || '#22C55E' }}
-                    />
-                  </div>
+        <Table>
+          <THead>
+            <span className="flex-1 min-w-0">Client</span>
+            <span className="hidden md:block flex-1 min-w-0">Email</span>
+            <span className="hidden lg:block w-44 shrink-0">GitHub</span>
+            <span className="w-20 shrink-0 text-right">Projects</span>
+            <span className="w-[188px] shrink-0" />
+          </THead>
+          <TBody>
+            {filteredClients.map((client) => (
+              <TRow key={client.client_id}>
+                <span className="flex-1 min-w-0 flex items-center gap-2.5">
+                  <span
+                    className="h-2 w-2 rounded-full shrink-0"
+                    style={{ backgroundColor: client.brand_color_hex || "#22C55E" }}
+                  />
+                  <span className="font-medium truncate">
+                    {client.company_name || "Unnamed Client"}
+                  </span>
+                </span>
 
-                  <div>
-                    <h3 className="font-semibold text-lg">
-                      {client.company_name || "Unnamed Client"}
-                    </h3>
-                    <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                      <Mail className="h-3.5 w-3.5" />
-                      {client.contact_email}
-                    </div>
-                    {client.github_org_name && (
-                      <a
-                        href={`https://github.com/${client.github_org_name}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 mt-2 text-xs text-accent hover:underline"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                        github.com/{client.github_org_name}
-                      </a>
-                    )}
-                  </div>
-                </div>
+                <span className="hidden md:block flex-1 min-w-0 text-muted-foreground truncate">
+                  {client.contact_email || "—"}
+                </span>
 
-                <div className="flex items-center gap-3">
-                  <Badge variant="secondary" className="gap-1">
-                    <FolderKanban className="h-3 w-3" />
-                    {client.projectCount || 0} projects
-                  </Badge>
+                <span className="hidden lg:block w-44 shrink-0 truncate">
+                  {client.github_org_name ? (
+                    <a
+                      href={`https://github.com/${client.github_org_name}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-accent hover:underline"
+                    >
+                      <ExternalLink className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{client.github_org_name}</span>
+                    </a>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </span>
+
+                <span className="w-20 shrink-0 text-right text-muted-foreground tabular-nums">
+                  {client.projectCount || 0}
+                </span>
+
+                <span className="w-[188px] shrink-0 flex items-center justify-end gap-1.5">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="gap-1.5 text-accent hover:bg-accent/10"
+                    className="h-8 gap-1.5 text-accent hover:bg-accent/10"
                     disabled={invitingClient === client.client_id}
                     onClick={() => handleInvite(client)}
                   >
@@ -302,6 +309,7 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="h-8 w-8 p-0"
                     onClick={() => openEditDialog(client)}
                   >
                     <Pencil className="h-4 w-4" />
@@ -309,6 +317,7 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="h-8 w-8 p-0"
                     onClick={() => {
                       setDeletingClient(client);
                       setIsDeleteDialogOpen(true);
@@ -316,16 +325,16 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
                   >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+                </span>
+              </TRow>
+            ))}
+          </TBody>
+        </Table>
       )}
 
       {/* Create/Edit Client Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-card border-border max-w-lg rounded-xl">
+        <DialogContent className="bg-card border-border max-w-lg rounded-lg">
           <DialogHeader>
             <DialogTitle>
               {editingClient ? "Edit Client" : "New Client"}
@@ -379,7 +388,7 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
                   value={formData.brand_color_hex}
                   onChange={(e) => setFormData({ ...formData, brand_color_hex: e.target.value })}
                   placeholder="#22C55E"
-                  className="font-mono"
+                  className="tabular-nums"
                 />
               </div>
             </div>
@@ -404,7 +413,7 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
 
       {/* Delete Confirmation */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="bg-card border-border rounded-xl">
+        <AlertDialogContent className="bg-card border-border rounded-lg">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Client?</AlertDialogTitle>
             <AlertDialogDescription>

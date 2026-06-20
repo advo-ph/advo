@@ -1,17 +1,11 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
 import {
   Calendar,
-  Clock,
-  CheckCircle2,
-  Circle,
-  AlertCircle,
   Plus,
   Pencil,
   Trash2,
   Loader2,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
@@ -39,13 +33,14 @@ import {
   type DeliverableInput,
   type DeliverableStatus,
 } from "@/hooks/useAdminDeliverables";
+import { PageHeader, Table, THead, TBody, TRow, Empty, Dot } from "@/components/admin/_ui";
 
-const statusConfig: Record<DeliverableStatus, { label: string; color: string; icon: React.ElementType }> = {
-  not_started: { label: "Not Started", color: "bg-secondary text-muted-foreground", icon: Circle },
-  in_progress: { label: "In Progress", color: "bg-blue-500/10 text-blue-500", icon: Clock },
-  review: { label: "In Review", color: "bg-purple-500/10 text-purple-500", icon: AlertCircle },
-  completed: { label: "Completed", color: "bg-green-500/10 text-green-500", icon: CheckCircle2 },
-  blocked: { label: "Blocked", color: "bg-red-500/10 text-red-500", icon: AlertCircle },
+const statusConfig: Record<DeliverableStatus, { label: string; dot: string }> = {
+  not_started: { label: "Not Started", dot: "bg-muted-foreground" },
+  in_progress: { label: "In Progress", dot: "bg-blue-500" },
+  review: { label: "In Review", dot: "bg-purple-500" },
+  completed: { label: "Completed", dot: "bg-green-500" },
+  blocked: { label: "Blocked", dot: "bg-red-500" },
 };
 
 const STATUS_ORDER: DeliverableStatus[] = [
@@ -169,185 +164,185 @@ const AdminSchedule = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold mb-2">Schedule & Deliverables</h1>
-          <p className="text-muted-foreground">Track team assignments and deadlines</p>
-        </div>
-        <Button onClick={openAdd} className="rounded-full bg-foreground text-background hover:bg-foreground/90 shrink-0">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Deliverable
-        </Button>
-      </div>
+      <PageHeader
+        title="Deliverables"
+        meta={`${deliverables.length} total${selectedMember ? ` · ${filteredDeliverables.length} shown` : ""}`}
+        action={
+          <Button onClick={openAdd} size="sm" className="h-9">
+            <Plus className="h-4 w-4 mr-1.5" />
+            Add deliverable
+          </Button>
+        }
+      />
 
       {/* Team Member Filter */}
-      <div className="flex gap-2 overflow-x-auto pb-2">
+      <div className="flex flex-wrap gap-1.5">
         <button
           onClick={() => setSelectedMember(null)}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
+          className={`px-2.5 h-7 rounded-md text-xs font-medium transition-colors ${
             selectedMember === null
-              ? "bg-accent text-white"
+              ? "bg-accent text-accent-foreground"
               : "bg-secondary text-muted-foreground hover:text-foreground"
           }`}
         >
-          All Members
+          All members
         </button>
         {teamMembers.map((member) => (
           <button
             key={member.team_member_id}
             onClick={() => setSelectedMember(member.team_member_id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${
+            className={`flex items-center gap-1.5 px-2.5 h-7 rounded-md text-xs font-medium transition-colors ${
               selectedMember === member.team_member_id
-                ? "bg-accent text-white"
+                ? "bg-accent text-accent-foreground"
                 : "bg-secondary text-muted-foreground hover:text-foreground"
             }`}
           >
-            <Avatar className="h-5 w-5">
+            <Avatar className="h-4 w-4">
               <AvatarImage src={member.avatar_url} />
-              <AvatarFallback className="text-xs">{getInitials(member.name)}</AvatarFallback>
+              <AvatarFallback className="text-[9px]">{getInitials(member.name)}</AvatarFallback>
             </Avatar>
             {member.name.split(" ")[0]}
           </button>
         ))}
       </div>
 
-      {/* Deliverables Grid */}
+      {/* Deliverables table */}
       {isLoading ? (
-        <div className="grid gap-4">
+        <div className="border border-border rounded-lg bg-card divide-y divide-border">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-24 bg-secondary animate-pulse rounded-xl" />
+            <div key={i} className="h-11 px-3 flex items-center">
+              <div className="h-3 w-1/3 bg-secondary animate-pulse rounded" />
+            </div>
           ))}
         </div>
       ) : filteredDeliverables.length === 0 ? (
-        <div className="text-center py-12 bg-card border border-border rounded-xl">
-          <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground mb-4">No deliverables yet</p>
-          <Button onClick={openAdd} variant="outline" className="rounded-full">
-            <Plus className="h-4 w-4 mr-2" />
-            Add your first deliverable
-          </Button>
-        </div>
+        <Table>
+          <Empty text="No deliverables yet" icon={Calendar} />
+        </Table>
       ) : (
-        <div className="grid gap-4">
-          {filteredDeliverables.map((deliverable, index) => {
-            const status = statusConfig[deliverable.status];
-            const StatusIcon = status.icon;
-            const isPastDue =
-              deliverable.due_date &&
-              new Date(deliverable.due_date) < new Date() &&
-              deliverable.status !== "completed";
+        <Table>
+          <THead>
+            <span className="flex-1 min-w-0">Title</span>
+            <span className="hidden lg:block w-40 shrink-0">Project</span>
+            <span className="w-32 shrink-0">Status</span>
+            <span className="hidden md:block w-28 shrink-0">Assignee</span>
+            <span className="w-12 shrink-0 text-center">Pri</span>
+            <span className="w-16 shrink-0 text-right">Due</span>
+            <span className="w-8 shrink-0" />
+          </THead>
+          <TBody>
+            {filteredDeliverables.map((deliverable) => {
+              const isPastDue =
+                deliverable.due_date &&
+                new Date(deliverable.due_date) < new Date() &&
+                deliverable.status !== "completed";
 
-            return (
-              <motion.div
-                key={deliverable.deliverable_id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.03 }}
-                className={`p-5 bg-card border rounded-xl shadow-card transition-colors ${
-                  isPastDue ? "border-red-500/50" : "border-border hover:border-accent/30"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2 flex-wrap">
-                      <h3 className="font-semibold">{deliverable.title}</h3>
-                      {/* Inline quick status change */}
-                      <Select
-                        value={deliverable.status}
-                        onValueChange={(v) =>
-                          updateStatus(deliverable.deliverable_id, v as DeliverableStatus)
-                        }
-                      >
-                        <SelectTrigger className={`h-7 w-auto gap-1 border-0 px-2.5 text-xs font-medium ${status.color}`}>
-                          <StatusIcon className="h-3 w-3" />
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {STATUS_ORDER.map((s) => {
-                            const cfg = statusConfig[s];
-                            const Icon = cfg.icon;
-                            return (
-                              <SelectItem key={s} value={s}>
-                                <span className="flex items-center gap-2">
-                                  <Icon className="h-3.5 w-3.5" />
-                                  {cfg.label}
-                                </span>
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
-                      {isPastDue && (
-                        <Badge variant="destructive" className="text-xs">
-                          Overdue
-                        </Badge>
-                      )}
-                    </div>
+              return (
+                <TRow key={deliverable.deliverable_id}>
+                  <span className="flex-1 min-w-0 flex items-center gap-2">
+                    <span className="font-medium truncate">{deliverable.title}</span>
+                    {isPastDue && (
+                      <span className="text-[10px] font-medium text-destructive shrink-0">Overdue</span>
+                    )}
+                  </span>
 
-                    <p className="text-sm text-muted-foreground mb-3">
-                      {deliverable.project?.title || "No project"}
-                    </p>
+                  <span className="hidden lg:block w-40 shrink-0 text-xs text-muted-foreground truncate">
+                    {deliverable.project?.title || "No project"}
+                  </span>
 
-                    <div className="flex items-center gap-4 text-sm">
-                      {deliverable.assignee && (
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarImage src={deliverable.assignee.avatar_url} />
-                            <AvatarFallback className="text-xs">
-                              {getInitials(deliverable.assignee.name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-muted-foreground">
-                            {deliverable.assignee.name}
-                          </span>
-                        </div>
-                      )}
+                  {/* Inline quick status change */}
+                  <span className="w-32 shrink-0">
+                    <Select
+                      value={deliverable.status}
+                      onValueChange={(v) =>
+                        updateStatus(deliverable.deliverable_id, v as DeliverableStatus)
+                      }
+                    >
+                      <SelectTrigger className="h-7 w-full gap-1.5 border-0 bg-transparent px-1.5 text-xs hover:bg-secondary/60 shadow-none focus:ring-0">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUS_ORDER.map((s) => {
+                          const cfg = statusConfig[s];
+                          return (
+                            <SelectItem key={s} value={s}>
+                              <span className="flex items-center gap-2">
+                                <Dot className={cfg.dot} />
+                                {cfg.label}
+                              </span>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </span>
 
-                      {deliverable.due_date && (
-                        <div className={`flex items-center gap-1 ${isPastDue ? "text-red-500" : "text-muted-foreground"}`}>
-                          <Calendar className="h-3.5 w-3.5" />
-                          {new Date(deliverable.due_date).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <span className="hidden md:flex w-28 shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+                    {deliverable.assignee ? (
+                      <>
+                        <Avatar className="h-4 w-4">
+                          <AvatarImage src={deliverable.assignee.avatar_url} />
+                          <AvatarFallback className="text-[9px]">
+                            {getInitials(deliverable.assignee.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="truncate">{deliverable.assignee.name.split(" ")[0]}</span>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground/60">—</span>
+                    )}
+                  </span>
 
-                  <div className="flex items-center gap-3 shrink-0">
-                    <div className="flex items-center gap-1" title={`Priority ${deliverable.priority}`}>
-                      {[1, 2, 3].map((p) => (
-                        <div
-                          key={p}
-                          className={`w-1.5 h-4 rounded-full ${
-                            p <= deliverable.priority ? "bg-accent" : "bg-secondary"
-                          }`}
-                        />
-                      ))}
-                    </div>
+                  <span
+                    className="w-12 shrink-0 flex items-center justify-center gap-0.5"
+                    title={`Priority ${deliverable.priority}`}
+                  >
+                    {[1, 2, 3].map((p) => (
+                      <span
+                        key={p}
+                        className={`w-1 h-3.5 rounded-full ${
+                          p <= deliverable.priority ? "bg-accent" : "bg-secondary"
+                        }`}
+                      />
+                    ))}
+                  </span>
+
+                  <span
+                    className={`w-16 shrink-0 text-right text-xs tabular-nums ${
+                      isPastDue ? "text-destructive" : "text-muted-foreground"
+                    }`}
+                  >
+                    {deliverable.due_date
+                      ? new Date(deliverable.due_date).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })
+                      : "—"}
+                  </span>
+
+                  <span className="w-8 shrink-0 flex justify-end">
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      className="h-7 w-7 text-muted-foreground hover:text-foreground"
                       onClick={() => openEdit(deliverable)}
                       aria-label="Edit deliverable"
                     >
-                      <Pencil className="h-4 w-4" />
+                      <Pencil className="h-3.5 w-3.5" />
                     </Button>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+                  </span>
+                </TRow>
+              );
+            })}
+          </TBody>
+        </Table>
       )}
 
       {/* Add / Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-card border-border max-w-md rounded-xl">
+        <DialogContent className="bg-card border-border max-w-md rounded-lg">
           <DialogHeader>
             <DialogTitle>{editing ? "Edit Deliverable" : "Add Deliverable"}</DialogTitle>
           </DialogHeader>

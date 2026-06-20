@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
   Loader2,
@@ -20,7 +19,6 @@ import {
   Monitor,
   Smartphone,
   Tablet,
-  Shield,
   Gauge,
   Sparkles,
   FileText,
@@ -34,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { get, post } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { PageHeader, Panel, StatStrip, Stat, Empty, Dot } from "./_ui";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type BrandData = Record<string, any>;
@@ -44,39 +43,31 @@ const SectionCard = ({
   count,
   children,
   defaultOpen = false,
-  accentColor,
 }: {
   title: string;
   icon: React.ElementType;
   count?: number;
   children: React.ReactNode;
   defaultOpen?: boolean;
-  accentColor?: string;
 }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-      className="bg-card border border-border rounded-xl shadow-card overflow-hidden">
+    <div className="bg-card border border-border rounded-lg overflow-hidden">
       <button onClick={() => setOpen(!open)}
-        className="w-full p-4 flex items-center justify-between hover:bg-secondary/30 transition-colors">
-        <div className="flex items-center gap-3">
-          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${accentColor || "bg-accent/10"}`}>
-            <Icon className={`h-4 w-4 ${accentColor ? "text-white" : "text-accent"}`} />
-          </div>
+        className="w-full px-4 h-11 flex items-center justify-between hover:bg-secondary/30 transition-colors">
+        <div className="flex items-center gap-2.5">
+          <Icon className="h-4 w-4 text-muted-foreground" />
           <span className="font-medium text-sm">{title}</span>
-          {count !== undefined && <Badge variant="secondary" className="text-xs">{count}</Badge>}
+          {count !== undefined && (
+            <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
+          )}
         </div>
         {open ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
       </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className="overflow-hidden">
-            <div className="px-4 pb-4 pt-1">{children}</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+      {open && (
+        <div className="px-4 pb-4 pt-1 border-t border-border">{children}</div>
+      )}
+    </div>
   );
 };
 
@@ -85,27 +76,20 @@ const CopyButton = ({ text }: { text: string }) => {
   return (
     <button onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
       className="p-1 rounded hover:bg-secondary/50 transition-colors" title="Copy">
-      {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3 text-muted-foreground" />}
+      {copied ? <Check className="h-3 w-3 text-accent" /> : <Copy className="h-3 w-3 text-muted-foreground" />}
     </button>
   );
 };
 
-const ScoreRing = ({ score, label, size = 60 }: { score: number; label: string; size?: number }) => {
-  const radius = (size - 8) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (score / 100) * circumference;
-  const color = score >= 80 ? "#22c55e" : score >= 50 ? "#f59e0b" : "#ef4444";
+const ScoreRing = ({ score, label }: { score: number; label: string; size?: number }) => {
+  const tone = score >= 80 ? "bg-green-500" : score >= 50 ? "bg-yellow-500" : "bg-red-500";
   return (
-    <div className="flex flex-col items-center gap-1">
-      <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size / 2} cy={size / 2} r={radius} stroke="currentColor" strokeWidth={4}
-          fill="none" className="text-secondary" />
-        <circle cx={size / 2} cy={size / 2} r={radius} stroke={color} strokeWidth={4}
-          fill="none" strokeDasharray={circumference} strokeDashoffset={offset}
-          strokeLinecap="round" className="transition-all duration-700" />
-      </svg>
-      <span className="text-lg font-bold" style={{ color, marginTop: -(size / 2 + 8) }}>{score}</span>
-      <span className="text-[10px] text-muted-foreground mt-2">{label}</span>
+    <div className="flex flex-col">
+      <p className="text-xs text-muted-foreground mb-1.5">{label}</p>
+      <div className="flex items-center gap-2">
+        <Dot className={tone} />
+        <p className="text-2xl font-semibold tracking-tight tabular-nums">{score}</p>
+      </div>
     </div>
   );
 };
@@ -199,44 +183,46 @@ const AdminBrandScraper = () => {
   const comparison = result?.comparison as Record<string, unknown> | undefined;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold mb-2">Brand Scraper</h1>
-        <p className="text-muted-foreground">Extract branding, design system, performance, SEO, and accessibility from any website</p>
-      </div>
+    <div className="space-y-4">
+      <PageHeader
+        title="Brand Scraper"
+        meta="Branding, design system, performance, SEO & accessibility from any site"
+      />
 
       {/* URL Input */}
-      <div className="space-y-3">
-        <div className="flex gap-3">
-          <div className="relative flex-1">
-            <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Enter website URL (e.g. stripe.com)" value={url}
-              onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleScrape()} className="pl-9" />
+      <Panel title="Inputs">
+        <div className="p-4 space-y-3">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Enter website URL (e.g. stripe.com)" value={url}
+                onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleScrape()} className="pl-9 h-9" />
+            </div>
+            <Button onClick={handleScrape} disabled={isLoading || !url}
+              className="h-9 bg-accent text-accent-foreground hover:bg-accent/90 min-w-[120px]">
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Search className="h-4 w-4 mr-2" />}
+              {isLoading ? "Analyzing…" : "Analyze"}
+            </Button>
           </div>
-          <Button onClick={handleScrape} disabled={isLoading || !url}
-            className="rounded-full bg-foreground text-background hover:bg-foreground/90 min-w-[120px]">
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Search className="h-4 w-4 mr-2" />}
-            {isLoading ? "Analyzing..." : "Analyze"}
-          </Button>
-        </div>
-        <div className="flex items-center gap-4">
-          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-            <input type="checkbox" checked={useFullScrape} onChange={(e) => setUseFullScrape(e.target.checked)}
-              className="rounded border-border" />
-            Full analysis (screenshots, SEO, performance, accessibility)
-          </label>
-          <button onClick={() => setShowCompare(!showCompare)} className="text-xs text-accent hover:underline flex items-center gap-1">
-            <GitCompare className="h-3 w-3" /> {showCompare ? "Hide compare" : "Compare with another site"}
-          </button>
-        </div>
-        {showCompare && (
-          <div className="relative">
-            <GitCompare className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Compare URL (e.g. competitor.com)" value={compareUrl}
-              onChange={(e) => setCompareUrl(e.target.value)} className="pl-9" />
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+              <input type="checkbox" checked={useFullScrape} onChange={(e) => setUseFullScrape(e.target.checked)}
+                className="rounded border-border" />
+              Full analysis (screenshots, SEO, performance, accessibility)
+            </label>
+            <button onClick={() => setShowCompare(!showCompare)} className="text-xs text-accent hover:underline flex items-center gap-1">
+              <GitCompare className="h-3 w-3" /> {showCompare ? "Hide compare" : "Compare with another site"}
+            </button>
           </div>
-        )}
-      </div>
+          {showCompare && (
+            <div className="relative">
+              <GitCompare className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Compare URL (e.g. competitor.com)" value={compareUrl}
+                onChange={(e) => setCompareUrl(e.target.value)} className="pl-9 h-9" />
+            </div>
+          )}
+        </div>
+      </Panel>
 
       {/* History */}
       {history.length > 0 && (
@@ -247,10 +233,10 @@ const AdminBrandScraper = () => {
             {history.length} saved scrapes
           </button>
           {showHistory && (
-            <div className="mt-2 space-y-1.5 max-h-[200px] overflow-y-auto">
+            <div className="mt-2 border border-border rounded-lg bg-card divide-y divide-border max-h-[200px] overflow-y-auto">
               {history.map((h) => (
                 <button key={h.scrapeResultId} onClick={() => loadFromHistory(h.scrapeResultId)}
-                  className="w-full text-left p-2.5 bg-secondary/30 rounded-lg hover:bg-secondary/50 transition-colors flex items-center justify-between">
+                  className="w-full text-left px-3 h-11 hover:bg-secondary/40 transition-colors flex items-center justify-between">
                   <span className="text-sm truncate flex-1">{h.url.replace(/^https?:\/\//, "")}</span>
                   <span className="text-xs text-muted-foreground ml-3 flex-shrink-0">{new Date(h.createdAt).toLocaleDateString()}</span>
                 </button>
@@ -262,12 +248,12 @@ const AdminBrandScraper = () => {
 
       {/* Loading */}
       {isLoading && (
-        <div className="flex flex-col items-center justify-center py-16 gap-4">
-          <Loader2 className="h-10 w-10 animate-spin text-accent" />
+        <div className="border border-border rounded-lg bg-card flex flex-col items-center justify-center py-12 gap-3">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
-            {useFullScrape ? "Full analysis: screenshots, crawling pages, testing SEO & performance..." : "Extracting brand data..."}
+            {useFullScrape ? "Full analysis: screenshots, crawling pages, testing SEO & performance…" : "Extracting brand data…"}
           </p>
-          {useFullScrape && <p className="text-xs text-muted-foreground">This may take 30-60 seconds</p>}
+          {useFullScrape && <p className="text-xs text-muted-foreground">This may take 30–60 seconds</p>}
         </div>
       )}
 
@@ -275,13 +261,13 @@ const AdminBrandScraper = () => {
       {result && (
         <div className="space-y-4">
           {/* Overview */}
-          <div className="p-5 bg-card border border-border rounded-xl shadow-card">
+          <div className="p-4 bg-card border border-border rounded-lg">
             <div className="flex items-start gap-4">
               {result.meta?.favicon && (
-                <img src={result.meta.favicon} alt="" className="w-10 h-10 rounded-lg" onError={(e) => (e.currentTarget.style.display = "none")} />
+                <img src={result.meta.favicon} alt="" className="w-10 h-10 rounded-md" onError={(e) => (e.currentTarget.style.display = "none")} />
               )}
               <div className="flex-1 min-w-0">
-                <h2 className="font-bold text-lg truncate">{result.meta?.ogTitle || result.meta?.title || result.url}</h2>
+                <h2 className="font-semibold text-base truncate">{result.meta?.ogTitle || result.meta?.title || result.url}</h2>
                 {result.meta?.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{result.meta.description}</p>}
                 <a href={result.url} target="_blank" rel="noopener noreferrer"
                   className="text-xs text-accent hover:underline flex items-center gap-1 mt-2">
@@ -289,7 +275,7 @@ const AdminBrandScraper = () => {
                 </a>
               </div>
               {result.meta?.ogImage && (
-                <img src={result.meta.ogImage} alt="" className="w-40 h-24 object-cover rounded-lg border border-border hidden md:block"
+                <img src={result.meta.ogImage} alt="" className="w-40 h-24 object-cover rounded-md border border-border hidden md:block"
                   onError={(e) => (e.currentTarget.style.display = "none")} />
               )}
             </div>
@@ -297,35 +283,28 @@ const AdminBrandScraper = () => {
 
           {/* Scores Row (if full scrape) */}
           {(seo || accessibility || perf) && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {seo && <div className="p-4 bg-card border border-border rounded-xl flex justify-center"><ScoreRing score={seo.score} label="SEO" /></div>}
-              {accessibility && <div className="p-4 bg-card border border-border rounded-xl flex justify-center"><ScoreRing score={accessibility.score} label="A11y" /></div>}
-              {perf && <div className="p-4 bg-card border border-border rounded-xl flex justify-center">
+            <StatStrip cols={4}>
+              {seo && <div className="bg-card px-4 py-3"><ScoreRing score={seo.score} label="SEO" /></div>}
+              {accessibility && <div className="bg-card px-4 py-3"><ScoreRing score={accessibility.score} label="A11y" /></div>}
+              {perf && <div className="bg-card px-4 py-3">
                 <ScoreRing score={Math.max(0, 100 - Math.round((perf.loadTimeMs || 0) / 100))} label="Speed" />
               </div>}
-              <div className="p-4 bg-card border border-border rounded-xl text-center flex flex-col justify-center">
-                <p className="text-2xl font-bold">{crawledPages?.length || 1}</p>
-                <p className="text-xs text-muted-foreground">Pages Crawled</p>
-              </div>
-            </div>
+              <Stat label="Pages crawled" value={String(crawledPages?.length || 1)} />
+            </StatStrip>
           )}
 
           {/* Stats Row */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <StatStrip cols={4}>
             {[
-              { label: "Colors", value: result.colors?.length || 0, icon: Palette },
-              { label: "Fonts", value: result.fonts?.length || 0, icon: Type },
-              { label: "Tech", value: result.techStack?.length || 0, icon: Code2 },
-              { label: "Images", value: result.images?.length || 0, icon: Image },
-              { label: "Features", value: result.features?.length || 0, icon: Zap },
+              { label: "Colors", value: result.colors?.length || 0 },
+              { label: "Fonts", value: result.fonts?.length || 0 },
+              { label: "Tech", value: result.techStack?.length || 0 },
+              { label: "Images", value: result.images?.length || 0 },
+              { label: "Features", value: result.features?.length || 0 },
             ].map((stat) => (
-              <div key={stat.label} className="p-4 bg-card border border-border rounded-xl text-center">
-                <stat.icon className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
-                <p className="text-lg font-bold">{stat.value}</p>
-                <p className="text-xs text-muted-foreground">{stat.label}</p>
-              </div>
+              <Stat key={stat.label} label={stat.label} value={String(stat.value)} />
             ))}
-          </div>
+          </StatStrip>
 
           {/* Screenshots */}
           {screenshots && screenshots.length > 0 && (
@@ -355,21 +334,21 @@ const AdminBrandScraper = () => {
 
           {/* Color Palette */}
           {palette && (
-            <SectionCard title="Color Palette" icon={Palette} defaultOpen accentColor="bg-gradient-to-br from-pink-500 to-violet-500">
+            <SectionCard title="Color Palette" icon={Palette} defaultOpen>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {palette.primary && (
                     <div className="space-y-1.5">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Primary</p>
                       <div className="h-16 rounded-lg border border-border" style={{ backgroundColor: palette.primary }} />
-                      <div className="flex items-center gap-1"><span className="text-xs font-mono">{palette.primary}</span><CopyButton text={palette.primary} /></div>
+                      <div className="flex items-center gap-1"><span className="text-xs tabular-nums">{palette.primary}</span><CopyButton text={palette.primary} /></div>
                     </div>
                   )}
                   {palette.secondary && (
                     <div className="space-y-1.5">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Secondary</p>
                       <div className="h-16 rounded-lg border border-border" style={{ backgroundColor: palette.secondary }} />
-                      <div className="flex items-center gap-1"><span className="text-xs font-mono">{palette.secondary}</span><CopyButton text={palette.secondary} /></div>
+                      <div className="flex items-center gap-1"><span className="text-xs tabular-nums">{palette.secondary}</span><CopyButton text={palette.secondary} /></div>
                     </div>
                   )}
                   {palette.accent?.length > 0 && (
@@ -382,7 +361,7 @@ const AdminBrandScraper = () => {
                       </div>
                       <div className="flex flex-wrap gap-1">
                         {palette.accent.slice(0, 4).map((c: string, i: number) => (
-                          <span key={i} className="text-[10px] font-mono">{c}</span>
+                          <span key={i} className="text-[10px] tabular-nums">{c}</span>
                         ))}
                       </div>
                     </div>
@@ -403,7 +382,7 @@ const AdminBrandScraper = () => {
                   {(result.colors || []).map((color: { hex: string; count: number }, i: number) => (
                     <div key={i} className="flex items-center gap-2 p-2 bg-secondary/30 rounded-lg">
                       <div className="w-6 h-6 rounded border border-border" style={{ backgroundColor: color.hex }} />
-                      <span className="text-[10px] font-mono">{color.hex}</span>
+                      <span className="text-[10px] tabular-nums">{color.hex}</span>
                       <CopyButton text={color.hex} />
                     </div>
                   ))}
@@ -420,7 +399,7 @@ const AdminBrandScraper = () => {
                   <div key={i} className="flex items-center gap-2 p-2 bg-secondary/30 rounded-lg">
                     <div className="w-8 h-8 rounded-md border border-border shadow-sm" style={{ backgroundColor: color.hex }} />
                     <div>
-                      <div className="flex items-center gap-1"><span className="text-xs font-mono">{color.hex}</span><CopyButton text={color.hex} /></div>
+                      <div className="flex items-center gap-1"><span className="text-xs tabular-nums">{color.hex}</span><CopyButton text={color.hex} /></div>
                       <span className="text-[10px] text-muted-foreground">used {color.count}x</span>
                     </div>
                   </div>
@@ -436,12 +415,12 @@ const AdminBrandScraper = () => {
                 {typography.map((t, i) => (
                   <div key={i} className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
                     <div className="flex items-center gap-3">
-                      <Badge variant="outline" className="text-[10px] w-10 justify-center font-mono">{t.element}</Badge>
+                      <Badge variant="outline" className="text-[10px] w-10 justify-center tabular-nums">{t.element}</Badge>
                       <span className="text-sm" style={{ fontFamily: t.family.split(",")[0].replace(/"/g, ""), fontSize: Math.min(parseInt(t.size), 24), fontWeight: parseInt(t.weight) }}>
                         {t.family.split(",")[0].replace(/"/g, "")}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground font-mono">
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
                       <span>{t.size}</span>
                       <span>w{t.weight}</span>
                       <span>lh:{t.lineHeight}</span>
@@ -519,12 +498,10 @@ const AdminBrandScraper = () => {
           {/* SEO Audit */}
           {seo && (
             <SectionCard title="SEO Audit" icon={BarChart3} count={seo.checks.filter(c => c.passed).length}>
-              <div className="space-y-2">
+              <div className="divide-y divide-border -mx-4">
                 {seo.checks.map((ch, i) => (
-                  <div key={i} className={`flex items-start gap-3 p-2.5 rounded-lg ${ch.passed ? "bg-green-500/5" : "bg-red-500/5"}`}>
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${ch.passed ? "bg-green-500/20 text-green-500" : "bg-red-500/20 text-red-500"}`}>
-                      {ch.passed ? <Check className="h-3 w-3" /> : <span className="text-xs">!</span>}
-                    </div>
+                  <div key={i} className="flex items-start gap-3 px-4 py-2.5">
+                    <Dot className={`mt-1.5 ${ch.passed ? "bg-green-500" : "bg-red-500"}`} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{ch.name}</p>
                       <p className="text-xs text-muted-foreground truncate">{ch.value}</p>
@@ -560,12 +537,10 @@ const AdminBrandScraper = () => {
           {/* Accessibility */}
           {accessibility && (
             <SectionCard title="Accessibility" icon={Eye} count={accessibility.checks.filter(c => c.passed).length}>
-              <div className="space-y-2">
+              <div className="divide-y divide-border -mx-4">
                 {accessibility.checks.map((ch, i) => (
-                  <div key={i} className={`flex items-start gap-3 p-2.5 rounded-lg ${ch.passed ? "bg-green-500/5" : "bg-red-500/5"}`}>
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${ch.passed ? "bg-green-500/20 text-green-500" : "bg-red-500/20 text-red-500"}`}>
-                      {ch.passed ? <Check className="h-3 w-3" /> : <span className="text-xs">!</span>}
-                    </div>
+                  <div key={i} className="flex items-start gap-3 px-4 py-2.5">
+                    <Dot className={`mt-1.5 ${ch.passed ? "bg-green-500" : "bg-red-500"}`} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{ch.name}</p>
                       <p className="text-xs text-muted-foreground">{ch.details}</p>
@@ -631,7 +606,7 @@ const AdminBrandScraper = () => {
             <SectionCard title="CSS Variables" icon={Variable} count={result.cssVariables.length}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 max-h-[300px] overflow-y-auto">
                 {result.cssVariables.map((v: { name: string; value: string }, i: number) => (
-                  <div key={i} className="flex items-center justify-between p-2 bg-secondary/30 rounded text-xs font-mono gap-2">
+                  <div key={i} className="flex items-center justify-between p-2 bg-secondary/30 rounded text-xs tabular-nums gap-2">
                     <span className="text-muted-foreground truncate">{v.name}</span>
                     <div className="flex items-center gap-1 flex-shrink-0">
                       {v.value.match(/^#[0-9a-f]{3,8}$/i) && <div className="w-3 h-3 rounded border" style={{ backgroundColor: v.value }} />}
@@ -731,12 +706,8 @@ const AdminBrandScraper = () => {
 
       {/* Empty state */}
       {!isLoading && !result && (
-        <div className="text-center py-16 bg-card border border-border rounded-xl">
-          <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground font-medium">Enter a URL to analyze</p>
-          <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
-            Extract colors, fonts, typography scale, tech stack, SEO audit, performance metrics, accessibility score, and responsive screenshots from any website.
-          </p>
+        <div className="border border-border rounded-lg bg-card">
+          <Empty text="Enter a URL to analyze branding, design system, SEO, performance & accessibility." icon={Search} />
         </div>
       )}
     </div>

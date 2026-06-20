@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
   Loader2,
@@ -34,6 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { get } from "@/lib/api";
 import { getAccessToken } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { PageHeader, Panel, StatStrip, Stat, Empty } from "./_ui";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:6107";
 
@@ -326,24 +326,16 @@ const SectionCard = ({
 }) => {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="bg-card border border-border rounded-xl shadow-card overflow-hidden"
-    >
+    <div className="bg-card border border-border rounded-lg overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full p-4 flex items-center justify-between hover:bg-secondary/30 transition-colors"
+        className="w-full px-4 h-11 flex items-center justify-between hover:bg-secondary/30 transition-colors"
       >
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-            <Icon className="h-4 w-4 text-blue-500" />
-          </div>
+        <div className="flex items-center gap-2.5">
+          <Icon className="h-4 w-4 text-muted-foreground" />
           <span className="font-medium text-sm">{title}</span>
           {count !== undefined && (
-            <Badge variant="secondary" className="text-xs">
-              {count}
-            </Badge>
+            <span className="text-xs text-muted-foreground tabular-nums">{count}</span>
           )}
         </div>
         {open ? (
@@ -352,20 +344,10 @@ const SectionCard = ({
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         )}
       </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden"
-          >
-            <div className="px-4 pb-4 pt-1">{children}</div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+      {open && (
+        <div className="px-4 pb-4 pt-1 border-t border-border">{children}</div>
+      )}
+    </div>
   );
 };
 
@@ -698,42 +680,44 @@ const AdminFacebookScraper = () => {
   const hasResults = posts.length > 0 || isComplete;
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold mb-2">Facebook Scraper</h1>
-        <p className="text-muted-foreground">
-          Extract posts, photos, and company data from Facebook pages — live streaming
-        </p>
-      </div>
+    <div className="space-y-4">
+      <PageHeader
+        title="Facebook Scraper"
+        meta="Posts, photos & company data from Facebook pages — live streaming"
+      />
 
       {/* URL Input */}
-      <div className="flex gap-3">
-        <div className="relative flex-1">
-          <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Facebook page URL or username (e.g. butfirstcoffeeph)"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && !isStreaming && startStream()}
-            className="pl-9"
-            disabled={isStreaming}
-          />
+      <Panel title="Inputs">
+        <div className="p-4">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Facebook page URL or username (e.g. butfirstcoffeeph)"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && !isStreaming && startStream()}
+                className="pl-9 h-9"
+                disabled={isStreaming}
+              />
+            </div>
+            {isStreaming ? (
+              <Button onClick={stopStream} variant="destructive" className="h-9 min-w-[120px]">
+                Stop
+              </Button>
+            ) : (
+              <Button
+                onClick={startStream}
+                disabled={!url}
+                className="h-9 bg-accent text-accent-foreground hover:bg-accent/90 min-w-[120px]"
+              >
+                <Radio className="h-4 w-4 mr-2" />
+                Live Scrape
+              </Button>
+            )}
+          </div>
         </div>
-        {isStreaming ? (
-          <Button onClick={stopStream} variant="destructive" className="rounded-full min-w-[120px]">
-            Stop
-          </Button>
-        ) : (
-          <Button
-            onClick={startStream}
-            disabled={!url}
-            className="rounded-full bg-blue-600 hover:bg-blue-700 text-white min-w-[120px]"
-          >
-            <Radio className="h-4 w-4 mr-2" />
-            Live Scrape
-          </Button>
-        )}
-      </div>
+      </Panel>
 
       {/* History */}
       {history.length > 0 && !isStreaming && (
@@ -746,12 +730,12 @@ const AdminFacebookScraper = () => {
             {history.length} saved scrapes
           </button>
           {showHistory && (
-            <div className="mt-2 space-y-1.5 max-h-[200px] overflow-y-auto">
+            <div className="mt-2 border border-border rounded-lg bg-card divide-y divide-border max-h-[200px] overflow-y-auto">
               {history.map((h) => (
                 <button
                   key={h.scrapeResultId}
                   onClick={() => loadFromHistory(h.scrapeResultId)}
-                  className="w-full text-left p-2.5 bg-secondary/30 rounded-lg hover:bg-secondary/50 transition-colors flex items-center justify-between"
+                  className="w-full text-left px-3 h-11 hover:bg-secondary/40 transition-colors flex items-center justify-between"
                 >
                   <span className="text-sm truncate flex-1">
                     {h.url.replace(/^https?:\/\/(www\.)?facebook\.com\//, "")}
@@ -771,20 +755,18 @@ const AdminFacebookScraper = () => {
         <div className="space-y-2">
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-2">
-              {isStreaming && <Loader2 className="h-3 w-3 animate-spin text-blue-500" />}
+              {isStreaming && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
               <span className="text-muted-foreground">{statusText}</span>
             </div>
             <div className="flex items-center gap-3 text-muted-foreground">
-              {scrollCount > 0 && <span>Scroll {scrollCount}</span>}
-              <span className="font-mono font-bold text-foreground">{postsCount} posts</span>
+              {scrollCount > 0 && <span className="tabular-nums">Scroll {scrollCount}</span>}
+              <span className="font-semibold text-foreground tabular-nums">{postsCount} posts</span>
             </div>
           </div>
-          <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-blue-500 rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.3 }}
+          <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden">
+            <div
+              className="h-full bg-accent rounded-full transition-all duration-300"
+              style={{ width: `${progress}%` }}
             />
           </div>
         </div>
@@ -794,14 +776,10 @@ const AdminFacebookScraper = () => {
       {/* 1. Company Profile Card (always visible, not collapsible)         */}
       {/* ================================================================= */}
       {pageInfo && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-5 bg-card border border-border rounded-xl shadow-card"
-        >
+        <div className="p-4 bg-card border border-border rounded-lg">
           {/* Cover image */}
           {pageInfo.coverImage && (
-            <div className="mb-4 -mx-5 -mt-5 rounded-t-xl overflow-hidden max-h-48">
+            <div className="mb-4 -mx-4 -mt-4 rounded-t-lg overflow-hidden max-h-48">
               <img
                 src={resolveImgUrl(pageInfo.coverImage || "")}
                 alt=""
@@ -815,12 +793,12 @@ const AdminFacebookScraper = () => {
               <img
                 src={resolveImgUrl(pageInfo.profileImage || "")}
                 alt=""
-                className="w-16 h-16 rounded-xl object-cover border-2 border-background shadow-md"
+                className="w-16 h-16 rounded-md object-cover border border-border"
                 onError={(e) => (e.currentTarget.style.display = "none")}
               />
             )}
             <div className="flex-1 min-w-0">
-              <h2 className="font-bold text-lg">{pageInfo.name || "Facebook Page"}</h2>
+              <h2 className="font-semibold text-base">{pageInfo.name || "Facebook Page"}</h2>
               {pageInfo.category && (
                 <Badge variant="secondary" className="text-xs mt-1">
                   {pageInfo.category}
@@ -837,7 +815,7 @@ const AdminFacebookScraper = () => {
                     href={pageInfo.website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-blue-500 hover:underline"
+                    className="flex items-center gap-1 text-accent hover:underline"
                   >
                     <Globe className="h-3 w-3" /> {pageInfo.website}
                   </a>
@@ -879,7 +857,7 @@ const AdminFacebookScraper = () => {
               </div>
             </div>
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* ================================================================= */}
@@ -887,28 +865,14 @@ const AdminFacebookScraper = () => {
       {/* ================================================================= */}
       {hasResults && analytics && (
         <SectionCard title="Analytics Overview" icon={BarChart3} defaultOpen>
-          <div className="space-y-4">
+          <div className="space-y-4 pt-3">
             {/* Key metrics grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-3 bg-secondary/30 rounded-lg text-center">
-                <p className="text-lg font-bold">{analytics.postsPerWeek}</p>
-                <p className="text-[10px] text-muted-foreground">Posts / week</p>
-              </div>
-              <div className="p-3 bg-secondary/30 rounded-lg text-center">
-                <p className="text-lg font-bold">{analytics.postsPerMonth}</p>
-                <p className="text-[10px] text-muted-foreground">Posts / month</p>
-              </div>
-              <div className="p-3 bg-secondary/30 rounded-lg text-center">
-                <p className="text-lg font-bold">{analytics.avgTextLength}</p>
-                <p className="text-[10px] text-muted-foreground">Avg text length</p>
-              </div>
-              <div className="p-3 bg-secondary/30 rounded-lg text-center">
-                <p className="text-lg font-bold">
-                  {analytics.withImages} / {analytics.textOnly}
-                </p>
-                <p className="text-[10px] text-muted-foreground">With images / text-only</p>
-              </div>
-            </div>
+            <StatStrip cols={4}>
+              <Stat label="Posts / week" value={String(analytics.postsPerWeek)} />
+              <Stat label="Posts / month" value={String(analytics.postsPerMonth)} />
+              <Stat label="Avg text length" value={String(analytics.avgTextLength)} />
+              <Stat label="With images / text-only" value={`${analytics.withImages} / ${analytics.textOnly}`} />
+            </StatStrip>
 
             {/* Top hashtags */}
             {allHashtags.length > 0 && (
@@ -960,7 +924,7 @@ const AdminFacebookScraper = () => {
 
         return (
           <SectionCard title="Brand Voice Analysis" icon={Type} defaultOpen>
-            <div className="space-y-6">
+            <div className="space-y-5 pt-3">
               {/* Unicode Fonts Used */}
               {unicodeFonts.length > 0 && (
                 <div>
@@ -989,9 +953,9 @@ const AdminFacebookScraper = () => {
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {emojis.slice(0, 25).map((e, i) => (
-                      <div key={i} className="flex items-center gap-1.5 px-2.5 py-1 bg-secondary/30 rounded-full">
+                      <div key={i} className="flex items-center gap-1.5 px-2.5 py-1 bg-secondary/30 rounded-md">
                         <span className="text-lg">{e.emoji}</span>
-                        <span className="text-[10px] text-muted-foreground font-mono">{e.count}</span>
+                        <span className="text-[10px] text-muted-foreground tabular-nums">{e.count}</span>
                       </div>
                     ))}
                   </div>
@@ -1046,8 +1010,8 @@ const AdminFacebookScraper = () => {
                     { label: "Posts with CTA ending", value: structure.hasCTA },
                     { label: "Posts with CAPS header", value: structure.capsHeaders },
                   ].map((s, i) => (
-                    <div key={i} className="p-3 bg-secondary/30 rounded-lg text-center">
-                      <p className="text-lg font-bold">{s.value}</p>
+                    <div key={i} className="p-3 bg-secondary/30 rounded-md text-center">
+                      <p className="text-lg font-semibold tabular-nums">{s.value}</p>
                       <p className="text-[10px] text-muted-foreground">{s.label}</p>
                     </div>
                   ))}
@@ -1063,7 +1027,7 @@ const AdminFacebookScraper = () => {
       {/* ================================================================= */}
       {hasResults && allImages.length > 0 && (
         <SectionCard title="Media Library" icon={Image} count={allImages.length} defaultOpen>
-          <div className="space-y-3">
+          <div className="space-y-3 pt-3">
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
                 {allImages.length} unique images from all posts
@@ -1080,7 +1044,7 @@ const AdminFacebookScraper = () => {
                   href={resolveImgUrl(img)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="aspect-square rounded-md overflow-hidden border border-border hover:border-blue-500/50 transition-colors"
+                  className="aspect-square rounded-md overflow-hidden border border-border hover:border-accent/50 transition-colors"
                 >
                   <img
                     src={resolveImgUrl(img)}
@@ -1101,7 +1065,7 @@ const AdminFacebookScraper = () => {
       {/* ================================================================= */}
       {hasResults && allCaptions.length > 0 && (
         <SectionCard title="All Captions" icon={FileText} count={allCaptions.length} defaultOpen={false}>
-          <div className="space-y-3">
+          <div className="space-y-3 pt-3">
             <div className="flex items-center justify-end">
               <CopyButton
                 text={allCaptions.join("\n---\n")}
@@ -1110,7 +1074,7 @@ const AdminFacebookScraper = () => {
             </div>
             <div className="space-y-2 max-h-[500px] overflow-y-auto">
               {allCaptions.map((cap, i) => (
-                <div key={i} className="p-3 bg-secondary/30 rounded-lg">
+                <div key={i} className="p-3 bg-secondary/30 rounded-md">
                   <p className="text-sm whitespace-pre-wrap">{cap}</p>
                   <p className="text-[10px] text-muted-foreground mt-1">{cap.length} chars</p>
                 </div>
@@ -1125,7 +1089,7 @@ const AdminFacebookScraper = () => {
       {/* ================================================================= */}
       {posts.length > 0 && (
         <SectionCard title="Posts" icon={MessageSquare} count={posts.length} defaultOpen>
-          <div className="space-y-3">
+          <div className="space-y-3 pt-3">
             {/* Controls */}
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative flex-1 min-w-[180px]">
@@ -1176,17 +1140,14 @@ const AdminFacebookScraper = () => {
                 const hasMore = post.text.length > 150;
 
                 return (
-                  <motion.div
+                  <div
                     key={post.postId || i}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="p-3 bg-secondary/30 rounded-lg"
+                    className="p-3 bg-secondary/30 rounded-md"
                   >
                     <div className="flex gap-3">
                       {/* Thumbnail */}
                       {post.images.length > 0 && (
-                        <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-border relative">
+                        <div className="flex-shrink-0 w-16 h-16 rounded-md overflow-hidden border border-border relative">
                           <img
                             src={resolveImgUrl(post.images[0])}
                             alt=""
@@ -1209,7 +1170,7 @@ const AdminFacebookScraper = () => {
                         {hasMore && (
                           <button
                             onClick={() => setExpandedPost(isExpanded ? null : post.postId)}
-                            className="text-[10px] text-blue-500 hover:underline mt-1"
+                            className="text-[10px] text-accent hover:underline mt-1"
                           >
                             {isExpanded ? "Show less" : "Show more"}
                           </button>
@@ -1249,7 +1210,7 @@ const AdminFacebookScraper = () => {
                                 href={resolveImgUrl(img)}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="aspect-square rounded-md overflow-hidden border border-border hover:border-blue-500/50"
+                                className="aspect-square rounded-md overflow-hidden border border-border hover:border-accent/50"
                               >
                                 <img
                                   src={resolveImgUrl(img)}
@@ -1263,7 +1224,7 @@ const AdminFacebookScraper = () => {
                         )}
                       </div>
                     </div>
-                  </motion.div>
+                  </div>
                 );
               })}
               <div ref={postsEndRef} />
@@ -1282,7 +1243,7 @@ const AdminFacebookScraper = () => {
           count={allUrlsFromPosts.length + allHashtags.length + allMentions.length}
           defaultOpen={false}
         >
-          <div className="space-y-4">
+          <div className="space-y-4 pt-3">
             {/* URLs */}
             {allUrlsFromPosts.length > 0 && (
               <div>
@@ -1296,7 +1257,7 @@ const AdminFacebookScraper = () => {
                         href={u.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-500 hover:underline truncate flex-1 mr-2"
+                        className="text-accent hover:underline truncate flex-1 mr-2"
                       >
                         {u.url}
                       </a>
@@ -1351,7 +1312,7 @@ const AdminFacebookScraper = () => {
       {/* ================================================================= */}
       {hasResults && posts.length > 0 && (
         <SectionCard title="Export" icon={Download} defaultOpen={false}>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 pt-3">
             <Button
               variant="outline"
               size="sm"
@@ -1396,29 +1357,21 @@ const AdminFacebookScraper = () => {
 
       {/* Complete banner */}
       {isComplete && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-4 bg-green-500/10 border border-green-500/30 rounded-xl flex items-center gap-3"
-        >
-          <Zap className="h-5 w-5 text-green-500" />
+        <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-lg flex items-center gap-3">
+          <Zap className="h-4 w-4 text-green-500 shrink-0" />
           <div>
             <p className="text-sm font-medium text-green-500">Scrape complete and saved</p>
             <p className="text-xs text-muted-foreground">
               {posts.length} posts captured. Load from history anytime.
             </p>
           </div>
-        </motion.div>
+        </div>
       )}
 
       {/* Empty state */}
       {!isStreaming && posts.length === 0 && !isComplete && (
-        <div className="text-center py-16 bg-card border border-border rounded-xl">
-          <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground font-medium">Enter a Facebook page URL</p>
-          <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
-            Posts stream in live as the page is scraped. No timeouts — captures everything.
-          </p>
+        <div className="border border-border rounded-lg bg-card">
+          <Empty text="Enter a Facebook page URL — posts stream in live as the page is scraped." icon={Search} />
         </div>
       )}
     </div>

@@ -1,6 +1,5 @@
 import { useState, useRef } from "react";
-import { motion } from "framer-motion";
-import { Instagram, Linkedin, Twitter, Calendar, Clock, Image, Heart, MessageCircle, Share2, Plus, Trash2, Edit, Loader2, Upload, Grid3X3, Bookmark, MoreHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
+import { Instagram, Linkedin, Twitter, Calendar, Clock, Image, Heart, MessageCircle, Share2, Plus, Trash2, Edit, Loader2, Upload, Grid3X3, Bookmark, MoreHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { upload } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminSocial, type SocialPost } from "@/hooks/useAdminSocial";
+import { PageHeader, StatStrip, Stat, Panel } from "./_ui";
 
 const platformConfig = {
   instagram: { icon: Instagram, color: "text-pink-500", bg: "bg-pink-500/10", label: "Instagram" },
@@ -157,53 +157,42 @@ const AdminSocial = () => {
   const instagramPosts = scheduledPosts.filter(p => p.platform === "instagram");
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold mb-2">Social Media</h1>
-          <p className="text-muted-foreground">Preview and manage social content</p>
-        </div>
-        <Button 
-          onClick={openCreateDialog}
-          className="rounded-full bg-foreground text-background hover:bg-foreground/90"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Create Post
-        </Button>
-      </div>
+      <PageHeader
+        title="Social Media"
+        meta="Preview and manage social content"
+        action={
+          <Button
+            onClick={openCreateDialog}
+            size="sm"
+            className="bg-accent text-accent-foreground hover:bg-accent/90 gap-1.5"
+          >
+            <Plus className="h-4 w-4" />
+            Create post
+          </Button>
+        }
+      />
 
       {/* Platform Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {Object.entries(platformConfig).map(([platform, config], index) => {
-          const PlatformIcon = config.icon;
-          const stats = platform === "instagram" 
-            ? { followers: "18", posts: "3" } 
-            : platform === "linkedin" 
-            ? { followers: "1.2K", posts: "0" } 
+      <StatStrip cols={3}>
+        {Object.entries(platformConfig).map(([platform]) => {
+          const stats = platform === "instagram"
+            ? { followers: "18", posts: "3" }
+            : platform === "linkedin"
+            ? { followers: "1.2K", posts: "0" }
             : { followers: "856", posts: "0" };
-          
+
           return (
-            <motion.div
+            <Stat
               key={platform}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-              className="p-5 bg-card border border-border rounded-xl shadow-card"
-            >
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-xl ${config.bg} flex items-center justify-center`}>
-                  <PlatformIcon className={`h-5 w-5 ${config.color}`} />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground capitalize">{platform}</p>
-                  <p className="text-xl font-bold">{stats.followers} <span className="text-xs font-normal text-muted-foreground">followers</span></p>
-                </div>
-              </div>
-            </motion.div>
+              label={platformConfig[platform as keyof typeof platformConfig].label}
+              value={stats.followers}
+              sub="followers"
+            />
           );
         })}
-      </div>
+      </StatStrip>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -219,63 +208,58 @@ const AdminSocial = () => {
         </TabsList>
 
         {/* Post Queue Tab */}
-        <TabsContent value="queue" className="mt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <TabsContent value="queue" className="mt-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Scheduled Posts List */}
-            <div className="space-y-4">
-              <h3 className="font-semibold flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Scheduled Posts ({scheduledPosts.length})
-              </h3>
-              
+            <Panel
+              title="Scheduled posts"
+              meta={`${scheduledPosts.length}`}
+            >
               {isLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin" />
+                <div className="flex items-center justify-center py-10">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                 </div>
               ) : scheduledPosts.length === 0 ? (
-                <div className="text-center py-8 bg-card border border-border rounded-xl">
-                  <p className="text-muted-foreground">No scheduled posts yet</p>
-                  <Button variant="link" onClick={openCreateDialog}>
+                <div className="px-4 py-10 text-center">
+                  <p className="text-sm text-muted-foreground">No scheduled posts yet</p>
+                  <Button variant="link" size="sm" className="text-accent" onClick={openCreateDialog}>
                     Create your first post
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
-                  {scheduledPosts.map((post, index) => {
+                <div className="divide-y divide-border max-h-[500px] overflow-y-auto">
+                  {scheduledPosts.map((post) => {
                     const platform = platformConfig[post.platform as keyof typeof platformConfig] || platformConfig.instagram;
                     const PlatformIcon = platform.icon;
                     const isSelected = previewPost?.social_post_id === post.social_post_id;
-                    
+
                     return (
-                      <motion.div
+                      <div
                         key={post.social_post_id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
                         onClick={() => setPreviewPost(post)}
-                        className={`p-4 bg-card border rounded-xl shadow-card group cursor-pointer transition-all ${
-                          isSelected ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-muted-foreground/30"
+                        className={`group cursor-pointer transition-colors px-4 py-3 hover:bg-secondary/40 ${
+                          isSelected ? "bg-accent/[0.06]" : ""
                         }`}
                       >
-                        <div className="flex items-start gap-4">
+                        <div className="flex items-start gap-3">
                           {post.image_url ? (
                             <img
                               src={post.image_url}
                               alt="Post preview"
-                              className="w-16 h-16 rounded-lg object-cover"
+                              className="w-12 h-12 rounded-md object-cover shrink-0"
                             />
                           ) : (
-                            <div className="w-16 h-16 rounded-lg bg-secondary flex items-center justify-center">
-                              <Image className="h-6 w-6 text-muted-foreground" />
+                            <div className="w-12 h-12 rounded-md bg-secondary flex items-center justify-center shrink-0">
+                              <Image className="h-5 w-5 text-muted-foreground" />
                             </div>
                           )}
-                          
+
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge className={`${platform.bg} ${platform.color} gap-1`}>
-                                <PlatformIcon className="h-3 w-3" />
-                                {post.platform}
-                              </Badge>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <PlatformIcon className={`h-3.5 w-3.5 ${platform.color}`} />
+                                {platform.label}
+                              </span>
                               {post.scheduled_for && (
                                 <span className="text-xs text-muted-foreground flex items-center gap-1">
                                   <Clock className="h-3 w-3" />
@@ -291,30 +275,30 @@ const AdminSocial = () => {
                             <p className="text-sm line-clamp-2">{post.content}</p>
                           </div>
 
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                            <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); openEditDialog(post); }}>
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 shrink-0">
+                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); openEditDialog(post); }}>
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button size="icon" variant="ghost" onClick={(e) => { e.stopPropagation(); handleDelete(post.social_post_id); }}>
+                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); handleDelete(post.social_post_id); }}>
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </div>
                         </div>
-                      </motion.div>
+                      </div>
                     );
                   })}
                 </div>
               )}
-            </div>
+            </Panel>
 
             {/* Single Post Preview */}
-            <div className="space-y-4">
-              <h3 className="font-semibold flex items-center gap-2">
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium flex items-center gap-2">
                 <Instagram className="h-4 w-4" />
-                Post Preview
+                Post preview
               </h3>
-              
-              <div className="bg-card border border-border rounded-xl overflow-hidden shadow-card">
+
+              <div className="bg-card border border-border rounded-lg overflow-hidden">
                 {/* Instagram Header */}
                 <div className="p-3 border-b border-border flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -377,9 +361,9 @@ const AdminSocial = () => {
         </TabsContent>
 
         {/* Feed Preview Tab */}
-        <TabsContent value="feed" className="mt-6">
+        <TabsContent value="feed" className="mt-4">
           {/* Instagram Profile Preview */}
-          <div className="bg-card border border-border rounded-xl overflow-hidden shadow-card max-w-2xl mx-auto">
+          <div className="bg-card border border-border rounded-lg overflow-hidden max-w-2xl mx-auto">
             {/* Profile Header */}
             <div className="p-6 border-b border-border">
               <div className="flex items-center gap-8">
@@ -424,12 +408,10 @@ const AdminSocial = () => {
             <div className="grid grid-cols-3 gap-0.5 bg-border">
               {/* Scheduled posts (upcoming) */}
               {instagramPosts.map((post) => (
-                <motion.div
+                <div
                   key={post.social_post_id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
                   className={`aspect-square bg-card relative cursor-pointer group ${
-                    previewPost?.social_post_id === post.social_post_id ? "ring-2 ring-primary ring-inset" : ""
+                    previewPost?.social_post_id === post.social_post_id ? "ring-2 ring-accent ring-inset" : ""
                   }`}
                   onClick={() => setPreviewPost(post)}
                 >
@@ -446,7 +428,7 @@ const AdminSocial = () => {
                   )}
                   {/* Scheduled overlay */}
                   <div className="absolute top-2 left-2">
-                    <Badge className="bg-orange-500 text-white text-[10px] px-1.5 py-0.5">
+                    <Badge className="bg-accent text-accent-foreground text-[10px] px-1.5 py-0.5">
                       <Clock className="h-2.5 w-2.5 mr-1" />
                       Scheduled
                     </Badge>
@@ -462,7 +444,7 @@ const AdminSocial = () => {
                       <span className="font-semibold">0</span>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               ))}
               
             </div>

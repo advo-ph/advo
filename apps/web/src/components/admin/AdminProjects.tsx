@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
 import {
   Plus,
   Pencil,
@@ -50,6 +49,15 @@ import type { Client, ProjectStatus } from "@/types/admin";
 import { STATUS_OPTIONS, formatCurrency } from "@/types/admin";
 import type { MergedProject } from "@/hooks/useOrgProjects";
 import ProjectCommandCenter from "./ProjectCommandCenter";
+import { PageHeader, StatStrip, Stat, Dot, Empty } from "./_ui";
+
+const STATUS_DOT: Record<string, string> = {
+  discovery: "bg-blue-500",
+  architecture: "bg-purple-500",
+  development: "bg-orange-500",
+  testing: "bg-yellow-500",
+  shipped: "bg-green-500",
+};
 
 interface AdminProjectsProps {
   projects: MergedProject[];
@@ -254,65 +262,81 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
     return <ProjectCommandCenter project={openProject} onBack={() => setOpenProjectId(null)} />;
   }
 
+  const activeCount = projects.filter((p) => p.project_status !== "shipped").length;
+  const shippedCount = projects.filter((p) => p.project_status === "shipped").length;
+  const totalPaid = projects.reduce((s, p) => s + p.amount_paid_cents, 0);
+  const totalValue = projects.reduce((s, p) => s + p.total_value_cents, 0);
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold mb-2">Projects</h1>
-          <p className="text-muted-foreground">Manage client projects</p>
-        </div>
-        <Button onClick={openCreateDialog} className="rounded-full bg-foreground text-background hover:bg-foreground/90">
-          <Plus className="h-4 w-4 mr-2" />
-          New Project
-        </Button>
-      </div>
+    <div className="space-y-5">
+      <PageHeader
+        title="Projects"
+        meta={`${projects.length} total · ${activeCount} active · ${shippedCount} shipped`}
+        action={
+          <Button
+            onClick={openCreateDialog}
+            size="sm"
+            className="h-9 bg-accent text-accent-foreground hover:bg-accent/90"
+          >
+            <Plus className="h-4 w-4 mr-1.5" />
+            New project
+          </Button>
+        }
+      />
+
+      {!isLoading && projects.length > 0 && (
+        <StatStrip cols={3}>
+          <Stat label="Active" value={String(activeCount)} sub={`${shippedCount} shipped`} />
+          <Stat label="Collected" value={formatCurrency(totalPaid)} accent />
+          <Stat label="Total value" value={formatCurrency(totalValue)} />
+        </StatStrip>
+      )}
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="flex items-center justify-center py-12 border border-border rounded-lg bg-card">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       ) : projects.length === 0 ? (
-        <div className="text-center py-12 bg-card border border-border rounded-xl">
-          <FolderKanban className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">No projects yet</p>
-          <p className="text-sm text-muted-foreground mt-2 mb-5">
-            Spin up your first project to track work, post updates, and share with clients
-          </p>
-          <Button onClick={openCreateDialog} className="rounded-full bg-foreground text-background hover:bg-foreground/90">
-            <Plus className="h-4 w-4 mr-2" />
-            New Project
-          </Button>
+        <div className="border border-border rounded-lg bg-card">
+          <Empty text="No projects yet" icon={FolderKanban} />
+          <div className="flex justify-center pb-8">
+            <Button
+              onClick={openCreateDialog}
+              size="sm"
+              className="h-9 bg-accent text-accent-foreground hover:bg-accent/90"
+            >
+              <Plus className="h-4 w-4 mr-1.5" />
+              New project
+            </Button>
+          </div>
         </div>
       ) : (
-        <div className="space-y-4">
-          {projects.map((project, index) => (
-            <motion.div
+        <div className="space-y-2">
+          {projects.map((project) => (
+            <div
               key={project.project_id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.03 }}
-              className="p-6 bg-card border border-border rounded-xl shadow-card hover:border-accent/30 transition-colors"
+              className="border border-border rounded-lg bg-card p-4 hover:bg-secondary/30 transition-colors"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-semibold">{project.title}</h3>
-                    <Badge
-                      variant="outline"
-                      className={`font-mono text-xs ${
-                        project.project_status === "shipped" ? "text-accent border-accent/30" : ""
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2.5 mb-1.5">
+                    <Dot className={STATUS_DOT[project.project_status] ?? "bg-muted-foreground"} />
+                    <h3 className="font-medium truncate">{project.title}</h3>
+                    <span
+                      className={`text-xs capitalize ${
+                        project.project_status === "shipped" ? "text-accent" : "text-muted-foreground"
                       }`}
                     >
                       {project.project_status}
-                    </Badge>
+                    </span>
                   </div>
 
-                  <p className="text-sm text-muted-foreground mb-3">
+                  <p className="text-xs text-muted-foreground mb-3 truncate">
                     {project.client?.company_name || project.client?.contact_email || "No client"}
                   </p>
 
                   <div className="flex items-center gap-4 text-sm">
-                    <span className="text-muted-foreground">
+                    <span className="text-muted-foreground tabular-nums">
                       <span className="text-accent">{formatCurrency(project.amount_paid_cents)}</span>
                       {" / "}
                       {formatCurrency(project.total_value_cents)}
@@ -341,11 +365,11 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
                   {/* GitHub enrichment row */}
                   {project.githubRepo && (
                     <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 tabular-nums">
                         <GitCommitHorizontal className="h-3 w-3" />
                         {project.commits.length} recent commits
                       </span>
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1 tabular-nums">
                         <GitPullRequest className="h-3 w-3" />
                         {project.openPRs} open PRs
                       </span>
@@ -358,7 +382,7 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
                       {project.detectedTechStack.length > 0 && (
                         <div className="flex items-center gap-1 flex-wrap">
                           {project.detectedTechStack.slice(0, 4).map((t) => (
-                            <Badge key={t.name} variant="secondary" className="text-[10px] px-1.5 py-0">
+                            <Badge key={t.name} variant="secondary" className="text-[10px] px-1.5 py-0 rounded-md">
                               {t.name}
                             </Badge>
                           ))}
@@ -368,27 +392,28 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
                   )}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 shrink-0">
                   <Button
                     size="sm"
-                    className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+                    className="h-8 bg-accent text-accent-foreground hover:bg-accent/90"
                     onClick={() => setOpenProjectId(project.project_id)}
                   >
-                    <LayoutDashboard className="h-4 w-4 mr-2" />
+                    <LayoutDashboard className="h-4 w-4 mr-1.5" />
                     Open
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="rounded-full"
+                    className="h-8"
                     onClick={() => openUpdateDialog(project)}
                   >
-                    <MessageSquarePlus className="h-4 w-4 mr-2" />
-                    Post Update
+                    <MessageSquarePlus className="h-4 w-4 mr-1.5" />
+                    Post update
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="h-8 w-8 p-0"
                     onClick={() => openEditDialog(project)}
                   >
                     <Pencil className="h-4 w-4" />
@@ -396,6 +421,7 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="h-8 w-8 p-0"
                     onClick={() => {
                       setDeletingProject(project);
                       setIsDeleteDialogOpen(true);
@@ -405,14 +431,14 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
                   </Button>
                 </div>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       )}
 
       {/* Create/Edit Project Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-card border-border max-w-2xl rounded-xl">
+        <DialogContent className="bg-card border-border max-w-2xl rounded-lg">
           <DialogHeader>
             <DialogTitle>
               {editingProject ? "Edit Project" : "Create Project"}
@@ -627,7 +653,7 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
 
       {/* Post Update Dialog */}
       <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
-        <DialogContent className="bg-card border-border max-w-lg rounded-xl">
+        <DialogContent className="bg-card border-border max-w-lg rounded-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               Post Update to {updatingProject?.title}
@@ -660,7 +686,7 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
                 value={updateFormData.commit_sha_reference}
                 onChange={(e) => setUpdateFormData({ ...updateFormData, commit_sha_reference: e.target.value })}
                 placeholder="e.g. abc1234"
-                className="font-mono"
+                className="tabular-nums"
               />
             </div>
           </div>
@@ -683,7 +709,7 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
 
       {/* Delete Confirmation */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="bg-card border-border rounded-xl">
+        <AlertDialogContent className="bg-card border-border rounded-lg">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Project?</AlertDialogTitle>
             <AlertDialogDescription>

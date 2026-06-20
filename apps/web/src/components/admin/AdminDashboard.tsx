@@ -1,17 +1,5 @@
-import { motion } from "framer-motion";
-import {
-  FolderKanban,
-  Users,
-  Inbox,
-  TrendingUp,
-  Calendar,
-  ArrowUpRight,
-  Plus,
-  Activity,
-  Clock,
-  CircleDot,
-} from "lucide-react";
 import { Link } from "react-router-dom";
+import { Plus, ArrowUpRight } from "lucide-react";
 import type { AdminSection } from "@/components/admin/AdminSidebar";
 import type {
   RecentActivity,
@@ -48,13 +36,6 @@ const STATUS_LABELS: Record<string, string> = {
   shipped: "Shipped",
 };
 
-const greeting = () => {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
-};
-
 const AdminDashboard = ({
   projects,
   clients,
@@ -65,7 +46,6 @@ const AdminDashboard = ({
   userName,
   onNavigate,
 }: AdminDashboardProps) => {
-  // Derive metrics
   const activeProjects = projects.filter((p) => p.project_status !== "shipped");
   const shippedProjects = projects.filter((p) => p.project_status === "shipped");
   const totalPaid = projects.reduce((s, p) => s + p.amount_paid_cents, 0);
@@ -77,287 +57,165 @@ const AdminDashboard = ({
   const qualifiedLeads = leads.filter(
     (l) => l.status === "qualified" || l.status === "proposal_sent",
   ).length;
+  const clientProjects = clients.reduce((s, c) => s + (c.projectCount || 0), 0);
 
-  // Status breakdown for pipeline
   const pipelineByStatus = ["discovery", "architecture", "development", "testing", "shipped"].map(
-    (s) => ({
-      status: s,
-      count: projects.filter((p) => p.project_status === s).length,
-    }),
+    (s) => ({ status: s, count: projects.filter((p) => p.project_status === s).length }),
   );
   const maxCount = Math.max(1, ...pipelineByStatus.map((p) => p.count));
 
   const today = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
+    weekday: "short",
+    month: "short",
     day: "numeric",
-    year: "numeric",
   });
-
   const firstName = userName?.split("@")[0]?.split(".")[0] || "there";
   const displayName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
 
   return (
-    <div className="space-y-8">
-      {/* Greeting + Quick Actions */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col lg:flex-row lg:items-end justify-between gap-6"
-      >
-        <div>
-          <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-muted-foreground mb-3">
-            {today}
-          </p>
-          <h1 className="text-3xl md:text-4xl font-semibold tracking-tight mb-2">
-            {greeting()}, {displayName}.
-          </h1>
-          <p className="text-muted-foreground">
-            Here's what's happening at ADVO today.
-          </p>
+    <div className="space-y-5">
+      {/* Title bar */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-baseline gap-3 min-w-0">
+          <h1 className="text-lg font-semibold tracking-tight">Overview</h1>
+          <span className="hidden sm:inline text-xs text-muted-foreground truncate">
+            {displayName} · {today}
+          </span>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            to="/start"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-accent-foreground rounded-full text-sm font-medium hover:bg-accent/90 btn-press"
-          >
-            <Plus className="h-4 w-4" /> New Project
-          </Link>
-        </div>
-      </motion.div>
-
-      {/* KPI Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard
-          delay={0}
-          label="Active Projects"
-          value={String(activeProjects.length)}
-          sub={`${shippedProjects.length} shipped`}
-          icon={FolderKanban}
-        />
-        <KpiCard
-          delay={0.05}
-          label="Revenue Collected"
-          value={formatCurrency(totalPaid)}
-          sub={`${collectionRate}% of ${formatCurrency(totalValue)} billed`}
-          icon={TrendingUp}
-          accent
-        />
-        <KpiCard
-          delay={0.1}
-          label="Open Leads"
-          value={String(newLeads)}
-          sub={`${qualifiedLeads} qualified`}
-          icon={Inbox}
-        />
-        <KpiCard
-          delay={0.15}
-          label="Active Clients"
-          value={String(clients.length)}
-          sub={`${clients.reduce((s, c) => s + (c.projectCount || 0), 0)} projects total`}
-          icon={Users}
-        />
+        <Link
+          to="/start"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent text-accent-foreground rounded-md text-sm font-medium hover:bg-accent/90 btn-press shrink-0"
+        >
+          <Plus className="h-4 w-4" /> New project
+        </Link>
       </div>
 
-      {/* Middle — Pipeline + Revenue */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-        {/* Project Pipeline */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="lg:col-span-3 p-6 bg-card border border-border rounded-2xl"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-muted-foreground mb-1">
-                Pipeline
-              </p>
-              <h3 className="text-lg font-semibold">Projects by stage</h3>
-            </div>
-            <span className="text-xs font-mono text-muted-foreground">
-              {projects.length} total
-            </span>
-          </div>
-          <div className="space-y-4">
+      {/* Stat strip — one bordered row, hairline-separated cells */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-px bg-border rounded-lg border border-border overflow-hidden">
+        <Stat label="Active projects" value={String(activeProjects.length)} sub={`${shippedProjects.length} shipped`} />
+        <Stat label="Collected" value={formatCurrency(totalPaid)} sub={`${collectionRate}% of ${formatCurrency(totalValue)}`} />
+        <Stat label="Open leads" value={String(newLeads)} sub={`${qualifiedLeads} qualified`} />
+        <Stat label="Clients" value={String(clients.length)} sub={`${clientProjects} projects`} />
+      </div>
+
+      {/* Pipeline + cash flow */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Panel className="lg:col-span-2" title="Pipeline" meta={`${projects.length} projects`}>
+          <div className="p-4 space-y-2.5">
             {pipelineByStatus.map((stage) => (
-              <div key={stage.status}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="w-2 h-2 rounded-full"
-                      style={{ backgroundColor: STATUS_COLORS[stage.status] }}
-                    />
-                    <span className="text-sm">
-                      {STATUS_LABELS[stage.status]}
-                    </span>
-                  </div>
-                  <span className="text-sm font-mono text-muted-foreground">
-                    {stage.count}
-                  </span>
-                </div>
-                <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
+              <div key={stage.status} className="flex items-center gap-3">
+                <span
+                  className="h-2 w-2 rounded-full shrink-0"
+                  style={{ backgroundColor: STATUS_COLORS[stage.status] }}
+                />
+                <span className="text-sm w-24 shrink-0">{STATUS_LABELS[stage.status]}</span>
+                <div className="flex-1 h-1 bg-secondary rounded-full overflow-hidden">
                   <div
-                    className="h-full rounded-full transition-all duration-500"
+                    className="h-full rounded-full"
                     style={{
                       width: `${(stage.count / maxCount) * 100}%`,
                       backgroundColor: STATUS_COLORS[stage.status],
                     }}
                   />
                 </div>
+                <span className="text-sm text-muted-foreground w-5 text-right shrink-0 tabular-nums">
+                  {stage.count}
+                </span>
               </div>
             ))}
           </div>
-        </motion.div>
+        </Panel>
 
-        {/* Revenue summary */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-          className="lg:col-span-2 p-6 bg-card border border-border rounded-2xl flex flex-col"
-        >
-          <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-muted-foreground mb-1">
-            Cash Flow
-          </p>
-          <h3 className="text-lg font-semibold mb-5">Revenue snapshot</h3>
-
-          <div className="space-y-5 flex-1">
-            <div>
-              <div className="flex items-baseline justify-between mb-1">
-                <span className="text-xs text-muted-foreground">Collected</span>
-                <span className="text-xl font-semibold tracking-tight">
-                  {formatCurrency(totalPaid)}
-                </span>
-              </div>
-              <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-accent rounded-full"
-                  style={{ width: `${collectionRate}%` }}
-                />
-              </div>
+        <Panel title="Cash flow">
+          <div className="p-4 space-y-3">
+            <div className="flex items-baseline justify-between">
+              <span className="text-sm text-muted-foreground">Collected</span>
+              <span className="text-sm font-semibold tracking-tight tabular-nums">{formatCurrency(totalPaid)}</span>
             </div>
-
-            <div>
-              <div className="flex items-baseline justify-between mb-1">
-                <span className="text-xs text-muted-foreground">Outstanding</span>
-                <span className="text-xl font-semibold tracking-tight">
-                  {formatCurrency(outstanding)}
-                </span>
-              </div>
-              <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-muted-foreground/40 rounded-full"
-                  style={{ width: `${100 - collectionRate}%` }}
-                />
-              </div>
+            <div className="h-1 bg-secondary rounded-full overflow-hidden">
+              <div className="h-full bg-accent rounded-full" style={{ width: `${collectionRate}%` }} />
+            </div>
+            <div className="flex items-baseline justify-between">
+              <span className="text-sm text-muted-foreground">Outstanding</span>
+              <span className="text-sm font-semibold tracking-tight tabular-nums">{formatCurrency(outstanding)}</span>
+            </div>
+            <div className="pt-3 mt-1 border-t border-border flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Collection rate</span>
+              <span className="text-sm font-semibold text-accent tabular-nums">{collectionRate}%</span>
             </div>
           </div>
-
-          <div className="pt-5 mt-5 border-t border-border flex items-center justify-between">
-            <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground">
-              Collection Rate
-            </span>
-            <span className="text-xl font-semibold text-accent">
-              {collectionRate}%
-            </span>
-          </div>
-        </motion.div>
+        </Panel>
       </div>
 
-      {/* Bottom — 3 column feeds */}
+      {/* Feeds */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <FeedCard
-          delay={0.3}
-          label="Activity"
-          title="Recent updates"
-          icon={Activity}
-          empty={recentActivity.length === 0}
-          emptyText="No recent activity"
-        >
-          {recentActivity.slice(0, 6).map((a, i) => (
-            <div key={i} className="flex items-start gap-3 pb-3 last:pb-0">
-              <CircleDot className="h-3 w-3 text-accent mt-1 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm leading-snug">{a.action}</p>
-                <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                  {a.target} · {a.time}
-                </p>
-              </div>
+        <Panel title="Recent activity">
+          {recentActivity.length === 0 ? (
+            <Empty text="No recent activity" />
+          ) : (
+            <div className="divide-y divide-border">
+              {recentActivity.slice(0, 6).map((a, i) => (
+                <div key={i} className="px-4 py-2.5 flex items-start gap-2.5">
+                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-accent shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-sm leading-snug">{a.action}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {a.target} · {a.time}
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </FeedCard>
+          )}
+        </Panel>
 
-        <FeedCard
-          delay={0.35}
-          label="Upcoming"
-          title="Deadlines"
-          icon={Calendar}
-          empty={upcomingDeadlines.length === 0}
-          emptyText="No upcoming deadlines"
-        >
-          {upcomingDeadlines.slice(0, 5).map((d) => (
-            <div
-              key={d.deliverable_id}
-              className="flex items-center justify-between gap-3 pb-3 last:pb-0"
-            >
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{d.title}</p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {d.project_title}
-                </p>
-              </div>
-              <span
-                className={`text-[10px] font-mono uppercase tracking-wider px-2 py-1 rounded-full shrink-0 ${
-                  d.is_urgent
-                    ? "bg-destructive/10 text-destructive"
-                    : "bg-secondary text-muted-foreground"
-                }`}
-              >
-                {d.due_date
-                  ? new Date(d.due_date).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })
-                  : "No date"}
-              </span>
+        <Panel title="Upcoming">
+          {upcomingDeadlines.length === 0 ? (
+            <Empty text="No upcoming deadlines" />
+          ) : (
+            <div className="divide-y divide-border">
+              {upcomingDeadlines.slice(0, 6).map((d) => (
+                <div key={d.deliverable_id} className="px-4 py-2.5 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm truncate">{d.title}</p>
+                    <p className="text-xs text-muted-foreground truncate">{d.project_title}</p>
+                  </div>
+                  <span
+                    className={`text-[11px] shrink-0 ${
+                      d.is_urgent ? "text-destructive" : "text-muted-foreground"
+                    }`}
+                  >
+                    {d.due_date
+                      ? new Date(d.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                      : "—"}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
-        </FeedCard>
+          )}
+        </Panel>
 
-        <FeedCard
-          delay={0.4}
-          label="Leads"
-          title="Latest inquiries"
-          icon={Inbox}
-          empty={leads.length === 0}
-          emptyText="No leads yet"
-          cta={{ label: "View all", onClick: () => onNavigate?.("leads") }}
-        >
-          {leads.slice(0, 5).map((l, i) => (
-            <div
-              key={l.lead_id || i}
-              className="flex items-start gap-3 pb-3 last:pb-0"
-            >
-              <div className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center text-xs font-medium shrink-0">
-                {l.name?.charAt(0).toUpperCase() || "?"}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{l.name}</p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {l.company || l.project_type || "—"}
-                </p>
-              </div>
-              <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/70 shrink-0">
-                <Clock className="inline h-2.5 w-2.5 mr-1" />
-                {new Date(l.submitted_at).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })}
-              </span>
+        <Panel title="Latest leads" cta={{ label: "View all", onClick: () => onNavigate?.("leads") }}>
+          {leads.length === 0 ? (
+            <Empty text="No leads yet" />
+          ) : (
+            <div className="divide-y divide-border">
+              {leads.slice(0, 6).map((l, i) => (
+                <div key={l.lead_id || i} className="px-4 py-2.5 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm truncate">{l.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {l.company || l.project_type || "—"}
+                    </p>
+                  </div>
+                  <span className="text-[11px] text-muted-foreground shrink-0">
+                    {new Date(l.submitted_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
-        </FeedCard>
+          )}
+        </Panel>
       </div>
     </div>
   );
@@ -365,95 +223,46 @@ const AdminDashboard = ({
 
 /* ───────────────────────────── Sub-components ───────────────────────────── */
 
-interface KpiCardProps {
-  label: string;
-  value: string;
-  sub: string;
-  icon: React.ElementType;
-  delay?: number;
-  accent?: boolean;
-}
-
-const KpiCard = ({ label, value, sub, icon: Icon, delay = 0, accent }: KpiCardProps) => (
-  <motion.div
-    initial={{ opacity: 0, y: 8 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay }}
-    className="group relative p-5 bg-card border border-border rounded-2xl hover:border-foreground/30 transition-colors"
-  >
-    <div className="flex items-center justify-between mb-4">
-      <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-muted-foreground">
-        {label}
-      </p>
-      <div
-        className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-          accent ? "bg-accent/15" : "bg-secondary"
-        }`}
-      >
-        <Icon
-          className={`h-4 w-4 ${accent ? "text-accent" : "text-muted-foreground"}`}
-        />
-      </div>
-    </div>
-    <p className="text-3xl font-semibold tracking-tight mb-1">{value}</p>
-    <p className="text-xs text-muted-foreground">{sub}</p>
-  </motion.div>
+const Stat = ({ label, value, sub }: { label: string; value: string; sub: string }) => (
+  <div className="bg-card px-4 py-3">
+    <p className="text-xs text-muted-foreground mb-1.5">{label}</p>
+    <p className="text-2xl font-semibold tracking-tight tabular-nums">{value}</p>
+    <p className="text-xs text-muted-foreground mt-0.5 truncate">{sub}</p>
+  </div>
 );
 
-interface FeedCardProps {
-  label: string;
-  title: string;
-  icon: React.ElementType;
-  empty: boolean;
-  emptyText: string;
-  children: React.ReactNode;
-  delay?: number;
-  cta?: { label: string; onClick: () => void };
-}
-
-const FeedCard = ({
-  label,
+const Panel = ({
   title,
-  icon: Icon,
-  empty,
-  emptyText,
-  children,
-  delay = 0,
+  meta,
   cta,
-}: FeedCardProps) => (
-  <motion.div
-    initial={{ opacity: 0, y: 8 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay }}
-    className="p-5 bg-card border border-border rounded-2xl"
-  >
-    <div className="flex items-center justify-between mb-5">
-      <div>
-        <p className="text-[11px] font-mono uppercase tracking-[0.18em] text-muted-foreground mb-1">
-          {label}
-        </p>
-        <h3 className="text-sm font-semibold">{title}</h3>
-      </div>
-      {cta ? (
+  className,
+  children,
+}: {
+  title: string;
+  meta?: string;
+  cta?: { label: string; onClick: () => void };
+  className?: string;
+  children: React.ReactNode;
+}) => (
+  <div className={`border border-border rounded-lg bg-card ${className ?? ""}`}>
+    <div className="flex items-center justify-between px-4 h-11 border-b border-border">
+      <h2 className="text-sm font-medium">{title}</h2>
+      {meta && <span className="text-xs text-muted-foreground">{meta}</span>}
+      {cta && (
         <button
           onClick={cta.onClick}
           className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1 transition-colors"
         >
           {cta.label} <ArrowUpRight className="h-3 w-3" />
         </button>
-      ) : (
-        <Icon className="h-4 w-4 text-muted-foreground" />
       )}
     </div>
-    {empty ? (
-      <div className="py-8 text-center">
-        <Icon className="h-6 w-6 mx-auto mb-2 text-muted-foreground/40" />
-        <p className="text-xs text-muted-foreground">{emptyText}</p>
-      </div>
-    ) : (
-      <div className="space-y-3">{children}</div>
-    )}
-  </motion.div>
+    {children}
+  </div>
+);
+
+const Empty = ({ text }: { text: string }) => (
+  <p className="px-4 py-8 text-sm text-muted-foreground text-center">{text}</p>
 );
 
 export default AdminDashboard;

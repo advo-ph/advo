@@ -148,15 +148,18 @@ const AdminSidebar = ({
                   key={item.id}
                   onClick={() => handleSectionChange(item.id)}
                   className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all",
+                    "relative w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
                     isActive
                       ? "bg-accent/10 text-accent"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
+                      : "text-muted-foreground hover:text-foreground hover:bg-secondary/60",
                   )}
                 >
+                  {isActive && (
+                    <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-accent" />
+                  )}
                   <item.icon
                     className={cn(
-                      "h-5 w-5 flex-shrink-0",
+                      "h-[18px] w-[18px] flex-shrink-0",
                       isActive && "text-accent",
                     )}
                   />
@@ -175,7 +178,7 @@ const AdminSidebar = ({
                 {navGroups.map((group) => (
                   <div key={group.label} className="mt-5 space-y-1">
                     {!isCollapsed && (
-                      <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                      <div className="px-3 pb-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground/50">
                         {group.label}
                       </div>
                     )}
@@ -197,7 +200,7 @@ const AdminSidebar = ({
               <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50">
                 Version
               </div>
-              <div className="mt-1 font-mono text-xs text-muted-foreground">
+              <div className="mt-1 text-xs text-muted-foreground">
                 {versionLabel}
               </div>
             </div>
@@ -205,7 +208,7 @@ const AdminSidebar = ({
 
           <button
             onClick={onToggleTheme}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
           >
             {theme === "dark" ? (
               <Sun className="h-5 w-5 flex-shrink-0" />
@@ -222,7 +225,7 @@ const AdminSidebar = ({
           <button
             onClick={() => handleSectionChange("settings")}
             className={cn(
-              "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors",
+              "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors",
               activeSection === "settings"
                 ? "bg-accent/10 text-accent"
                 : "text-muted-foreground hover:text-foreground hover:bg-secondary/50",
@@ -242,7 +245,7 @@ const AdminSidebar = ({
           {/* Collapse — desktop only */}
           <button
             onClick={onToggleCollapse}
-            className="hidden lg:flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+            className="hidden lg:flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
           >
             {isCollapsed ? (
               <ChevronRight className="h-5 w-5" />

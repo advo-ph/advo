@@ -1,5 +1,4 @@
 import { useState, useRef } from "react";
-import { motion } from "framer-motion";
 import {
   Plus,
   Pencil,
@@ -44,6 +43,7 @@ import {
   type CaseStudy,
   type PortfolioProject,
 } from "@/hooks/useAdminPortfolio";
+import { PageHeader, Empty } from "@/components/admin/_ui";
 
 /* ─── Drag-and-drop media list ──────────────────── */
 
@@ -356,42 +356,44 @@ const AdminPortfolio = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold mb-2">Portfolio</h1>
-          <p className="text-muted-foreground">Manage portfolio showcase projects</p>
-        </div>
-        <Button
-          onClick={openCreateDialog}
-          className="rounded-full bg-foreground text-background hover:bg-foreground/90"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Add Project
-        </Button>
-      </div>
+    <div className="space-y-4">
+      <PageHeader
+        title="Portfolio"
+        meta={`${projects.length} ${projects.length === 1 ? "project" : "projects"}`}
+        action={
+          <Button
+            onClick={openCreateDialog}
+            size="sm"
+            className="h-9 bg-accent text-accent-foreground hover:bg-accent/90"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Add project
+          </Button>
+        }
+      />
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="border border-border rounded-lg bg-card flex items-center justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : projects.length === 0 ? (
+        <div className="border border-border rounded-lg bg-card">
+          <Empty text="No portfolio projects yet" icon={BookOpen} />
         </div>
       ) : (
-        <div className="space-y-3">
-          {projects.map((project, index) => (
-            <motion.div
+        <div className="border border-border rounded-lg bg-card overflow-hidden divide-y divide-border">
+          {projects.map((project) => (
+            <div
               key={project.portfolio_project_id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.03 }}
-              className="flex items-center justify-between p-4 bg-card border border-border rounded-xl shadow-card hover:border-accent/30 transition-colors"
+              className="flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-secondary/40 transition-colors"
             >
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 min-w-0">
                 {/* Thumbnail */}
-                <div className="w-16 h-12 rounded-lg bg-secondary overflow-hidden flex-shrink-0">
+                <div className="w-16 h-11 rounded-md bg-secondary overflow-hidden shrink-0">
                   {(() => {
                     const thumb = project.image_urls?.[0] || project.image_url;
                     if (!thumb) return (
-                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-[10px]">
                         No media
                       </div>
                     );
@@ -404,20 +406,20 @@ const AdminPortfolio = () => {
                   })()}
                 </div>
 
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="font-medium text-sm">{project.title}</p>
+                    <p className="font-medium text-sm truncate">{project.title}</p>
                     {project.is_featured && (
-                      <Badge className="text-[10px] bg-accent/10 text-accent border-accent/30 gap-1">
+                      <Badge className="text-[10px] bg-accent/10 text-accent border-accent/30 gap-1 shrink-0">
                         <Star className="h-2.5 w-2.5" />
                         Featured
                       </Badge>
                     )}
-                    <span className="text-[10px] text-muted-foreground font-mono">
+                    <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
                       #{project.display_order}
                     </span>
                     {(project.image_urls?.length || 0) > 1 && (
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
                         {project.image_urls!.length} media
                       </Badge>
                     )}
@@ -452,13 +454,14 @@ const AdminPortfolio = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={() => openEditDialog(project)}>
+              <div className="flex items-center gap-1 shrink-0">
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => openEditDialog(project)}>
                   <Pencil className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
+                  className="h-8 w-8 p-0"
                   onClick={() => {
                     setDeletingProject(project);
                     setIsDeleteDialogOpen(true);
@@ -467,14 +470,14 @@ const AdminPortfolio = () => {
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
               </div>
-            </motion.div>
+            </div>
           ))}
         </div>
       )}
 
       {/* Create / Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-card border-border max-w-xl rounded-xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="bg-card border-border max-w-xl rounded-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingProject ? "Edit Portfolio Project" : "Add Portfolio Project"}
@@ -663,7 +666,7 @@ const AdminPortfolio = () => {
 
       {/* Delete Confirmation */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <AlertDialogContent className="bg-card border-border rounded-xl">
+        <AlertDialogContent className="bg-card border-border rounded-lg">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Portfolio Project?</AlertDialogTitle>
             <AlertDialogDescription>
