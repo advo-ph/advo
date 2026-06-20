@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Plus, ArrowUpRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import type { AdminSection } from "@/components/admin/AdminSidebar";
 import type {
   RecentActivity,
@@ -82,12 +83,15 @@ const AdminDashboard = ({
             {displayName} · {today}
           </span>
         </div>
-        <Link
-          to="/start"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-accent text-accent-foreground rounded-md text-sm font-medium hover:bg-accent/90 btn-press shrink-0"
+        <Button
+          asChild
+          size="sm"
+          className="h-9 bg-accent text-accent-foreground hover:bg-accent/90 gap-1.5 shrink-0"
         >
-          <Plus className="h-4 w-4" /> New project
-        </Link>
+          <Link to="/start">
+            <Plus className="h-4 w-4" /> New project
+          </Link>
+        </Button>
       </div>
 
       {/* Stat strip — one bordered row, hairline-separated cells */}
