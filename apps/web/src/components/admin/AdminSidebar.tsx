@@ -9,6 +9,7 @@ import {
   CalendarClock,
   Instagram,
   FileText,
+  FileSignature,
   Image,
   Banknote,
   Bell,
@@ -35,6 +36,7 @@ export type AdminSection =
   | "schedule"
   | "calendar"
   | "availability"
+  | "contracts"
   | "social"
   | "content"
   | "portfolio"
@@ -70,6 +72,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { id: "schedule", label: "Deliverables", icon: Calendar },
       { id: "calendar", label: "Calendar", icon: CalendarDays },
       { id: "availability", label: "Availability", icon: CalendarClock },
+      { id: "contracts", label: "Contracts", icon: FileSignature },
       { id: "finance", label: "Finance", icon: Banknote },
     ],
   },
