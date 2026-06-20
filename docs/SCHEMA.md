@@ -2,7 +2,11 @@
 
 Convention: BIGINT IDs, singular table naming, cents for currency, camelCase in API responses.
 
-Schema source of truth: `advo-api/src/db/schema.ts` (Drizzle ORM)
+Schema source of truth: [`apps/api/src/db/schema.ts`](../apps/api/src/db/schema.ts) (Drizzle ORM, post-monorepo restructure).
+
+Convention reference: [.agents/workflows/advo-standard.md](../.agents/workflows/advo-standard.md) and [database-conventions skill](../../.claude/skills/database-conventions/SKILL.md).
+
+Migration log: [`apps/api/migrations/`](../apps/api/migrations/) — raw SQL applied directly to prod; schema.ts kept in sync after.
 
 ## Tables
 
@@ -184,6 +188,7 @@ Unique constraint on (`team_member_id`, `project_id`).
 | `visible_public` | BOOLEAN | |
 | `visible_client_portal` | BOOLEAN | |
 | `content` | JSONB | Section-specific content |
+| `created_at` | TIMESTAMPTZ | Added by migration `001_audit_tier1.sql` |
 | `updated_at` | TIMESTAMPTZ | |
 
 ### portfolio_project
@@ -219,10 +224,13 @@ Unique constraint on (`team_member_id`, `project_id`).
 
 ### site_config
 
+Key-value config table. Most keys are admin-only via `/api/settings/*`. The allowlisted subset (`social_links`, `brand_name`, `team_order`) is also exposed anonymously via `GET /api/settings/public` for the landing footer + team-order rendering.
+
 | Column | Type | Description |
 |--------|------|-------------|
-| `key` | VARCHAR(100) (PK) | e.g. `agency_name`, `accent_color` |
+| `key` | VARCHAR(100) (PK) | e.g. `agency_name`, `accent_color`, `social_links`, `team_order` |
 | `value` | JSONB | |
+| `created_at` | TIMESTAMPTZ | Added by migration `001_audit_tier1.sql` |
 | `updated_at` | TIMESTAMPTZ | |
 
 ### github_event
@@ -251,3 +259,44 @@ Unique constraint on (`team_member_id`, `project_id`).
 | `entity_id` | BIGINT | |
 | `metadata` | JSONB | |
 | `created_at` | TIMESTAMPTZ | |
+
+### availability_block
+
+Per-member schedule blocks used by [`AdminAvailability`](../apps/web/src/components/admin/AdminAvailability.tsx) to track when each team member is in school / on break / available for work / unavailable.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `block_id` | BIGSERIAL (PK) | |
+| `team_member_id` | BIGINT (FK) | → `team_member` ON DELETE CASCADE |
+| `day_of_week` | INTEGER | 0–6 (Sunday–Saturday) |
+| `start_time` | TIME | |
+| `end_time` | TIME | |
+| `block_type` | ENUM | `school`, `break`, `work`, `unavailable` |
+| `label` | VARCHAR(255) | Optional (e.g. "CS 101", "Lunch") |
+| `created_at` | TIMESTAMPTZ | |
+| `updated_at` | TIMESTAMPTZ | |
+
+### scrape_result
+
+Output of the admin Brand Scraper + FB Scraper, keyed by URL. Append-only from the admin UIs.
+
+**Retention:** keep latest 90 days, delete older. Retention script `scripts/scrape-result-retention.ts` is **not yet written** — see `apps/api/migrations/001_audit_tier1.sql` for the `COMMENT ON TABLE` documenting the policy intent.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `scrape_result_id` | BIGSERIAL (PK) | |
+| `url` | TEXT | Source URL scraped |
+| `type` | VARCHAR(50) | `brand`, `brand-full`, `fb-page` |
+| `data` | JSONB | Full scrape payload (colors, fonts, screenshots base64, etc.) |
+| `scraped_by` | BIGINT (FK) | → `user` (nullable, set when an admin triggered it) |
+| `created_at` | TIMESTAMPTZ | |
+
+---
+
+## Migration log
+
+Drizzle-kit `push` syncs `schema.ts` → Postgres. For schema changes that need explicit SQL (ON DELETE alterations, COMMENTs, conditional adds), a raw migration file lives in `apps/api/migrations/NNN_descriptive.sql` and is applied directly via `psql`, then mirrored back into `schema.ts`.
+
+| Migration | Date | What it did |
+|---|---|---|
+| `001_audit_tier1.sql` | 2026-06-20 | Added 3 missing FK indexes (`idx_lead_assigned_to`, `idx_scrape_result_scraped_by`, `idx_notification_project_id`); added `created_at` to `site_config` + `site_content`; added retention COMMENT on `scrape_result`. Source: database-conventions audit (docs/ROADMAP.md). |

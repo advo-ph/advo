@@ -343,10 +343,11 @@ A MotionSites-style visual library at `/admin/library` — team-wide (not admin-
 
 | Doc | What it's for |
 |---|---|
+| [HANDOFF.md](HANDOFF.md) | Reverse-chronological session log — what shipped each session + honest open-items |
 | [ROADMAP.md](ROADMAP.md) | Canonical forward-looking roadmap — synthesizes Messenger archive + landing/feature sub-roadmaps |
 | [CONTRACTS.md](CONTRACTS.md) | Draft contract policy + clauses (revision limits, downpayment floor, change orders). Needs legal review before binding use. |
 | [CUTOVER.md](CUTOVER.md) | VPS monorepo cutover runbook + rollback plan |
-| [SCHEMA.md](SCHEMA.md) | Database schema reference |
+| [SCHEMA.md](SCHEMA.md) | Database schema reference + migration log |
 | [SETUP.md](SETUP.md) | Dev setup + deployment commands |
 | [/ROADMAP.md](../ROADMAP.md) | Historical Stripe-landing audit roadmap (codex branch) — most items live only in the labeled stash |
 | [/.agents/workflows/advo-standard.md](../.agents/workflows/advo-standard.md) | The ADVO Standard — cross-stack naming, DB conventions, auth, file patterns |
