@@ -14,7 +14,7 @@ Cross-links: [ROADMAP.md](ROADMAP.md) (forward work) · [SCHEMA.md](SCHEMA.md) (
 
 | Bucket | Count | Severity |
 |---|---|---|
-| 🔴 Security — cross-tenant data exposure (live in prod) | 4 | **fix first** |
+| 🔴 Security — cross-tenant data exposure | 4 | ✅ S1–S3 fixed + deployed (`0e42f13`, 2026-06-20) · S4 open |
 | 🔴 Genuinely broken in the admin UI | 3 | high |
 | 🟡 Looks done but isn't (write-only / stub / mock) | 8 | medium |
 | 🟡 Correctness edges | 4 | medium-low |
@@ -24,7 +24,9 @@ Cross-links: [ROADMAP.md](ROADMAP.md) (forward work) · [SCHEMA.md](SCHEMA.md) (
 
 ## 🔴 Security — fix first (verified)
 
-These are cross-tenant data-exposure bugs on a multi-client platform. The correct, already-existing pattern to copy is the role-branch + `where(eq(client.userId, user.userId))` filter in [invoices.routes.ts:36-42](../apps/api/src/routes/invoices.routes.ts#L36-L42).
+> **Update 2026-06-20 — S1, S2, S3 FIXED + DEPLOYED** (`0e42f13`, live on `api.advo.ph`). Each now role-scopes like `invoices.routes.ts`; a regression test ("cross-tenant data scoping" in `api-wiring.test.ts`) + a `client@advo.ph` seed fixture were added and proven to fail against the old code. **S4 (browser-exposed tokens) is still open.**
+
+These were cross-tenant data-exposure bugs on a multi-client platform. The correct pattern (now applied) is the role-branch + `where(eq(client.userId, user.userId))` filter in [invoices.routes.ts:36-42](../apps/api/src/routes/invoices.routes.ts#L36-L42).
 
 ### S1 — 🔴 `GET /api/deliverables` leaks every client's deliverables
 [deliverables.routes.ts:19-35](../apps/api/src/routes/deliverables.routes.ts#L19-L35). The list handler has **no role branch and no `WHERE`** — it selects all `deliverable` rows joined to `project`/`team_member`. Guarded only by `deliverables.use("*", requireAuth)` (line 15), which any `client` passes. The client Hub calls this directly ([useClientData.ts:146](../apps/web/src/hooks/useClientData.ts#L146)) and filters by `projectId` **client-side** — so the full deliverable list (titles, due dates, statuses, project linkage) for all clients is delivered to the browser.
@@ -128,7 +130,7 @@ Legend: ✅ wired end-to-end · ⚠️ partial/risk · 🔴 broken/missing.
 ### Client portal + public
 | Surface | Actions | Status |
 |---|---|---|
-| Hub | projects ✅ (scoped) · **project detail 🔴 (S2 IDOR)** · invoices ✅ (scoped) · **deliverables 🔴 (S1 leak)** · notifications ✅ (scoped) · mark-read 🟡 (S3) · sign out ✅ · eng feed / cloudflare 🟡 (S4 token) | 🔴 security |
+| Hub | projects ✅ (scoped) · project detail ✅ (S2 fixed) · invoices ✅ (scoped) · deliverables ✅ (S1 fixed) · notifications ✅ (scoped) · mark-read ✅ (S3 fixed) · sign out ✅ · eng feed / cloudflare 🟡 (S4 token open) | ⚠️ S4 only |
 | ProjectDetail (public case study) | load by slug ✅ | ✅ |
 | Start (lead form) | submit ✅ (public, rate-limited) | ✅ |
 | Team (public) | list ✅ (optionalAuth) | ✅ |
@@ -155,10 +157,10 @@ Legend: ✅ wired end-to-end · ⚠️ partial/risk · 🔴 broken/missing.
 
 ## Prioritized action plan
 
-- **Tier 1 — security, ship now (~1-2h):** S1, S2, S3 (copy the invoices scoping pattern); S4 plan.
+- **Tier 1 — security:** ✅ S1, S2, S3 done + deployed (`0e42f13`). ⏳ S4 (route the engineering feed through the backend so the GitHub/Cloudflare tokens leave the browser bundle) still open.
 - **Tier 2 — broken features (~half day):** B1 (Deliverables CRUD UI — biggest functional win), B2 (health envelope), B3 (no-op button).
 - **Tier 3 — finish the half-built (~1 day):** W1, W2, W3, W7 + the W8 test; R1–R4 correctness edges.
 - **Tier 4 — cleanup + build:** prune/wire the orphaned GitHub + brand-analysis routes; then start a new system (CRM / proposal pipeline / AI prompt management).
 
 ## Test-coverage gaps
-`/api/settings/public` untested (W8); no `/api/scrape/*` tests; method-specific gaps in `api-wiring.test.ts` (`PATCH /api/leads/bulk`, `POST /api/leads/:id/convert`, `POST /api/team/reorder`, `POST /api/notifications/broadcast`, availability routes). The data-scoping bugs S1/S2 have **no test** — when fixed, add a "client cannot read another client's project/deliverable" regression test.
+`/api/settings/public` untested (W8); no `/api/scrape/*` tests; method-specific gaps in `api-wiring.test.ts` (`PATCH /api/leads/bulk`, `POST /api/leads/:id/convert`, `POST /api/team/reorder`, `POST /api/notifications/broadcast`, availability routes). ✅ The S1/S2/S3 data-scoping bugs now have a regression test (the "cross-tenant data scoping" block in `api-wiring.test.ts`, backed by the `client@advo.ph` seed fixture).
