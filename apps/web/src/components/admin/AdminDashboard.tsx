@@ -6,13 +6,13 @@ import {
   TrendingUp,
   Calendar,
   ArrowUpRight,
-  Sparkles,
   Plus,
   Activity,
   Clock,
   CircleDot,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import type { AdminSection } from "@/components/admin/AdminSidebar";
 import type {
   RecentActivity,
   UpcomingDeadline,
@@ -29,6 +29,7 @@ interface AdminDashboardProps {
   recentActivity: RecentActivity[];
   upcomingDeadlines: UpcomingDeadline[];
   userName?: string;
+  onNavigate?: (section: AdminSection) => void;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -62,6 +63,7 @@ const AdminDashboard = ({
   recentActivity,
   upcomingDeadlines,
   userName,
+  onNavigate,
 }: AdminDashboardProps) => {
   // Derive metrics
   const activeProjects = projects.filter((p) => p.project_status !== "shipped");
@@ -121,9 +123,6 @@ const AdminDashboard = ({
           >
             <Plus className="h-4 w-4" /> New Project
           </Link>
-          <button className="inline-flex items-center gap-2 px-4 py-2.5 border border-border rounded-full text-sm text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors">
-            <Sparkles className="h-4 w-4" /> Quick action
-          </button>
         </div>
       </motion.div>
 
@@ -333,7 +332,7 @@ const AdminDashboard = ({
           icon={Inbox}
           empty={leads.length === 0}
           emptyText="No leads yet"
-          cta={{ label: "View all", href: "#leads" }}
+          cta={{ label: "View all", onClick: () => onNavigate?.("leads") }}
         >
           {leads.slice(0, 5).map((l, i) => (
             <div
@@ -409,7 +408,7 @@ interface FeedCardProps {
   emptyText: string;
   children: React.ReactNode;
   delay?: number;
-  cta?: { label: string; href: string };
+  cta?: { label: string; onClick: () => void };
 }
 
 const FeedCard = ({
@@ -436,12 +435,12 @@ const FeedCard = ({
         <h3 className="text-sm font-semibold">{title}</h3>
       </div>
       {cta ? (
-        <a
-          href={cta.href}
+        <button
+          onClick={cta.onClick}
           className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1 transition-colors"
         >
           {cta.label} <ArrowUpRight className="h-3 w-3" />
-        </a>
+        </button>
       ) : (
         <Icon className="h-4 w-4 text-muted-foreground" />
       )}

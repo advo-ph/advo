@@ -11,6 +11,23 @@ Cross-links:
 
 ---
 
+## 2026-06-20 — Tier 2 quick-fix batch (5 broken/papercut items)
+
+> Merged to `main`. typecheck 0/0, lint clean, build ✓, full vitest 75/75. Each fix verified at runtime. **Touches API + web — needs both deploys.**
+
+Knocked out five small verified-broken items from the audit in one pass:
+- **B2** — health badge always read "Disconnected". `checkConnection` ([db.ts](apps/web/src/lib/db.ts)) now reads the raw `db` field from the un-enveloped `/api/health` instead of `res.data?.db`. Browser-verified: Settings shows **Connected**. (Endpoint shape unchanged → health tests + monitors unaffected.)
+- **B3** — removed the no-op "Quick action" dashboard button (`AdminDashboard.tsx`).
+- **R1** — invoice PATCH now clears `paid_at` when status leaves "paid" ([invoices.routes.ts](apps/api/src/routes/invoices.routes.ts)). API-verified: paid→stamps, overdue→clears.
+- **W6** — dashboard "View all" leads CTA was a dead `#leads` anchor; now a button calling `onNavigate("leads")` threaded from `Admin.tsx`. Browser-verified: switches to Leads tab.
+- **R5** — broadcast notification loop wrapped in try/catch so a client deleted mid-broadcast is skipped instead of 500ing the whole call ([notifications.routes.ts](apps/api/src/routes/notifications.routes.ts)). (The `fileParallelism:false` test fix from the gate stays.)
+
+### Honest open-items
+- **Deploy pending** — this batch changes both `apps/api` (invoices, notifications) and `apps/web` (db, dashboard, Admin), so it needs API rebuild+restart AND web build+rsync.
+- Remaining Tier 3: W1 (settings not read back), W2 (Add-Admin), W3 (notif toggles), W4 (dashboard recent-activity stub), W5 (social mock stats), W7 (scraper delete+bloat), W8 (settings/public test); R2/R3/R4 edges. Plus **S4** (browser tokens).
+
+---
+
 ## 2026-06-20 — B1: Deliverables CRUD UI (admin)
 
 > Branch merged to `main`. Build + typecheck clean; full vitest suite 75/75; CRUD verified end-to-end in a real browser. **Not yet deployed** (frontend — needs VPS `build:web` + rsync).

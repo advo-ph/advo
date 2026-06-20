@@ -121,20 +121,27 @@ notifications.post(
     const created = [];
 
     for (const cl of allClients) {
-      const [n] = await d
-        .insert(notification)
-        .values({
-          clientId: cl.clientId,
-          type: "custom",
-          title: data.title,
-          body: data.body || null,
-        })
-        .returning();
+      try {
+        const [n] = await d
+          .insert(notification)
+          .values({
+            clientId: cl.clientId,
+            type: "custom",
+            title: data.title,
+            body: data.body || null,
+          })
+          .returning();
 
-      created.push(n);
+        created.push(n);
 
-      if (data.sendEmail && cl.contactEmail) {
-        await sendNotificationEmail(cl.contactEmail, data.title, data.body || "");
+        if (data.sendEmail && cl.contactEmail) {
+          await sendNotificationEmail(cl.contactEmail, data.title, data.body || "").catch(
+            () => {},
+          );
+        }
+      } catch {
+        // A client may have been deleted between the select-all above and this
+        // insert (FK violation) — skip it rather than 500 the whole broadcast.
       }
     }
 

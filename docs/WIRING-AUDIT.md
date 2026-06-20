@@ -15,7 +15,7 @@ Cross-links: [ROADMAP.md](ROADMAP.md) (forward work) · [SCHEMA.md](SCHEMA.md) (
 | Bucket | Count | Severity |
 |---|---|---|
 | 🔴 Security — cross-tenant data exposure | 4 | ✅ S1–S3 fixed + deployed (`0e42f13`, 2026-06-20) · S4 open |
-| 🔴 Genuinely broken in the admin UI | 3 | ✅ B1 (Deliverables CRUD) fixed 2026-06-20 · B2/B3 open |
+| 🔴 Genuinely broken in the admin UI | 3 | ✅ all fixed 2026-06-20 (B1 Deliverables CRUD · B2 health badge · B3 no-op button) |
 | 🟡 Looks done but isn't (write-only / stub / mock) | 8 | medium |
 | 🟡 Correctness edges | 4 | medium-low |
 | ⚪ Dead backend code (orphaned endpoints) | ~14 | cleanup |
@@ -54,12 +54,16 @@ These were cross-tenant data-exposure bugs on a multi-client platform. The corre
 [AdminSchedule.tsx](../apps/web/src/components/admin/AdminSchedule.tsx) renders deliverables + a member filter but has **zero** create/edit/assign/status/delete controls; [useAdminDeliverables.ts](../apps/web/src/hooks/useAdminDeliverables.ts) exposes only a `get` query. Meanwhile [deliverables.routes.ts:73,88,110](../apps/api/src/routes/deliverables.routes.ts#L73) fully implements `POST`/`PATCH`/`DELETE` (requireTeam). **An admin cannot create, assign, re-prioritize, change status of, or delete any deliverable from the panel** — the only way deliverables enter the system is direct DB/API. This is the single biggest functional gap and the backbone of "project management."
 **Fix:** add an "Add deliverable" dialog + per-card status `<Select>`/assignee picker/delete; extend the hook with create/update/delete mutations posting camelCase `{ projectId, title, assignedTo, priority, status, dueDate }`. Backend is ready.
 
-### B2 — 🔴 API health badge always shows "Disconnected"
+### B2 — ✅ FIXED (2026-06-20) — API health badge always showed "Disconnected"
+
+> `checkConnection` ([db.ts](../apps/web/src/lib/db.ts)) now reads the raw `db` field from `/api/health` (which is intentionally un-enveloped, the shape monitors expect) instead of `res.data?.db`. Verified: Settings → Integrations shows **Connected**. Endpoint shape unchanged, so the health tests + any external monitors are unaffected. Original below.
+
+#### (original) API health badge always shows "Disconnected"
 [health.routes.ts:6-14](../apps/api/src/routes/health.routes.ts#L6-L14) returns the raw `{ status, db, uptime, timestamp }` — the only route **not** wrapped in the `{ data, error }` envelope. So [api.ts](../apps/web/src/lib/api.ts) returns it as-is, `res.data` is `undefined`, and [db.ts:342-348](../apps/web/src/lib/db.ts#L342) `checkConnection()` reads `res.data?.db` → `false`. The Settings → Integrations card shows a red "Disconnected" badge even when the API is healthy.
 **Fix:** wrap the health response in the envelope (`return c.json({ data: { status, db, ... }, error: null })`).
 
-### B3 — 🔴 Dashboard "Quick action" button is a no-op
-[AdminDashboard.tsx:124-126](../apps/web/src/components/admin/AdminDashboard.tsx#L124) — a button with no `onClick`. Wire it or remove it.
+### B3 — ✅ FIXED (2026-06-20) — Dashboard "Quick action" button was a no-op
+Removed the dead button (it sat next to the working "New Project" link with no handler). `AdminDashboard.tsx`. Also wired the leads "View all" CTA — see W6.
 
 ---
 
@@ -72,7 +76,7 @@ These were cross-tenant data-exposure bugs on a multi-client platform. The corre
 | W3 | Notification auto-rule toggles | AdminNotifications.tsx:72-75 | Persist into `site_content.client_dashboard` but **no backend reads them** before sending auto-notifications. Inert. Wire into the notification trigger or label as not-yet-active. |
 | W4 | Dashboard "Recent activity" | db.ts:153-168 | `getRecentProgressUpdates` fetches then returns `[]`. Feed is leads-only; progress updates never appear. |
 | W5 | Social platform stats | AdminSocial.tsx:180-184 | Hardcoded fake follower/post counts. Cosmetic; reads as live data. |
-| W6 | Dashboard "View all" leads anchor | AdminDashboard.tsx:336 | `href="#leads"` but the admin shell uses state-driven tabs, not hash routing. Likely dead. |
+| W6 | Dashboard "View all" leads anchor | AdminDashboard.tsx | ✅ **FIXED 2026-06-20** — `FeedCard` CTA is now a button calling `onNavigate("leads")` (threaded from `Admin.tsx` `setActiveSection`); replaced the dead `href="#leads"`. Verified: click switches to the Leads tab. |
 | W7 | Scraper history delete + bloat | AdminBrandScraper / AdminFacebookScraper | `DELETE /api/scrape/history/:id` exists but has **no UI**. Brand scrapes also store full base64 screenshots in `jsonb` with **no size cap** ([scrape.routes.ts:2114](../apps/api/src/routes/scrape.routes.ts#L2114)) → unbounded `scrape_result` bloat. Add delete UI + payload limit (the FB path already stores `/uploads/...` paths instead). |
 | W8 | `/api/settings/public` has no test | — | The landing footer's only dynamic dependency. A regression re-ordering the route behind the auth middleware would 401 the footer silently. Add an anonymous-GET test. |
 
@@ -82,11 +86,11 @@ These were cross-tenant data-exposure bugs on a multi-client platform. The corre
 
 | # | Feature | Where | Problem |
 |---|---|---|---|
-| R1 | Invoice status change away from "paid" | invoices.routes.ts:89 | Sets `paid_at` on "paid" but never clears it on flip back to unpaid/overdue → stale timestamp. Add `if (status && status !== "paid") values.paidAt = null;`. |
+| R1 | Invoice status change away from "paid" | invoices.routes.ts | ✅ **FIXED 2026-06-20** — PATCH now clears `paidAt` when status changes to anything other than `paid`. Verified via API: paid→sets timestamp, overdue→clears it. |
 | R2 | AdminProjects "Add Asset" | AdminProjects.tsx:533-583 | Asset-type `<Select>` is uncontrolled; handler reads `typeEl.textContent`; URL/caption read via `getElementById`. Works today but fragile. Make controlled with `useState`. |
 | R3 | AdminTeam drag-reorder | AdminTeam.tsx:51-80 | Operates on the **filtered** (visible) list, so reordering while inactive members are hidden writes a `team_order` omitting them → scrambles their positions. Compute order against the full member list, or disable drag while filtered. |
 | R4 | AdminTeam order read | useAdminTeam.ts:63 | Reads order from `GET /api/settings/team_order` (admin-only). For a `team`-role user this 403s (tolerated, but inconsistent). Point at `GET /api/settings/public` which already allowlists `team_order`. |
-| R5 | Broadcast notification TOCTOU | notifications.routes.ts:112-146 | `SELECT all clients` then a per-client `INSERT` loop with no transaction — if a client is deleted between the select and its insert, the whole broadcast 500s (FK violation) and partially completes. Found during the 2026-06-20 verification gate (surfaced as a flaky parallel-test failure). Fix: wrap each insert in try/catch and skip vanished clients, or run the select+inserts in one transaction. Test-side mitigation already shipped: `fileParallelism: false` in `vitest.config.ts` so shared-DB suites don't race. |
+| R5 | Broadcast notification TOCTOU | notifications.routes.ts | ✅ **FIXED 2026-06-20** — each per-client insert is wrapped in try/catch, so a client deleted mid-broadcast is skipped instead of 500ing the whole call (email send also made non-fatal). `fileParallelism: false` in `vitest.config.ts` remains as the test-isolation fix. |
 
 ---
 
@@ -163,8 +167,8 @@ Legend: ✅ wired end-to-end · ⚠️ partial/risk · 🔴 broken/missing.
 ## Prioritized action plan
 
 - **Tier 1 — security:** ✅ S1, S2, S3 done + deployed (`0e42f13`). ⏳ S4 (route the engineering feed through the backend so the GitHub/Cloudflare tokens leave the browser bundle) still open.
-- **Tier 2 — broken features (~half day):** ✅ B1 (Deliverables CRUD UI) done. ⏳ B2 (health envelope), B3 (no-op button) open.
-- **Tier 3 — finish the half-built (~1 day):** W1, W2, W3, W7 + the W8 test; R1–R4 correctness edges.
+- **Tier 2 — broken features:** ✅ all done — B1 (Deliverables CRUD UI), B2 (health badge), B3 (no-op button).
+- **Tier 3 — finish the half-built:** ✅ R1 (invoice paid_at), W6 (leads CTA), R5 (broadcast TOCTOU) done. ⏳ remaining: W1, W2, W3, W4, W5, W7 + the W8 test; R2, R3, R4 correctness edges.
 - **Tier 4 — cleanup + build:** prune/wire the orphaned GitHub + brand-analysis routes; then start a new system (CRM / proposal pipeline / AI prompt management).
 
 ## Test-coverage gaps

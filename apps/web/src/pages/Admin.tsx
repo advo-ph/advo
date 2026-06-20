@@ -134,6 +134,7 @@ const Admin = () => {
               recentActivity={recentActivity}
               upcomingDeadlines={upcomingDeadlines}
               userName={user?.email}
+              onNavigate={setActiveSection}
             />
           )}
 

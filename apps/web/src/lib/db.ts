@@ -342,7 +342,11 @@ export async function getClientProjects() {
 export async function checkConnection(): Promise<boolean> {
   try {
     const res = await get<{ status: string; db: boolean }>("/api/health");
-    return res.data?.db === true;
+    // /api/health is intentionally NOT wrapped in the { data, error } envelope
+    // (conventional health shape monitors expect), so read the field directly;
+    // fall back to res.data?.db in case it ever gets enveloped.
+    const raw = res as unknown as { db?: boolean };
+    return raw.db === true || res.data?.db === true;
   } catch {
     return false;
   }

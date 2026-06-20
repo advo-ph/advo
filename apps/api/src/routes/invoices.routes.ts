@@ -87,6 +87,9 @@ invoices.patch("/:id", requireAdmin, zValidator("json", updateSchema), async (c)
 
   const values: Record<string, unknown> = { ...data, updatedAt: new Date() };
   if (data.status === "paid") values.paidAt = new Date();
+  // Flipping away from "paid" must clear the timestamp, or the row stays
+  // internally inconsistent (shows unpaid but still has a paid_at).
+  else if (data.status !== undefined) values.paidAt = null;
   if (data.dueDate !== undefined) {
     values.dueDate = data.dueDate ? new Date(data.dueDate) : null;
   }
