@@ -125,3 +125,38 @@ export async function sendWelcomeEmail(to: string, tempPassword?: string) {
     `)
   );
 }
+
+export async function sendLeadNotificationEmail(
+  to: string,
+  lead: {
+    name: string;
+    email: string;
+    company?: string | null;
+    projectType?: string | null;
+    budget?: string | null;
+    description?: string | null;
+  },
+) {
+  const row = (label: string, value?: string | null) =>
+    value
+      ? `<tr><td style="padding:4px 12px 4px 0;color:#999;white-space:nowrap;">${label}</td><td style="color:#1a1a1a;">${value}</td></tr>`
+      : "";
+  await send(
+    to,
+    `New lead: ${lead.name}${lead.company ? ` — ${lead.company}` : ""}`,
+    wrap(`
+      <h2 style="color:#1a1a1a;font-size:18px;margin:0 0 12px;">New project inquiry</h2>
+      <table style="border-collapse:collapse;font-size:14px;">
+        ${row("Name", lead.name)}
+        ${row("Email", lead.email)}
+        ${row("Company", lead.company)}
+        ${row("Project", lead.projectType)}
+        ${row("Budget", lead.budget)}
+      </table>
+      ${lead.description ? `<p style="color:#333;line-height:1.6;margin-top:14px;">${lead.description}</p>` : ""}
+      <a href="${env().FRONTEND_URL}/admin" style="display:inline-block;background:#ea580c;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:16px;">
+        Open Admin → Leads
+      </a>
+    `),
+  );
+}

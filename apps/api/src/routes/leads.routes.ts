@@ -8,7 +8,7 @@ import { lead, client, user, project } from "../db/schema.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin, requireTeam } from "../middleware/rbac.js";
 import { hashPassword } from "../services/auth.service.js";
-import { sendWelcomeEmail } from "../services/email.service.js";
+import { sendWelcomeEmail, sendLeadNotificationEmail } from "../services/email.service.js";
 import { nanoid } from "nanoid";
 import type { Variables } from "../types/context.js";
 
@@ -28,6 +28,24 @@ const submitSchema = z.object({
 leads.post("/", zValidator("json", submitSchema), async (c) => {
   const data = c.req.valid("json");
   const [created] = await db().insert(lead).values(data).returning();
+
+  // Fire-and-forget: alert the team. Never fail the public submit on email error.
+  void (async () => {
+    try {
+      const admins = await db()
+        .select({ email: user.email })
+        .from(user)
+        .where(eq(user.role, "admin"));
+      await Promise.all(
+        admins
+          .filter((a) => a.email)
+          .map((a) => sendLeadNotificationEmail(a.email, created)),
+      );
+    } catch (err) {
+      console.error("[leads] notification email failed:", err);
+    }
+  })();
+
   return c.json({ data: created, error: null }, 201);
 });
 
