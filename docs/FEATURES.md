@@ -80,9 +80,11 @@ User card surfaces the actual `user.role` (capitalized) instead of a hardcoded "
 
 ## Admin Panel (`/admin`)
 
+> **Design language (2026-06-20):** the admin console + client hub use a Linear-inspired system — cool near-black canvas, charcoal panels, ADVO orange accent (used sparingly), Hanken Grotesk type (no monospace), 6px radius, dense tables over cards. Shared primitives in [`components/admin/_ui.tsx`](../apps/web/src/components/admin/_ui.tsx); pattern references: `AdminDashboard.tsx` (stat-strip + panels), `AdminLeads.tsx` (dense table). See [HANDOFF.md](HANDOFF.md) + memory `feedback_design_language`.
+
 ### Sidebar Navigation
 
-Fixed left sidebar (240px / 72px collapsed). Dashboard sits at the top on its own; remaining sections are grouped under four labels — **Operations** (Projects, Clients, Team, Deliverables, Availability, Finance), **Marketing Site** (Content Studio, Portfolio, Social), **Pipeline** (Leads, Notifications), **Tools** (Brand Scraper, FB Scraper). Settings is anchored to the bottom. Collapsed state replaces group labels with thin dividers to preserve visual rhythm.
+Fixed left sidebar (240px / 72px collapsed). Dashboard sits at the top on its own; remaining sections are grouped under four labels — **Operations** (Projects, Clients, Team, Deliverables, Calendar, Availability, Finance), **Marketing Site** (Content Studio, Portfolio, Social), **Pipeline** (Leads, Notifications), **Tools** (Brand Scraper, FB Scraper). Settings is anchored to the bottom. Collapsed state replaces group labels with thin dividers to preserve visual rhythm.
 
 Admins landing on `/hub` are auto-redirected to `/admin` via `redirectAdminTo` on the route guard (post-login destination is also role-aware).
 
@@ -148,6 +150,14 @@ Team member profiles with name, role, email, bio, social links (LinkedIn, GitHub
 Full CRUD (shipped `3a622af`, closing audit finding B1 — was previously read-only). Add/Edit dialog (project, title, description, assignee, status, priority, due date), a per-card **inline status quick-change** (optimistic), delete (dialog footer), team-member filter, and an empty-state CTA. Mirrors the `AdminAvailability` dialog pattern. Backend `POST/PATCH/DELETE /api/deliverables` already existed; this added the missing UI.
 
 **Files**: `AdminSchedule.tsx`, `useAdminDeliverables.ts`
+
+### Calendar
+
+The all-around ADVO records calendar (Phase 1, shipped `0018c3e`/`80f076e`). A month grid that overlays **manually-created events** (meeting / deadline / MOA / BIR / content / social / cold-email / event) with **derived events computed at read time** from existing records: deliverable due dates, invoice due + paid dates, project kickoffs. Prev/today/next nav, today highlight, a category-filter legend, click-a-day to add, and an edit/delete dialog (title, category, date, all-day or start/end time, location, notes). `GET /api/calendar?from&to` returns the union; POST/PATCH/DELETE manage manual events (requireTeam). Derived events are read-only (edit them on their own page).
+
+**Phase 2/3 (not built):** more record layers (contracts/MOAs, meetings, BIR, content/social posting, cold-email cadence); Google Calendar + ICS sync. `Availability` will fold into this as a team-availability layer.
+
+**Files**: `AdminCalendar.tsx` (new), `useCalendar.ts` (new), `calendar.routes.ts` (new), `calendar_event` table (migration `003`)
 
 ### Finance
 

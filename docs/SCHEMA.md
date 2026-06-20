@@ -291,6 +291,24 @@ Output of the admin Brand Scraper + FB Scraper, keyed by URL. Append-only from t
 | `scraped_by` | BIGINT (FK) | → `user` ON DELETE SET NULL (nullable, set when an admin triggered it) |
 | `created_at` | TIMESTAMPTZ | |
 
+### calendar_event
+
+Backs the ADVO records calendar (migration `003`). **Manual events only** — derived events (deliverable due dates, invoice due/paid, project kickoffs) are computed at read time in `GET /api/calendar`, not stored here.
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `calendar_event_id` | BIGSERIAL (PK) | |
+| `project_id` | INTEGER (FK) | → `project` ON DELETE SET NULL (nullable, optional link) |
+| `title` | VARCHAR(255) | |
+| `category` | VARCHAR(50) | `meeting`/`deadline`/`moa`/`bir`/`content`/`social`/`cold_email`/`event` — varchar (set grows → app-validated, not a DB enum). Default `event`. |
+| `description` | TEXT | |
+| `location` | VARCHAR(255) | |
+| `starts_at` | TIMESTAMPTZ | |
+| `ends_at` | TIMESTAMPTZ | Nullable |
+| `is_all_day` | BOOLEAN | Default `false` |
+| `created_at` | TIMESTAMPTZ | |
+| `updated_at` | TIMESTAMPTZ | |
+
 ---
 
 ## Migration log
@@ -301,3 +319,4 @@ Drizzle-kit `push` syncs `schema.ts` → Postgres. For schema changes that need 
 |---|---|---|
 | `001_audit_tier1.sql` | 2026-06-20 | Added 3 missing FK indexes (`idx_lead_assigned_to`, `idx_scrape_result_scraped_by`, `idx_notification_project_id`); added `created_at` to `site_config` + `site_content`; added retention COMMENT on `scrape_result`. Source: database-conventions audit (docs/ROADMAP.md). |
 | `002_audit_tier2.sql` | 2026-06-20 | Set explicit `ON DELETE` on the 8 FKs that had drifted to `NO ACTION` (drizzle-kit `push` never alters existing FK actions). **CASCADE** (drift-repair, already declared in schema.ts): `github_event.project_id`, `notification.project_id`. **SET NULL** (detach, don't erase/block): `activity_log.user_id`, `deliverable.assigned_to`, `lead.assigned_to`, `scrape_result.scraped_by`, `client.user_id`, `team_member.user_id`. Unblocks `DELETE /api/team/:id` (was failing when a member had assigned deliverables/leads) and client-delete cascade through projects. Source: database-conventions audit Tier 2, per-FK policy confirmed with owner. |
+| `003_calendar_event.sql` | 2026-06-20 | Created `calendar_event` (manual ADVO calendar events — meetings, MOAs, BIR deadlines, content/social posts, cold-email cadence). bigserial PK, `project_id` FK `ON DELETE SET NULL`, `category` varchar (growable set → app-validated, not an enum), `is_all_day` predicate boolean, TIMESTAMPTZ, `COMMENT ON TABLE`, indexes on `starts_at` + FK — per database-conventions. Applied to prod as the app DB user (so the app owns + can read it). Backs `GET /api/calendar`; derived events (deliverables/invoices/projects) are computed at read time, not stored. |

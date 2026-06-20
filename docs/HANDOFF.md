@@ -11,6 +11,41 @@ Cross-links:
 
 ---
 
+## 2026-06-20 — ADVO records calendar (Phase 1)
+
+> Merged to `main` (`0018c3e` + `80f076e`). API + web typecheck 0/0, both builds ✓, suite 81/81. **Deployed (API + web + migration 003)** — `/api/calendar` live (401-gated), advo.ph serves `index-C1JfRqd4.js`, migration applied to prod as the app DB user. User: *"for availability, I feel like we can just make that a calendar... a full out calendar that's connected to deliverables, financing, BIR compliance, content, social aspects, posting, cold emailing."*
+
+Phase 1 of the all-around calendar (the vision is much bigger — see open-items).
+- Backend: new `calendar_event` table (migration `003`, per the database-conventions skill — see [SCHEMA.md](SCHEMA.md)). `GET /api/calendar?from&to` ([calendar.routes.ts](apps/api/src/routes/calendar.routes.ts), requireTeam) returns **manual events UNION derived** events computed at read time from deliverables (due), invoices (due + paid), and projects (kickoff). POST/PATCH/DELETE manage manual events.
+- Frontend: [AdminCalendar.tsx](apps/web/src/components/admin/AdminCalendar.tsx) — month grid, dot-coded event chips, prev/today/next, category-filter legend, today highlight, click-day-to-add, edit/delete dialog (title/category/date/all-day/time/location/notes). [useCalendar.ts](apps/web/src/hooks/useCalendar.ts) hook. Wired "Calendar" into the Operations nav.
+- Verified: read path live-tested locally (real deliverable/invoice/kickoff events rendered across months); migration applied + table confirmed local + prod.
+
+### Honest open-items
+- **Calendar endpoints have no automated test** — `/api/calendar` GET/POST/PATCH/DELETE aren't in `api-wiring.test.ts`. Add a range-GET + create/delete assertion.
+- **Authenticated create not live-tested on prod** — no prod admin creds in hand; the write path is deployed + compiles + uses the same insert/mutation pattern as other working CRUD, but a live "Add event" click should confirm it.
+- **Phase 2** (not started): contracts/MOAs, meetings, BIR deadlines, content/social posting, cold-email cadence as event layers — some need their own tables/fields first.
+- **Phase 3** (not started): Google Calendar + ICS sync — needs the owner's **two-way vs read-only** decision.
+- **Availability** page still in the nav; folds into the calendar (team-availability layer) once the calendar is proven.
+
+---
+
+## 2026-06-20 — Linear-inspired UI redesign (admin + hub + design system)
+
+> Merged to `main` (`d728c2e` → `8d67d82`, + refinement `eab41ea`). API+web typecheck 0/0, lint 0 err, builds ✓, full suite **81/81**. **Deployed (web).** User: *"this font is screaming ai"* · *"I'd like the design... more compressed... not follow a template... more humane."*
+
+Full redesign of the admin console + client hub to a Linear-inspired language, validated against the captured Linear spec in the local `Codex/design.md` repo. Design preference saved to memory (`feedback_design_language`).
+- **Foundation** (`d728c2e`): cooled the palette to a cool near-black canvas + charcoal panels (kept ADVO orange accent), dark-first; swapped Geist/Geist Mono → **Hanken Grotesk** and removed all `font-mono` (the loudest "AI" tell); shared admin primitives in [_ui.tsx](apps/web/src/components/admin/_ui.tsx) (PageHeader/StatStrip/Stat/Panel/Empty/Dot/Table).
+- **Compression** (`cbcfd5f`): killed the AI tells (greeting hero, "Admin" badge, icon chips, uniform floating cards, motion fade-ins); list pages → **dense tables**, summary pages → stat-strip + hairline panels. Propagated across all 17 admin sections via parallel agents + the Command Center.
+- **Hub** (`8d67d82`): same language, compressed.
+- **Refinement** (`eab41ea`): snapped tokens to Linear's exact values (canvas `#08090a`, card `#0f1011`, hairline `#23252a`, muted `#8a8f98`); radius 8px → 6px.
+
+### Honest open-items
+- Presentation-only — no logic changed; 81/81 suite still green (it tests API wiring, not styling).
+- Landing page also picked up Hanken (the font is global) — owner OK'd one cohesive brand font.
+- Availability page restyled but not restructured (becomes the calendar — see the entry above).
+
+---
+
 ## 2026-06-20 — "go build these" batch: email-on-lead · S4 closed · Files pillar · AI contract review
 
 > Merged to `main` (4 commits, `8bc719f`→`fae49dd`). API + web typecheck 0/0, lint clean (0 err), both builds ✓, full suite **81/81** against the live dev API. **Deployed (API + web)** — health 200, advo.ph serves `index-Mnygn4dS.js`, new routes live (401-gated).

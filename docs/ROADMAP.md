@@ -15,7 +15,7 @@ Treat this as the **canonical roadmap**. Two existing sub-roadmaps stay where th
 | **API** | api.advo.ph live (`apps/api`, PM2 on VPS) |
 | **Active client engagements** | Felici Gelato (in dev), Coffee Rush (in dev) |
 | **Shipped** | Fourlinq (`fourlinq.ph`) — June 19, 2026 |
-| **Latest platform work (2026-06-20)** | Project Command Center (per-project hub) · contract red-flag review (now **AI-capable**, Claude + heuristic fallback) · Files/Drive pillar · Show-Client-Now expiring preview links + client request-from-Hub · email-on-new-lead · Deliverables CRUD · Tier-1/2 security fixes (incl. **S4 closed**) + DB FK migration — all live. See [HANDOFF.md](HANDOFF.md). |
+| **Latest platform work (2026-06-20)** | Project Command Center (per-project hub) · contract red-flag review (now **AI-capable**, Claude + heuristic fallback) · Files/Drive pillar · Show-Client-Now expiring preview links + client request-from-Hub · email-on-new-lead · Deliverables CRUD · Tier-1/2 security fixes (incl. **S4 closed**) + DB FK migration · **Linear UI redesign** (admin + hub — Hanken Grotesk, dense tables, no mono) · **ADVO records calendar** (Phase 1: month grid + derived events from deliverables/invoices/projects + manual event CRUD) — all live. See [HANDOFF.md](HANDOFF.md). |
 | **Stalled** | Daj, Ms. Imee (Inventi), Tita Imee |
 | **Passed/declined** | Personal Collection (already on Shopify) |
 | **Prospecting** | Medical City (David's cousin lead), dental clinic outreach (5K scraped leads) |
@@ -100,6 +100,7 @@ Behaviors that ship but have no automated test. Listed here so they don't get lo
 | 🟡 `DELETE /api/projects/:id/assets/:assetId` (Files pillar, `bdf1a8b`) | No dedicated test; the GET-assets list is exercised in `e2e-flow.test.ts` but delete (incl. project-scoping) isn't. Proven live by hand. | S — one scoped-delete test |
 | 🟡 Email side-effect on `POST /api/leads` (`8bc719f`) | Lead-create is tested; the fire-and-forget admin-notification dispatch isn't asserted. Proven live (leadId 154 fired). | S — mock the mailer + assert it's called |
 | 🟢 AI contract path (`fae49dd`) | Untestable without `ANTHROPIC_API_KEY`; the heuristic fallback stays covered by the existing contract tests. Add an AI-path test once a key exists in CI. | M — needs a key / mock the SDK |
+| 🟡 Calendar endpoints (`0018c3e`) | `/api/calendar` GET/POST/PATCH/DELETE have no integration test — the derived-event union + manual-event CRUD are unverified by the suite. Read path verified live; authenticated create not yet live-tested on prod. | S — range-GET + create/delete assertions |
 
 ## P2 — Long-shot / parked
 
