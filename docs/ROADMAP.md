@@ -46,7 +46,7 @@ Direct quote, Prince (May 6): *"we need a proper workflow or system na we'd be a
 
 | Item | Why | Effort |
 |---|---|---|
-| **Capacity view in Admin** | Already have `apps/web/src/components/admin/AdminAvailability.tsx`. Make sure it shows current commitments per dev so taking new clients has guardrails. | S — likely already partly there, audit + wire in |
+| **Capacity view in Admin** | `AdminAvailability` tracks per-member time blocks (school/work/break/unavailable) and computes overlapping free time. **Audit finding:** what's missing is the *commitments* side — projects-per-dev. `project_access` table already links team↔project, and the single-project endpoint (`GET /api/projects/:id`) returns the team. But the projects *list* endpoint (`GET /api/projects`) does not include team data, so a per-member project count needs either (a) extending the list endpoint to include `team_member_ids[]` per project, or (b) a new `GET /api/team/:id/projects` endpoint. Then in AdminAvailability: show each member's active-project count beside their tab + a "capacity remaining" indicator. | M — needs API change first |
 | **Per-junior client assignment workflow** | Prince's pattern: 1 junior dev per client (Anthony / Au / Kenneth) under his supervision. Surface this in `AdminTeam` + `AdminProjects`. | S |
 | **School/availability blackout calendar** | "pre-fi to finals szn" cost ~2 weeks of throughput. Track each member's school blocks so client timelines don't promise into them. | M |
 

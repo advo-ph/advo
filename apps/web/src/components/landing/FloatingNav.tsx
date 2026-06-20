@@ -1,7 +1,7 @@
-import { useState, useEffect, useLayoutEffect } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useState, useEffect, useLayoutEffect, useCallback } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { ArrowRight, LogIn, Menu, X } from "lucide-react";
 
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
@@ -12,6 +12,7 @@ const FloatingNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const isLandingPage = location.pathname === "/";
+  const shouldReduceMotion = useReducedMotion();
 
   const [isScrolled, setIsScrolled] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -19,6 +20,8 @@ const FloatingNav = () => {
     return (el?.scrollTop ?? window.scrollY) > 80;
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const closeMobileMenu = useCallback(() => setIsMobileMenuOpen(false), []);
 
   useIsomorphicLayoutEffect(() => {
     const el = document.getElementById("root");
@@ -30,6 +33,26 @@ const FloatingNav = () => {
     return () =>
       target.removeEventListener("scroll", handleScroll as EventListener);
   }, [location.pathname]);
+
+  // Close drawer on route change so navigating from inside it doesn't leave it open.
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  // Escape closes the drawer + body scroll lock while open.
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeMobileMenu();
+    };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [isMobileMenuOpen, closeMobileMenu]);
 
   const handleAboutClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -48,6 +71,10 @@ const FloatingNav = () => {
     { label: "Team", href: "/team" },
     { label: "Client Hub", href: "/login" },
   ];
+
+  const drawerMotion = shouldReduceMotion
+    ? { initial: false, animate: { y: 0 }, exit: { y: 0 }, transition: { duration: 0 } }
+    : { initial: { y: -12 }, animate: { y: 0 }, exit: { y: -12 }, transition: { duration: 0.2 } };
 
   return (
     <>
@@ -126,10 +153,12 @@ const FloatingNav = () => {
               </Link>
 
               <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="md:hidden p-2 text-foreground hover:text-foreground transition-colors"
+                onClick={() => setIsMobileMenuOpen((open) => !open)}
+                className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-md text-foreground hover:bg-secondary/70 transition-colors"
                 style={{ filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.6))" }}
-                aria-label="Toggle menu"
+                aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+                aria-expanded={isMobileMenuOpen}
+                aria-controls="mobile-navigation-drawer"
               >
                 {isMobileMenuOpen ? (
                   <X className="w-5 h-5" />
@@ -145,31 +174,75 @@ const FloatingNav = () => {
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.15 }}
-            className="fixed top-[5rem] left-4 right-4 z-40 md:hidden"
+            id="mobile-navigation-drawer"
+            initial={false}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 1 }}
+            transition={{ duration: 0 }}
+            className="fixed inset-0 z-40 min-h-svh bg-background pt-[5.5rem] md:hidden"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mobile navigation"
           >
-            <div className="bg-card border border-border rounded-2xl p-4">
-              {navLinks.map((link) => (
+            <motion.div
+              {...drawerMotion}
+              className="relative mx-4 flex min-h-[calc(100svh-6.5rem)] flex-col overflow-hidden rounded-2xl border border-border/75 bg-card shadow-lg"
+            >
+              <div className="border-b border-border/55 px-5 py-5">
+                <p className="mb-2 inline-flex items-center gap-2 rounded-md border border-accent/20 bg-accent/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-accent">
+                  ADVO
+                </p>
+                <p className="max-w-[18rem] text-lg font-semibold leading-snug tracking-tight">
+                  Websites with the system behind them.
+                </p>
+              </div>
+
+              <nav className="flex-1 px-3 py-3">
+                {navLinks.map((link, index) => (
+                  <Link
+                    key={link.label}
+                    to={link.href}
+                    onClick={(event) => {
+                      link.onClick?.(event);
+                      closeMobileMenu();
+                    }}
+                    className="group flex min-h-16 items-center justify-between rounded-xl px-3.5 py-3 text-left transition-colors hover:bg-secondary/70"
+                  >
+                    <span>
+                      <span className="mb-1 block font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                        0{index + 1}
+                      </span>
+                      <span className="block text-2xl font-semibold tracking-tight text-foreground">
+                        {link.label}
+                      </span>
+                    </span>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-accent" />
+                  </Link>
+                ))}
+              </nav>
+
+              <div className="mt-auto grid gap-px border-t border-border/60 bg-border/60 sm:grid-cols-2">
                 <Link
-                  key={link.label}
-                  to={link.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="block py-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  to="/start"
+                  className="group flex min-h-16 items-center justify-between bg-card px-5 py-4 text-sm font-medium transition-colors hover:bg-secondary/70"
+                  onClick={closeMobileMenu}
                 >
-                  {link.label}
+                  Start a Project
+                  <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-accent" />
                 </Link>
-              ))}
-              <Link
-                to="/start"
-                className="block mt-2 px-4 py-2.5 rounded-full bg-foreground text-background text-sm font-medium text-center"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Get Started
-              </Link>
-            </div>
+                <Link
+                  to="/login"
+                  className="group flex min-h-16 items-center justify-between bg-card px-5 py-4 text-sm font-medium transition-colors hover:bg-secondary/70"
+                  onClick={closeMobileMenu}
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <LogIn className="h-4 w-4 text-accent" />
+                    Client Hub
+                  </span>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-accent" />
+                </Link>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
