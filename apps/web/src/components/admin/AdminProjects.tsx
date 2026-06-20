@@ -14,6 +14,7 @@ import {
   GitPullRequest,
   Clock,
   FolderKanban,
+  LayoutDashboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +49,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Client, ProjectStatus } from "@/types/admin";
 import { STATUS_OPTIONS, formatCurrency } from "@/types/admin";
 import type { MergedProject } from "@/hooks/useOrgProjects";
+import ProjectCommandCenter from "./ProjectCommandCenter";
 
 interface AdminProjectsProps {
   projects: MergedProject[];
@@ -67,6 +69,12 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
   const [deletingProject, setDeletingProject] = useState<MergedProject | null>(null);
   const [updatingProject, setUpdatingProject] = useState<MergedProject | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Command-center view: keep the id and re-derive from the live list so it
+  // stays fresh after edits/refetch (and falls back to the list if deleted).
+  const [openProjectId, setOpenProjectId] = useState<number | null>(null);
+  const openProject =
+    openProjectId != null ? projects.find((p) => p.project_id === openProjectId) ?? null : null;
 
   // Form state
   const [formData, setFormData] = useState({
@@ -242,6 +250,10 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
     }
   };
 
+  if (openProject) {
+    return <ProjectCommandCenter project={openProject} onBack={() => setOpenProjectId(null)} />;
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -357,6 +369,14 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
                 </div>
 
                 <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    className="rounded-full bg-foreground text-background hover:bg-foreground/90"
+                    onClick={() => setOpenProjectId(project.project_id)}
+                  >
+                    <LayoutDashboard className="h-4 w-4 mr-2" />
+                    Open
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"

@@ -11,6 +11,25 @@ Cross-links:
 
 ---
 
+## 2026-06-20 — Project Command Center (shell)
+
+> Branch merged to `main`. typecheck 0/0, lint clean, build ✓; walked through in a real browser. Web-only — **not yet deployed**. New feature, not an audit item.
+
+First slice of the per-project "command center" vision (owner wants a Drive + dev/deploy status + "show client now" + contracts/AI-review, role-aware for manager/dev/finance, "benefit but don't overwhelm"). Chose **shell-first**: structure before features.
+
+- New [ProjectCommandCenter.tsx](apps/web/src/components/admin/ProjectCommandCenter.tsx) — opened via a new **Open** button on each card in `AdminProjects` (early-returns into the command center; `openProjectId` re-derives from the live list so it stays fresh). Header (title/status/client/value/repo/preview + a disabled **Show Client Now**) + 6 tabs:
+  - **Overview / Deliverables / Finance** — REAL data (project fields + payment progress; project-scoped deliverables via `useAdminDeliverables`; project-scoped invoices via `useInvoices`).
+  - **Files / Dev & Deploy / Contracts** — `ComingNext` scaffolds that spell out each pillar (Project Drive on `project_asset`+R2; Show-Client-Now expiring preview link, host-agnostic, also closes S4; contract status + AI red-flag review against CONTRACTS.md). Each scaffold names which role it serves.
+
+**Key insight (owner's "here-dot-now"):** that's **here.now** — "instant web hosting for agents". It's the right mechanism for the instant/ephemeral preview pillar (far better than fighting Vercel's persistent previews). Design Show-Client-Now around here.now when that pillar gets built.
+
+### Honest open-items
+- **Not deployed** (web-only — needs `build:web` + rsync).
+- Shell only — Files/Dev/Contracts panels are scaffolds, no functionality yet. Next: pick a pillar to fill (owner leaning order TBD; my rec was Contracts AI-review first for business value, but they chose shell-first to see structure).
+- Command center doesn't yet host Post Update / Edit (those still live on the list cards) — could move in later.
+
+---
+
 ## 2026-06-20 — Tier 2 quick-fix batch (5 broken/papercut items)
 
 > Merged to `main`. typecheck 0/0, lint clean, build ✓, full vitest 75/75. Each fix verified at runtime. **Touches API + web — needs both deploys.**
