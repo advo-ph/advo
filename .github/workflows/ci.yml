@@ -81,7 +81,9 @@ jobs:
 
       - name: Sync frontend build
         run: |
-          rsync -az --delete \
+          # --omit-dir-times avoids non-fatal "failed to set times" noise when
+          # the deploy user doesn't own a directory it isn't replacing.
+          rsync -rltpz --delete --omit-dir-times \
             -e "ssh -i ~/.ssh/advo_deploy_key -p $VPS_PORT" \
             dist/ "$VPS_USER@$VPS_HOST:$VPS_WEB_ROOT/"
 

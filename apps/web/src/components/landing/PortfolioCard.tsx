@@ -63,11 +63,6 @@ const getProof = (
   const beforeAfter = caseStudy?.before_after || caseStudy?.beforeAfter;
 
   return {
-    metric:
-      caseStudy?.metric ||
-      caseStudy?.outcome ||
-      results[0] ||
-      `Shipped: ${title}`,
     outcome:
       caseStudy?.outcome ||
       caseStudy?.overview ||
@@ -199,7 +194,7 @@ const PortfolioCard = ({
         <div className="relative bg-secondary/30 p-3">
           <div
             className={cn(
-              "aspect-[16/10] overflow-hidden rounded-lg border border-border/60 bg-background/70",
+              "aspect-video overflow-hidden rounded-lg border border-border/60 bg-background/70",
               isFeatured && "md:h-full md:min-h-[430px] md:aspect-auto",
             )}
           >
@@ -229,17 +224,16 @@ const PortfolioCard = ({
           <div className="mb-5 flex items-start justify-between gap-4">
             <div>
               <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-accent">
-                Outcome
+                Shipped
               </p>
               <h3 className="text-xl sm:text-2xl font-semibold leading-tight tracking-tight">
-                {proof.metric}
+                {title}
               </h3>
             </div>
             <ArrowUpRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-accent" />
           </div>
 
           <div className="mb-5 border-t border-border/55 pt-5">
-            <p className="mb-2 text-sm font-medium">{title}</p>
             <p className="line-clamp-3 text-sm leading-relaxed text-muted-foreground">
               {compactResult(proof.outcome)}
             </p>
