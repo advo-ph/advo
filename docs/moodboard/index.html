@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ADVO — Moodboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --card: #0f0f0f;
+      --surface: #1a1a1a;
+      --fg: #fafafa;
+      --muted: #999999;
+      --accent: #e67a3a;
+      --border: #242424;
+      --radius: 10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: "Geist", system-ui, sans-serif;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    .mono { font-family: "Geist Mono", ui-monospace, monospace; }
+    .wrap {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 48px 24px 96px;
+    }
+    header {
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 40px;
+      margin-bottom: 40px;
+    }
+    .eyebrow {
+      font-family: "Geist Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: clamp(2rem, 5vw, 3.25rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      max-width: 18ch;
+      margin-bottom: 20px;
+    }
+    .lede {
+      color: var(--muted);
+      max-width: 52ch;
+      font-size: 1.05rem;
+    }
+    .lede strong { color: var(--fg); font-weight: 500; }
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 28px;
+    }
+    .pill {
+      font-family: "Geist Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--muted);
+      background: var(--card);
+    }
+    .pill.on {
+      border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+      color: var(--accent);
+    }
+    .pill.off {
+      text-decoration: line-through;
+      opacity: 0.45;
+    }
+
+    section { margin-bottom: 56px; }
+    .section-head {
+      display: flex;
+      align-items: baseline;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .section-head .num {
+      font-family: "Geist Mono", monospace;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .section-head h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    @media (min-width: 720px) {
+      .grid.two { grid-template-columns: 1fr 1fr; }
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .card img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      object-fit: cover;
+      background: #000;
+    }
+    .card .cap {
+      padding: 16px 18px 18px;
+      border-top: 1px solid var(--border);
+    }
+    .card .cap .label {
+      font-family: "Geist Mono", monospace;
+      font-size: 11px;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .card .cap p {
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+    .card .cap p em { color: var(--fg); font-style: normal; font-weight: 500; }
+
+    /* CSS system board — exact tokens, no AI text */
+    .system {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      min-height: 280px;
+    }
+    @media (max-width: 719px) {
+      .system { grid-template-columns: 1fr; }
+    }
+    .swatches {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+    }
+    .swatch {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      min-height: 120px;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .swatch span {
+      font-family: "Geist Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .swatch .hex { opacity: 0.7; margin-top: 4px; }
+    .s-bg { background: #0a0a0a; color: #fafafa; }
+    .s-card { background: #0f0f0f; color: #fafafa; }
+    .s-surface { background: #1a1a1a; color: #fafafa; }
+    .s-accent { background: #e67a3a; color: #fff; }
+
+    .type-board {
+      padding: 28px 24px;
+      background: #0a0a0a;
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    @media (max-width: 719px) {
+      .type-board { border-left: none; border-top: 1px solid var(--border); }
+    }
+    .type-board .display {
+      font-size: clamp(1.75rem, 3vw, 2.4rem);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+    }
+    .type-board .display span { color: var(--accent); }
+    .type-board .meta {
+      font-family: "Geist Mono", monospace;
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .type-board .cta {
+      display: inline-flex;
+      align-self: flex-start;
+      background: var(--accent);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 10px 16px;
+      border-radius: var(--radius);
+    }
+
+    .table-wrap {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th {
+      font-family: "Geist Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: var(--card);
+      font-weight: 500;
+    }
+    tr:last-child td { border-bottom: none; }
+    td:first-child { color: var(--fg); font-weight: 500; width: 28%; }
+    td { color: var(--muted); }
+    .yes { color: #6ee7a8; }
+    .no { color: #f87171; }
+
+    .ia {
+      display: grid;
+      gap: 8px;
+    }
+    .ia-row {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      gap: 16px;
+      align-items: start;
+      padding: 16px 18px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .ia-row .n {
+      font-family: "Geist Mono", monospace;
+      font-size: 13px;
+      color: var(--muted);
+      padding-top: 2px;
+    }
+    .ia-row h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin-bottom: 4px;
+    }
+    .ia-row p { font-size: 0.88rem; color: var(--muted); }
+
+    footer {
+      margin-top: 64px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      font-family: "Geist Mono", monospace;
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 24px;
+      justify-content: space-between;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    .warn {
+      margin-top: 12px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+      background: color-mix(in srgb, var(--accent) 8%, var(--card));
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .warn strong { color: var(--accent); font-weight: 500; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <p class="eyebrow">ADVO · Moodboard · 2026</p>
+      <h1>What we want ADVO to be</h1>
+      <p class="lede">
+        The operating layer for Philippine businesses that have not been digitalized yet —
+        <strong>software plus commodity hardware</strong>, vertical by vertical.
+        Not an AI agency. Not global SaaS. Calm, dark, orange, real.
+      </p>
+      <div class="pill-row">
+        <span class="pill on">Industry OS</span>
+        <span class="pill on">PH-first</span>
+        <span class="pill on">Deploy + retainer</span>
+        <span class="pill on">#0A0A0A + #E67A3A</span>
+        <span class="pill off">AI agency</span>
+        <span class="pill off">Free trial SaaS</span>
+        <span class="pill off">Purple gradients</span>
+      </div>
+    </header>
+
+    <section>
+      <div class="section-head">
+        <span class="num">01</span>
+        <h2>Visual direction</h2>
+      </div>
+      <div class="grid two">
+        <article class="card">
+          <img src="01-hardware.jpg" alt="Tablet, receipt printer, and display on black" />
+          <div class="cap">
+            <p class="label">Hardware as product</p>
+            <p>
+              <em>Outcome on devices you can replace at the mall.</em>
+              Tablet POS · Bluetooth printer · HDMI queue TV. No custom silicon until a vertical is proven.
+            </p>
+          </div>
+        </article>
+        <article class="card">
+          <img src="02-operations.jpg" alt="Philippine counter with tablet POS and queue LED" />
+          <div class="cap">
+            <p class="label">Where we deploy</p>
+            <p>
+              <em>Real counters, not glass offices.</em>
+              Queue LED, cashless notes, grit allowed. This is incomplete digitalization — our market.
+            </p>
+          </div>
+        </article>
+        <article class="card">
+          <div class="system">
+            <div class="swatches">
+              <div class="swatch s-bg"><span>Background</span><span class="hex">#0A0A0A</span></div>
+              <div class="swatch s-card"><span>Card</span><span class="hex">#0F0F0F</span></div>
+              <div class="swatch s-surface"><span>Surface</span><span class="hex">#1A1A1A</span></div>
+              <div class="swatch s-accent"><span>Accent</span><span class="hex">#E67A3A</span></div>
+            </div>
+            <div class="type-board">
+              <div>
+                <p class="eyebrow" style="margin-bottom:12px">Geist · Mono</p>
+                <p class="display">We digitalize<br />for <span>you.</span></p>
+              </div>
+              <div class="meta">
+                <span>01  ·  NUMERAL RHYTHM</span>
+                <span>TRACKING −0.02EM · HEADINGS</span>
+                <span>ORANGE = CTAs ONLY</span>
+              </div>
+              <span class="cta">Start a Project</span>
+            </div>
+          </div>
+          <div class="cap">
+            <p class="label">System (exact tokens)</p>
+            <p>
+              <em>Already live in <span class="mono">index.css</span>.</em>
+              Black field, one warm orange, tight sans, mono labels. Refine — do not rebrand.
+            </p>
+          </div>
+        </article>
+        <article class="card">
+          <img src="04-site-ui.jpg" alt="Dark startup website mock on laptop and phone" />
+          <div class="cap">
+            <p class="label">Site composition reference</p>
+            <p>
+              <em>Steal layout energy, not SaaS copy.</em>
+              Huge type · pill nav · orange CTA · team strip. Pricing stays deploy + retainer — never “start free trial.”
+            </p>
+            <p class="warn"><strong>Note:</strong> mock text is placeholder aesthetic only. Public site must not adopt freemium language.</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <span class="num">02</span>
+        <h2>Category check</h2>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Claim</th>
+              <th>Verdict</th>
+              <th>Why Ms. Imee would care</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Industry software + hardware</td>
+              <td class="yes">Yes</td>
+              <td>Matches how we price, hire, and stay after go-live</td>
+            </tr>
+            <tr>
+              <td>PH / incomplete digitalization</td>
+              <td class="yes">Yes</td>
+              <td>Market is first software, not replace software</td>
+            </tr>
+            <tr>
+              <td>AI agency / tool showcase</td>
+              <td class="no">No</td>
+              <td>Wrong buyers; competes on hype; tools are not the product</td>
+            </tr>
+            <tr>
+              <td>Global horizontal SaaS</td>
+              <td class="no">No</td>
+              <td>Race to free; no relational distribution edge</td>
+            </tr>
+            <tr>
+              <td>Dark minimal + orange</td>
+              <td class="yes">Yes</td>
+              <td>Already shipped; consistency = trust</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <span class="num">03</span>
+        <h2>Startup site IA</h2>
+      </div>
+      <div class="ia">
+        <div class="ia-row">
+          <span class="n">01</span>
+          <div>
+            <h3>Hero — category in one breath</h3>
+            <p>Keep “We digitalize for you.” Subtext → operations systems on commodity hardware, not generic “web apps.”</p>
+          </div>
+        </div>
+        <div class="ia-row">
+          <span class="n">02</span>
+          <div>
+            <h3>Problem — paper, Viber, tally sheets</h3>
+            <p>Why this market exists. Incomplete digitalization thesis in plain owner language.</p>
+          </div>
+        </div>
+        <div class="ia-row">
+          <span class="n">03</span>
+          <div>
+            <h3>What we install</h3>
+            <p>Software + TV / tablet / phone + printer. Outcome, not seat count.</p>
+          </div>
+        </div>
+        <div class="ia-row">
+          <span class="n">04</span>
+          <div>
+            <h3>How we work — deploy → embed → reference</h3>
+            <p>Numbered process already exists; retarget labels to the vertical loop.</p>
+          </div>
+        </div>
+        <div class="ia-row">
+          <span class="n">05</span>
+          <div>
+            <h3>Work + team + start</h3>
+            <p>Portfolio outcomes, editorial team, <span class="mono">/start</span> lead form. Credibility before conversion tricks.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <span class="num">04</span>
+        <h2>Ship gate</h2>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Question</th><th>Fail state</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="mono">1</td><td>Does the sentence work if we never say “AI”?</td><td>If no → rewrite</td></tr>
+            <tr><td class="mono">2</td><td>Would a clinic / parking / resto owner get it in one read?</td><td>If no → simplify</td></tr>
+            <tr><td class="mono">3</td><td>Pricing language = deploy + retainer?</td><td>If free-trial → cut</td></tr>
+            <tr><td class="mono">4</td><td>Visuals stay black + orange + real photos?</td><td>If neon / purple → reject</td></tr>
+            <tr><td class="mono">5</td><td>Would anyone ask “ano ba talaga kayo?”</td><td>If yes → clarify category</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer>
+      <span>Sources: VISION.md · src/index.css · this board</span>
+      <span><a href="../MOODBOARD.md">Full write-up (MOODBOARD.md)</a> · <a href="../VISION.md">Strategy</a></span>
+    </footer>
+  </div>
+</body>
+</html>

@@ -225,9 +225,14 @@ Concurrency cancels superseded runs per branch — no wasted minutes when you pu
 
 ## Documentation
 
+- [VISION.md](./docs/VISION.md) — Strategy: PH-first vertical software + hardware
+- [MOODBOARD.md](./docs/MOODBOARD.md) — Brand / startup-site direction + [visual board](./docs/moodboard/index.html)
+- [SCOPE-PWA-MEETING.md](./docs/SCOPE-PWA-MEETING.md) — Mobile PWA + meeting record (not built yet)
 - [SETUP.md](./docs/SETUP.md) — Development setup, deployment, VPS transfer guide
-- [SCHEMA.md](./docs/SCHEMA.md) — Full database schema (18 tables)
+- [SCHEMA.md](./docs/SCHEMA.md) — Full database schema
 - [FEATURES.md](./docs/FEATURES.md) — Feature documentation, auth system, hooks reference
+- [ROADMAP.md](./docs/ROADMAP.md) — Product roadmap
+- [HANDOFF.md](./docs/HANDOFF.md) — Session handoff / open items
 
 ## License
 
