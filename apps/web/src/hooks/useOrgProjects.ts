@@ -16,6 +16,8 @@ export interface MergedProject {
   amount_paid_cents: number;
   tech_stack: string[];
   created_at: string;
+  /** Assigned team members via project_access (from list API). */
+  teamMemberId: number[];
   client?: {
     company_name?: string;
     contact_email?: string;
@@ -55,6 +57,11 @@ async function fetchOrgProjects(): Promise<MergedProject[]> {
     amount_paid_cents: p.amountPaidCents ?? p.amount_paid_cents ?? 0,
     tech_stack: p.techStack ?? p.tech_stack ?? [],
     created_at: p.createdAt ?? p.created_at,
+    teamMemberId: Array.isArray(p.teamMemberId)
+      ? (p.teamMemberId as number[])
+      : Array.isArray(p.team_member_id)
+        ? (p.team_member_id as number[])
+        : [],
     client: p.client
       ? {
           company_name: p.client.companyName ?? p.client.company_name,

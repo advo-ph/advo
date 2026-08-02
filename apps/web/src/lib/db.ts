@@ -134,6 +134,24 @@ export async function deleteProject(projectId: number): Promise<DbResult<null>> 
   return { data: null, error: res.error };
 }
 
+/** Assign a team member to a project (project_access). Idempotent on unique index. */
+export async function assignProjectTeam(
+  projectId: number,
+  teamMemberId: number,
+): Promise<DbResult<null>> {
+  const res = await post(`/api/projects/${projectId}/team`, { teamMemberId });
+  return { data: null, error: res.error };
+}
+
+/** Remove a team member from a project. */
+export async function removeProjectTeam(
+  projectId: number,
+  teamMemberId: number,
+): Promise<DbResult<null>> {
+  const res = await del(`/api/projects/${projectId}/team/${teamMemberId}`);
+  return { data: null, error: res.error };
+}
+
 // ─── Progress Updates ──────────────────────────────────────────────
 
 export async function createProgressUpdate(update: {

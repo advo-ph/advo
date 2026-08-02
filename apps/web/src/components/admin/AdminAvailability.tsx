@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Plus,
   School,
@@ -33,6 +34,8 @@ import {
   type AvailabilityBlock,
   type BlockType,
 } from "@/hooks/useAdminAvailability";
+import { get } from "@/lib/api";
+import { projectCountByMember, capacityRemaining, type CapacityProject } from "@/lib/capacity";
 import { PageHeader, Panel } from "./_ui";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -58,6 +61,18 @@ const AdminAvailability = () => {
     deleteBlock,
     isSaving,
   } = useAdminAvailability();
+
+  // Project load for capacity badges (does not block schedule UI)
+  const { data: project = [] } = useQuery({
+    queryKey: ["adminProjectsCapacity"],
+    queryFn: async () => {
+      const res = await get<CapacityProject[]>("/api/projects");
+      return res.data ?? [];
+    },
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const projectCount = useMemo(() => projectCountByMember(project), [project]);
 
   const isLoading = teamLoading || blocksLoading;
   const [selectedMember, setSelectedMember] = useState<number | null>(null);
@@ -325,10 +340,12 @@ const AdminAvailability = () => {
         </Panel>
       )}
 
-      {/* Team Member Tabs */}
+      {/* Team Member Tabs + capacity */}
       <div className="flex gap-2 overflow-x-auto pb-1">
         {teamMembers.map(member => {
           const active = selectedMember === member.team_member_id;
+          const activeProjectCount = projectCount.get(member.team_member_id) ?? 0;
+          const remaining = capacityRemaining(activeProjectCount);
           return (
             <button
               key={member.team_member_id}
@@ -344,6 +361,24 @@ const AdminAvailability = () => {
                 <AvatarFallback className="text-[10px]">{getInitials(member.name)}</AvatarFallback>
               </Avatar>
               {member.name}
+              <span
+                className={`inline-flex items-center gap-1.5 text-[10px] font-normal tabular-nums ${
+                  active ? "text-muted-foreground" : "text-muted-foreground/80"
+                }`}
+              >
+                <span className="rounded border border-border/80 bg-secondary/40 px-1.5 py-0.5">
+                  {activeProjectCount} {activeProjectCount === 1 ? "project" : "projects"}
+                </span>
+                <span
+                  className={`rounded border px-1.5 py-0.5 ${
+                    remaining === 0
+                      ? "border-rose-500/30 bg-rose-500/10 text-rose-400"
+                      : "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                  }`}
+                >
+                  capacity left: {remaining}
+                </span>
+              </span>
             </button>
           );
         })}

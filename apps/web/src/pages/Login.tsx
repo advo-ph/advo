@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import FloatingNav from "@/components/landing/FloatingNav";
+import { destinationFor } from "@/lib/destination";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -22,14 +23,11 @@ const Login = () => {
   const explicitRedirect = searchParams.get("redirectTo");
   const { user, isLoading: authLoading, login, loginWithMagicLink, verifyMagicLink } = useAuth();
 
-  const destinationFor = (role: string | undefined) =>
-    explicitRedirect ?? (role === "admin" ? "/admin" : "/hub");
-
   useEffect(() => {
     if (!authLoading && user) {
-      navigate(destinationFor(user.role), { replace: true });
+      navigate(destinationFor(user.role, explicitRedirect), { replace: true });
     }
-  }, [authLoading, user, navigate]);
+  }, [authLoading, user, navigate, explicitRedirect]);
 
   // Handle magic link token from URL on mount
   useState(() => {
@@ -42,7 +40,7 @@ const Login = () => {
         if (error) {
           toast({ variant: "destructive", title: "Error", description: error });
         } else {
-          navigate(destinationFor(user?.role));
+          navigate(destinationFor(user?.role, explicitRedirect));
         }
       })();
     }
@@ -86,7 +84,7 @@ const Login = () => {
         description: error,
       });
     } else {
-      navigate(destinationFor(user?.role));
+      navigate(destinationFor(user?.role, explicitRedirect));
     }
   };
 

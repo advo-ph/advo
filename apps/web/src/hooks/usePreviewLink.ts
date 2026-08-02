@@ -4,6 +4,8 @@ import { useToast } from "@/hooks/use-toast";
 
 export interface PreviewLink {
   url: string;
+  /** Pretty frontend path, e.g. `/p/<token>` (optional for older API responses). */
+  publicPath?: string;
   expiresAt: string;
   ttlMinutes: number;
 }
