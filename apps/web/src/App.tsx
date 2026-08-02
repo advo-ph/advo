@@ -12,6 +12,7 @@ import Admin from "./pages/Admin";
 import Start from "./pages/Start";
 import Team from "./pages/Team";
 import ProjectDetail from "./pages/ProjectDetail";
+import PreviewLink from "./pages/PreviewLink";
 import NotFound from "./pages/NotFound";
 
 const App = () => (
@@ -27,6 +28,8 @@ const App = () => (
           <Route path="/start" element={<Start />} />
           <Route path="/team" element={<Team />} />
           <Route path="/project/:slug" element={<ProjectDetail />} />
+          {/* Public: branded Show-Client-Now gate → API preview resolve */}
+          <Route path="/p/:token" element={<PreviewLink />} />
 
           {/* Protected: requires auth */}
           <Route element={<ProtectedRoute requireAuth redirectAdminTo="/admin" />}>

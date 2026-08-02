@@ -3,9 +3,11 @@
 Unified, forward-looking roadmap for the ADVO platform and the business that runs on top of it. Synthesizes signals from the Messenger archive (Apr–Jun 2026), the May 26 client meeting, and the in-progress codex landing redesign.
 
 Treat this as the **canonical roadmap**. Two existing sub-roadmaps stay where they are and are referenced from here:
-- **Landing design** — see [/ROADMAP.md](../ROADMAP.md) (Stripe-audit-driven; most items implemented in the `codex/linear-design-system` stash, only the hero+services copy port shipped to main so far).
+- **Landing design** — see [/ROADMAP.md](../ROADMAP.md) (Stripe-audit-driven; full codex-style `LandingPage` shipped on main `278a65a` 2026-08-02).
 - **Platform feature backlog** — see [FEATURES.md → Roadmap](FEATURES.md#roadmap) (Internal Library, Admin UX cleanup, monorepo).
 - **Feature wiring audit** — see [WIRING-AUDIT.md](WIRING-AUDIT.md) (2026-06-20 end-to-end audit of every admin + client feature). The 🔴 cross-tenant data-leak bugs (**S1/S2/S3**) are **fixed + deployed** (`0e42f13`); B1/B2/B3 + several papercuts also fixed. **All security items S1–S4 are now fixed + deployed** — S4 (`9574820`) removed the `VITE_GITHUB_TOKEN`/`VITE_CLOUDFLARE_TOKEN` browser reads; the GitHub feed routes through the backend `github_event` cache.
+
+**2026-08-02 fan-out (COMPLETE mode):** capacity API+UI, junior project assign, proposal tracker section, outreach targeting filter, branded `/p/:token` preview, Tools scrapers submenu, Internal Library, Projects full-page form, Vertex brand-analysis decommission, plus wiring tests for public settings / asset delete / lead create path. See session evidence under goal scratch `fanout-report.md`.
 
 ## Status snapshot
 
@@ -41,8 +43,8 @@ Currently bottlenecked: 5K scraped clinic leads but proposals are manual, so the
 | **Email-on-new-lead notification** ✅ | Leads come in via the contact form; you don't see them until logging into admin. Two test rows in DB are evidence nobody's monitoring it. | ✅ **Shipped** (`8bc719f`) — `POST /api/leads` emails all admins via `sendLeadNotificationEmail` (Resend SMTP when `RESEND_API_KEY` set, else logs). |
 | **Import the ~5K scraped clinic leads into the DB** | The CSV + JSON from the Messenger archive (metro-manila clinics, with digital/design/perf scores) aren't loaded yet — the pipeline below assumes they are. Precursor to everything in this section. | S — one-time importer + dedupe |
 | **Clinic-scraper → proposal-PDF pipeline** | Already have 5K leads with digital scores, design feedback, perf grades. Need: feed → AI-design proposal → send. | L — multi-stage. Start with template-fill, defer AI generation. |
-| **Proposal tracker** | Once you send 10+/month, need to know which clinics opened, replied, signed. | M — table + statuses in admin. |
-| **Targeting rule: zero/outdated systems only** | Repeating signal: *"if a company has a system/website, we can't just offer them a new one"* (Prince) — Personal Collection passed, AAPM has Inventi, etc. | S | Bake into the scraper scoring + outreach criteria. |
+| **Proposal tracker** ✅ | Once you send 10+/month, need to know which clinics opened, replied, signed. | ✅ **Shipped (fan-out 2026-08-02)** — Admin → Proposals filters leads in `proposal_sent` / `closed_won` / `closed_lost` (`filterProposalLead`); no new table. |
+| **Targeting rule: zero/outdated systems only** ✅ | Repeating signal: *"if a company has a system/website, we can't just offer them a new one"* (Prince) — Personal Collection passed, AAPM has Inventi, etc. | ✅ **Shipped (fan-out 2026-08-02)** — `outreachPriority` / `isOutreachTarget` + Admin Leads **Outdated only** filter (`apps/web/src/lib/targeting.ts`). |
 
 ## P1 — Project management for multi-client throughput
 
@@ -50,8 +52,8 @@ Direct quote, Prince (May 6): *"we need a proper workflow or system na we'd be a
 
 | Item | Why | Effort |
 |---|---|---|
-| **Capacity view in Admin** | `AdminAvailability` tracks per-member time blocks (school/work/break/unavailable) and computes overlapping free time. **Audit finding:** what's missing is the *commitments* side — projects-per-dev. `project_access` table already links team↔project, and the single-project endpoint (`GET /api/projects/:id`) returns the team. But the projects *list* endpoint (`GET /api/projects`) does not include team data, so a per-member project count needs either (a) extending the list endpoint to include `team_member_ids[]` per project, or (b) a new `GET /api/team/:id/projects` endpoint. Then in AdminAvailability: show each member's active-project count beside their tab + a "capacity remaining" indicator. | M — needs API change first |
-| **Per-junior client assignment workflow** | Prince's pattern: 1 junior dev per client (Anthony / Au / Kenneth) under his supervision. Surface this in `AdminTeam` + `AdminProjects`. | S |
+| **Capacity view in Admin** ✅ | Projects-per-dev + capacity remaining on Availability. | ✅ **Shipped (fan-out 2026-08-02)** — `GET /api/projects` attaches `teamMemberId: number[]`; Admin Availability badges use `projectCountByMember` / `capacityRemaining` (cap 3). |
+| **Per-junior client assignment workflow** ✅ | Prince's pattern: 1 junior dev per client (Anthony / Au / Kenneth) under his supervision. | ✅ **Shipped (fan-out 2026-08-02)** — `POST/DELETE /api/projects/:id/team`; Command Center Overview Team panel + `isJuniorRole`. |
 | **School/availability blackout calendar** | "pre-fi to finals szn" cost ~2 weeks of throughput. Track each member's school blocks so client timelines don't promise into them. | M |
 
 ## P2 — Platform polish (UX / landing)
@@ -69,11 +71,11 @@ Mostly captured in the two sub-roadmaps; surfaced here so you don't lose them.
 | Mobile viewport audit (no horizontal overflow at 360 / 390 / 768 / 1280 / 1440) | Codex stash | ⏳ Codex shipped a `bench/roadmap/landing-stripe-audit/viewport-check.mjs` script that gates this; not wired into CI yet |
 | Strip "Why Go Digital" / generic FAQ → product-system framing | Codex stash | ⏳ Hero + ServiceTiers framing ported (38ff047); WhyDigital / FAQ / ContactCTA copy still generic |
 | Footer system-continuity copy + oversized wordmark | Codex stash | ⏳ Not started |
-| Internal Library at `/admin/library` | [FEATURES.md](FEATURES.md#internal-library-planned) | Spec only, no code |
-| Admin: modal → page for high-field-count CRUD (Projects, Clients) | [FEATURES.md](FEATURES.md#admin-ux-cleanup) | Not started |
-| Admin: hide experimental scrapers behind a "Tools" submenu | [FEATURES.md](FEATURES.md#admin-ux-cleanup) | Tools group exists but scrapers still always visible |
-| Capacity view in Admin (per-member project assignments + remaining capacity) | This doc, P1 | ⏳ Audit done — needs API: `GET /api/projects` to include `team_member_ids[]` OR new `GET /api/team/:id/projects` endpoint |
-| Pretty preview route `advo.ph/p/<token>` | [HANDOFF.md](HANDOFF.md) (Show-Client-Now) | ⏳ Show-Client-Now hands out an `api.advo.ph/api/preview/<token>` link today — functional but unbranded. A frontend `/p/<token>` route is the polish. |
+| Internal Library at `/admin/library` | [FEATURES.md](FEATURES.md#internal-library-planned) | ✅ **Shipped (fan-out 2026-08-02)** — Admin → Library; persists via `GET/PATCH /api/settings/library` |
+| Admin: modal → page for high-field-count CRUD (Projects, Clients) | [FEATURES.md](FEATURES.md#admin-ux-cleanup) | ✅ Projects full-page create/edit (fan-out 2026-08-02). Clients still modal. |
+| Admin: hide experimental scrapers behind a "Tools" submenu | [FEATURES.md](FEATURES.md#admin-ux-cleanup) | ✅ **Shipped (fan-out 2026-08-02)** — Tools collapsible; scrapers hidden until expand (`isToolsSection`) |
+| Capacity view in Admin (per-member project assignments + remaining capacity) | This doc, P1 | ✅ See P1 capacity row (shipped fan-out 2026-08-02) |
+| Pretty preview route `advo.ph/p/<token>` | [HANDOFF.md](HANDOFF.md) (Show-Client-Now) | ✅ **Shipped (fan-out 2026-08-02)** — public `GET /p/:token` gate; mint returns `publicPath` |
 | here.now fresh-deploy path (instant ephemeral preview) | [HANDOFF.md](HANDOFF.md) (Show-Client-Now) | ⏳ Deferred — the original "instant temp deploy" ask. Current expiring-link approach is host-agnostic + works today; here.now needs an API key + per-project build artifacts. |
 
 ## Infra & Ops
@@ -84,7 +86,7 @@ Operational items running live prod — none of this is tracked elsewhere despit
 |---|---|---|
 | **VPS migration — API → company VPS** | Planned move of the ADVO API to the company VPS; keep the deploy portable (no host-specific assumptions) so cutover is a git-pull + env swap. | M — env/secrets move, DNS, smoke |
 | **Activate AI contract review in prod** | `reviewContract()` runs Claude when `ANTHROPIC_API_KEY` is set, else the heuristic; prod has no key, so live review is heuristic-only. | S — add `ANTHROPIC_API_KEY` to VPS `apps/api/.env` + `pm2 restart advo-api` |
-| **Decommission or rebuild the orphaned LLM service** | [`brand-analysis.routes.ts`](apps/api/src/routes/brand-analysis.routes.ts) + [`brand-analysis.service.ts`](apps/api/src/services/brand-analysis.service.ts) use Vertex/Gemini, which has no creds anywhere → dead code. Now that Claude is wired (contract review), decide: rebuild on Claude, or delete the route + service. | S delete · M rebuild |
+| **Decommission or rebuild the orphaned LLM service** ✅ | Vertex/Gemini brand-analysis had no creds. | ✅ **Deleted (fan-out 2026-08-02)** — route + service removed; Playwright brand scraper (`/api/scrape/brand`) kept. |
 | **Monitoring / error tracking / backups** | No error tracking, uptime monitoring, or documented DB-backup cadence for live prod. A silent API crash or data loss has no alarm today. | M — uptime ping + nightly `pg_dump` + error capture |
 
 ## Open test-coverage gaps
@@ -93,12 +95,12 @@ Behaviors that ship but have no automated test. Listed here so they don't get lo
 
 | Behavior | Risk | Effort |
 |---|---|---|
-| 🔴 `GET /api/settings/public` (added in `a8a8cdc`) | New endpoint, no integration test. The existing api-wiring guard treats `/api/settings` as auth-required — the public variant wasn't added. If a future change accidentally re-protects this, the landing footer 401s again silently. | S — add one anonymous-GET test |
-| 🟡 Role-based post-login redirect (admin → `/admin`, client → `/hub`) | Two-line logic in [Login.tsx:25](apps/web/src/pages/Login.tsx#L25) + [ProtectedRoute.tsx](apps/web/src/components/ProtectedRoute.tsx). If `destinationFor()` regresses (e.g., role enum changes), admins land on the wrong page silently. | S — pure-function unit test |
+| ✅ `GET /api/settings/public` (added in `a8a8cdc`) | Covered in `api-wiring.test.ts` (anonymous allowlist). | ✅ Fan-out 2026-08-02 |
+| ✅ Role-based post-login redirect (admin → `/admin`, client → `/hub`) | `destinationFor` exported from `lib/destination.ts`; unit tested. | ✅ Fan-out 2026-08-02 |
 | 🟡 Portfolio proof card fallback rendering | `getProof()` in `landing/PortfolioCard.tsx` has 4 fallback paths for missing case-study fields. None exercised by tests; visual regressions would slip through. | M — snapshot or render-tree test |
 | 🟢 Mobile drawer interactions (escape close, scroll lock, route-change close) | A11y-critical but currently only verified by hand. | M — playwright e2e |
-| 🟡 `DELETE /api/projects/:id/assets/:assetId` (Files pillar, `bdf1a8b`) | No dedicated test; the GET-assets list is exercised in `e2e-flow.test.ts` but delete (incl. project-scoping) isn't. Proven live by hand. | S — one scoped-delete test |
-| 🟡 Email side-effect on `POST /api/leads` (`8bc719f`) | Lead-create is tested; the fire-and-forget admin-notification dispatch isn't asserted. Proven live (leadId 154 fired). | S — mock the mailer + assert it's called |
+| ✅ `DELETE /api/projects/:id/assets/:assetId` (Files pillar, `bdf1a8b`) | Covered in `api-wiring.test.ts` create→delete→list + 404. | ✅ Fan-out 2026-08-02 |
+| 🟡 Email side-effect on `POST /api/leads` (`8bc719f`) | Lead-create path re-asserted in api-wiring; fire-and-forget mail still not mocked (no transport in CI). | Partial — create path green |
 | 🟢 AI contract path (`fae49dd`) | Untestable without `ANTHROPIC_API_KEY`; the heuristic fallback stays covered by the existing contract tests. Add an AI-path test once a key exists in CI. | M — needs a key / mock the SDK |
 | ✅ Calendar endpoints (`0018c3e`) | Covered in `api-wiring.test.ts` (Calendar block): auth-gate, unified range-GET shape, and the full manual-event POST→GET→PATCH→DELETE lifecycle (incl. namespaced `manual-<id>` lookup + 404-on-re-delete). Verifies the derived∪manual union and the authenticated write path against a real DB. **Remaining:** authenticated create still not live-tested on **prod** (no prod admin creds); prod deploy + auth-gate confirmed (401 unauth). | ✅ Done — added range-GET + CRUD assertions |
 

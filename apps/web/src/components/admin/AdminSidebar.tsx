@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
@@ -14,15 +15,18 @@ import {
   Banknote,
   Bell,
   UserPlus,
+  FileCheck2,
   Settings,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Scan,
   BookOpen,
   Sun,
   Moon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { isToolsSection } from "@/lib/admin-nav";
 
 const appVersion = import.meta.env.VITE_APP_VERSION || "1.0.0";
 const appCommit = import.meta.env.VITE_APP_COMMIT || "local";
@@ -43,8 +47,10 @@ export type AdminSection =
   | "finance"
   | "notifications"
   | "leads"
+  | "proposals"
   | "brand-scraper"
   | "fb-scraper"
+  | "library"
   | "settings";
 
 interface AdminSidebarProps {
@@ -62,6 +68,8 @@ type NavItem = { id: AdminSection; label: string; icon: React.ElementType };
 
 const topItem: NavItem = { id: "dashboard", label: "Dashboard", icon: LayoutDashboard };
 
+const TOOLS_GROUP_LABEL = "Tools";
+
 const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "Operations",
@@ -74,6 +82,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { id: "availability", label: "Availability", icon: CalendarClock },
       { id: "contracts", label: "Contracts", icon: FileSignature },
       { id: "finance", label: "Finance", icon: Banknote },
+      { id: "library", label: "Library", icon: BookOpen },
     ],
   },
   {
@@ -88,11 +97,12 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     label: "Pipeline",
     items: [
       { id: "leads", label: "Leads", icon: UserPlus },
+      { id: "proposals", label: "Proposals", icon: FileCheck2 },
       { id: "notifications", label: "Notifications", icon: Bell },
     ],
   },
   {
-    label: "Tools",
+    label: TOOLS_GROUP_LABEL,
     items: [
       { id: "brand-scraper", label: "Brand Scraper", icon: Scan },
       { id: "fb-scraper", label: "FB Scraper", icon: BookOpen },
@@ -110,6 +120,17 @@ const AdminSidebar = ({
   theme,
   onToggleTheme,
 }: AdminSidebarProps) => {
+  const [toolsExpanded, setToolsExpanded] = useState(() =>
+    isToolsSection(activeSection),
+  );
+
+  // Keep Tools open when a scraper section is active so the item stays visible.
+  useEffect(() => {
+    if (isToolsSection(activeSection)) {
+      setToolsExpanded(true);
+    }
+  }, [activeSection]);
+
   const handleSectionChange = (s: AdminSection) => {
     onSectionChange(s);
     onMobileClose();
@@ -181,19 +202,50 @@ const AdminSidebar = ({
             return (
               <>
                 <div className="space-y-1">{renderItem(topItem)}</div>
-                {navGroups.map((group) => (
-                  <div key={group.label} className="mt-5 space-y-1">
-                    {!isCollapsed && (
-                      <div className="px-3 pb-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground/50">
-                        {group.label}
-                      </div>
-                    )}
-                    {isCollapsed && (
-                      <div className="mx-3 mb-1 h-px bg-border/50" />
-                    )}
-                    {group.items.map(renderItem)}
-                  </div>
-                ))}
+                {navGroups.map((group) => {
+                  const isToolsGroup = group.label === TOOLS_GROUP_LABEL;
+                  // Expanded sidebar: scrapers only when Tools is open.
+                  // Collapsed icon rail: always show scraper icons for reachability.
+                  const showGroupItem =
+                    !isToolsGroup || isCollapsed || toolsExpanded;
+                  const toolsActive =
+                    isToolsGroup && isToolsSection(activeSection);
+
+                  return (
+                    <div key={group.label} className="mt-5 space-y-1">
+                      {!isCollapsed && isToolsGroup && (
+                        <button
+                          type="button"
+                          onClick={() => setToolsExpanded((open) => !open)}
+                          aria-expanded={toolsExpanded}
+                          className={cn(
+                            "w-full flex items-center justify-between gap-2 px-3 pb-1 text-[10px] uppercase tracking-[0.16em] transition-colors",
+                            toolsActive
+                              ? "text-accent/80"
+                              : "text-muted-foreground/50 hover:text-muted-foreground",
+                          )}
+                        >
+                          <span>{group.label}</span>
+                          <ChevronDown
+                            className={cn(
+                              "h-3 w-3 flex-shrink-0 transition-transform duration-200",
+                              toolsExpanded && "rotate-180",
+                            )}
+                          />
+                        </button>
+                      )}
+                      {!isCollapsed && !isToolsGroup && (
+                        <div className="px-3 pb-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground/50">
+                          {group.label}
+                        </div>
+                      )}
+                      {isCollapsed && (
+                        <div className="mx-3 mb-1 h-px bg-border/50" />
+                      )}
+                      {showGroupItem && group.items.map(renderItem)}
+                    </div>
+                  );
+                })}
               </>
             );
           })()}

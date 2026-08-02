@@ -20,9 +20,27 @@ import { requireAdmin, requireTeam } from "../middleware/rbac.js";
 import { sendNotificationEmail } from "../services/email.service.js";
 import { signPreviewToken, PREVIEW_TTL_MINUTES } from "../services/preview.service.js";
 import { looseUrl, requiredUrl } from "../utils/validators.js";
+import { attachTeamMemberId } from "../utils/project-capacity.js";
 import type { Variables, AuthUser } from "../types/context.js";
 
 const projects = new Hono<{ Variables: Variables }>();
+
+/** One query for all project_access rows for the listed projects, then attach teamMemberId[]. */
+async function withTeamMemberId<T extends { projectId: number }>(
+  d: ReturnType<typeof db>,
+  projectRow: T[],
+): Promise<(T & { teamMemberId: number[] })[]> {
+  if (!projectRow.length) return [];
+  const projectIdList = projectRow.map((p) => p.projectId);
+  const access = await d
+    .select({
+      projectId: projectAccess.projectId,
+      teamMemberId: projectAccess.teamMemberId,
+    })
+    .from(projectAccess)
+    .where(inArray(projectAccess.projectId, projectIdList));
+  return attachTeamMemberId(projectRow, access);
+}
 
 // All routes require auth
 projects.use("*", requireAuth);
@@ -82,10 +100,11 @@ projects.get("/", async (c) => {
       .leftJoin(client, eq(project.clientId, client.clientId))
       .orderBy(desc(project.createdAt));
 
-    return c.json({
-      data: rows.map((r) => ({ ...r.project, client: r.client })),
-      error: null,
-    });
+    const data = await withTeamMemberId(
+      d,
+      rows.map((r) => ({ ...r.project, client: r.client })),
+    );
+    return c.json({ data, error: null });
   }
 
   if (user.role === "client") {
@@ -96,13 +115,15 @@ projects.get("/", async (c) => {
       .where(eq(client.userId, user.userId))
       .orderBy(desc(project.createdAt));
 
-    return c.json({
-      data: rows.map((r) => ({ ...r.project, client: r.client })),
-      error: null,
-    });
+    // Client list may include teamMemberId (empty when unassigned).
+    const data = await withTeamMemberId(
+      d,
+      rows.map((r) => ({ ...r.project, client: r.client })),
+    );
+    return c.json({ data, error: null });
   }
 
-  // Team: only assigned projects
+  // Team: only assigned projects — include teamMemberId for capacity
   const tm = await d
     .select()
     .from(teamMember)
@@ -126,10 +147,11 @@ projects.get("/", async (c) => {
     .where(inArray(project.projectId, projectIds))
     .orderBy(desc(project.createdAt));
 
-  return c.json({
-    data: rows.map((r) => ({ ...r.project, client: r.client })),
-    error: null,
-  });
+  const data = await withTeamMemberId(
+    d,
+    rows.map((r) => ({ ...r.project, client: r.client })),
+  );
+  return c.json({ data, error: null });
 });
 
 // ─── Get Single Project ───────────────────────────────
@@ -254,6 +276,84 @@ projects.delete("/:id", requireAdmin, async (c) => {
 
   if (!deleted) throw new HTTPException(404, { message: "Project not found" });
   return c.json({ data: { message: "Project deleted" }, error: null });
+});
+
+// ─── Team assignment (project_access) ─────────────────
+
+const assignTeamSchema = z.object({
+  teamMemberId: z.number().int().positive(),
+});
+
+/** Admin assigns a team member to a project. Unique (teamMemberId, projectId) — ignore conflict. */
+projects.post(
+  "/:id/team",
+  requireAdmin,
+  zValidator("json", assignTeamSchema),
+  async (c) => {
+    const projectId = Number(c.req.param("id"));
+    const { teamMemberId } = c.req.valid("json");
+    const d = db();
+
+    const [proj] = await d
+      .select({ projectId: project.projectId })
+      .from(project)
+      .where(eq(project.projectId, projectId))
+      .limit(1);
+    if (!proj) throw new HTTPException(404, { message: "Project not found" });
+
+    const [member] = await d
+      .select({ teamMemberId: teamMember.teamMemberId })
+      .from(teamMember)
+      .where(eq(teamMember.teamMemberId, teamMemberId))
+      .limit(1);
+    if (!member) throw new HTTPException(404, { message: "Team member not found" });
+
+    const [created] = await d
+      .insert(projectAccess)
+      .values({ teamMemberId, projectId })
+      .onConflictDoNothing({
+        target: [projectAccess.teamMemberId, projectAccess.projectId],
+      })
+      .returning();
+
+    if (created) {
+      return c.json({ data: created, error: null }, 201);
+    }
+
+    // Already assigned — return existing row (idempotent)
+    const [existing] = await d
+      .select()
+      .from(projectAccess)
+      .where(
+        and(
+          eq(projectAccess.teamMemberId, teamMemberId),
+          eq(projectAccess.projectId, projectId),
+        ),
+      )
+      .limit(1);
+
+    return c.json({ data: existing, error: null });
+  },
+);
+
+/** Admin removes a team member from a project. */
+projects.delete("/:id/team/:teamMemberId", requireAdmin, async (c) => {
+  const projectId = Number(c.req.param("id"));
+  const teamMemberId = Number(c.req.param("teamMemberId"));
+  const d = db();
+
+  const [deleted] = await d
+    .delete(projectAccess)
+    .where(
+      and(
+        eq(projectAccess.projectId, projectId),
+        eq(projectAccess.teamMemberId, teamMemberId),
+      ),
+    )
+    .returning();
+
+  if (!deleted) throw new HTTPException(404, { message: "Project access not found" });
+  return c.json({ data: { message: "Team member removed" }, error: null });
 });
 
 // ─── Progress Updates ─────────────────────────────────
@@ -381,7 +481,14 @@ projects.post("/:id/preview-link", requireTeam, async (c) => {
   const { token, expiresAt } = await signPreviewToken(id);
   const origin = new URL(c.req.url).origin;
   return c.json({
-    data: { url: `${origin}/api/preview/${token}`, expiresAt, ttlMinutes: PREVIEW_TTL_MINUTES },
+    data: {
+      url: `${origin}/api/preview/${token}`,
+      // Pretty frontend surface (advo.ph/p/<token>) — clients can share this
+      // instead of the raw API redirect URL.
+      publicPath: `/p/${token}`,
+      expiresAt,
+      ttlMinutes: PREVIEW_TTL_MINUTES,
+    },
     error: null,
   });
 });

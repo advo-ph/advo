@@ -124,6 +124,48 @@ async function seed() {
     }
   }
 
+  // ─── Team fixture (e2e-flow Auth Flows) ──────────────
+  // Login: angelo.revelo@advo.ph / Advo2026!admin
+  const teamPasswordHash = await hashPassword("Advo2026!admin");
+  await d
+    .insert(user)
+    .values({
+      email: "angelo.revelo@advo.ph",
+      passwordHash: teamPasswordHash,
+      role: "team",
+    })
+    .onConflictDoNothing();
+
+  const [teamUser] = await d
+    .select()
+    .from(user)
+    .where(eq(user.email, "angelo.revelo@advo.ph"))
+    .limit(1);
+
+  if (teamUser) {
+    const { teamMember } = await import("./schema.js");
+    const [existingTm] = await d
+      .select()
+      .from(teamMember)
+      .where(eq(teamMember.userId, teamUser.userId))
+      .limit(1);
+    if (!existingTm) {
+      await d.insert(teamMember).values({
+        userId: teamUser.userId,
+        name: "Angelo Revelo",
+        role: "developer",
+        email: "angelo.revelo@advo.ph",
+        avatarUrl: "/team/angelo-revelo.jpg",
+        isActive: true,
+      });
+    } else if (!existingTm.avatarUrl) {
+      await d
+        .update(teamMember)
+        .set({ avatarUrl: "/team/angelo-revelo.jpg", updatedAt: new Date() })
+        .where(eq(teamMember.teamMemberId, existingTm.teamMemberId));
+    }
+  }
+
   console.log("Seed complete");
   await closeDb();
 }

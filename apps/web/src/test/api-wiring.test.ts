@@ -428,6 +428,30 @@ describe("Settings", () => {
     const { status } = await apiGet("/api/settings");
     expect(status).toBe(401);
   });
+
+  // T1: public landing footer must not 401 (allowlisted keys, no auth)
+  it("GET /api/settings/public is anonymous and allowlisted", async () => {
+    const { status, body } = await apiGet("/api/settings/public");
+    expect(status).toBe(200);
+    expect(body.error).toBeNull();
+    expect(Array.isArray(body.data)).toBe(true);
+    for (const row of body.data as { key: string }[]) {
+      expect(["social_links", "brand_name", "team_order"]).toContain(row.key);
+    }
+  });
+});
+
+// ─── Capacity — teamMemberId on project list ──────────
+
+describe("Project capacity teamMemberId", () => {
+  it("GET /api/projects attaches teamMemberId array per project", async () => {
+    const { status, body } = await apiGet("/api/projects", adminToken);
+    expect(status).toBe(200);
+    expect(Array.isArray(body.data)).toBe(true);
+    for (const row of body.data as { teamMemberId?: unknown }[]) {
+      expect(Array.isArray(row.teamMemberId)).toBe(true);
+    }
+  });
 });
 
 // ─── Response Envelope ────────────────────────────────
@@ -728,6 +752,110 @@ describe("Authorization — cross-tenant data scoping", () => {
       clientToken as string
     );
     expect(status).toBe(404);
+  });
+});
+
+// ─── Files pillar — asset delete (T3) ─────────────────
+
+describe("Project asset delete", () => {
+  let assetProjectId: number | null = null;
+  let assetId: number | null = null;
+  let assetClientId: number | null = null;
+
+  beforeAll(async () => {
+    const clientRes = await apiPost(
+      "/api/clients",
+      {
+        companyName: "Asset Delete Client",
+        contactEmail: `asset-del-${Date.now()}@test.advo.ph`,
+      },
+      adminToken,
+    );
+    assetClientId = clientRes.body.data?.clientId ?? null;
+    if (!assetClientId) return;
+
+    const projectRes = await apiPost(
+      "/api/projects",
+      {
+        clientId: assetClientId,
+        title: "Asset Delete Project",
+        projectStatus: "development",
+      },
+      adminToken,
+    );
+    assetProjectId = projectRes.body.data?.projectId ?? null;
+    if (!assetProjectId) return;
+
+    const assetRes = await apiPost(
+      `/api/projects/${assetProjectId}/assets`,
+      {
+        assetType: "document",
+        url: "https://example.com/test-asset.pdf",
+        caption: "delete-me",
+      },
+      adminToken,
+    );
+    assetId = assetRes.body.data?.projectAssetId ?? null;
+  });
+
+  afterAll(async () => {
+    if (assetProjectId) await apiDelete(`/api/projects/${assetProjectId}`, adminToken);
+    if (assetClientId) await apiDelete(`/api/clients/${assetClientId}`, adminToken);
+  });
+
+  it("DELETE /api/projects/:id/assets/:assetId removes the asset", async () => {
+    expect(assetProjectId).toBeTruthy();
+    expect(assetId).toBeTruthy();
+    const { status, body } = await apiDelete(
+      `/api/projects/${assetProjectId}/assets/${assetId}`,
+      adminToken,
+    );
+    expect(status).toBe(200);
+    expect(body.error).toBeNull();
+
+    const list = await apiGet(`/api/projects/${assetProjectId}/assets`, adminToken);
+    const idList = (list.body.data as { projectAssetId: number }[]).map((a) => a.projectAssetId);
+    expect(idList).not.toContain(assetId);
+  });
+
+  it("DELETE unknown asset returns 404", async () => {
+    expect(assetProjectId).toBeTruthy();
+    const { status } = await apiDelete(
+      `/api/projects/${assetProjectId}/assets/999999001`,
+      adminToken,
+    );
+    expect(status).toBe(404);
+  });
+});
+
+// ─── Lead create + notification path (T4) ─────────────
+
+describe("Lead notification path", () => {
+  it("POST /api/leads creates a lead (notification fire-and-forget)", async () => {
+    const { status, body } = await apiPost("/api/leads", {
+      name: "Fanout Test Lead",
+      email: `fanout-lead-${Date.now()}@example.com`,
+      company: "Test Co",
+      projectType: "website",
+      description: "roadmap fan-out verification",
+    });
+    expect(status).toBe(201);
+    expect(body.error).toBeNull();
+    expect(body.data?.leadId ?? body.data?.name).toBeTruthy();
+    // Email is fire-and-forget (logs when no RESEND_API_KEY); create path must not fail.
+  });
+});
+
+// ─── Brand-analysis decommission ──────────────────────
+
+describe("Brand analysis decommissioned", () => {
+  it("POST /api/scrape/analyze-brand is gone", async () => {
+    const { status } = await apiPost(
+      "/api/scrape/analyze-brand",
+      { scrapeData: { url: "https://x", pageInfo: {}, posts: [] } },
+      adminToken,
+    );
+    expect([404, 405]).toContain(status);
   });
 });
 
