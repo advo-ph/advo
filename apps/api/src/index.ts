@@ -34,6 +34,7 @@ import expenseRoutes from "./routes/expense.routes.js";
 import meetingRoutes from "./routes/meeting.routes.js";
 import previewRoutes from "./routes/preview.routes.js";
 import calendarRoutes from "./routes/calendar.routes.js";
+import changeOrderRoutes from "./routes/change-order.routes.js";
 
 import type { Variables } from "./types/context.js";
 
@@ -128,6 +129,9 @@ app.route("/api/expense", expenseRoutes);
 
 // Meeting MoM records (Admin Meetings + Hub)
 app.route("/api/meeting", meetingRoutes);
+
+// Change orders (Hub file + team list; CONTRACTS.md policy 3)
+app.route("/api/change-order", changeOrderRoutes);
 
 // Preview links (public redirect for "Show Client Now")
 app.route("/api/preview", previewRoutes);

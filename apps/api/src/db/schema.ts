@@ -333,6 +333,31 @@ export const contract = pgTable(
   ]
 );
 
+// Change orders (migration 009). Client files scope + reason from /hub
+// (CONTRACTS.md policy 3). status is app-validated varchar (growable set).
+export const changeOrder = pgTable(
+  "change_order",
+  {
+    changeOrderId: bigserial("change_order_id", { mode: "number" }).primaryKey(),
+    projectId: integer("project_id")
+      .notNull()
+      .references(() => project.projectId, { onDelete: "cascade" }),
+    scope: text("scope").notNull(),
+    reason: text("reason").notNull(),
+    status: varchar("status", { length: 50 }).notNull().default("filed"),
+    priceCents: integer("price_cents"),
+    timelineNote: text("timeline_note"),
+    createdBy: integer("created_by").references(() => user.userId, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_change_order_project").on(t.projectId),
+    index("idx_change_order_created_by").on(t.createdBy),
+    index("idx_change_order_created_at").on(t.createdAt),
+  ]
+);
+
 // Meeting MoM records (migration 006). Full transcript per project; optional
 // plaud_share_key for Plaud share links. project_id required CASCADE.
 export const meeting = pgTable(

@@ -11,6 +11,20 @@ Cross-links:
 
 ---
 
+## 2026-08-15 — hub: change-order form (`change-order-form`)
+
+> Lane hub. Client files a change order (scope + reason) from `/hub` against CONTRACTS.md policy 3; team lists it.
+
+- Migration `009_change_order.sql` + `change_order` table in `schema.ts`.
+- `POST/GET /api/change-order` (client scoped to own projects; team sees all). `PATCH` (team) quotes `price_cents` / `timeline_note` / status.
+- Hub project dashboard: Change order panel — form + filed list.
+- Bench: `change-order-form` PASS. `monitor-backup` still PASS.
+
+### Honest open-items
+- No admin UI for quoting — team uses `GET`/`PATCH /api/change-order`. Command Center is another lane.
+- Quote → client-sign flow is API-ready (`signed`) but the hub form only files; no client-confirm button yet.
+- Binding language still needs the lawyer (`legal-bind` / `lawyer` are out of this tier).
+
 ## 2026-08-15 — staff lane: capacity, junior assign, school blackout
 
 > Roadmap-remain lane `staff` on `lane/staff`. Scoring: `capacity-view`, `junior-assign`, `blackout-calendar` PASS; `monitor-backup` still PASS.
