@@ -16,7 +16,8 @@
     "test": "npm --workspace apps/web run test",
     "test:local": "bash scripts/test-local.sh",
     "bench:landing": "node bench/roadmap/landing-stripe-audit/scoring.mjs && node bench/roadmap/landing-stripe-audit/viewport-check.mjs",
-    "bench:landing-follow": "node bench/roadmap/landing-follow/scoring.mjs"
+    "bench:landing-follow": "node bench/roadmap/landing-follow/scoring.mjs",
+    "bench:roadmap-remain": "node bench/roadmap/roadmap-remain/scoring.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.0",

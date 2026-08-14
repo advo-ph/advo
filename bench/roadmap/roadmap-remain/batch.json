@@ -1,0 +1,15 @@
+{
+  "tier": "roadmap-remain",
+  "lane": [
+    "staff",
+    "lead",
+    "admin",
+    "wiring",
+    "hub",
+    "site",
+    "test",
+    "ops"
+  ],
+  "builder": "grok",
+  "resume": false
+}

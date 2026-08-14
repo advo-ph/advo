@@ -1,0 +1,29 @@
+{
+  "lane": [
+    { "name": "staff", "worktree": "C:/Users/maran/Antigravity/advo-lane-staff", "builder": "grok", "resume": false },
+    { "name": "lead", "worktree": "C:/Users/maran/Antigravity/advo-lane-lead", "builder": "grok", "resume": false },
+    { "name": "admin", "worktree": "C:/Users/maran/Antigravity/advo-lane-admin", "builder": "grok", "resume": false },
+    { "name": "wiring", "worktree": "C:/Users/maran/Antigravity/advo-lane-wiring", "builder": "grok", "resume": false },
+    { "name": "hub", "worktree": "C:/Users/maran/Antigravity/advo-lane-hub", "builder": "grok", "resume": false },
+    { "name": "site", "worktree": "C:/Users/maran/Antigravity/advo-lane-site", "builder": "grok", "resume": false },
+    { "name": "test", "worktree": "C:/Users/maran/Antigravity/advo-lane-test", "builder": "grok", "resume": false },
+    { "name": "ops", "worktree": "C:/Users/maran/Antigravity/advo-lane-ops", "builder": "grok", "resume": false }
+  ],
+  "config": {
+    "name": "parcel-roadmap-remain",
+    "windows": [
+      {
+        "tabs": [
+          { "title": "staff", "layout": { "cwd": "C:/Users/maran/Antigravity/advo-lane-staff", "commands": [{ "exec": "grok \"Read bench/roadmap/roadmap-remain/PROMPT.md and follow it.\"" }] } },
+          { "title": "lead", "layout": { "cwd": "C:/Users/maran/Antigravity/advo-lane-lead", "commands": [{ "exec": "grok \"Read bench/roadmap/roadmap-remain/PROMPT.md and follow it.\"" }] } },
+          { "title": "admin", "layout": { "cwd": "C:/Users/maran/Antigravity/advo-lane-admin", "commands": [{ "exec": "grok \"Read bench/roadmap/roadmap-remain/PROMPT.md and follow it.\"" }] } },
+          { "title": "wiring", "layout": { "cwd": "C:/Users/maran/Antigravity/advo-lane-wiring", "commands": [{ "exec": "grok \"Read bench/roadmap/roadmap-remain/PROMPT.md and follow it.\"" }] } },
+          { "title": "hub", "layout": { "cwd": "C:/Users/maran/Antigravity/advo-lane-hub", "commands": [{ "exec": "grok \"Read bench/roadmap/roadmap-remain/PROMPT.md and follow it.\"" }] } },
+          { "title": "site", "layout": { "cwd": "C:/Users/maran/Antigravity/advo-lane-site", "commands": [{ "exec": "grok \"Read bench/roadmap/roadmap-remain/PROMPT.md and follow it.\"" }] } },
+          { "title": "test", "layout": { "cwd": "C:/Users/maran/Antigravity/advo-lane-test", "commands": [{ "exec": "grok \"Read bench/roadmap/roadmap-remain/PROMPT.md and follow it.\"" }] } },
+          { "title": "ops", "layout": { "cwd": "C:/Users/maran/Antigravity/advo-lane-ops", "commands": [{ "exec": "grok \"Read bench/roadmap/roadmap-remain/PROMPT.md and follow it.\"" }] } }
+        ]
+      }
+    ]
+  }
+}
