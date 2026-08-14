@@ -17,6 +17,11 @@ export default defineConfig({
     fileParallelism: false,
   },
   resolve: {
-    alias: { "@": path.resolve(__dirname, "./src") },
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+      // Web workspace does not depend on the API SDK. The contract-ai test
+      // imports reviewContract() and this stub stands in for the live client.
+      "@anthropic-ai/sdk": path.resolve(__dirname, "./src/test/anthropic-sdk.stub.ts"),
+    },
   },
 });
