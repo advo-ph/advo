@@ -11,6 +11,16 @@ Cross-links:
 
 ---
 
+## 2026-08-14 — host `advo`, ports 6400/6407, admin/meeting/expense on `main`
+
+> User: *"i want to change the name of my contabo repos"* / *"go /cleanup commit merge to main"*. The ADVO-PH box is **`ssh advo`** (was Contabo `vmi3170887`). Local + prod API **6407**, web **6400** (claimed block 6400–6499; do not share sisia's 6107). `deploy.sh` defaults `VPS_SSH=advo`. Expense / meeting / PM-assist WIP fast-forwarded to `origin/main` (`c75fc3d`); parking-lot `wip/admin-meeting-expense` deleted after land. Three-box contract: `booted/docs/vps.md`. Ledger: `~/Antigravity/PORTS.md`.
+
+### Honest open-items
+- **Calendar endpoints still have no automated test** (carried from 2026-06-20).
+- **`.grok/` leftover** untracked; not committed.
+- **Meeting/expense has no dedicated test** beyond what was already in the suite — new routes landed with the product WIP.
+- This session did not re-smoke `api.advo.ph` after the 6407 retarget from this machine.
+
 ## 2026-06-20 — ADVO records calendar (Phase 1)
 
 > Merged to `main` (`0018c3e` + `80f076e`). API + web typecheck 0/0, both builds ✓, suite 81/81. **Deployed (API + web + migration 003)** — `/api/calendar` live (401-gated), advo.ph serves `index-C1JfRqd4.js`, migration applied to prod as the app DB user. User: *"for availability, I feel like we can just make that a calendar... a full out calendar that's connected to deliverables, financing, BIR compliance, content, social aspects, posting, cold emailing."*
