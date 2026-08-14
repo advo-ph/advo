@@ -15,6 +15,7 @@ import {
   Banknote,
   Bell,
   UserPlus,
+  FileCheck2,
   Settings,
   ChevronLeft,
   ChevronRight,
@@ -45,6 +46,7 @@ export type AdminSection =
   | "finance"
   | "notifications"
   | "leads"
+  | "proposals"
   | "brand-scraper"
   | "fb-scraper"
   | "settings";
@@ -91,6 +93,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     label: "Pipeline",
     items: [
       { id: "leads", label: "Leads", icon: UserPlus },
+      { id: "proposals", label: "Proposals", icon: FileCheck2 },
       { id: "notifications", label: "Notifications", icon: Bell },
     ],
   },

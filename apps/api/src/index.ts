@@ -35,6 +35,7 @@ import meetingRoutes from "./routes/meeting.routes.js";
 import previewRoutes from "./routes/preview.routes.js";
 import calendarRoutes from "./routes/calendar.routes.js";
 import changeOrderRoutes from "./routes/change-order.routes.js";
+import proposalRoutes from "./routes/proposal.routes.js";
 
 import type { Variables } from "./types/context.js";
 
@@ -56,6 +57,8 @@ app.use(
     origin: [
       e.FRONTEND_URL,
       "http://localhost:6400",
+      "http://localhost:6441",
+      "http://127.0.0.1:6441",
       "http://localhost:6100",
       "http://localhost:6101",
       "http://localhost:5173",
@@ -103,6 +106,7 @@ app.route("/api/projects", projectRoutes);
 app.route("/api/clients", clientRoutes);
 app.route("/api/team", teamRoutes);
 app.route("/api/leads", leadRoutes);
+app.route("/api/proposal", proposalRoutes);
 app.route("/api/invoices", invoiceRoutes);
 app.route("/api/deliverables", deliverableRoutes);
 app.route("/api/availability", availabilityRoutes);

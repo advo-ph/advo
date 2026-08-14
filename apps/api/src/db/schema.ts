@@ -45,6 +45,13 @@ export const leadStatusEnum = pgEnum("lead_status", [
   "closed_lost",
 ]);
 
+export const proposalStatusEnum = pgEnum("proposal_status", [
+  "sent",
+  "opened",
+  "replied",
+  "signed",
+]);
+
 export const invoiceStatusEnum = pgEnum("invoice_status", [
   "unpaid",
   "paid",
@@ -570,4 +577,32 @@ export const scrapeResult = pgTable(
     index("idx_scrape_type").on(t.type),
     index("idx_scrape_result_scraped_by").on(t.scrapedBy),
   ]
+);
+
+// ─── Proposal pipeline ────────────────────────────────
+
+export const proposal = pgTable(
+  "proposal",
+  {
+    proposalId: bigserial("proposal_id", { mode: "number" }).primaryKey(),
+    leadId: integer("lead_id")
+      .notNull()
+      .references(() => lead.leadId, { onDelete: "cascade" }),
+    title: varchar("title", { length: 255 }).notNull(),
+    bodyHtml: text("body_html").notNull(),
+    status: proposalStatusEnum("status").notNull().default("sent"),
+    valueCents: integer("value_cents").notNull().default(0),
+    clause: jsonb("clause"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    openedAt: timestamp("opened_at", { withTimezone: true }),
+    repliedAt: timestamp("replied_at", { withTimezone: true }),
+    signedAt: timestamp("signed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_proposal_lead").on(t.leadId),
+    index("idx_proposal_status").on(t.status),
+    index("idx_proposal_created").on(t.createdAt),
+  ],
 );

@@ -226,11 +226,23 @@ Manage public portfolio projects. Multi-image upload. Toggle featured. Full CRUD
 Pipeline view of inquiries. Status: new → contacted → qualified → proposal → won/lost.
 
 - **Search + filter** by text and status
+- **Outdated only** — Prince's targeting rule: keep zero/outdated systems, hide modern stacks (Shopify / Inventi / etc.)
 - **Bulk actions** — select multiple leads, bulk set status or assign
 - **Convert to Client** button — creates user account + client + project, sends welcome email
 - **Notes** per lead with auto-save on blur
+- **Import** — `npx tsx scripts/import-clinic-lead.ts` (default `data/clinic-lead/sample.json`; optional path to the Messenger dump). Dedupes by email. Does not invent 5K rows.
 
-**Files**: `AdminLeads.tsx`, `useLeads.ts`
+**Files**: `AdminLeads.tsx`, `useLeads.ts`, `lib/targeting.ts`, `scripts/import-clinic-lead.ts`
+
+### Proposals
+
+Admin table of template-filled proposals. Status: sent → opened → replied → signed.
+
+- **Generate** from a lead: fills CONTRACTS.md clauses + lead fields (no AI)
+- **Status** editable in the table
+- **View / print** the filled HTML document
+
+**Files**: `AdminProposals.tsx`, `lib/proposal-tracker.ts`, `apps/api/src/routes/proposal.routes.ts`, `apps/api/src/services/proposal.service.ts`, `apps/api/migrations/010_proposal.sql`
 
 ### Settings
 
