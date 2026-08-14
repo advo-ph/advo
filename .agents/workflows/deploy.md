@@ -4,68 +4,57 @@ description: How to deploy ADVO to production
 
 ## Stack overview
 
-- **VPS**: `root@62.146.237.12` (SSH alias: `advo`) — Contabo, Singapore
-- **Frontend**: Static build served by Nginx from `/var/www/advo/dist`
-- **API**: Node + Hono on `127.0.0.1:6107`, managed by PM2 (process: `advo-api`)
-- **Database**: PostgreSQL 16 on the same VPS
+- **VPS**: `advo` (`ssh advo` → `62.146.237.12`) — Contabo, Singapore
+- **Frontend**: local Vite build, rsync to `/var/www/advo/dist`
+- **API**: monorepo `apps/api`, PM2 `advo-api`, cwd `/opt/advo/apps/api`
+- **Database**: PostgreSQL 16 on the same box
+
+Do not deploy the standalone `advo-api` repo to `/opt/advo-api`. That path is rollback only.
 
 ## Pre-deploy checklist
 
-Run all three of these locally before pushing:
+Run locally before shipping:
 
 ```bash
 cd /Users/angelonrevelo/Antigravity/advo
-npx tsc --noEmit              # type check
-npm run lint                  # 0 errors expected
-npm run test:local            # 68/68 — boots the API automatically
-npm run build                 # production build succeeds
+npx tsc --noEmit
+npm run lint
+npm run test:local
+npm run build:web
 ```
 
-CI (`.github/workflows/ci.yml`) will run typecheck + lint + build on every push, but **not** the integration tests (those need a Postgres + API service step that isn't wired yet). Run `test:local` manually before merging anything that touches the API client or hooks.
+CI (`.github/workflows/ci.yml`) runs typecheck + lint + build on push, not the integration tests.
 
-## Deploy frontend
+## Deploy
 
-1. Stage, commit, push:
+From the monorepo root. Default host is `advo`.
 
 ```bash
-cd /Users/angelonrevelo/Antigravity/advo && git add -A && git status
-git commit -m "feat: <description>"
-git push origin main
+./deploy.sh                 # API + web
+./deploy.sh --api-only
+./deploy.sh --frontend-only
 ```
 
-2. Wait for the CI run to go green at https://github.com/advo-ph/advo/actions
+The script:
 
-3. Pull + rebuild on VPS:
+- SSHs to `advo` (override with `VPS_SSH=…`)
+- Does not clobber `apps/api/.env` or `apps/web/.env.production`
+- Rsyncs `apps/api/` → `/opt/advo/apps/api`, restarts PM2 `advo-api`
+- Builds web with `VITE_API_URL=https://api.advo.ph` and refuses to ship if the bundle still points at localhost
+- Rsyncs `apps/web/dist/` → `/var/www/advo/dist/`
+- Smokes `https://advo.ph/` and `https://api.advo.ph/api/health`
 
-```bash
-ssh advo "cd /opt/advo && git pull && npm install && npm run build && rsync -a --delete dist/ /var/www/advo/dist/"
-```
-
-## Deploy API
-
-`advo-api` is **not git-tracked** — it deploys directly via rsync.
-
-```bash
-cd /Users/angelonrevelo/Antigravity/advo-api && ./deploy.sh advo
-```
-
-This:
-- Syncs source to `/opt/advo-api` (excluding `node_modules`, `uploads`, `.env`)
-- Runs `npm install --production` on the VPS
-- Restarts the `advo-api` PM2 process
-
-After restart, give it ~3s before hitting `/api/health` (warm-up).
+`apps/api/deploy.sh` forwards to `./deploy.sh --api-only`.
 
 ## Database migrations
 
-Use Drizzle Kit from the API project:
-
 ```bash
-cd /Users/angelonrevelo/Antigravity/advo-api && npm run db:push    # local dev
-ssh advo "cd /opt/advo-api && npm run db:push"                     # prod
+cd /Users/angelonrevelo/Antigravity/advo
+npm --workspace apps/api run db:push                 # local
+ssh advo "cd /opt/advo/apps/api && npm run db:push"  # prod
 ```
 
-Manual backups (automated nightly at 3am via cron):
+Manual backup (nightly cron also runs at 03:00):
 
 ```bash
 ssh advo "sudo -u postgres pg_dump -Fc advo > /var/backups/advo/advo_\$(date +%Y%m%d).dump"
@@ -75,5 +64,5 @@ ssh advo "sudo -u postgres pg_dump -Fc advo > /var/backups/advo/advo_\$(date +%Y
 
 - Production: https://advo.ph
 - API health: https://api.advo.ph/api/health → `{"status":"ok","db":true}`
-- PM2 status: `ssh advo "pm2 list | grep advo-api"`
-- Recent API logs: `ssh advo "pm2 logs advo-api --lines 50 --nostream"`
+- PM2: `ssh advo "pm2 list | grep advo-api"`
+- Logs: `ssh advo "pm2 logs advo-api --lines 50 --nostream"`

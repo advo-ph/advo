@@ -100,7 +100,7 @@ All tokens in `src/index.css`, Tailwind config in `tailwind.config.ts`.
 | **Email** | Nodemailer (Resend SMTP or custom SMTP) |
 | **State** | TanStack React Query v5 |
 | **Integrations** | GitHub API (webhooks + polling), Simple Icons CDN, Puppeteer, Playwright |
-| **Hosting** | Contabo VPS (Singapore): Nginx + PM2 + Let's Encrypt. Frontend served as static build from `/var/www/advo/dist`, API on `127.0.0.1:6107`. |
+| **Hosting** | Contabo VPS (Singapore): Nginx + PM2 + Let's Encrypt. Frontend served as static build from `/var/www/advo/dist`, API on `127.0.0.1:6407`. |
 | **DNS** | Namecheap |
 
 ## Quick Start
@@ -111,7 +111,7 @@ cp apps/api/.env.example apps/api/.env   # Edit with your DB credentials
 npm install                              # Installs both workspaces
 npm --workspace apps/api run db:push     # Create tables
 npm --workspace apps/api run db:seed     # Seed defaults
-npm run dev                              # Starts web (6100) + api (6107) together
+npm run dev                              # Starts web (6400) + api (6407) together
 ```
 
 Default login: `admin@advo.ph` / `changeme`
@@ -122,7 +122,7 @@ Default login: `admin@advo.ph` / `changeme`
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `VITE_API_URL` | Yes | API base URL (`http://localhost:6107` or `https://api.advo.ph`) |
+| `VITE_API_URL` | Yes | API base URL (`http://localhost:6407` or `https://api.advo.ph`) |
 | `VITE_GITHUB_TOKEN` | No | GitHub PAT for commit history |
 
 ### API (`apps/api/.env`)
@@ -138,23 +138,24 @@ Default login: `admin@advo.ph` / `changeme`
 
 ## Deployment
 
-```bash
-# Frontend — build on VPS from monorepo, deploy to /var/www/advo/dist:
-ssh advo "cd /opt/advo && git pull && npm install && npm run build:web && rsync -a --delete apps/web/dist/ /var/www/advo/dist/"
+Host: `advo`. Remote: `/opt/advo`. PM2: `advo-api` (`/opt/advo/apps/api`). Web: `/var/www/advo/dist`.
 
-# API:
-cd apps/api && ./deploy.sh root@advo
+```bash
+./deploy.sh                 # API + frontend (default SSH alias: advo)
+./deploy.sh --api-only
+./deploy.sh --frontend-only
 
 # Manual DB backup (automated nightly at 3am via cron):
 ssh advo "sudo -u postgres pg_dump -Fc advo > /var/backups/advo/advo_$(date +%Y%m%d).dump"
 ```
 
-> `advo` is an SSH alias for `root@62.146.237.12` — add to `~/.ssh/config` locally.
+> `advo` is the SSH alias for this VPS (`62.146.237.12`). Add `Host advo` to `~/.ssh/config` — see [docs/SETUP.md](./docs/SETUP.md).
 
 ## Project Structure
 
 ```
 advo/                          # Monorepo root (npm workspaces)
+├── deploy.sh                  # VPS deploy (host advo; --api-only / --frontend-only)
 ├── apps/
 │   ├── web/                   # Frontend (React/Vite)
 │   │   ├── src/
@@ -172,7 +173,7 @@ advo/                          # Monorepo root (npm workspaces)
 │       │   ├── services/      # auth, email
 │       │   ├── vendor/        # easydiv-detector.js (component scanner)
 │       │   └── utils/         # env, logger
-│       ├── deploy.sh          # VPS deployment script
+│       ├── deploy.sh          # Forwards to root deploy.sh --api-only
 │       ├── ecosystem.config.cjs  # PM2 config
 │       ├── nginx.conf         # Nginx reverse proxy config
 │       └── backup.sh          # Daily DB backup script
@@ -206,11 +207,11 @@ Shared cache means the projects list shows up cached when navigating between adm
 68 integration tests across two files (`src/test/api-wiring.test.ts` + `src/test/e2e-flow.test.ts`) hit the live API. Two ways to run:
 
 ```bash
-npm run test:local      # auto-boots advo-api on :6107, runs full suite, cleans up — 68/68
+npm run test:local      # auto-boots advo-api on :6407, runs full suite, cleans up — 68/68
 npm run test            # runs vitest against whatever VITE_API_URL points at
 ```
 
-The local script (`scripts/test-local.sh`) reuses an existing API on `:6107` if you already have one running.
+The local script (`scripts/test-local.sh`) reuses an existing API on `:6407` if you already have one running.
 
 ## CI
 

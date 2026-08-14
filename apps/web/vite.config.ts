@@ -23,7 +23,7 @@ const appCommit =
 export default defineConfig({
   server: {
     host: "::",
-    port: 6100,
+    port: 6400,
     hmr: {
       overlay: false,
     },

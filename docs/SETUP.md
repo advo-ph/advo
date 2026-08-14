@@ -4,14 +4,14 @@
 
 ```
 Frontend (React/Vite)  →  ADVO API (Hono/Node)  →  PostgreSQL
-     port 6100                port 6107              port 5432
+     port 6400                port 6407              port 5432
      (static /var/www       (PM2 fork, localhost)
       /advo/dist via nginx)
 ```
 
-Ports follow the shared-VPS [PORTS.md](../../../Downloads/PORTS.md) scheme: advo gets range `6100–6199` (first slot on the fresh Singapore box). API always ends in `07`.
+Ports: advo range `6400–6499` (sisia-app owns `6100–6199`). API is `6407`. Frontend dev is `6400`.
 
-All three tiers run on the same Contabo VPS in Singapore (`62.146.237.12`, ssh alias `advo`).
+All three tiers run on the same Contabo VPS in Singapore — host `advo` (`62.146.237.12`).
 
 ## Prerequisites
 
@@ -30,10 +30,10 @@ cp apps/api/.env.example apps/api/.env   # Edit with your local DB credentials
 npm install                              # Installs both workspaces
 npm --workspace apps/api run db:push     # Create tables in PostgreSQL
 npm --workspace apps/api run db:seed     # Seed default data
-npm run dev                              # Starts web (6100) + api (6107) concurrently
+npm run dev                              # Starts web (6400) + api (6407) concurrently
 ```
 
-Open http://localhost:6100
+Open http://localhost:6400
 
 Default admin login: `admin@advo.ph` / `changeme`
 
@@ -44,14 +44,14 @@ cd /path/to/Antigravity/advo
 npm run test:local            # boots the API automatically, runs 68 tests, cleans up
 ```
 
-If you already have the API running on `:6107`, the script reuses it. Pass extra args to target a single file: `npm run test:local src/test/e2e-flow`.
+If you already have the API running on `:6407`, the script reuses it. Pass extra args to target a single file: `npm run test:local src/test/e2e-flow`.
 
 ## Environment Variables
 
 ### Frontend (`advo/.env`)
 
 ```env
-VITE_API_URL=http://localhost:6107        # Local
+VITE_API_URL=http://localhost:6407        # Local
 # VITE_API_URL=https://api.advo.ph       # Production
 # (S4, 9574820) VITE_GITHUB_TOKEN / VITE_CLOUDFLARE_TOKEN removed — the GitHub
 # feed routes through the backend now; no API tokens in the browser bundle.
@@ -74,12 +74,12 @@ GITHUB_ORG=advo-ph
 CLOUDFLARE_TOKEN=...                      # Deployment status
 CLOUDFLARE_ACCOUNT_ID=...
 
-# Server (advo = 6100–6499 per PORTS.md; API ends in 07)
-PORT=6107
+# Server (advo = 6400–6499; API ends in 07)
+PORT=6407
 NODE_ENV=development
 UPLOAD_DIR=./uploads
-API_URL=http://localhost:6107
-FRONTEND_URL=http://localhost:6100
+API_URL=http://localhost:6407
+FRONTEND_URL=http://localhost:6400
 ```
 
 ## Database
@@ -119,38 +119,38 @@ npm run db:generate           # Generate migration files
 
 ## Production Deployment
 
-Host: `advo` (ssh alias for `root@62.146.237.12`, Contabo Singapore). Add to `~/.ssh/config`:
+Host: `advo` (SSH alias). Remote monorepo: `/opt/advo`. PM2: `advo-api` from `/opt/advo/apps/api`. Frontend static: `/var/www/advo/dist`.
+
+Add to `~/.ssh/config`:
 
 ```
-Host advo advo-vps
+Host advo
   HostName 62.146.237.12
   User root
   IdentityFile ~/.ssh/id_ed25519_advo
   IdentitiesOnly yes
 ```
 
-> **Cutover pending.** The repo is now a monorepo (`apps/web` + `apps/api`) but the VPS still has the pre-monorepo layout (`/opt/advo` = frontend-only, `/opt/advo-api` = standalone API). The commands below are for **post-cutover** state. Until the VPS is repointed, running `git pull` in `/opt/advo` against `main` will break the frontend build (paths shifted).
-
-### API
+Monorepo cutover is done (see [CUTOVER.md](./CUTOVER.md)). Live API cwd is `/opt/advo/apps/api`. `/opt/advo-api` is a rollback artifact only.
 
 ```bash
-# One-shot deploy:
-cd apps/api && ./deploy.sh root@advo
+# Full (API + frontend) — default host is the `advo` alias:
+./deploy.sh
 
-# Or manually:
-rsync -azP --exclude node_modules --exclude .env ./ root@advo:/opt/advo/apps/api/
-ssh advo "cd /opt/advo/apps/api && npm install && npx drizzle-kit push && pm2 restart advo-api"
+./deploy.sh --api-only
+./deploy.sh --frontend-only
+
+# Override host if needed:
+VPS_SSH=advo ./deploy.sh
 ```
 
-API runs under PM2 as `advo-api` (fork mode, port 6107). Logs: `/var/log/advo-api/{out,error}.log`.
+The script rsyncs the monorepo (does not clobber `apps/api/.env` or `apps/web/.env.production`), restarts PM2 `advo-api` from `/opt/advo/apps/api`, builds web locally with `VITE_API_URL=https://api.advo.ph`, and rsyncs `apps/web/dist/` → `/var/www/advo/dist/`.
 
-### Frontend (built on VPS)
+`apps/api/deploy.sh` forwards to `./deploy.sh --api-only`. Do not use the legacy `advo-api` repo script except for rollback.
 
-```bash
-ssh advo "cd /opt/advo && git pull && npm install && npm run build:web && rsync -a --delete apps/web/dist/ /var/www/advo/dist/"
-```
+API runs under PM2 as `advo-api` (port 6407). Logs: `/var/log/advo-api/{out,error}.log`.
 
-`/opt/advo` is a `git clone https://github.com/advo-ph/advo.git` with `apps/web/.env.production` containing `VITE_API_URL=https://api.advo.ph`. Nginx serves `/var/www/advo/dist` with SPA fallback (`try_files $uri $uri/ /index.html`).
+Nginx serves `/var/www/advo/dist` with SPA fallback (`try_files $uri $uri/ /index.html`). `apps/web/.env.production` stays on the box (gitignored) as a fallback for any on-VPS build.
 
 ### SSL
 
@@ -181,12 +181,32 @@ sudo -u postgres pg_restore -d advo advo_YYYYMMDD.dump
 | Service | URL / Location |
 |---------|---------------|
 | **Frontend (prod)** | [advo.ph](https://advo.ph) + [www.advo.ph](https://www.advo.ph) (VPS nginx) |
-| **API (prod)** | [api.advo.ph](https://api.advo.ph) (VPS, PM2 port 6107) |
-| **VPS** | `62.146.237.12` (Contabo Cloud VPS 20 SSD, Singapore 2). SSH alias `advo`. |
+| **API (prod)** | [api.advo.ph](https://api.advo.ph) (VPS, PM2 port 6407) |
+| **VPS** | `advo` (`62.146.237.12`, Contabo Cloud VPS 20 SSD, Singapore 2). |
 | **Database** | PostgreSQL on VPS (port 5432) |
 | **DNS** | Namecheap |
 | **GitHub Org** | [github.com/advo-ph](https://github.com/advo-ph) |
 | **Email** | Google Workspace (@advo.ph) + Resend (transactional) |
+
+## Advo Vercel (client preview ops)
+
+Client site previews are host-agnostic in the product (`project.preview_url` → Hub live iframe). When using **Vercel** for a client build, follow this checklist. **Do not store Vercel tokens or deploy secrets in this repo or in the ADVO app env** — Vercel stays in the Vercel dashboard; ADVO only stores the public preview URL.
+
+> This section is an ops runbook. It does **not** claim an Advo Vercel team or account already exists — create one when you need it.
+
+### Ops checklist
+
+1. **Create an Advo Vercel team** (or use an existing org team) under the Advo account you control. Invite only team members who deploy client sites.
+2. **Connect the client repo** — Import the client GitHub repo (typically under [github.com/advo-ph](https://github.com/advo-ph)) into that Vercel team. One Vercel project per client site.
+3. **Deploy on `main`** — Production branch = `main`. Push/merge to `main` should produce the production deployment URL (Vercel production domain or assigned `*.vercel.app`).
+4. **Put `preview_url` on the project** — In Admin → Projects (or project edit), set `preview_url` to that production/preview HTTPS URL. Field maps to `project.preview_url` / column `preview_url`. No secrets; URL only.
+5. **Hub iframe consumes it** — Client Hub (`ProjectDashboard`) embeds a sandboxed iframe when `preview_url` is set (`allow-scripts allow-same-origin allow-forms allow-popups`). Client also gets “Open in new tab” and “Request a preview”. Team can mint a short-lived show-client link via `POST /api/projects/:id/preview-link` → public `GET /api/preview/:token` 302 to the same URL.
+
+### Out of scope here
+
+- Vercel API tokens, OAuth, or webhooks in ADVO env
+- Auto-sync of deploy status from Vercel into ADVO (not required for iframe)
+- Using Vercel for **advo.ph** itself (hub frontend stays on the Contabo VPS)
 
 ## API Endpoints
 
@@ -215,8 +235,8 @@ Quick reference:
 ### Port in use
 
 ```bash
-lsof -ti :6100 | xargs kill -9    # Frontend
-lsof -ti :6107 | xargs kill -9    # API
+lsof -ti :6400 | xargs kill -9    # Frontend
+lsof -ti :6407 | xargs kill -9    # API
 ```
 
 ### API not starting

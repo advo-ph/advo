@@ -2,13 +2,13 @@
  * API Wiring Validation Tests
  *
  * These tests verify that all frontend modules correctly call the ADVO
- * API. Default target is the local dev API (http://localhost:6107) but
+ * API. Default target is the local dev API (http://localhost:6407) but
  * can be overridden via VITE_API_URL (e.g. https://api.advo.ph).
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 
-const API = process.env.VITE_API_URL || "http://localhost:6107";
+const API = process.env.VITE_API_URL || "http://localhost:6407";
 
 async function apiGet(path: string, token?: string) {
   const headers: Record<string, string> = {};
@@ -218,6 +218,83 @@ describe("Invoices", () => {
     const { status, body } = await apiGet("/api/invoices", adminToken);
     expect(status).toBe(200);
     expect(Array.isArray(body.data)).toBe(true);
+  });
+});
+
+// ─── Expense ledger ───────────────────────────────────
+// Admin Finance expenses tab: team-only list/create/delete.
+// is_reimbursable is derived from receipt_url (never stored).
+
+describe("Expense ledger", () => {
+  it("GET /api/expense requires auth", async () => {
+    const { status } = await apiGet("/api/expense");
+    expect(status).toBe(401);
+  });
+
+  it("POST /api/expense requires auth", async () => {
+    const { status } = await apiPost("/api/expense", {
+      purpose: "Unauthed attempt",
+      authorizedBy: "Nobody",
+      amountCents: 100,
+    });
+    expect(status).toBe(401);
+  });
+
+  it("GET /api/expense returns array for team", async () => {
+    const { status, body } = await apiGet("/api/expense", adminToken);
+    expect(status).toBe(200);
+    expect(Array.isArray(body.data)).toBe(true);
+    expect(body.error).toBeNull();
+  });
+
+  it("POST + GET + DELETE expense lifecycle; isReimbursable derived from receipt", async () => {
+    const create = await apiPost(
+      "/api/expense",
+      {
+        purpose: "Office supplies",
+        authorizedBy: "Admin",
+        amountCents: 125050,
+        location: "Makati",
+        receiptUrl: "https://example.com/receipt.pdf",
+        category: "office",
+      },
+      adminToken,
+    );
+    expect(create.status).toBe(201);
+    const expenseId = create.body.data.expenseId;
+    expect(expenseId).toBeTruthy();
+    expect(create.body.data.amountCents).toBe(125050);
+    expect(create.body.data.isReimbursable).toBe(true);
+    // Free-floating flag must not be stored — only derived.
+    expect(create.body.data).not.toHaveProperty("is_reimbursable");
+
+    const noReceipt = await apiPost(
+      "/api/expense",
+      {
+        purpose: "Taxi without receipt",
+        authorizedBy: "Admin",
+        amountCents: 5000,
+        category: "travel",
+      },
+      adminToken,
+    );
+    expect(noReceipt.status).toBe(201);
+    expect(noReceipt.body.data.isReimbursable).toBe(false);
+    const noReceiptId = noReceipt.body.data.expenseId;
+
+    const list = await apiGet("/api/expense", adminToken);
+    expect(list.status).toBe(200);
+    expect(
+      list.body.data.some((x: { expenseId: number }) => x.expenseId === expenseId),
+    ).toBe(true);
+
+    const del = await apiDelete(`/api/expense/${expenseId}`, adminToken);
+    expect(del.status).toBe(200);
+    const delAgain = await apiDelete(`/api/expense/${expenseId}`, adminToken);
+    expect(delAgain.status).toBe(404);
+
+    const delNoReceipt = await apiDelete(`/api/expense/${noReceiptId}`, adminToken);
+    expect(delNoReceipt.status).toBe(200);
   });
 });
 

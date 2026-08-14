@@ -285,7 +285,6 @@ Picks up the **8 FKs without explicit ON DELETE** open-item from the previous se
 - VPS SSH alias: `advo` → `root@62.146.237.12` (in `~/.ssh/config`)
 - Live URLs: `https://advo.ph` (frontend), `https://api.advo.ph` (API), `https://api.advo.ph/api/health` (health check)
 - Prod DB: `ssh advo "sudo -u postgres psql advo"`
-- Frontend deploy: `ssh advo 'cd /opt/advo && git pull && npm install && npm run build:web && rsync -a --delete apps/web/dist/ /var/www/advo/dist/'`
-- API deploy: `cd apps/api && ./deploy.sh root@advo`  *(API code already at `/opt/advo/apps/api` — that script may need a path update)*
-- PM2: `ssh advo "pm2 list"` — process name `advo-api`, port 6107
+- Deploy: `./deploy.sh` (host `advo`; `--api-only` / `--frontend-only`). API cwd `/opt/advo/apps/api`, web `/var/www/advo/dist`.
+- PM2: `ssh advo "pm2 list"` — process name `advo-api`, port 6407
 - Codex WIP recall: `git stash show -p stash@{0} -- <path>` (do not pop; the stash is the archive)

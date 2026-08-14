@@ -9,7 +9,7 @@
 set -euo pipefail
 
 API_DIR="$(cd "$(dirname "$0")/../apps/api" && pwd)"
-API_URL="http://localhost:6107"
+API_URL="http://localhost:6407"
 LOG_FILE="/tmp/advo-api-test.log"
 
 if [ ! -d "$API_DIR" ]; then
@@ -30,9 +30,9 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-# If something is already on 6107, assume the user is running their own API.
+# If something is already on 6407, assume the user is running their own API.
 if curl -sf "$API_URL/api/health" >/dev/null 2>&1; then
-  echo "✓ advo-api already running on 6107 — reusing"
+  echo "✓ advo-api already running on 6407 — reusing"
 else
   echo "→ Starting advo-api (logs: $LOG_FILE)"
   (cd "$API_DIR" && npm run dev) > "$LOG_FILE" 2>&1 &

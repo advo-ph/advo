@@ -25,7 +25,7 @@ describe("client API mapping", () => {
 
     expect(result.error).toBeNull();
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:6107/api/clients",
+      "http://localhost:6407/api/clients",
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({
