@@ -1,6 +1,6 @@
 # ADVO — Agency Platform
 
-Landing site, client portal, and admin CMS for ADVO — a Philippine software agency. Dark minimal design, self-hosted stack.
+Landing site, client portal, and admin CMS for ADVO — a Philippine software agency. White editorial public `/` (`LandingPage`); Linear dark admin/hub. Self-hosted stack.
 
 **Live**: [advo.ph](https://advo.ph) · **API**: [api.advo.ph](https://api.advo.ph/api/health)
 
@@ -8,16 +8,22 @@ Landing site, client portal, and admin CMS for ADVO — a Philippine software ag
 
 ### Public Site (`/`)
 
-- **Hero** — Full-bleed team photo with stagger-animated overlay text + stats row
-- **Why Go Digital** — Benefits grid (numeral `01`)
-- **Our Process** — Step-by-step methodology (numeral `02`)
-- **TechTicker** — Scrolling brand logos from Simple Icons CDN
-- **Infrastructure** — Isometric 3D scene (React Three Fiber) showing the Security / Frontend / Backend / Database pipeline with animated circuit traces. Responsive: vertical stack on mobile
-- **Services** — Core offerings (numeral `03`)
-- **Portfolio** — Recent work grid (numeral `04`)
-- **FAQ** — Centered accordion (numeral `05`)
-- **ContactCTA** — Animated organic orange blob gradient with grain texture, over the "Ready to digitalize?" CTA
-- **Team page** — Editorial portrait cards with image fade into card
+Shipped Codex [`LandingPage`](apps/web/src/components/landing/LandingPage.tsx) + [`landing-page.css`](apps/web/src/components/landing/landing-page.css). Routed from [`Index.tsx`](apps/web/src/pages/Index.tsx). White editorial marketing page — not the old dark 3D / ticker / blob landing.
+
+- **Nav** — in-page Services / Process / Work / Pricing + Log in + Start a project. Hamburger on small viewports.
+- **Hero** — kicker "PH software agency & client workspace"; headline "Build together. Ship with *clarity.*"
+- **Showcase** — mock workspace shell (overview, tasks, approvals, invoices) with floating stat cards
+- **Features** — Plan / Create / Approve / Deliver
+- **Services** — Strategy / Design / Development / Support
+- **Process** — Discover & Plan → Design & Build → Review & Launch
+- **Workflow** — Inquiry → Scope → Build → Review → Launch
+- **Metrics** — shipped counts (projects, satisfaction, disciplines, response time)
+- **Integrations** — local brand marks (Gmail, Calendar, Notion, Slack, Trello, Drive, Zoom, Asana, Teams)
+- **Engagement** — Project / Retainer / Hourly / Enterprise starting prices
+- **FAQ** — workspace, invites, fees, invoicing, support
+- **Footer** — CTA + sitemap + local-only newsletter (no subscribe API) + PH landscape
+
+A testimonials block is still in the source; invented names are not approved proof. Fourlinq is the shipped public client. Title/meta and footer social URLs are follow-through on `lane/copy`. Satellite routes (`/start`, `/login`, `/team`, `/project/:slug`) are being aligned to this chrome on `lane/route`. `/hub` stays on the June Linear language (`FloatingNav`).
 
 ### Client Hub (`/hub`)
 
@@ -51,14 +57,31 @@ Landing site, client portal, and admin CMS for ADVO — a Philippine software ag
 
 ### Client Onboarding (`/start`)
 
-- Two-column numbered layout (matches `01`–`05` landing rhythm as `06`)
-- Form: name, email, company, project type, budget, description
+- Lead form: name, email, company, project type, budget, description
 - Perks checklist + direct email + 24h response promise
 - Success state personalized with first name
+- Chrome is being aligned to the white `LandingPage` shell (`lane/route`)
 
 ## Design System
 
-All tokens in `src/index.css`, Tailwind config in `tailwind.config.ts`.
+Two languages. Public `/` is the white editorial `LandingPage`. Admin + hub stay on the June Linear dark chrome.
+
+### Public landing (`apps/web/src/components/landing/landing-page.css`)
+
+| Token | Value | Use |
+|-------|-------|-----|
+| `--landing-ink` | `#11110f` | Body text |
+| `--landing-muted` | `#6d6b65` | Secondary copy |
+| `--landing-line` | `#d9d7d0` | Hairline |
+| `--landing-orange` | `#ff5b22` | CTAs, accent word |
+| `--landing-cream` | `#f7f2e7` | Footer field |
+| background | `#fff` | Page |
+
+**Type**: Geist on `.landing-page` (falls back to system-ui). Tight display tracking on the hero. No mono numerals.
+
+**Motion**: Framer reveal-on-view + `prefers-reduced-motion` path. Float cards / illustrations ease. No 3D scene, no logo ticker, no blob CTA.
+
+### Admin + hub (`apps/web/src/index.css`)
 
 | Token | Value | Use |
 |-------|-------|-----|
@@ -70,36 +93,27 @@ All tokens in `src/index.css`, Tailwind config in `tailwind.config.ts`.
 | `--border` | `hsl(0 0% 14%)` — `#242424` | Hairline dividers |
 | `--radius` | `0.625rem` (10px) | Default rounding |
 
-**Typography**: Geist (sans) + Geist Mono — both loaded from Google Fonts. Headings use `-0.02em` letter-spacing for tight display. Mono used for eyebrow labels, micro-info, and numerals (`01`, `02`…).
+**Type**: Hanken Grotesk (Tailwind `sans`). Dense tables, no mono.
 
-**Primitives** (`src/components/ui/section.tsx`):
-- `<Section>` — standardized `py-24 px-6`, `max-w-6xl` container, optional `divided` (top border) and `narrow` (for centered text sections)
-- `<SectionHeader>` — eyebrow + huge mono numeral + title + optional subtitle
+**Primitives** (`src/components/ui/section.tsx`) still exist for leftover satellite pages; `/` does not use them.
 
-**Animation philosophy**: zero scroll animations. Only kinetic surfaces are:
-- `FloatingNav` pill morph using Framer Motion spring `{ stiffness: 380, damping: 38 }` + liquid glass backdrop filter
-- Hero content stagger on page load
-- `TechTicker` CSS keyframe marquee
-- `InfrastructureDiagram` — animated circuit-trace pulses (dashOffset) + orthographic iso camera
-- `ContactCTA` — 4 ambient blobs drifting on 22–28s cycles with SVG grain overlay
-- Button hover micro-transitions
+**Animation (product chrome)**: `FloatingNav` pill morph (Framer spring) stays on `/hub`. Button hover micro-transitions.
 
-**Scrollbars**: overlay-style across macOS/Windows (no gutter reservation). `scrollbar-width: thin` + hover-only WebKit fallback. `#root` is the scroll container (body is fixed-height) — see [src/index.css](src/index.css).
+**Scrollbars**: overlay-style across macOS/Windows (no gutter reservation). `scrollbar-width: thin` + hover-only WebKit fallback. See [src/index.css](apps/web/src/index.css).
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
 | **Frontend** | React 18 + Vite + TypeScript |
-| **Styling** | Tailwind CSS + Shadcn/UI + Geist font |
-| **Animation** | Framer Motion (spring physics) + React Three Fiber (r3f) for the Infrastructure scene |
-| **3D** | `three` + `@react-three/fiber` v8 + `@react-three/drei` v9 (React-18-compatible pins) |
+| **Styling** | Tailwind CSS + Shadcn/UI + Hanken Grotesk (admin/hub); `landing-page.css` + Geist (public `/`) |
+| **Animation** | Framer Motion (landing reveals + hub `FloatingNav` spring) |
 | **API** | Hono (Node.js) + Drizzle ORM |
 | **Database** | PostgreSQL 16 |
 | **Auth** | JWT (access + refresh tokens, DB-backed sessions) |
 | **Email** | Nodemailer (Resend SMTP or custom SMTP) |
 | **State** | TanStack React Query v5 |
-| **Integrations** | GitHub API (webhooks + polling), Simple Icons CDN, Puppeteer, Playwright |
+| **Integrations** | GitHub API (webhooks + polling), Puppeteer, Playwright |
 | **Hosting** | Contabo VPS (Singapore): Nginx + PM2 + Let's Encrypt. Frontend served as static build from `/var/www/advo/dist`, API on `127.0.0.1:6407`. |
 | **DNS** | Namecheap |
 

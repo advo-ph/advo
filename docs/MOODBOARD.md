@@ -23,13 +23,13 @@ Not an AI studio. Not a generic web agency. Not global SaaS.
 | **Geography** | Philippines-first, developing-market comparable | Digitalization incomplete; competition thin; deals are relational |
 | **Product** | Software + replaceable mall hardware | TV queue, tablet POS, phone + Bluetooth printer — no custom silicon until a vertical is proven |
 | **Voice** | Calm, direct, engineer-owned | We ship systems people depend on; hype language undermines trust |
-| **Look** | Dark minimal, one warm orange, editorial photos | Already live on advo.ph — refine, don’t rebrand |
+| **Look** | Public `/`: white editorial, ink + cream + one orange. Admin/hub: Linear dark | `/` is the shipped Codex `LandingPage` — do not document the old black 3D page as live |
 
 ---
 
 ## Visual system (already in code)
 
-These tokens are law until we deliberately change them. See `apps/web/src/index.css`.
+Admin/hub tokens below live in `apps/web/src/index.css`. Public `/` tokens live in `landing-page.css` (white, `--landing-ink` / `--landing-cream` / `--landing-orange`).
 
 | Token | Value | Role |
 |-------|-------|------|
@@ -38,16 +38,16 @@ These tokens are law until we deliberately change them. See `apps/web/src/index.
 | Text | `#FAFAFA` / `#999` muted | Body / secondary |
 | Accent | `#E67A3A` | CTAs, highlights only — never rainbow |
 | Border | `#242424` | Hairline |
-| Type | Geist + Geist Mono | Display tight (`-0.02em`); mono for `01` numerals, eyebrows |
+| Type | Landing: Geist on `.landing-page`. Admin/hub: Hanken Grotesk | No mono `01` numerals on `/`. Product chrome is dense sans, not display-mono |
 | Radius | 10px | Default |
 
 **Photography language**
 
-1. **Team** — real faces, editorial portraits, group full-bleed (hero already does this).
+1. **Team** — real faces, editorial portraits. `/` hero is type + workspace showcase, not a full-bleed photo. `/team` still has portraits.
 2. **Floor** — PH operations with modern rails: queue LED, tablet at a stainless counter, receipt printer, cracked screens and stickers allowed. Grit is proof we understand the deployment surface.
 3. **Product** — black studio shot of tablet + printer + display TV. Commodity hardware as hero objects.
 
-**Motion** — sparse: nav spring, hero stagger, ticker, circuit traces, CTA blobs. No scroll-jacking, no particle AI wallpaper.
+**Motion** — landing: Framer reveal-on-view + reduced-motion path. Hub: `FloatingNav` spring. No ticker, circuit traces, or blob CTA on `/`.
 
 ---
 
@@ -123,10 +123,10 @@ Honest inventory so we do not pretend the moodboard already shipped.
 
 | Surface | Today | Direction |
 |---------|-------|-----------|
-| Hero subtext | Web apps, client portals, digital systems | Ops systems + hardware surfaces for PH businesses |
+| Hero subtext | Shipped `LandingPage`: "Build together. Ship with *clarity.*" + workspace showcase | Ops systems + hardware surfaces for PH businesses |
 | Services defaults | Web / Mobile / Cloud (generic agency) | Vertical outcomes + deploy surfaces (or fewer, sharper services) |
 | Why Digital defaults | Generic “24/7 presence / scale” | Incomplete digitalization thesis (first software, not replace software) |
-| Visual system | Already on-brand | Keep tokens; improve photo discipline |
+| Visual system | `/` is white editorial (`landing-page.css`). Admin/hub stay Linear dark | Keep the split; do not restore black 3D / ticker / blob as current `/` |
 | Vision doc | Clear | Site copy has not fully caught up |
 
 **Finalize pass (next build, not this moodboard):** rewrite public section defaults + CMS content to match VISION without rewriting the design system.
