@@ -106,6 +106,26 @@ export async function sendNotificationEmail(
   );
 }
 
+export async function sendAdminInviteEmail(to: string, tempPassword?: string) {
+  const loginInfo = tempPassword
+    ? `<p style="color: #333;">Your temporary password is: <code style="background: #f5f5f5; padding: 2px 6px; border-radius: 4px;">${tempPassword}</code></p>
+       <p style="color: #666; font-size: 14px;">Please change your password after your first login.</p>`
+    : `<p style="color: #333;">You can sign in using the magic link option with this email address.</p>`;
+
+  await send(
+    to,
+    "Your ADVO admin account",
+    wrap(`
+      <h2 style="color: #1a1a1a; font-size: 18px;">You have admin access</h2>
+      <p style="color: #333; line-height: 1.6;">An admin account was created for this email. Sign in to the ADVO admin console to manage projects, clients, and settings.</p>
+      ${loginInfo}
+      <a href="${env().FRONTEND_URL}/login" style="display: inline-block; background: #ea580c; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 16px;">
+        Go to Admin
+      </a>
+    `),
+  );
+}
+
 export async function sendWelcomeEmail(to: string, tempPassword?: string) {
   const loginInfo = tempPassword
     ? `<p style="color: #333;">Your temporary password is: <code style="background: #f5f5f5; padding: 2px 6px; border-radius: 4px;">${tempPassword}</code></p>

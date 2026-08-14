@@ -72,7 +72,29 @@ const AdminSettings = () => {
     checkApiConnection();
     fetchAdminEmails();
     fetchSocialLinks();
+    fetchSiteConfig();
   }, []);
+
+  const settingText = (value: unknown, fallback: string): string => {
+    if (typeof value === "string" && value.length > 0) return value;
+    if (typeof value === "number") return String(value);
+    return fallback;
+  };
+
+  const fetchSiteConfig = async () => {
+    const [agency, domain, accent, logo] = await Promise.all([
+      get("/api/settings/agency_name"),
+      get("/api/settings/domain_url"),
+      get("/api/settings/accent_color"),
+      get("/api/settings/logo_url"),
+    ]);
+    setConfig({
+      agency_name: settingText((agency.data as { value?: unknown } | null)?.value, DEFAULT_CONFIG.agency_name),
+      domain_url: settingText((domain.data as { value?: unknown } | null)?.value, DEFAULT_CONFIG.domain_url),
+      accent_color: settingText((accent.data as { value?: unknown } | null)?.value, DEFAULT_CONFIG.accent_color),
+      logo_url: settingText((logo.data as { value?: unknown } | null)?.value, DEFAULT_CONFIG.logo_url),
+    });
+  };
 
   const fetchAdminEmails = async () => {
     const res = await get<Array<Record<string, unknown>>>("/api/team");
@@ -200,7 +222,7 @@ const AdminSettings = () => {
       toast({ title: "Email already exists", variant: "destructive" });
       return;
     }
-    // team_member requires name + role (NOT NULL); derive a sensible default.
+    // Creates a login-capable user with role: "admin" plus a directory row.
     try {
       const res = await post<Record<string, unknown>>("/api/team", {
         name: newEmail.split("@")[0],
@@ -218,7 +240,13 @@ const AdminSettings = () => {
       ]);
       setNewEmail("");
       setIsAddEmailOpen(false);
-      toast({ title: "Admin email added" });
+      const tempPassword = typeof res.data.tempPassword === "string" ? res.data.tempPassword : null;
+      toast({
+        title: "Admin user created",
+        description: tempPassword
+          ? `Login-capable account created. Temporary password: ${tempPassword}`
+          : "Login-capable admin account created. A welcome email was sent (or logged if SMTP is unset).",
+      });
     } catch (err) {
       toast({
         title: "Error",

@@ -129,7 +129,13 @@ const AdminNotifications = () => {
       />
 
       {/* Auto-Notification Toggles */}
-      <Panel title="Auto-notification rules">
+      <Panel
+        title="Auto-notification rules"
+        meta="Inactive — not yet applied to event sends"
+      >
+        <div className="px-4 py-2 text-xs text-muted-foreground border-b border-border">
+          Toggles persist, but event triggers (progress / invoice / deliverable) do not read them yet.
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border">
           {[
             { key: "notify_on_progress_update", label: "On progress update" },

@@ -11,6 +11,23 @@ Cross-links:
 
 ---
 
+## 2026-08-15 — wiring leftover (W1–W5, R3–R4)
+
+> Roadmap-remain wiring lane. Close the WIRING-AUDIT half-built admin items this lane owns.
+
+- **W1** Settings branding hydrates from `GET /api/settings/agency_name` (+ domain/accent/logo).
+- **W2** Add Admin creates a login-capable `user` with `role: "admin"` (temp password emailed / shown once).
+- **W3** Auto-rule toggles labeled inactive; `POST /api/notifications` reads them before send.
+- **W4** Dashboard Recent activity uses real `getRecentProgressUpdates` (project update feed, not `{ data: [] }`).
+- **W5** Social platform stats show queued post counts, not fake follower numbers.
+- **R3** Team drag-reorder mutates `allMembers`, not the filtered visible subset.
+- **R4** `useAdminTeam` reads `team_order` from `GET /api/settings/public`.
+
+### Honest open-items
+- Event triggers in `projects.routes.ts` / invoices / deliverables still do not call the auto-rule helper (those files are another lane).
+- W7 scraper delete + R2 asset select + W8 public-settings test belong to admin/test lanes.
+- API `tsc` on this machine is red (no `apps/api/node_modules`); not fixed with lockfile churn.
+
 ## 2026-08-15 — lane/admin: library, full-page CRUD, Tools scrapers, `/p/:token`
 
 > Roadmap-remain admin lane. Ships the P2 admin surface: Library MVP, Projects/Clients as pages, collapsed Tools scrapers, branded preview gate, controlled add-asset, scraper history delete.

@@ -6,6 +6,7 @@
  */
 
 import { get, post, patch, del } from "@/lib/api";
+import { formatDistanceToNow } from "date-fns";
 import type { Project, Client, Lead, ProjectStatus, RecentActivity, UpcomingDeadline } from "@/types/admin";
 
 // ─── Generic Query Result ──────────────────────────────────────────
@@ -176,20 +177,55 @@ export async function createProgressUpdate(update: {
 }
 
 export async function getRecentProgressUpdates(limit = 5): Promise<DbResult<RecentActivity[]>> {
-  // Fetch all projects and get recent updates from them
   const res = await get<Array<{
-    progressUpdateId: number;
-    updateTitle: string;
-    createdAt: string;
-    project?: { title: string };
-  }>>(`/api/projects?_updates_limit=${limit}`);
+    projectId?: number;
+    project_id?: number;
+    title: string;
+  }>>("/api/projects");
 
-  // For now, use a simpler approach — fetch from deliverables/upcoming
-  // The API returns updates nested in projects, so we aggregate
   if (res.error) return { data: null, error: res.error };
 
-  // Return empty for now — this gets populated from useAdminData's own aggregation
-  return { data: [], error: null };
+  const project = res.data || [];
+  const feed = await Promise.all(
+    project.map(async (row) => {
+      const projectId = row.projectId ?? row.project_id;
+      if (!projectId) return { title: row.title, update: [] as Array<{
+        updateTitle?: string;
+        update_title?: string;
+        createdAt?: string;
+        created_at?: string;
+      }> };
+      const updateRes = await get<Array<{
+        updateTitle?: string;
+        update_title?: string;
+        createdAt?: string;
+        created_at?: string;
+      }>>(`/api/projects/${projectId}/updates`);
+      return { title: row.title, update: updateRes.data || [] };
+    }),
+  );
+
+  const activity: Array<RecentActivity & { sortAt: number }> = [];
+  for (const row of feed) {
+    for (const item of row.update) {
+      const created = item.createdAt ?? item.created_at;
+      const sortAt = created ? new Date(created).getTime() : 0;
+      activity.push({
+        action: item.updateTitle ?? item.update_title ?? "Progress update",
+        target: row.title,
+        time: created
+          ? formatDistanceToNow(new Date(created), { addSuffix: true })
+          : "",
+        sortAt,
+      });
+    }
+  }
+
+  activity.sort((a, b) => b.sortAt - a.sortAt);
+  return {
+    data: activity.slice(0, limit).map(({ sortAt: _sortAt, ...rest }) => rest),
+    error: null,
+  };
 }
 
 // ─── Clients ───────────────────────────────────────────────────────

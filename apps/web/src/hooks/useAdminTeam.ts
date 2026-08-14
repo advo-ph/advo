@@ -66,15 +66,16 @@ function toApiPayload(input: TeamMemberInput) {
 const QUERY_KEY = ["adminTeam"];
 
 async function fetchTeam(): Promise<TeamMember[]> {
-  const [teamRes, orderRes] = await Promise.all([
+  const [teamRes, publicRes] = await Promise.all([
     get<Record<string, unknown>[]>("/api/team"),
-    get<{ value: unknown }>("/api/settings/team_order"),
+    get<{ key: string; value: unknown }[]>("/api/settings/public"),
   ]);
   const mapped = (teamRes.data || []).map(mapMember);
-  if (orderRes.data?.value) {
-    const order = (typeof orderRes.data.value === "string"
-      ? JSON.parse(orderRes.data.value)
-      : orderRes.data.value) as number[];
+  const orderRow = (publicRes.data || []).find((row) => row.key === "team_order");
+  if (orderRow?.value) {
+    const order = (typeof orderRow.value === "string"
+      ? JSON.parse(orderRow.value)
+      : orderRow.value) as number[];
     mapped.sort((a, b) => {
       const ai = order.indexOf(a.team_member_id);
       const bi = order.indexOf(b.team_member_id);
