@@ -187,7 +187,7 @@ const LandingPage = () => {
         </div>
       </motion.header>
 
-      <motion.section className="landing-hero" id="top" initial="hidden" animate="visible" variants={{ hidden: {}, visible: { transition: { staggerChildren: reduceMotion ? 0 : .09, delayChildren: .12 } } }}>
+      <motion.section className="landing-hero" id="top" initial={reduceMotion ? false : "hidden"} animate="visible" variants={{ hidden: {}, visible: { transition: { staggerChildren: reduceMotion ? 0 : .09, delayChildren: reduceMotion ? 0 : .12 } } }}>
         <motion.div className="landing-hero-kicker" variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0, transition: { duration: .42 } } }}>PH software agency &amp; client workspace</motion.div>
         <motion.h1 variants={{ hidden: { opacity: 0, y: 18 }, visible: { opacity: 1, y: 0, transition: { duration: .55, ease: [0.22, 1, 0.36, 1] } } }}>Build together.<br />Ship with <em>clarity.</em></motion.h1>
         <motion.p variants={{ hidden: { opacity: 0, y: 14 }, visible: { opacity: 1, y: 0, transition: { duration: .48 } } }}>ADVO helps teams plan, build, and deliver digital products<br className="landing-desktop-break" /> inside one connected workspace.</motion.p>

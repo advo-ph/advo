@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, ExternalLink, Github, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +33,7 @@ const ProjectDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     if (!slug) return;
@@ -90,9 +91,9 @@ const ProjectDetail = () => {
         <div className="max-w-4xl mx-auto">
           {/* Back Button */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
+            initial={reduceMotion ? false : { opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: reduceMotion ? 0 : 0.3 }}
           >
             <Link 
               to="/#portfolio"
@@ -105,9 +106,9 @@ const ProjectDetail = () => {
 
           {/* Hero */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={reduceMotion ? false : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: reduceMotion ? 0 : 0.5 }}
           >
             <span className="text-xs font-medium text-accent uppercase tracking-wider mb-2 block">
               Case Study
@@ -152,9 +153,9 @@ const ProjectDetail = () => {
           {/* Project Image */}
           {heroImage && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={reduceMotion ? false : { opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
+              transition={{ delay: reduceMotion ? 0 : 0.2, duration: reduceMotion ? 0 : 0.5 }}
               className="mb-16"
             >
               <div className="aspect-video bg-secondary rounded-xl overflow-hidden border border-border">
@@ -182,10 +183,10 @@ const ProjectDetail = () => {
             {/* Overview */}
             {cs.overview && (
               <motion.section
-                initial={{ opacity: 0, y: 20 }}
+                initial={reduceMotion ? false : { opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
+                transition={{ duration: reduceMotion ? 0 : 0.5 }}
               >
                 <h2 className="text-2xl font-bold mb-4">Overview</h2>
                 <p className="text-muted-foreground leading-relaxed">
@@ -197,11 +198,11 @@ const ProjectDetail = () => {
             {/* Challenge */}
             {cs.challenge && (
               <motion.section
-                initial={{ opacity: 0, y: 20 }}
+                initial={reduceMotion ? false : { opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-                className="p-6 bg-card border border-border rounded-xl glass"
+                transition={{ duration: reduceMotion ? 0 : 0.5 }}
+                className="p-6 bg-card border border-border rounded-xl"
               >
                 <h2 className="text-2xl font-bold mb-4">The Challenge</h2>
                 <p className="text-muted-foreground leading-relaxed">
@@ -213,10 +214,10 @@ const ProjectDetail = () => {
             {/* Solution */}
             {cs.solution && (
               <motion.section
-                initial={{ opacity: 0, y: 20 }}
+                initial={reduceMotion ? false : { opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
+                transition={{ duration: reduceMotion ? 0 : 0.5 }}
               >
                 <h2 className="text-2xl font-bold mb-4">Our Solution</h2>
                 <p className="text-muted-foreground leading-relaxed">
@@ -228,10 +229,10 @@ const ProjectDetail = () => {
             {/* Results */}
             {cs.results && cs.results.length > 0 && (
               <motion.section
-                initial={{ opacity: 0, y: 20 }}
+                initial={reduceMotion ? false : { opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
+                transition={{ duration: reduceMotion ? 0 : 0.5 }}
               >
                 <h2 className="text-2xl font-bold mb-4">Results</h2>
                 <ul className="space-y-3">
@@ -248,10 +249,10 @@ const ProjectDetail = () => {
 
           {/* CTA */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={reduceMotion ? false : { opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: reduceMotion ? 0 : 0.5 }}
             className="mt-16 p-8 bg-card border border-border rounded-xl text-center"
           >
             <h3 className="text-2xl font-bold mb-2">Like what you see?</h3>

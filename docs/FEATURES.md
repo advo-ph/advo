@@ -4,7 +4,9 @@
 
 `/` is the shipped Codex `LandingPage` (`apps/web/src/components/landing/LandingPage.tsx` + `landing-page.css`). White editorial marketing page — sticky nav, hero ("Build together. Ship with *clarity.*"), workspace showcase, feature / service / process / workflow, metrics, integration grid, engagement options, FAQ, cream footer with a local-only newsletter (no subscribe API). Routed from `pages/Index.tsx`. Section list lives in [README.md](../README.md).
 
-The previous dark landing (FloatingNav, TechTicker, R3F infrastructure, orange-blob CTA, PortfolioCard proof grid) is **not** current `/`. Satellite public routes (`/start`, `/login`, `/team`, `/project/:slug`) use `landing-shell`. `/hub` still uses `FloatingNav`.
+The previous dark landing (FloatingNav, TechTicker, R3F infrastructure, orange-blob CTA, PortfolioCard proof grid) is **not** current `/`. Satellite public routes (`/start`, `/login`, `/team`, `/project/:slug`) use `landing-shell` with the same white tokens; interiors no longer paint the dark Linear grid. `/hub` still uses `FloatingNav`.
+
+Post-login destination is `destinationFor(role, explicitRedirect)` in `lib/destination.ts` (admin → `/admin`, else `/hub`; `?redirectTo=` wins).
 
 Proof on `/` is Fourlinq only. Title/meta match the hero. Footer social icons read `GET /api/settings/public`.
 

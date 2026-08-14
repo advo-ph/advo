@@ -69,7 +69,7 @@ const Team = () => {
                       <img
                         src={member.avatar_url}
                         alt={member.name}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-7xl font-semibold text-muted-foreground/10 bg-secondary">
