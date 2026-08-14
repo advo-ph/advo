@@ -20,8 +20,8 @@ Cross-links:
 - [FEATURES.md](FEATURES.md) Public Landing + [MOODBOARD.md](MOODBOARD.md) type/look rows match the live page.
 
 ### Honest open-items
-- **Copy lane** (`lane/copy`): `title-meta`, `proof-copy` (invented testimonials still in source; Fourlinq is the shipped public client), `social-wire`.
-- **Route lane** (`lane/route`): `/start`, `/login`, `/team`, `/project/:slug` still on leftover `FloatingNav` / old `Footer`. `/hub` stays Linear.
+- Copy + route + docs lanes are merged to `main`. `/start` `/login` `/team` `/project/:slug` use `landing-shell`; inner page bodies still use dark Linear tokens on the white chrome.
+- `/hub` stays Linear / `FloatingNav`.
 - Do not invent a newsletter API, client-logo strip, or dashboard redesign.
 
 ## 2026-08-14 — host `advo`, ports 6400/6407, admin/meeting/expense on `main`

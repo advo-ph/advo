@@ -4,9 +4,9 @@
 
 `/` is the shipped Codex `LandingPage` (`apps/web/src/components/landing/LandingPage.tsx` + `landing-page.css`). White editorial marketing page — sticky nav, hero ("Build together. Ship with *clarity.*"), workspace showcase, feature / service / process / workflow, metrics, integration grid, engagement options, FAQ, cream footer with a local-only newsletter (no subscribe API). Routed from `pages/Index.tsx`. Section list lives in [README.md](../README.md).
 
-The previous dark landing (FloatingNav, TechTicker, R3F infrastructure, orange-blob CTA, PortfolioCard proof grid) is **not** current `/`. Satellite public routes (`/start`, `/login`, `/team`, `/project/:slug`) still use leftover chrome and are being aligned on `lane/route`. `/hub` still uses `FloatingNav`.
+The previous dark landing (FloatingNav, TechTicker, R3F infrastructure, orange-blob CTA, PortfolioCard proof grid) is **not** current `/`. Satellite public routes (`/start`, `/login`, `/team`, `/project/:slug`) use `landing-shell`. `/hub` still uses `FloatingNav`.
 
-A testimonials block is still in the source. Invented names are not approved proof; Fourlinq is the shipped public client. Title/meta and footer social URLs are follow-through on `lane/copy`.
+Proof on `/` is Fourlinq only. Title/meta match the hero. Footer social icons read `GET /api/settings/public`.
 
 ### Leftover landing pieces (not `/`)
 
@@ -16,7 +16,7 @@ A testimonials block is still in the source. Invented names are not approved pro
 
 ### Public Settings Endpoint
 
-`GET /api/settings/public` returns an allowlisted subset of `site_config` keys (currently `social_links`, `brand_name`, `team_order`) **without auth**. The leftover `Footer` reads `social_links` from here. The shipped `LandingPage` footer is not wired to it yet (`lane/copy`). The rest of `/api/settings/*` stays admin-only.
+`GET /api/settings/public` returns an allowlisted subset of `site_config` keys (currently `social_links`, `brand_name`, `team_order`) **without auth**. `LandingPage` and `landing-shell` (and the leftover `Footer`) read `social_links` from here. The rest of `/api/settings/*` stays admin-only.
 
 Added because the old Footer was hitting the admin-only `/api/settings` and 401-ing on every anonymous visit. To add a new public key: extend `PUBLIC_KEYS` in [`settings.routes.ts`](../apps/api/src/routes/settings.routes.ts).
 

@@ -23,7 +23,7 @@ Shipped Codex [`LandingPage`](apps/web/src/components/landing/LandingPage.tsx) +
 - **FAQ** — workspace, invites, fees, invoicing, support
 - **Footer** — CTA + sitemap + local-only newsletter (no subscribe API) + PH landscape
 
-A testimonials block is still in the source; invented names are not approved proof. Fourlinq is the shipped public client. Title/meta and footer social URLs are follow-through on `lane/copy`. Satellite routes (`/start`, `/login`, `/team`, `/project/:slug`) are being aligned to this chrome on `lane/route`. `/hub` stays on the June Linear language (`FloatingNav`).
+Proof on `/` is Fourlinq (`fourlinq.ph`) only. Title/OG match the hero. Footer social icons use `GET /api/settings/public` plus the same real defaults as the leftover `Footer`. `/start`, `/login`, `/team`, and `/project/:slug` share `landing-shell`. `/hub` stays on the June Linear language (`FloatingNav`).
 
 ### Client Hub (`/hub`)
 
@@ -60,7 +60,7 @@ A testimonials block is still in the source; invented names are not approved pro
 - Lead form: name, email, company, project type, budget, description
 - Perks checklist + direct email + 24h response promise
 - Success state personalized with first name
-- Chrome is being aligned to the white `LandingPage` shell (`lane/route`)
+- White `landing-shell` chrome (shared with `/login`, `/team`, `/project/:slug`)
 
 ## Design System
 

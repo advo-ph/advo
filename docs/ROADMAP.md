@@ -4,7 +4,7 @@ Unified, forward-looking roadmap for the ADVO platform and the business that run
 
 Treat this as the **canonical roadmap**. Two existing sub-roadmaps stay where they are and are referenced from here:
 
-- **Landing design** — see [/ROADMAP.md](../ROADMAP.md) (historical Stripe-audit cut). Public `/` is the shipped Codex `LandingPage`. Follow-through (title/meta, proof, social, satellite chrome) is in-flight on `lane/copy` and `lane/route`.
+- **Landing design** — see [/ROADMAP.md](../ROADMAP.md) (historical Stripe-audit cut). Public `/` is the shipped Codex `LandingPage`. Title/meta, Fourlinq proof, social URLs, and `landing-shell` on `/start` `/login` `/team` `/project/:slug` are on `main`.
 - **Platform feature backlog** — see [FEATURES.md → Roadmap](FEATURES.md#roadmap) (Internal Library, Admin UX cleanup, monorepo).
 - **Feature wiring audit** — see [WIRING-AUDIT.md](WIRING-AUDIT.md) (2026-06-20 end-to-end audit of every admin + client feature). The 🔴 cross-tenant data-leak bugs (**S1/S2/S3**) are **fixed + deployed** (`0e42f13`); B1/B2/B3 + several papercuts also fixed. **All security items S1–S4 are now fixed + deployed** — S4 (`9574820`) removed the `VITE_GITHUB_TOKEN`/`VITE_CLOUDFLARE_TOKEN` browser reads; the GitHub feed routes through the backend `github_event` cache.
 
