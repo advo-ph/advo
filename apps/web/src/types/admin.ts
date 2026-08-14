@@ -26,6 +26,8 @@ export interface Project {
   amount_paid_cents: number;
   tech_stack: string[];
   created_at: string;
+  /** Assigned team members from project_access (singular collection key). */
+  team_member_id: number[];
   client?: Client;
 }
 

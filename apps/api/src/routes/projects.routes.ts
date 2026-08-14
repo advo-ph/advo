@@ -14,11 +14,15 @@ import {
   githubEvent,
   notification,
   activityLog,
+  deliverable,
 } from "../db/schema.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin, requireTeam } from "../middleware/rbac.js";
 import { sendNotificationEmail } from "../services/email.service.js";
 import { signPreviewToken, PREVIEW_TTL_MINUTES } from "../services/preview.service.js";
+import { suggestTimeline } from "../services/timeline-suggestion.service.js";
+import { buildRevisionTaskDescription } from "../services/revision-task.service.js";
+import { buildPresentationDraft } from "../services/presentation-draft.service.js";
 import { looseUrl, requiredUrl } from "../utils/validators.js";
 import type { Variables, AuthUser } from "../types/context.js";
 
@@ -69,6 +73,40 @@ async function assertProjectAccess(
   if (!access) throw new HTTPException(404, { message: "Project not found" });
 }
 
+// Attach singular collection key `teamMemberId: number[]` from project_access.
+// CamelCase matches drizzle field names in every other list response.
+async function withTeamMemberId(
+  d: ReturnType<typeof db>,
+  rows: Array<{
+    project: typeof project.$inferSelect;
+    client: typeof client.$inferSelect | null;
+  }>,
+) {
+  if (!rows.length) return [];
+
+  const projectIdList = rows.map((r) => r.project.projectId);
+  const accessRow = await d
+    .select({
+      projectId: projectAccess.projectId,
+      teamMemberId: projectAccess.teamMemberId,
+    })
+    .from(projectAccess)
+    .where(inArray(projectAccess.projectId, projectIdList));
+
+  const teamMemberIdByProject = new Map<number, number[]>();
+  for (const row of accessRow) {
+    const list = teamMemberIdByProject.get(row.projectId) ?? [];
+    list.push(row.teamMemberId);
+    teamMemberIdByProject.set(row.projectId, list);
+  }
+
+  return rows.map((r) => ({
+    ...r.project,
+    client: r.client,
+    teamMemberId: teamMemberIdByProject.get(r.project.projectId) ?? [],
+  }));
+}
+
 // ─── List Projects ────────────────────────────────────
 
 projects.get("/", async (c) => {
@@ -83,7 +121,7 @@ projects.get("/", async (c) => {
       .orderBy(desc(project.createdAt));
 
     return c.json({
-      data: rows.map((r) => ({ ...r.project, client: r.client })),
+      data: await withTeamMemberId(d, rows),
       error: null,
     });
   }
@@ -97,7 +135,7 @@ projects.get("/", async (c) => {
       .orderBy(desc(project.createdAt));
 
     return c.json({
-      data: rows.map((r) => ({ ...r.project, client: r.client })),
+      data: await withTeamMemberId(d, rows),
       error: null,
     });
   }
@@ -127,7 +165,7 @@ projects.get("/", async (c) => {
     .orderBy(desc(project.createdAt));
 
   return c.json({
-    data: rows.map((r) => ({ ...r.project, client: r.client })),
+    data: await withTeamMemberId(d, rows),
     error: null,
   });
 });
@@ -256,6 +294,92 @@ projects.delete("/:id", requireAdmin, async (c) => {
   return c.json({ data: { message: "Project deleted" }, error: null });
 });
 
+// ─── Project Access (team member ↔ project assignment) ─
+
+const grantAccessSchema = z.object({
+  teamMemberId: z.number().int().positive(),
+  permissionLevel: z.enum(["read", "write", "admin"]).optional(),
+});
+
+// Admin assigns a team member to a project (upsert on unique pair).
+projects.post(
+  "/:id/access",
+  requireAdmin,
+  zValidator("json", grantAccessSchema),
+  async (c) => {
+    const projectId = Number(c.req.param("id"));
+    const data = c.req.valid("json");
+    const d = db();
+
+    const [existingProject] = await d
+      .select({ projectId: project.projectId })
+      .from(project)
+      .where(eq(project.projectId, projectId))
+      .limit(1);
+    if (!existingProject) throw new HTTPException(404, { message: "Project not found" });
+
+    const [existingMember] = await d
+      .select({ teamMemberId: teamMember.teamMemberId })
+      .from(teamMember)
+      .where(eq(teamMember.teamMemberId, data.teamMemberId))
+      .limit(1);
+    if (!existingMember) throw new HTTPException(404, { message: "Team member not found" });
+
+    const [existingAccess] = await d
+      .select()
+      .from(projectAccess)
+      .where(
+        and(
+          eq(projectAccess.projectId, projectId),
+          eq(projectAccess.teamMemberId, data.teamMemberId),
+        ),
+      )
+      .limit(1);
+
+    if (existingAccess) {
+      if (data.permissionLevel && data.permissionLevel !== existingAccess.permissionLevel) {
+        const [updated] = await d
+          .update(projectAccess)
+          .set({ permissionLevel: data.permissionLevel })
+          .where(eq(projectAccess.projectAccessId, existingAccess.projectAccessId))
+          .returning();
+        return c.json({ data: updated, error: null });
+      }
+      return c.json({ data: existingAccess, error: null });
+    }
+
+    const [created] = await d
+      .insert(projectAccess)
+      .values({
+        projectId,
+        teamMemberId: data.teamMemberId,
+        permissionLevel: data.permissionLevel ?? "write",
+      })
+      .returning();
+
+    return c.json({ data: created, error: null }, 201);
+  },
+);
+
+// Admin revokes a team member's project access.
+projects.delete("/:id/access/:teamMemberId", requireAdmin, async (c) => {
+  const projectId = Number(c.req.param("id"));
+  const teamMemberId = Number(c.req.param("teamMemberId"));
+
+  const [deleted] = await db()
+    .delete(projectAccess)
+    .where(
+      and(
+        eq(projectAccess.projectId, projectId),
+        eq(projectAccess.teamMemberId, teamMemberId),
+      ),
+    )
+    .returning();
+
+  if (!deleted) throw new HTTPException(404, { message: "Project access not found" });
+  return c.json({ data: { message: "Access revoked" }, error: null });
+});
+
 // ─── Progress Updates ─────────────────────────────────
 
 const updateBodySchema = z.object({
@@ -332,17 +456,31 @@ const createAssetSchema = z.object({
   caption: z.string().max(255).nullish(),
 });
 
+// Authenticated clients with project access may POST document assets;
+// team/admin may set any allowed assetType. Delete stays requireTeam.
 projects.post(
   "/:id/assets",
-  requireTeam,
   zValidator("json", createAssetSchema),
   async (c) => {
     const projectId = Number(c.req.param("id"));
+    const user = c.get("user");
+    await assertProjectAccess(db(), user, projectId);
     const data = c.req.valid("json");
+
+    let assetType = data.assetType ?? "document";
+    if (user.role === "client") {
+      // Clients only upload supporting materials as documents
+      if (data.assetType && data.assetType !== "document") {
+        throw new HTTPException(403, {
+          message: "Clients may only upload document assets",
+        });
+      }
+      assetType = "document";
+    }
 
     const [created] = await db()
       .insert(projectAsset)
-      .values({ ...data, projectId })
+      .values({ ...data, assetType, projectId })
       .returning();
 
     return c.json({ data: created, error: null }, 201);
@@ -425,5 +563,270 @@ projects.get("/:id/preview-requests", requireTeam, async (c) => {
 
   return c.json({ data: rows, error: null });
 });
+
+// ─── Client revision → deliverable ───────────────────
+// requireTeam. Body: revision_note. Creates deliverable titled "Client revision"
+// with description = (optional AI polish of note) + CONTRACTS.md policy reminder
+// (2 rounds/phase). Claude polish only when ANTHROPIC_API_KEY set; else raw note.
+
+const revisionTaskBodySchema = z.object({
+  revisionNote: z.string().min(1).max(4000),
+});
+
+projects.post(
+  "/:id/revision-task",
+  requireTeam,
+  zValidator("json", revisionTaskBodySchema),
+  async (c) => {
+    const id = Number(c.req.param("id"));
+    if (Number.isNaN(id)) throw new HTTPException(400, { message: "Invalid project id" });
+
+    const { revisionNote } = c.req.valid("json");
+    const d = db();
+
+    const [row] = await d
+      .select({ projectId: project.projectId })
+      .from(project)
+      .where(eq(project.projectId, id))
+      .limit(1);
+
+    if (!row) throw new HTTPException(404, { message: "Project not found" });
+
+    const { description, method } = await buildRevisionTaskDescription(revisionNote);
+
+    const [created] = await d
+      .insert(deliverable)
+      .values({
+        projectId: id,
+        title: "Client revision",
+        description,
+        status: "not_started",
+        priority: 0,
+      })
+      .returning();
+
+    return c.json(
+      {
+        data: {
+          deliverable: created,
+          method,
+          projectId: id,
+        },
+        error: null,
+      },
+      201,
+    );
+  },
+);
+
+// ─── AI / heuristic timeline suggestion ──────────────
+// requireTeam. Loads project (+ DB deliverable if body.deliverable omitted).
+// Claude when ANTHROPIC_API_KEY set; else complexity heuristic.
+// Response-only suggestion; optional activity_log audit row (no project column write).
+
+const suggestTimelineBodySchema = z.object({
+  deliverable: z
+    .array(
+      z.object({
+        title: z.string().min(1).max(255),
+        description: z.string().max(5000).nullish(),
+        priority: z.number().int().nullish(),
+        status: z.string().max(40).nullish(),
+      }),
+    )
+    .max(50)
+    .optional(),
+  contractNotes: z.string().max(20_000).nullish(),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "startDate must be YYYY-MM-DD")
+    .nullish(),
+});
+
+projects.post(
+  "/:id/suggest-timeline",
+  requireTeam,
+  zValidator("json", suggestTimelineBodySchema),
+  async (c) => {
+    const id = Number(c.req.param("id"));
+    if (Number.isNaN(id)) throw new HTTPException(400, { message: "Invalid project id" });
+
+    const body = c.req.valid("json");
+    const user = c.get("user");
+    const d = db();
+
+    const [row] = await d
+      .select({
+        projectId: project.projectId,
+        title: project.title,
+        description: project.description,
+        projectStatus: project.projectStatus,
+        techStack: project.techStack,
+        totalValueCents: project.totalValueCents,
+      })
+      .from(project)
+      .where(eq(project.projectId, id))
+      .limit(1);
+
+    if (!row) throw new HTTPException(404, { message: "Project not found" });
+
+    let deliverableInput = body.deliverable ?? null;
+    if (!deliverableInput) {
+      const rows = await d
+        .select({
+          title: deliverable.title,
+          description: deliverable.description,
+          priority: deliverable.priority,
+          status: deliverable.status,
+        })
+        .from(deliverable)
+        .where(eq(deliverable.projectId, id))
+        .orderBy(desc(deliverable.priority));
+      deliverableInput = rows.map((r) => ({
+        title: r.title,
+        description: r.description,
+        priority: r.priority,
+        status: r.status,
+      }));
+    }
+
+    const suggestion = await suggestTimeline({
+      project: {
+        title: row.title,
+        description: row.description,
+        projectStatus: row.projectStatus,
+        techStack: row.techStack,
+        totalValueCents: row.totalValueCents,
+      },
+      deliverable: deliverableInput,
+      contractNotes: body.contractNotes ?? null,
+      startDate: body.startDate ?? null,
+    });
+
+    // Lightweight audit trail — suggestion stays response-primary.
+    try {
+      await d.insert(activityLog).values({
+        userId: user.userId,
+        action: "timeline_suggested",
+        entityType: "project",
+        entityId: id,
+        metadata: {
+          method: suggestion.method,
+          totalDurationDays: suggestion.totalDurationDays,
+          phaseCount: suggestion.phase.length,
+          summary: suggestion.summary,
+        },
+      });
+    } catch {
+      /* non-critical */
+    }
+
+    return c.json({
+      data: {
+        projectId: id,
+        ...suggestion,
+      },
+      error: null,
+    });
+  },
+);
+
+// ─── Final client presentation draft (markdown) ──────
+// requireTeam. Loads project title + deliverable list (body.deliverable optional).
+// Claude when ANTHROPIC_API_KEY set; else structured template.
+// Response-primary markdown outline — no file storage.
+
+const presentationDraftBodySchema = z.object({
+  deliverable: z
+    .array(
+      z.object({
+        title: z.string().min(1).max(255),
+        description: z.string().max(5000).nullish(),
+        status: z.string().max(40).nullish(),
+      }),
+    )
+    .max(50)
+    .optional(),
+  clientName: z.string().max(255).nullish(),
+  note: z.string().max(4000).nullish(),
+});
+
+projects.post(
+  "/:id/presentation-draft",
+  requireTeam,
+  zValidator("json", presentationDraftBodySchema),
+  async (c) => {
+    const id = Number(c.req.param("id"));
+    if (Number.isNaN(id)) throw new HTTPException(400, { message: "Invalid project id" });
+
+    const body = c.req.valid("json");
+    const d = db();
+
+    const [row] = await d
+      .select({
+        projectId: project.projectId,
+        title: project.title,
+        description: project.description,
+        projectStatus: project.projectStatus,
+        techStack: project.techStack,
+        clientId: project.clientId,
+      })
+      .from(project)
+      .where(eq(project.projectId, id))
+      .limit(1);
+
+    if (!row) throw new HTTPException(404, { message: "Project not found" });
+
+    let deliverableInput = body.deliverable ?? null;
+    if (!deliverableInput) {
+      const rows = await d
+        .select({
+          title: deliverable.title,
+          description: deliverable.description,
+          status: deliverable.status,
+        })
+        .from(deliverable)
+        .where(eq(deliverable.projectId, id))
+        .orderBy(desc(deliverable.priority));
+      deliverableInput = rows.map((r) => ({
+        title: r.title,
+        description: r.description,
+        status: r.status,
+      }));
+    }
+
+    let clientName = body.clientName?.trim() || null;
+    if (!clientName && row.clientId) {
+      const [clientRow] = await d
+        .select({ companyName: client.companyName })
+        .from(client)
+        .where(eq(client.clientId, row.clientId))
+        .limit(1);
+      clientName = clientRow?.companyName ?? null;
+    }
+
+    const draft = await buildPresentationDraft({
+      project: {
+        title: row.title,
+        description: row.description,
+        projectStatus: row.projectStatus,
+        techStack: row.techStack,
+      },
+      deliverable: deliverableInput,
+      clientName,
+      note: body.note ?? null,
+    });
+
+    return c.json({
+      data: {
+        projectId: id,
+        markdown: draft.markdown,
+        method: draft.method,
+        disclaimer: draft.disclaimer,
+      },
+      error: null,
+    });
+  },
+);
 
 export default projects;

@@ -48,15 +48,25 @@ View issued invoices with amount, status (unpaid/paid/overdue), due dates. API e
 
 ### Contract Section
 
-"View Contract" button linking to contract PDF, or "Contract pending" if not yet set.
+"View Contract" button linking to `project.contract_url` when set, or "Contract pending".
 
-**Files**: `ProjectDashboard.tsx` → reads `project.contract_url`
+**Signed contracts list** (CP1): hub also loads `GET /api/contracts/mine` — client-scoped first-class `contract` rows (title, type, status, signed_at, document_url; no notes/value). Team/admin get the same public field set for all contracts. Rendered on Hub alongside the project list.
 
-### Progress Photos
+**Files**: `ProjectDashboard.tsx` → `project.contract_url`; `Hub.tsx` + `useMyContracts` → `/api/contracts/mine`
 
-Grid of admin-uploaded progress photos with captions and upload dates.
+### Live preview iframe
 
-**Files**: `ProjectDashboard.tsx` → reads `project_asset` via API
+When `project.preview_url` is set, Hub embeds a sandboxed iframe (`allow-scripts allow-same-origin allow-forms allow-popups`) so the client sees the live site in-dashboard, not only the GitHub engineering feed or an external link. "Open in new tab" + "Request a preview" remain.
+
+**Files**: `ProjectDashboard.tsx`
+
+### Progress Photos / Your materials
+
+Grid of project assets (progress photos, documents) with captions and upload dates.
+
+**Client material upload** (CP1): clients with project access may `POST /api/projects/:id/assets` with `assetType: "document"` only (team may still set any asset type). Hub "Your materials" panel uploads via `/api/files/upload` then creates the asset row. Delete stays team-only.
+
+**Files**: `ProjectDashboard.tsx`, `useProjectAssets.ts`, `projects.routes.ts`
 
 ### Team Contacts
 
@@ -131,7 +141,19 @@ Paste a contract / SOW into the Contracts tab → `POST /api/contracts/review` (
 
 Generate a private, **20-minute** link to the project's `preview_url` to drop to a client mid-build. `POST /api/projects/:id/preview-link` (requireTeam) mints a signed HS256 token (reuses `JWT_SECRET`); the **public** `GET /api/preview/:token` verifies it and **302-redirects** to the preview, or shows a branded 410 gate page when expired. Host-agnostic (Vercel / Cloudflare Pages / here.now / VPS — ADVO just stores the URL and controls the link's lifetime). Clients can also **request** a preview from their Hub (see Client Portal) → logged to `activity_log` → the team sees it in this panel.
 
-**Files**: `ProjectCommandCenter.tsx`, `useContractReview.ts`, `usePreviewLink.ts`, `apps/api/src/services/contract-review.service.ts`, `apps/api/src/routes/contracts.routes.ts`, `apps/api/src/services/preview.service.ts`, `apps/api/src/routes/preview.routes.ts`
+#### Meeting → deliverable tasks (Plaud CP3)
+
+**Generate tasks** on a meeting (AdminMeetings + Project Command Center) → `POST /api/meeting/:id/generate-task` (requireTeam). Reads `meeting.transcript`; Claude (`claude-opus-4-8`) when `ANTHROPIC_API_KEY` is set, else a line/bullet heuristic. Inserts **1–8** `deliverable` rows on `meeting.project_id` with a **Suggested skill** line in each description. Returns `{ deliverable, method, meetingId, projectId }`. **400** empty transcript; **422** no actionable tasks (no silent success).
+
+#### Suggest timeline (Plaud CP3)
+
+Team-only `POST /api/projects/:id/suggest-timeline` accepts optional `{ deliverable[], contractNotes, startDate }`. Loads the project (and DB deliverables when the body omits them). Returns a phase/milestone plan with **singular keys** (`phase`, `milestone`, `assumption`, `risk`, …) via Claude or complexity heuristic. **Response-primary** — audits `activity_log` action `timeline_suggested`; does **not** write a project JSON column.
+
+#### Client revision → deliverable (Plaud CP3)
+
+`POST /api/projects/:id/revision-task` (requireTeam). Body camelCase `{ revisionNote }`. Creates a deliverable titled **"Client revision"**; description = note (optional Claude polish when `ANTHROPIC_API_KEY` is set) + CONTRACTS.md **2-rounds/phase** policy reminder. Response data: `{ deliverable, method: "raw"|"ai", projectId }`.
+
+**Files**: `ProjectCommandCenter.tsx`, `AdminMeetings.tsx`, `useMeeting.ts`, `useContractReview.ts`, `usePreviewLink.ts`, `apps/api/src/services/contract-review.service.ts`, `apps/api/src/routes/contracts.routes.ts`, `apps/api/src/services/preview.service.ts`, `apps/api/src/routes/preview.routes.ts`, `apps/api/src/routes/meeting.routes.ts`, `apps/api/src/services/meeting-task.service.ts`, `apps/api/src/routes/projects.routes.ts`, `apps/api/src/services/timeline-suggestion.service.ts`, `apps/api/src/services/revision-task.service.ts`
 
 ### Clients
 
@@ -143,13 +165,17 @@ Client management with company name, contact email, GitHub org, brand color. **I
 
 Team member profiles with name, role, email, bio, social links (LinkedIn, GitHub). Avatar upload (max 5MB). **Drag-to-reorder** — order persists via `team_order` site config key. Applied on landing page + team page.
 
-**Files**: `AdminTeam.tsx`
+**Penalty points** (P11): each `team_member` has `penalty_point_count` (integer, default 0). Admin Team list shows the count; edit dialog lets admin set it via `PATCH /api/team/:id` (`penaltyPointCount`). **Automatic accrual is deferred** — rules still open; no hooks from late deliverables or verify yet.
+
+**Files**: `AdminTeam.tsx`, `useAdminTeam.ts`, `team.routes.ts`, migration `008_team_member_penalty_point_count.sql`
 
 ### Deliverables (Schedule)
 
 Full CRUD (shipped `3a622af`, closing audit finding B1 — was previously read-only). Add/Edit dialog (project, title, description, assignee, status, priority, due date), a per-card **inline status quick-change** (optimistic), delete (dialog footer), team-member filter, and an empty-state CTA. Mirrors the `AdminAvailability` dialog pattern. Backend `POST/PATCH/DELETE /api/deliverables` already existed; this added the missing UI.
 
-**Files**: `AdminSchedule.tsx`, `useAdminDeliverables.ts`
+**Verify** (P7): team can set/clear `verified_at` independently of status via **Verify** / **Verified** toggle on each row (`PATCH /api/deliverables/:id` with `verifiedAt` ISO or `null`). Completing a deliverable still sets `completed_at` only; verification is separate QA sign-off. Migration `007_deliverable_verified_at.sql`.
+
+**Files**: `AdminSchedule.tsx`, `useAdminDeliverables.ts`, `deliverables.routes.ts`, `schema.ts`
 
 ### Calendar
 
@@ -165,7 +191,9 @@ The all-around ADVO records calendar (Phase 1, shipped `0018c3e`/`80f076e`). A m
 
 Invoice management with create/edit/delete. Status toggle (unpaid → paid → overdue). Auto-triggers email notification on create.
 
-**Files**: `AdminFinance.tsx`, `useInvoices.ts`
+**Expense ledger** (migration `005`, shipped with Plaud 07-30 CP1): team logs agency spend with purpose, who authorized, `amount_cents`, location, optional `receipt_url`, and category (`ai_usage` / `media` / `subscription` / `outside_payment` / travel / meals / software / hardware / marketing / office / other). **`is_reimbursable` is derived** as `receipt_url` present — never stored, so “no receipt → no reimbursement” cannot drift. CRUD at `GET/POST/DELETE /api/expense` (requireTeam). UI: Expenses section on `AdminFinance`.
+
+**Files**: `AdminFinance.tsx`, `useInvoices.ts`, `useExpense.ts`, `expense.routes.ts`
 
 ### Notifications
 
@@ -190,6 +218,7 @@ Manage public portfolio projects. Multi-image upload. Toggle featured. Full CRUD
 ### Leads
 
 Pipeline view of inquiries. Status: new → contacted → qualified → proposal → won/lost.
+
 - **Search + filter** by text and status
 - **Bulk actions** — select multiple leads, bulk set status or assign
 - **Convert to Client** button — creates user account + client + project, sends welcome email
@@ -212,6 +241,7 @@ Pipeline view of inquiries. Status: new → contacted → qualified → proposal
 Two modes — lightweight `/api/scrape/brand` (fast) and full `/api/scrape/brand-full` (deep analysis). Uses stealth Puppeteer with a single browser instance reused across viewports and pages.
 
 **Core extraction** (both modes):
+
 - Colors (hex, frequency, CSS variables, theme color)
 - Fonts (Google Fonts, CSS declarations)
 - Logos & favicons (img, SVG inline, apple-touch-icon)
@@ -222,6 +252,7 @@ Two modes — lightweight `/api/scrape/brand` (fast) and full `/api/scrape/brand
 - All images with previews
 
 **Full-scrape additions** (13 features):
+
 - Screenshots at 3 viewports (desktop 1440×900, tablet 768×1024, mobile 375×812) as base64 data URLs
 - Multi-page crawl (follows up to `crawlDepth` internal nav links, merges data)
 - Color palette grouping (primary / secondary / accent[] / neutral[]) via HSL clustering
@@ -238,6 +269,7 @@ Two modes — lightweight `/api/scrape/brand` (fast) and full `/api/scrape/brand
 Powered by the [easydiv](https://github.com/CelestialBrain/easydiv) component scanner, vendored at `advo-api/src/vendor/easydiv-detector.js` and injected into the live Puppeteer page via `mainPage.evaluate()`. Uses 6 signals: semantic tags, ARIA roles, class-name hints, structural shape, sibling clustering (3+ children with same tag+class signature), browser-side visibility checks. Includes a CSS-in-JS-aware class normalizer that strips hash suffixes (`hero-a8b3f9` → `hero`, `css-x1y2z3` → dropped) so it works against emotion / styled-components / CSS Modules sites.
 
 Two response fields:
+
 - `components: [{ name, selector, count }]` — legacy shape grouped by type, used by the existing UI
 - `componentCandidates: { [type]: [{ tag, classes, score, reason, depth, childCount, textPreview, ... }] }` — top 5 per type with full element data including a 80-char text preview
 
@@ -248,6 +280,7 @@ Auto-saves to DB, load past scrapes from history.
 ### Facebook Scraper
 
 Paste a Facebook page URL → extracts company data via authenticated Playwright:
+
 - Company info (name, category, followers, likes)
 - Contact details (website, phone, email, social links, address)
 - **All posts** (100+) with full text, engagement metrics, and images per post
@@ -271,11 +304,11 @@ Uses Nodemailer with either Resend SMTP or custom SMTP transport.
 
 **Auto-Triggers**:
 
-| Event | Type |
-|-------|------|
-| Progress update posted | `progress_update` |
-| Invoice created | `invoice_issued` |
-| Deliverable completed | `deliverable_completed` |
+| Event                  | Type                    |
+| ---------------------- | ----------------------- |
+| Progress update posted | `progress_update`       |
+| Invoice created        | `invoice_issued`        |
+| Deliverable completed  | `deliverable_completed` |
 | Project status changed | `project_status_change` |
 
 ---
@@ -298,12 +331,12 @@ JWT-based authentication via ADVO API.
 
 Both brand and Facebook scrapes auto-save to `scrape_result` table. Endpoints:
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/api/scrape/save` | Save scrape result |
-| GET | `/api/scrape/history` | List saved scrapes (optional `?type=brand\|facebook`) |
-| GET | `/api/scrape/history/:id` | Get single saved scrape with full data |
-| DELETE | `/api/scrape/history/:id` | Delete a saved scrape |
+| Method | Path                      | Description                                           |
+| ------ | ------------------------- | ----------------------------------------------------- |
+| POST   | `/api/scrape/save`        | Save scrape result                                    |
+| GET    | `/api/scrape/history`     | List saved scrapes (optional `?type=brand\|facebook`) |
+| GET    | `/api/scrape/history/:id` | Get single saved scrape with full data                |
+| DELETE | `/api/scrape/history/:id` | Delete a saved scrape                                 |
 
 ---
 
@@ -313,34 +346,35 @@ All data fetching uses React Query (`@tanstack/react-query` v5). Each admin CRUD
 
 ### Auth + utility
 
-| Hook | Purpose |
-|------|---------|
-| `useAuth` | JWT auth state, login, magic link, password change, sign out |
-| `useRoles` | Permission role from JWT token |
-| `useGitHub` | GitHub commits and branches (via `lib/github.ts`) |
+| Hook        | Purpose                                                      |
+| ----------- | ------------------------------------------------------------ |
+| `useAuth`   | JWT auth state, login, magic link, password change, sign out |
+| `useRoles`  | Permission role from JWT token                               |
+| `useGitHub` | GitHub commits and branches (via `lib/github.ts`)            |
 
 ### Admin data
 
-| Hook | Purpose |
-|------|---------|
-| `useAdminData` | Aggregated dashboard counts (projects, clients, leads, stats) |
-| `useOrgProjects` | Projects with GitHub enrichment (commits, PRs, tech stack) |
-| `useAdminPortfolio` | Portfolio CRUD (list, create, update, delete) |
-| `useAdminSocial` | Social post CRUD |
-| `useAdminTeam` | Team member CRUD + drag-reorder |
-| `useAdminAvailability` | Team availability blocks CRUD |
-| `useAdminDeliverables` | Deliverables CRUD + optimistic inline status |
-| `useInvoices` | Invoice CRUD with optimistic status toggle |
-| `useNotifications` | Admin: fetch all + send/broadcast. Client: fetch + mark-read |
-| `useLeads` | Lead management with status updates, assignment, bulk actions, conversion |
-| `useSiteContent` | CMS sections: toggle visibility, update content |
-| `useContractReview` | Command Center: heuristic contract red-flag review |
-| `usePreviewLink` | Command Center: mint expiring preview links + list client requests (`useProjectPreview`); client request-a-preview (`useRequestPreview`) |
+| Hook                   | Purpose                                                                                                                                  |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `useAdminData`         | Aggregated dashboard counts (projects, clients, leads, stats)                                                                            |
+| `useOrgProjects`       | Projects with GitHub enrichment (commits, PRs, tech stack)                                                                               |
+| `useAdminPortfolio`    | Portfolio CRUD (list, create, update, delete)                                                                                            |
+| `useAdminSocial`       | Social post CRUD                                                                                                                         |
+| `useAdminTeam`         | Team member CRUD + drag-reorder                                                                                                          |
+| `useAdminAvailability` | Team availability blocks CRUD                                                                                                            |
+| `useAdminDeliverables` | Deliverables CRUD + optimistic inline status                                                                                             |
+| `useInvoices`          | Invoice CRUD with optimistic status toggle                                                                                               |
+| `useNotifications`     | Admin: fetch all + send/broadcast. Client: fetch + mark-read                                                                             |
+| `useLeads`             | Lead management with status updates, assignment, bulk actions, conversion                                                                |
+| `useSiteContent`       | CMS sections: toggle visibility, update content                                                                                          |
+| `useContractReview`    | Command Center: heuristic contract red-flag review                                                                                       |
+| `usePreviewLink`       | Command Center: mint expiring preview links + list client requests (`useProjectPreview`); client request-a-preview (`useRequestPreview`) |
+| `useMeeting`           | Meeting rows for AdminMeetings + Command Center; **Generate tasks** (`POST /api/meeting/:id/generate-task`)                              |
 
 ### Client portal
 
-| Hook | Purpose |
-|------|---------|
+| Hook            | Purpose                                                         |
+| --------------- | --------------------------------------------------------------- |
 | `useClientData` | Client-side: projects, deliverables, invoices, assets, contacts |
 
 ## Roadmap
@@ -350,6 +384,7 @@ All data fetching uses React Query (`@tanstack/react-query` v5). Each admin CRUD
 A MotionSites-style visual library at `/admin/library` — team-wide (not admin-only) — for pulling references into client conversations and reusing internal assets.
 
 **Item types** (single `library_item` table, `type` enum drives render):
+
 - `website` — reference sites with thumbnail + optional looping preview, external URL
 - `prompt` — reusable vibe-coding prompts with copy-to-clipboard
 - `module` — code modules / reusable component recipes
@@ -357,6 +392,7 @@ A MotionSites-style visual library at `/admin/library` — team-wide (not admin-
 - `doc` — KT notes, runbooks (markdown body)
 
 **v1 surface**
+
 - Grid view with thumbnail cards, type chip, tags, hover preview
 - Filters: type chips + tag multi-select + search
 - Detail drawer per item (copy / link out / download)
@@ -384,13 +420,13 @@ A MotionSites-style visual library at `/admin/library` — team-wide (not admin-
 
 ## Operational Docs
 
-| Doc | What it's for |
-|---|---|
-| [HANDOFF.md](HANDOFF.md) | Reverse-chronological session log — what shipped each session + honest open-items |
-| [ROADMAP.md](ROADMAP.md) | Canonical forward-looking roadmap — synthesizes Messenger archive + landing/feature sub-roadmaps |
-| [CONTRACTS.md](CONTRACTS.md) | Draft contract policy + clauses (revision limits, downpayment floor, change orders). Needs legal review before binding use. |
-| [CUTOVER.md](CUTOVER.md) | VPS monorepo cutover runbook + rollback plan |
-| [SCHEMA.md](SCHEMA.md) | Database schema reference + migration log |
-| [SETUP.md](SETUP.md) | Dev setup + deployment commands |
-| [/ROADMAP.md](../ROADMAP.md) | Historical Stripe-landing audit roadmap (codex branch) — most items live only in the labeled stash |
-| [/.agents/workflows/advo-standard.md](../.agents/workflows/advo-standard.md) | The ADVO Standard — cross-stack naming, DB conventions, auth, file patterns |
+| Doc                                                                          | What it's for                                                                                                               |
+| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| [HANDOFF.md](HANDOFF.md)                                                     | Reverse-chronological session log — what shipped each session + honest open-items                                           |
+| [ROADMAP.md](ROADMAP.md)                                                     | Canonical forward-looking roadmap — synthesizes Messenger archive + landing/feature sub-roadmaps                            |
+| [CONTRACTS.md](CONTRACTS.md)                                                 | Draft contract policy + clauses (revision limits, downpayment floor, change orders). Needs legal review before binding use. |
+| [CUTOVER.md](CUTOVER.md)                                                     | VPS monorepo cutover runbook + rollback plan                                                                                |
+| [SCHEMA.md](SCHEMA.md)                                                       | Database schema reference + migration log                                                                                   |
+| [SETUP.md](SETUP.md)                                                         | Dev setup + deployment commands                                                                                             |
+| [/ROADMAP.md](../ROADMAP.md)                                                 | Historical Stripe-landing audit roadmap (codex branch) — most items live only in the labeled stash                          |
+| [/.agents/workflows/advo-standard.md](../.agents/workflows/advo-standard.md) | The ADVO Standard — cross-stack naming, DB conventions, auth, file patterns                                                 |

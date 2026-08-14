@@ -184,6 +184,8 @@ export const teamMember = pgTable(
     githubUrl: varchar("github_url", { length: 500 }),
     permissionRole: permissionRoleEnum("permission_role").notNull().default("developer"),
     isActive: boolean("is_active").notNull().default(true),
+    /** Manual tally; auto-accrual deferred (rules open). Admin PATCH only. */
+    penaltyPointCount: integer("penalty_point_count").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -224,6 +226,8 @@ export const deliverable = pgTable(
     status: deliverableStatusEnum("status").notNull().default("not_started"),
     dueDate: timestamp("due_date", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
+    /** Team QA sign-off; independent of status/completed_at. Null = unverified. */
+    verifiedAt: timestamp("verified_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -275,6 +279,31 @@ export const calendarEvent = pgTable(
   ]
 );
 
+// Expense ledger (migration 005). amount_cents is integer cents. is_reimbursable
+// is derived at read time as (receipt_url IS NOT NULL) — never stored as a column.
+// category is app-validated varchar (growable set).
+export const expense = pgTable(
+  "expense",
+  {
+    expenseId: bigserial("expense_id", { mode: "number" }).primaryKey(),
+    projectId: integer("project_id").references(() => project.projectId, { onDelete: "set null" }),
+    purpose: text("purpose").notNull(),
+    authorizedBy: varchar("authorized_by", { length: 255 }).notNull(),
+    amountCents: integer("amount_cents").notNull(),
+    location: varchar("location", { length: 255 }),
+    receiptUrl: varchar("receipt_url", { length: 500 }),
+    category: varchar("category", { length: 50 }).notNull().default("other"),
+    createdBy: integer("created_by").references(() => user.userId, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_expense_project").on(t.projectId),
+    index("idx_expense_created_by").on(t.createdBy),
+    index("idx_expense_created_at").on(t.createdAt),
+  ]
+);
+
 // Contracts / MOAs / SOWs / NDAs / retainers (migration 004). `contractType`
 // and `status` are app-validated varchar (growable sets). signed_at/expires_at
 // derive into GET /api/calendar at read time, not stored in calendar_event.
@@ -301,6 +330,30 @@ export const contract = pgTable(
     index("idx_contract_client").on(t.clientId),
     index("idx_contract_project").on(t.projectId),
     index("idx_contract_expires").on(t.expiresAt),
+  ]
+);
+
+// Meeting MoM records (migration 006). Full transcript per project; optional
+// plaud_share_key for Plaud share links. project_id required CASCADE.
+export const meeting = pgTable(
+  "meeting",
+  {
+    meetingId: bigserial("meeting_id", { mode: "number" }).primaryKey(),
+    projectId: integer("project_id")
+      .notNull()
+      .references(() => project.projectId, { onDelete: "cascade" }),
+    title: varchar("title", { length: 255 }).notNull(),
+    recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull(),
+    transcript: text("transcript").notNull(),
+    plaudShareKey: varchar("plaud_share_key", { length: 255 }),
+    createdBy: integer("created_by").references(() => user.userId, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_meeting_project").on(t.projectId),
+    index("idx_meeting_recorded_at").on(t.recordedAt),
+    index("idx_meeting_created_by").on(t.createdBy),
   ]
 );
 

@@ -22,8 +22,13 @@ import {
   Send,
   Trash2,
   Download,
+  Mic,
+  ChevronDown,
+  ChevronUp,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatCurrency } from "@/types/admin";
@@ -36,6 +41,7 @@ import { useInvoices } from "@/hooks/useInvoices";
 import { useContractReview, type FlagSeverity } from "@/hooks/useContractReview";
 import { useProjectPreview } from "@/hooks/usePreviewLink";
 import { useProjectAssets } from "@/hooks/useProjectAssets";
+import { useMeeting } from "@/hooks/useMeeting";
 import { Panel, Empty, Dot } from "@/components/admin/_ui";
 
 interface ProjectCommandCenterProps {
@@ -75,6 +81,7 @@ const TABS: { value: string; label: string; icon: React.ElementType }[] = [
   { value: "files", label: "Files", icon: FolderOpen },
   { value: "dev", label: "Dev & Deploy", icon: GitCommitHorizontal },
   { value: "contracts", label: "Contracts", icon: FileText },
+  { value: "meetings", label: "Meetings", icon: Mic },
   { value: "finance", label: "Finance", icon: Banknote },
 ];
 
@@ -94,9 +101,25 @@ const ProjectCommandCenter = ({ project, onBack }: ProjectCommandCenterProps) =>
     requests: previewRequests,
   } = useProjectPreview(project.project_id);
   const { assets, uploadFile, deleteAsset, isUploading } = useProjectAssets(project.project_id);
+  const {
+    meeting: projectMeeting,
+    isLoading: meetingLoading,
+    createMeeting,
+    deleteMeeting,
+    generateTask,
+    isSaving: isSavingMeeting,
+    isGeneratingTask,
+  } = useMeeting(project.project_id);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [tab, setTab] = useState("overview");
   const [copied, setCopied] = useState(false);
+  const [expandedMeetingId, setExpandedMeetingId] = useState<number | null>(null);
+  const [generatingMeetingId, setGeneratingMeetingId] = useState<number | null>(null);
+  const [showMeetingForm, setShowMeetingForm] = useState(false);
+  const [meetingTitle, setMeetingTitle] = useState("");
+  const [meetingRecordedAt, setMeetingRecordedAt] = useState("");
+  const [meetingTranscript, setMeetingTranscript] = useState("");
+  const [meetingPlaudKey, setMeetingPlaudKey] = useState("");
 
   const isImageAsset = (a: { url: string; asset_type: string }) =>
     a.asset_type !== "document" || /\.(png|jpe?g|gif|webp|svg|avif|heic)$/i.test(a.url);
@@ -538,6 +561,176 @@ const ProjectCommandCenter = ({ project, onBack }: ProjectCommandCenterProps) =>
                 </div>
               )}
             </div>
+          </Panel>
+        </TabsContent>
+
+        {/* ── Meetings (MoM) ── */}
+        <TabsContent value="meetings" className="pt-4">
+          <Panel
+            title="Meeting minutes"
+            meta={
+              meetingLoading
+                ? "loading…"
+                : `${projectMeeting.length} MoM record${projectMeeting.length === 1 ? "" : "s"}`
+            }
+            action={
+              <Button
+                size="sm"
+                className="h-8 rounded-md bg-accent text-accent-foreground hover:bg-accent/90"
+                onClick={() => setShowMeetingForm((v) => !v)}
+              >
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                {showMeetingForm ? "Cancel" : "Add MoM"}
+              </Button>
+            }
+          >
+            {showMeetingForm && (
+              <div className="space-y-2 border-b border-border p-4">
+                <Input
+                  placeholder="Title"
+                  value={meetingTitle}
+                  onChange={(e) => setMeetingTitle(e.target.value)}
+                  className="h-9"
+                />
+                <Input
+                  type="datetime-local"
+                  value={meetingRecordedAt}
+                  onChange={(e) => setMeetingRecordedAt(e.target.value)}
+                  className="h-9"
+                />
+                <Textarea
+                  placeholder="Paste transcript / MoM notes…"
+                  value={meetingTranscript}
+                  onChange={(e) => setMeetingTranscript(e.target.value)}
+                  className="min-h-[120px] text-sm"
+                />
+                <Input
+                  placeholder="Plaud share key (optional)"
+                  value={meetingPlaudKey}
+                  onChange={(e) => setMeetingPlaudKey(e.target.value)}
+                  className="h-9"
+                />
+                <Button
+                  size="sm"
+                  className="h-8 bg-accent text-accent-foreground hover:bg-accent/90"
+                  disabled={
+                    isSavingMeeting ||
+                    !meetingTitle.trim() ||
+                    !meetingRecordedAt ||
+                    !meetingTranscript.trim()
+                  }
+                  onClick={async () => {
+                    try {
+                      await createMeeting({
+                        projectId: project.project_id,
+                        title: meetingTitle.trim(),
+                        recordedAt: new Date(meetingRecordedAt).toISOString(),
+                        transcript: meetingTranscript.trim(),
+                        plaudShareKey: meetingPlaudKey.trim() || null,
+                      });
+                      setMeetingTitle("");
+                      setMeetingRecordedAt("");
+                      setMeetingTranscript("");
+                      setMeetingPlaudKey("");
+                      setShowMeetingForm(false);
+                    } catch {
+                      // toast from hook
+                    }
+                  }}
+                >
+                  {isSavingMeeting ? (
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  ) : null}
+                  Save MoM
+                </Button>
+              </div>
+            )}
+            {meetingLoading && projectMeeting.length === 0 ? (
+              <div className="flex items-center gap-2 p-4 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" /> Loading…
+              </div>
+            ) : projectMeeting.length === 0 ? (
+              <Empty text="No meeting minutes for this project yet." icon={Mic} />
+            ) : (
+              <div className="divide-y divide-border">
+                {projectMeeting.map((m) => {
+                  const isOpen = expandedMeetingId === m.meetingId;
+                  return (
+                    <div key={m.meetingId}>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedMeetingId(isOpen ? null : m.meetingId)
+                        }
+                        className="flex w-full items-center gap-3 px-4 h-11 text-left hover:bg-secondary/40 transition-colors"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{m.title}</p>
+                          <p className="text-xs text-muted-foreground tabular-nums">
+                            {new Date(m.recordedAt).toLocaleString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </div>
+                        {isOpen ? (
+                          <ChevronUp className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        )}
+                      </button>
+                      {isOpen && (
+                        <div className="space-y-2 border-t border-border bg-secondary/20 px-4 py-3">
+                          <div className="flex flex-wrap justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7"
+                              disabled={
+                                isGeneratingTask ||
+                                !m.transcript?.trim() ||
+                                generatingMeetingId === m.meetingId
+                              }
+                              onClick={async () => {
+                                setGeneratingMeetingId(m.meetingId);
+                                try {
+                                  await generateTask(m.meetingId);
+                                } catch {
+                                  // toast from hook
+                                } finally {
+                                  setGeneratingMeetingId(null);
+                                }
+                              }}
+                            >
+                              {generatingMeetingId === m.meetingId ? (
+                                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+                              )}
+                              Generate tasks
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-destructive hover:bg-destructive/10"
+                              onClick={() => void deleteMeeting(m.meetingId)}
+                            >
+                              <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
+                            </Button>
+                          </div>
+                          <pre className="max-h-64 overflow-y-auto whitespace-pre-wrap rounded-md border border-border bg-card p-3 font-sans text-sm text-foreground/90">
+                            {m.transcript}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </Panel>
         </TabsContent>
 

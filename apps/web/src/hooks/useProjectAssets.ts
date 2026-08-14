@@ -36,19 +36,30 @@ export function useProjectAssets(projectId: number) {
   });
 
   const uploadMutation = useMutation({
-    mutationFn: async ({ file, caption }: { file: File; caption?: string }) => {
+    mutationFn: async ({
+      file,
+      caption,
+      assetType,
+    }: {
+      file: File;
+      caption?: string;
+      /** When set (e.g. client materials → "document"), skip image auto-detect. */
+      assetType?: "progress_photo" | "completion_photo" | "document";
+    }) => {
       const up = await upload(file, "assets");
       if (up.error || !up.url) throw new Error(up.error || "Upload failed");
-      const assetType = file.type.startsWith("image/") ? "progress_photo" : "document";
+      const resolvedType =
+        assetType ?? (file.type.startsWith("image/") ? "progress_photo" : "document");
       const res = await post(`/api/projects/${projectId}/assets`, {
         url: up.url,
         caption: caption || null,
-        assetType,
+        assetType: resolvedType,
       });
       if (res.error) throw new Error(res.error);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey });
+      qc.invalidateQueries({ queryKey: ["clientData"] });
       toast({ title: "Uploaded", description: "File added to the project" });
     },
     onError: (e: Error) => toast({ title: "Error", description: e.message, variant: "destructive" }),
@@ -75,7 +86,11 @@ export function useProjectAssets(projectId: number) {
   return {
     assets,
     isLoading,
-    uploadFile: (file: File, caption?: string) => uploadMutation.mutateAsync({ file, caption }),
+    uploadFile: (
+      file: File,
+      caption?: string,
+      assetType?: "progress_photo" | "completion_photo" | "document",
+    ) => uploadMutation.mutateAsync({ file, caption, assetType }),
     deleteAsset: deleteMutation.mutateAsync,
     isUploading: uploadMutation.isPending,
   };

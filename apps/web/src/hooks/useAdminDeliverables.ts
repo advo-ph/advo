@@ -25,6 +25,8 @@ export interface Deliverable {
   status: DeliverableStatus;
   priority: number;
   due_date?: string | null;
+  /** ISO timestamp when team verified; null/undefined = unverified. */
+  verified_at?: string | null;
   project?: { title: string };
   assignee?: DeliverableAssignee;
 }
@@ -48,6 +50,7 @@ function mapDeliverable(t: Record<string, unknown>): Deliverable {
     status: ((t.status as DeliverableStatus) || "not_started") as DeliverableStatus,
     priority: (t.priority as number) || 0,
     due_date: (t.dueDate ?? t.due_date ?? null) as string | null,
+    verified_at: (t.verifiedAt ?? t.verified_at ?? null) as string | null,
     assigned_to: (t.assignedTo ?? t.assigned_to ?? null) as number | null,
     project: t.project as { title: string } | undefined,
     assignee: (t.assignee ?? t.team_member) as DeliverableAssignee | undefined,
@@ -134,6 +137,37 @@ export function useAdminDeliverables() {
     },
   });
 
+  // Team QA verify / unverify — sets or clears verified_at only.
+  const verifyMutation = useMutation({
+    mutationFn: async ({ id, verified }: { id: number; verified: boolean }) => {
+      const res = await patch(`/api/deliverables/${id}`, {
+        verifiedAt: verified ? new Date().toISOString() : null,
+      });
+      if (res.error) throw new Error(res.error);
+    },
+    onMutate: async ({ id, verified }) => {
+      await queryClient.cancelQueries({ queryKey: QUERY_KEY });
+      const prev = queryClient.getQueryData<Deliverable[]>(QUERY_KEY);
+      queryClient.setQueryData<Deliverable[]>(QUERY_KEY, (old = []) =>
+        old.map((d) =>
+          d.deliverable_id === id
+            ? { ...d, verified_at: verified ? new Date().toISOString() : null }
+            : d,
+        ),
+      );
+      return { prev };
+    },
+    onError: (err: Error, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(QUERY_KEY, ctx.prev);
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+    onSuccess: (_data, { verified }) =>
+      toast({
+        title: verified ? "Verified" : "Verification cleared",
+        description: verified ? "Deliverable marked verified" : "Deliverable unverified",
+      }),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
       const res = await del(`/api/deliverables/${id}`);
@@ -162,6 +196,9 @@ export function useAdminDeliverables() {
       updateMutation.mutateAsync({ id, input }),
     updateStatus: (id: number, status: DeliverableStatus) =>
       statusMutation.mutateAsync({ id, status }),
+    /** Set or clear verified_at (team QA). Does not change status. */
+    setVerified: (id: number, verified: boolean) =>
+      verifyMutation.mutateAsync({ id, verified }),
     deleteDeliverable: deleteMutation.mutateAsync,
     isSaving: createMutation.isPending || updateMutation.isPending,
   };

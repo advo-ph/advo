@@ -14,6 +14,7 @@ import {
   Clock,
   FolderKanban,
   LayoutDashboard,
+  UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +49,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Client, ProjectStatus } from "@/types/admin";
 import { STATUS_OPTIONS, formatCurrency } from "@/types/admin";
 import type { MergedProject } from "@/hooks/useOrgProjects";
+import { useAdminTeam } from "@/hooks/useAdminTeam";
 import ProjectCommandCenter from "./ProjectCommandCenter";
 import { PageHeader, StatStrip, Stat, Dot, Empty } from "./_ui";
 
@@ -68,15 +70,18 @@ interface AdminProjectsProps {
 
 const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProjectsProps) => {
   const { toast } = useToast();
+  const { activeMembers: teamMember } = useAdminTeam();
 
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [assigningProject, setAssigningProject] = useState<MergedProject | null>(null);
   const [editingProject, setEditingProject] = useState<MergedProject | null>(null);
   const [deletingProject, setDeletingProject] = useState<MergedProject | null>(null);
   const [updatingProject, setUpdatingProject] = useState<MergedProject | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [assignMemberId, setAssignMemberId] = useState("");
 
   // Command-center view: keep the id and re-derive from the live list so it
   // stays fresh after edits/refetch (and falls back to the list if deleted).
@@ -258,6 +263,79 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
     }
   };
 
+  const memberName = (id: number) =>
+    teamMember.find((m) => m.team_member_id === id)?.name ?? `Member ${id}`;
+
+  const handleGrantAccess = async () => {
+    if (!assigningProject || !assignMemberId) {
+      toast({ title: "Error", description: "Select a team member", variant: "destructive" });
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const { error } = await db.grantProjectAccess(
+        assigningProject.project_id,
+        parseInt(assignMemberId, 10),
+      );
+      if (error) {
+        toast({ title: "Error", description: error, variant: "destructive" });
+      } else {
+        toast({ title: "Assigned", description: "Team member added to project" });
+        setAssignMemberId("");
+        onRefresh();
+        // Keep dialog open; refresh parent list will update assigningProject via re-open below
+        setAssigningProject((prev) =>
+          prev
+            ? {
+                ...prev,
+                team_member_id: [
+                  ...new Set([...(prev.team_member_id ?? []), parseInt(assignMemberId, 10)]),
+                ],
+              }
+            : null,
+        );
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Unable to assign member",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleRevokeAccess = async (teamMemberId: number) => {
+    if (!assigningProject) return;
+    setIsSaving(true);
+    try {
+      const { error } = await db.revokeProjectAccess(assigningProject.project_id, teamMemberId);
+      if (error) {
+        toast({ title: "Error", description: error, variant: "destructive" });
+      } else {
+        toast({ title: "Removed", description: "Team member removed from project" });
+        setAssigningProject((prev) =>
+          prev
+            ? {
+                ...prev,
+                team_member_id: (prev.team_member_id ?? []).filter((id) => id !== teamMemberId),
+              }
+            : null,
+        );
+        onRefresh();
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Unable to revoke access",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (openProject) {
     return <ProjectCommandCenter project={openProject} onBack={() => setOpenProjectId(null)} />;
   }
@@ -360,7 +438,25 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
                         Preview
                       </a>
                     )}
+
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {(project.team_member_id ?? []).length} assigned
+                    </span>
                   </div>
+
+                  {(project.team_member_id ?? []).length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {(project.team_member_id ?? []).map((id) => (
+                        <Badge
+                          key={id}
+                          variant="secondary"
+                          className="text-[10px] px-1.5 py-0 rounded-md font-normal"
+                        >
+                          {memberName(id)}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
 
                   {/* GitHub enrichment row */}
                   {project.githubRepo && (
@@ -400,6 +496,18 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
                   >
                     <LayoutDashboard className="h-4 w-4 mr-1.5" />
                     Open
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8"
+                    onClick={() => {
+                      setAssigningProject(project);
+                      setAssignMemberId("");
+                    }}
+                  >
+                    <UserPlus className="h-4 w-4 mr-1.5" />
+                    Assign
                   </Button>
                   <Button
                     variant="outline"
@@ -702,6 +810,107 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
                 <MessageSquarePlus className="h-4 w-4 mr-2" />
               )}
               Post Update
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign team member to project */}
+      <Dialog
+        open={!!assigningProject}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAssigningProject(null);
+            setAssignMemberId("");
+          }
+        }}
+      >
+        <DialogContent className="bg-card border-border max-w-md rounded-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-4 w-4" />
+              Assign team — {assigningProject?.title}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Current team</label>
+              {(assigningProject?.team_member_id ?? []).length === 0 ? (
+                <p className="text-sm text-muted-foreground">No one assigned yet.</p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {(assigningProject?.team_member_id ?? []).map((id) => (
+                    <Badge
+                      key={id}
+                      variant="secondary"
+                      className="text-xs px-2 py-0.5 rounded-md font-normal gap-1"
+                    >
+                      {memberName(id)}
+                      <button
+                        type="button"
+                        className="ml-0.5 text-muted-foreground hover:text-destructive"
+                        disabled={isSaving}
+                        onClick={() => handleRevokeAccess(id)}
+                        aria-label={`Remove ${memberName(id)}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Add member</label>
+              <div className="flex gap-2">
+                <Select value={assignMemberId} onValueChange={setAssignMemberId}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Select team member" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {teamMember
+                      .filter(
+                        (m) =>
+                          !(assigningProject?.team_member_id ?? []).includes(m.team_member_id),
+                      )
+                      .map((m) => (
+                        <SelectItem key={m.team_member_id} value={m.team_member_id.toString()}>
+                          {m.name}
+                          {m.role ? ` · ${m.role}` : ""}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  className="h-10 bg-accent text-accent-foreground hover:bg-accent/90"
+                  onClick={handleGrantAccess}
+                  disabled={isSaving || !assignMemberId}
+                >
+                  {isSaving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-1" />
+                      Add
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAssigningProject(null);
+                setAssignMemberId("");
+              }}
+            >
+              Done
             </Button>
           </DialogFooter>
         </DialogContent>

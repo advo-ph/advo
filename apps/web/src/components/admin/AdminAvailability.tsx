@@ -33,11 +33,14 @@ import {
   type AvailabilityBlock,
   type BlockType,
 } from "@/hooks/useAdminAvailability";
+import { useOrgProjects } from "@/hooks/useOrgProjects";
 import { PageHeader, Panel } from "./_ui";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const FULL_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const HOURS = Array.from({ length: 24 }, (_, i) => i); // 12am to 11pm
+/** Soft concurrent-project cap for capacity remaining chip. */
+const CAPACITY_SOFT_CAP = 3;
 
 // Cool, flat palette — small color cues against the charcoal canvas, no glow.
 const blockTypeConfig: Record<BlockType, { label: string; color: string; bgColor: string; dot: string; icon: React.ElementType }> = {
@@ -58,9 +61,22 @@ const AdminAvailability = () => {
     deleteBlock,
     isSaving,
   } = useAdminAvailability();
+  const { projects, isLoading: projectLoading } = useOrgProjects();
 
-  const isLoading = teamLoading || blocksLoading;
+  const isLoading = teamLoading || blocksLoading || projectLoading;
   const [selectedMember, setSelectedMember] = useState<number | null>(null);
+
+  // Active (non-shipped) project count per team_member_id from GET /api/projects.
+  const activeProjectCountByMember = useMemo(() => {
+    const count = new Map<number, number>();
+    for (const project of projects) {
+      if (project.project_status === "shipped") continue;
+      for (const memberId of project.team_member_id ?? []) {
+        count.set(memberId, (count.get(memberId) ?? 0) + 1);
+      }
+    }
+    return count;
+  }, [projects]);
 
   // Auto-select first member when data loads
   if (selectedMember === null && teamMembers.length > 0) {
@@ -325,10 +341,13 @@ const AdminAvailability = () => {
         </Panel>
       )}
 
-      {/* Team Member Tabs */}
+      {/* Team Member Tabs + capacity chip (active project count) */}
       <div className="flex gap-2 overflow-x-auto pb-1">
         {teamMembers.map(member => {
           const active = selectedMember === member.team_member_id;
+          const projectCount = activeProjectCountByMember.get(member.team_member_id) ?? 0;
+          const remaining = Math.max(0, CAPACITY_SOFT_CAP - projectCount);
+          const isAtCapacity = projectCount >= CAPACITY_SOFT_CAP;
           return (
             <button
               key={member.team_member_id}
@@ -344,6 +363,26 @@ const AdminAvailability = () => {
                 <AvatarFallback className="text-[10px]">{getInitials(member.name)}</AvatarFallback>
               </Avatar>
               {member.name}
+              <span
+                title={
+                  isAtCapacity
+                    ? `${projectCount} active project${projectCount === 1 ? "" : "s"} · at capacity`
+                    : `${projectCount} active · ${remaining} capacity remaining`
+                }
+                className={`inline-flex items-center rounded-full px-1.5 py-0 text-[10px] font-medium tabular-nums border ${
+                  isAtCapacity
+                    ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
+                    : projectCount > 0
+                      ? "bg-accent/10 border-accent/30 text-accent"
+                      : "bg-secondary border-border text-muted-foreground"
+                }`}
+              >
+                {projectCount} proj
+                {!isAtCapacity && remaining < CAPACITY_SOFT_CAP && (
+                  <span className="ml-1 opacity-70">· {remaining} left</span>
+                )}
+                {isAtCapacity && <span className="ml-1 opacity-70">· full</span>}
+              </span>
             </button>
           );
         })}

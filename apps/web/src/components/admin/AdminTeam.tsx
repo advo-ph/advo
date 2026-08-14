@@ -62,6 +62,7 @@ const AdminTeam = () => {
     linkedin_url: "",
     github_url: "",
     is_active: true,
+    penalty_point_count: 0,
   });
 
   const handleDragStart = (idx: number) => setDraggedIdx(idx);
@@ -86,7 +87,17 @@ const AdminTeam = () => {
 
   const openCreateDialog = () => {
     setEditingMember(null);
-    setFormData({ name: "", role: "", email: "", avatar_url: "", bio: "", linkedin_url: "", github_url: "", is_active: true });
+    setFormData({
+      name: "",
+      role: "",
+      email: "",
+      avatar_url: "",
+      bio: "",
+      linkedin_url: "",
+      github_url: "",
+      is_active: true,
+      penalty_point_count: 0,
+    });
     setIsDialogOpen(true);
   };
 
@@ -101,6 +112,7 @@ const AdminTeam = () => {
       linkedin_url: member.linkedin_url || "",
       github_url: member.github_url || "",
       is_active: member.is_active,
+      penalty_point_count: member.penalty_point_count ?? 0,
     });
     setIsDialogOpen(true);
   };
@@ -153,6 +165,9 @@ const AdminTeam = () => {
       linkedin_url: formData.linkedin_url || null,
       github_url: formData.github_url || null,
       is_active: formData.is_active,
+      ...(editingMember && {
+        penalty_point_count: Math.max(0, Math.floor(Number(formData.penalty_point_count) || 0)),
+      }),
     };
 
     setIsDialogOpen(false);
@@ -221,6 +236,7 @@ const AdminTeam = () => {
             <span className="w-4 shrink-0" />
             <span className="flex-1 min-w-0">Member</span>
             <span className="hidden lg:block flex-1 min-w-0">Bio</span>
+            <span className="hidden sm:block w-16 shrink-0 text-right">Pts</span>
             <span className="hidden md:block w-44 shrink-0">Links</span>
             <span className="w-4 shrink-0" />
           </div>
@@ -267,6 +283,15 @@ const AdminTeam = () => {
 
                 <span className="hidden lg:block flex-1 min-w-0 text-xs text-muted-foreground truncate">
                   {member.bio || "—"}
+                </span>
+
+                <span
+                  className={`hidden sm:block w-16 shrink-0 text-right tabular-nums text-xs font-medium ${
+                    member.penalty_point_count > 0 ? "text-destructive" : "text-muted-foreground"
+                  }`}
+                  title="Penalty points (manual; auto-accrual deferred)"
+                >
+                  {member.penalty_point_count}
                 </span>
 
                 <div className="hidden md:flex w-44 shrink-0 items-center gap-3 text-xs">
@@ -362,6 +387,27 @@ const AdminTeam = () => {
                 <Input value={formData.github_url} onChange={(e) => setFormData({ ...formData, github_url: e.target.value })} placeholder="https://github.com/..." />
               </div>
             </div>
+
+            {editingMember && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Penalty points</label>
+                <Input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={formData.penalty_point_count}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      penalty_point_count: Math.max(0, Math.floor(Number(e.target.value) || 0)),
+                    })
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  Manual tally only. Automatic accrual is deferred (rules open).
+                </p>
+              </div>
+            )}
 
             {/* Active / Inactive toggle */}
             <div className="flex items-center justify-between pt-2 border-t border-border">

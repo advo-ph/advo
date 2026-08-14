@@ -30,6 +30,8 @@ import fbScrapeRoutes from "./routes/fb-scrape.routes.js";
 import availabilityRoutes from "./routes/availability.routes.js";
 import brandRoutes from "./routes/brand-analysis.routes.js";
 import contractRoutes from "./routes/contracts.routes.js";
+import expenseRoutes from "./routes/expense.routes.js";
+import meetingRoutes from "./routes/meeting.routes.js";
 import previewRoutes from "./routes/preview.routes.js";
 import calendarRoutes from "./routes/calendar.routes.js";
 
@@ -120,6 +122,12 @@ app.route("/api/settings", settingRoutes);
 
 // Contracts (red-flag review)
 app.route("/api/contracts", contractRoutes);
+
+// Expense ledger (Admin Finance)
+app.route("/api/expense", expenseRoutes);
+
+// Meeting MoM records (Admin Meetings + Hub)
+app.route("/api/meeting", meetingRoutes);
 
 // Preview links (public redirect for "Show Client Now")
 app.route("/api/preview", previewRoutes);

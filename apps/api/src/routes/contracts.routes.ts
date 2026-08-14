@@ -4,7 +4,7 @@ import { zValidator } from "@hono/zod-validator";
 import { eq, desc } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { db } from "../db/connection.js";
-import { contract } from "../db/schema.js";
+import { client, contract } from "../db/schema.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireTeam } from "../middleware/rbac.js";
 import { reviewContract } from "../services/contract-review.service.js";
@@ -36,6 +36,42 @@ contracts.post("/review", requireTeam, zValidator("json", reviewSchema), async (
 
 const CONTRACT_TYPES = ["contract", "moa", "sow", "nda", "retainer"] as const;
 const CONTRACT_STATUSES = ["draft", "sent", "signed", "active", "expired", "terminated"] as const;
+
+// Client-safe field set — no notes / value_cents (team-only on full CRUD).
+const mineSelect = {
+  contractId: contract.contractId,
+  title: contract.title,
+  status: contract.status,
+  contractType: contract.contractType,
+  signedAt: contract.signedAt,
+  documentUrl: contract.documentUrl,
+  projectId: contract.projectId,
+};
+
+// GET /mine — requireAuth (client or team). Clients scoped to their client_id
+// via client.user_id ownership. Team/admin see all, same public field set.
+// Registered before /:id so "mine" is not captured as an id param.
+contracts.get("/mine", async (c) => {
+  const user = c.get("user");
+  const d = db();
+
+  if (user.role === "client") {
+    const row = await d
+      .select(mineSelect)
+      .from(contract)
+      .innerJoin(client, eq(contract.clientId, client.clientId))
+      .where(eq(client.userId, user.userId))
+      .orderBy(desc(contract.createdAt));
+    return c.json({ data: row, error: null });
+  }
+
+  // team + admin
+  const row = await d
+    .select(mineSelect)
+    .from(contract)
+    .orderBy(desc(contract.createdAt));
+  return c.json({ data: row, error: null });
+});
 
 const createSchema = z.object({
   clientId: z.number().int(),

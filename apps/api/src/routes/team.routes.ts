@@ -55,6 +55,11 @@ const createSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
+// Admin-only adjustment of penalty_point_count (manual tally; auto-accrual deferred).
+const updateSchema = createSchema.partial().extend({
+  penaltyPointCount: z.number().int().min(0).optional(),
+});
+
 team.post("/", requireAuth, requireAdmin, zValidator("json", createSchema), async (c) => {
   const data = c.req.valid("json");
   const [created] = await db().insert(teamMember).values(data).returning();
@@ -63,7 +68,7 @@ team.post("/", requireAuth, requireAdmin, zValidator("json", createSchema), asyn
 
 // ─── Update ───────────────────────────────────────────
 
-team.patch("/:id", requireAuth, requireAdmin, zValidator("json", createSchema.partial()), async (c) => {
+team.patch("/:id", requireAuth, requireAdmin, zValidator("json", updateSchema), async (c) => {
   const id = Number(c.req.param("id"));
   const data = c.req.valid("json");
 

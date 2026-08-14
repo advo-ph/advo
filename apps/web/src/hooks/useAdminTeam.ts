@@ -12,6 +12,8 @@ export interface TeamMember {
   linkedin_url: string | null;
   github_url: string | null;
   is_active: boolean;
+  /** Manual tally; auto-accrual deferred. */
+  penalty_point_count: number;
 }
 
 function mapMember(m: Record<string, unknown>): TeamMember {
@@ -25,6 +27,7 @@ function mapMember(m: Record<string, unknown>): TeamMember {
     linkedin_url: (m.linkedinUrl ?? m.linkedin_url ?? null) as string | null,
     github_url: (m.githubUrl ?? m.github_url ?? null) as string | null,
     is_active: Boolean(m.isActive ?? m.is_active ?? true),
+    penalty_point_count: Number(m.penaltyPointCount ?? m.penalty_point_count ?? 0),
   };
 }
 
@@ -37,6 +40,8 @@ export interface TeamMemberInput {
   linkedin_url?: string | null;
   github_url?: string | null;
   is_active?: boolean;
+  /** Admin-only; omit on create (DB default 0). */
+  penalty_point_count?: number;
 }
 
 function toApiPayload(input: TeamMemberInput) {
@@ -52,6 +57,9 @@ function toApiPayload(input: TeamMemberInput) {
     ...(input.linkedin_url !== undefined && { linkedinUrl: input.linkedin_url || null }),
     ...(input.github_url !== undefined && { githubUrl: input.github_url || null }),
     ...(input.is_active !== undefined && { isActive: input.is_active }),
+    ...(input.penalty_point_count !== undefined && {
+      penaltyPointCount: input.penalty_point_count,
+    }),
   };
 }
 

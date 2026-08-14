@@ -17,6 +17,7 @@ import AdminTeam from "@/components/admin/AdminTeam";
 import AdminSchedule from "@/components/admin/AdminSchedule";
 import AdminCalendar from "@/components/admin/AdminCalendar";
 import AdminContracts from "@/components/admin/AdminContracts";
+import AdminMeetings from "@/components/admin/AdminMeetings";
 import AdminSocial from "@/components/admin/AdminSocial";
 import AdminAvailability from "@/components/admin/AdminAvailability";
 import AdminContentStudio from "@/components/admin/AdminContentStudio";
@@ -163,6 +164,8 @@ const Admin = () => {
           {activeSection === "availability" && <AdminAvailability />}
 
           {activeSection === "contracts" && <AdminContracts clients={clients} />}
+
+          {activeSection === "meetings" && <AdminMeetings projects={projects} />}
 
           {activeSection === "social" && <AdminSocial />}
 

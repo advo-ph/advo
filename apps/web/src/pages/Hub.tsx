@@ -1,17 +1,51 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut, Briefcase, ChevronRight, User, Bell, Check } from "lucide-react";
+import {
+  LogOut,
+  Briefcase,
+  ChevronRight,
+  User,
+  Bell,
+  Check,
+  FileSignature,
+  ExternalLink,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useClientData, type ClientProject } from "@/hooks/useClientData";
 import { useClientNotifications } from "@/hooks/useNotifications";
+import { useMyContracts } from "@/hooks/useContracts";
 import ProjectDashboard from "@/components/hub/ProjectDashboard";
 import FloatingNav from "@/components/landing/FloatingNav";
+
+const typeLabel = (v: string) => {
+  const map: Record<string, string> = {
+    contract: "Contract",
+    moa: "MOA",
+    sow: "SOW",
+    nda: "NDA",
+    retainer: "Retainer",
+  };
+  return map[v] ?? v;
+};
+
+const statusLabel = (v: string) =>
+  v ? v.charAt(0).toUpperCase() + v.slice(1) : v;
+
+const fmtSigned = (iso: string | null) =>
+  iso
+    ? new Date(iso).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : null;
 
 const Hub = () => {
   const { user, isLoading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const { projects, isLoading } = useClientData();
+  const { contract, isLoading: contractLoading } = useMyContracts();
   const { notifications, unreadCount, markRead } = useClientNotifications();
   const [selectedProject, setSelectedProject] = useState<ClientProject | null>(null);
   const [bellOpen, setBellOpen] = useState(false);
@@ -34,18 +68,22 @@ const Hub = () => {
     );
   }
 
+  const pageLoading = isLoading || contractLoading;
+  const hasProject = projects.length > 0;
+  const hasContract = contract.length > 0;
+
   return (
     <div className="min-h-screen flex flex-col">
       <FloatingNav />
 
       <main className="pt-24 pb-16 px-6 flex-1">
         <div className="max-w-7xl mx-auto">
-          {isLoading ? (
+          {pageLoading ? (
             <div className="space-y-4">
               <div className="h-6 w-48 bg-secondary animate-pulse rounded" />
               <div className="h-64 bg-secondary animate-pulse rounded-lg" />
             </div>
-          ) : projects.length === 0 ? (
+          ) : !hasProject && !hasContract ? (
             <div className="border border-border rounded-lg bg-card px-4 py-12 text-center max-w-md mx-auto">
               <Briefcase className="h-7 w-7 text-muted-foreground/40 mx-auto mb-3" />
               <p className="text-sm text-muted-foreground mb-4">
@@ -152,41 +190,113 @@ const Hub = () => {
                   </div>
 
                   {/* Projects List */}
+                  {hasProject && (
+                    <div className="bg-card border border-border rounded-lg overflow-hidden">
+                      <div className="px-3 h-9 border-b border-border flex items-center">
+                        <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/70">
+                          Your projects
+                        </span>
+                      </div>
+                      <nav className="divide-y divide-border">
+                        {projects.map((project) => {
+                          const isActive = selectedProject?.project_id === project.project_id;
+                          return (
+                            <button
+                              key={project.project_id}
+                              onClick={() => setSelectedProject(project)}
+                              className={`relative w-full text-left flex items-center justify-between gap-2 px-3 h-11 text-sm transition-colors ${
+                                isActive
+                                  ? "bg-accent/[0.06] text-foreground"
+                                  : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
+                              }`}
+                            >
+                              {isActive && (
+                                <span className="absolute left-0 top-0 bottom-0 w-0.5 bg-accent" />
+                              )}
+                              <span className="font-medium truncate">{project.title}</span>
+                              <ChevronRight className="h-4 w-4 shrink-0 opacity-60" />
+                            </button>
+                          );
+                        })}
+                      </nav>
+                    </div>
+                  )}
+
+                  {/* Contracts list — open document_url when present */}
                   <div className="bg-card border border-border rounded-lg overflow-hidden">
-                    <div className="px-3 h-9 border-b border-border flex items-center">
+                    <div className="px-3 h-9 border-b border-border flex items-center gap-1.5">
+                      <FileSignature className="h-3 w-3 text-muted-foreground/70" />
                       <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/70">
-                        Your projects
+                        Contracts
                       </span>
                     </div>
-                    <nav className="divide-y divide-border">
-                      {projects.map((project) => {
-                        const isActive = selectedProject?.project_id === project.project_id;
-                        return (
-                          <button
-                            key={project.project_id}
-                            onClick={() => setSelectedProject(project)}
-                            className={`relative w-full text-left flex items-center justify-between gap-2 px-3 h-11 text-sm transition-colors ${
-                              isActive
-                                ? "bg-accent/[0.06] text-foreground"
-                                : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
-                            }`}
-                          >
-                            {isActive && (
-                              <span className="absolute left-0 top-0 bottom-0 w-0.5 bg-accent" />
-                            )}
-                            <span className="font-medium truncate">{project.title}</span>
-                            <ChevronRight className="h-4 w-4 shrink-0 opacity-60" />
-                          </button>
-                        );
-                      })}
-                    </nav>
+                    {contract.length === 0 ? (
+                      <p className="px-3 py-6 text-xs text-muted-foreground text-center">
+                        No contracts yet
+                      </p>
+                    ) : (
+                      <ul className="divide-y divide-border">
+                        {contract.map((c) => {
+                          const signed = fmtSigned(c.signedAt);
+                          const body = (
+                            <>
+                              <div className="flex items-start justify-between gap-2 min-w-0">
+                                <span className="text-sm font-medium truncate">{c.title}</span>
+                                {c.documentUrl && (
+                                  <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-60 mt-0.5" />
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-muted-foreground">
+                                <span>{typeLabel(c.contractType)}</span>
+                                <span aria-hidden>·</span>
+                                <span>{statusLabel(c.status)}</span>
+                                {signed && (
+                                  <>
+                                    <span aria-hidden>·</span>
+                                    <span>Signed {signed}</span>
+                                  </>
+                                )}
+                              </div>
+                            </>
+                          );
+                          return (
+                            <li key={c.contractId}>
+                              {c.documentUrl ? (
+                                <a
+                                  href={c.documentUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="block px-3 py-2.5 hover:bg-secondary/40 transition-colors"
+                                >
+                                  {body}
+                                </a>
+                              ) : (
+                                <div className="px-3 py-2.5 text-muted-foreground">{body}</div>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
                   </div>
                 </div>
               </div>
 
               {/* Main Content - Project Dashboard (Scrollable) */}
               <div className="flex-1 min-w-0">
-                {selectedProject && <ProjectDashboard project={selectedProject} />}
+                {selectedProject ? (
+                  <ProjectDashboard project={selectedProject} />
+                ) : (
+                  <div className="border border-border rounded-lg bg-card px-4 py-12 text-center">
+                    <FileSignature className="h-7 w-7 text-muted-foreground/40 mx-auto mb-3" />
+                    <p className="text-sm text-muted-foreground">
+                      Your signed contracts are listed in the sidebar.
+                      {hasContract
+                        ? " Open a document link to view the file."
+                        : " Projects will appear here when work begins."}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}

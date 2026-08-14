@@ -5,6 +5,7 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
+  ExternalLink,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +17,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useInvoices, type Invoice, type InvoiceStatus } from "@/hooks/useInvoices";
+import { useExpense, type ExpenseInput } from "@/hooks/useExpense";
 import { PageHeader, StatStrip, Stat, Empty, Dot } from "@/components/admin/_ui";
+
+const EXPENSE_CATEGORIES = [
+  "ai_usage",
+  "media",
+  "subscription",
+  "outside_payment",
+  "travel",
+  "meals",
+  "software",
+  "hardware",
+  "marketing",
+  "office",
+  "other",
+] as const;
 
 /* ─── Helpers ─────────────────────────────────────────────── */
 
@@ -108,11 +124,138 @@ const CreateInvoiceForm = ({
   );
 };
 
+/* ─── Expense create form ─────────────────────────────────── */
+
+const CreateExpenseForm = ({
+  projects,
+  onCreate,
+  isCreating,
+}: {
+  projects: ProjectSummary[];
+  onCreate: (input: ExpenseInput) => Promise<unknown>;
+  isCreating: boolean;
+}) => {
+  const [purpose, setPurpose] = useState("");
+  const [authorizedBy, setAuthorizedBy] = useState("");
+  const [amount, setAmount] = useState("");
+  const [location, setLocation] = useState("");
+  const [receiptUrl, setReceiptUrl] = useState("");
+  const [category, setCategory] = useState<string>("other");
+  const [projectId, setProjectId] = useState<string>("none");
+
+  const handleSubmit = async () => {
+    if (!purpose.trim() || !authorizedBy.trim() || !amount) return;
+    const amountCents = Math.round(parseFloat(amount) * 100);
+    if (!Number.isFinite(amountCents) || amountCents < 0) return;
+    try {
+      await onCreate({
+        purpose: purpose.trim(),
+        authorizedBy: authorizedBy.trim(),
+        amountCents,
+        location: location.trim() || null,
+        receiptUrl: receiptUrl.trim() || null,
+        category,
+        projectId: projectId === "none" ? null : Number(projectId),
+      });
+      setPurpose("");
+      setAuthorizedBy("");
+      setAmount("");
+      setLocation("");
+      setReceiptUrl("");
+      setCategory("other");
+      setProjectId("none");
+    } catch {
+      // Hook surfaces the toast.
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 px-3 py-3 border-t border-border bg-secondary/10">
+      <Input
+        placeholder="Purpose"
+        value={purpose}
+        onChange={(e) => setPurpose(e.target.value)}
+        className="flex-1 min-w-[140px] h-8"
+      />
+      <Input
+        placeholder="Authorized by"
+        value={authorizedBy}
+        onChange={(e) => setAuthorizedBy(e.target.value)}
+        className="w-36 h-8"
+      />
+      <Input
+        placeholder="Amount (₱)"
+        type="number"
+        step="0.01"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+        className="w-28 h-8 tabular-nums"
+      />
+      <Input
+        placeholder="Location"
+        value={location}
+        onChange={(e) => setLocation(e.target.value)}
+        className="w-32 h-8"
+      />
+      <Input
+        placeholder="Receipt URL"
+        value={receiptUrl}
+        onChange={(e) => setReceiptUrl(e.target.value)}
+        className="w-40 h-8"
+      />
+      <Select value={category} onValueChange={setCategory}>
+        <SelectTrigger className="w-28 h-8 text-xs">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {EXPENSE_CATEGORIES.map((c) => (
+            <SelectItem key={c} value={c}>
+              {c.charAt(0).toUpperCase() + c.slice(1)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Select value={projectId} onValueChange={setProjectId}>
+        <SelectTrigger className="w-36 h-8 text-xs">
+          <SelectValue placeholder="Project" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="none">No project</SelectItem>
+          {projects.map((p) => (
+            <SelectItem key={p.project_id} value={String(p.project_id)}>
+              {p.title}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Button
+        size="sm"
+        className="h-8"
+        onClick={handleSubmit}
+        disabled={isCreating || !purpose.trim() || !authorizedBy.trim() || !amount}
+      >
+        {isCreating ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Plus className="h-3.5 w-3.5" />
+        )}
+      </Button>
+    </div>
+  );
+};
+
 /* ─── Main Component ──────────────────────────────────────── */
 
 const AdminFinance = ({ projects }: AdminFinanceProps) => {
   const { invoices, isLoading, createInvoice, toggleStatus, deleteInvoice, isCreating } =
     useInvoices();
+  const {
+    expense,
+    isLoading: expenseLoading,
+    createExpense,
+    deleteExpense,
+    isCreating: isCreatingExpense,
+  } = useExpense();
   const [expandedProject, setExpandedProject] = useState<number | null>(null);
 
   // Summary stats
@@ -123,6 +266,8 @@ const AdminFinance = ({ projects }: AdminFinanceProps) => {
     (sum, i) => sum + i.amount_cents,
     0
   );
+  const expenseTotalCents = expense.reduce((sum, e) => sum + e.amountCents, 0);
+  const reimbursableCount = expense.filter((e) => e.isReimbursable).length;
 
   // Group invoices by project_id
   const invoicesByProject = new Map<number, Invoice[]>();
@@ -132,7 +277,7 @@ const AdminFinance = ({ projects }: AdminFinanceProps) => {
     invoicesByProject.set(inv.project_id, existing);
   }
 
-  if (isLoading) {
+  if (isLoading || expenseLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -144,11 +289,14 @@ const AdminFinance = ({ projects }: AdminFinanceProps) => {
   const collectionRate =
     totalContracted > 0 ? Math.round((totalRevenue / totalContracted) * 100) : 0;
 
+  const projectTitle = (id: number | null) =>
+    id == null ? "—" : projects.find((p) => p.project_id === id)?.title ?? `Project #${id}`;
+
   return (
     <div className="space-y-4">
       <PageHeader
         title="Finance"
-        meta={`${projects.length} project${projects.length !== 1 ? "s" : ""} · ${invoices.length} invoice${invoices.length !== 1 ? "s" : ""}`}
+        meta={`${projects.length} project${projects.length !== 1 ? "s" : ""} · ${invoices.length} invoice${invoices.length !== 1 ? "s" : ""} · ${expense.length} expense${expense.length !== 1 ? "s" : ""}`}
       />
 
       {/* Summary strip */}
@@ -301,6 +449,89 @@ const AdminFinance = ({ projects }: AdminFinanceProps) => {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* Expenses section */}
+      <div className="space-y-2">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold tracking-tight">Expenses</h2>
+            <p className="text-xs text-muted-foreground">
+              {formatPeso(expenseTotalCents)} logged · {reimbursableCount} reimbursable
+              (receipt on file)
+            </p>
+          </div>
+        </div>
+
+        <div className="border border-border rounded-lg bg-card overflow-hidden">
+          <div className="flex items-center gap-3 px-3 h-9 border-b border-border text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/70">
+            <span className="w-24 shrink-0">Category</span>
+            <span className="flex-1 min-w-0">Purpose</span>
+            <span className="hidden md:block w-28 shrink-0">Authorized</span>
+            <span className="hidden lg:block w-28 shrink-0">Location</span>
+            <span className="hidden xl:block w-32 shrink-0">Project</span>
+            <span className="w-20 shrink-0 text-right">Amount</span>
+            <span className="w-16 shrink-0 text-center">Receipt</span>
+            <span className="w-8 shrink-0" />
+          </div>
+
+          {expense.length === 0 ? (
+            <Empty text="No expenses logged yet" />
+          ) : (
+            <div className="divide-y divide-border">
+              {expense.map((row) => (
+                <div key={row.expenseId} className="flex items-center gap-3 px-3 h-11 text-sm">
+                  <span className="w-24 shrink-0 text-xs text-muted-foreground capitalize">
+                    {row.category}
+                  </span>
+                  <span className="flex-1 min-w-0 font-medium truncate">{row.purpose}</span>
+                  <span className="hidden md:block w-28 shrink-0 text-xs text-muted-foreground truncate">
+                    {row.authorizedBy}
+                  </span>
+                  <span className="hidden lg:block w-28 shrink-0 text-xs text-muted-foreground truncate">
+                    {row.location || "—"}
+                  </span>
+                  <span className="hidden xl:block w-32 shrink-0 text-xs text-muted-foreground truncate">
+                    {projectTitle(row.projectId)}
+                  </span>
+                  <span className="w-20 shrink-0 text-right font-medium tabular-nums">
+                    {formatPeso(row.amountCents)}
+                  </span>
+                  <span className="w-16 shrink-0 flex items-center justify-center">
+                    {row.isReimbursable && row.receiptUrl ? (
+                      <a
+                        href={row.receiptUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-accent hover:underline"
+                        title="View receipt"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </a>
+                    ) : (
+                      <Dot className="bg-muted-foreground/40" />
+                    )}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0"
+                    onClick={() => deleteExpense(row.expenseId)}
+                    aria-label="Delete expense"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <CreateExpenseForm
+            projects={projects}
+            onCreate={createExpense}
+            isCreating={isCreatingExpense}
+          />
         </div>
       </div>
     </div>

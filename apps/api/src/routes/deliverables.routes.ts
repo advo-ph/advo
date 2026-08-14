@@ -129,8 +129,15 @@ deliverables.post("/", requireTeam, zValidator("json", createSchema), async (c) 
 });
 
 // ─── Update ───────────────────────────────────────────
+// verifiedAt is set/cleared explicitly by team (QA sign-off). Independent of
+// status — completing a deliverable does not auto-verify; clearing verifiedAt
+// does not reopen status.
 
-deliverables.patch("/:id", requireTeam, zValidator("json", createSchema.partial()), async (c) => {
+const updateSchema = createSchema.partial().extend({
+  verifiedAt: flexibleDateTime(),
+});
+
+deliverables.patch("/:id", requireTeam, zValidator("json", updateSchema), async (c) => {
   const id = Number(c.req.param("id"));
   const data = c.req.valid("json");
 
@@ -138,6 +145,9 @@ deliverables.patch("/:id", requireTeam, zValidator("json", createSchema.partial(
   if (data.status === "completed") values.completedAt = new Date();
   if (data.dueDate !== undefined) {
     values.dueDate = data.dueDate ? new Date(data.dueDate) : null;
+  }
+  if (data.verifiedAt !== undefined) {
+    values.verifiedAt = data.verifiedAt ? new Date(data.verifiedAt) : null;
   }
 
   const [updated] = await db()

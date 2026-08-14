@@ -32,6 +32,9 @@ function mapProject(p: any): Project {
     amount_paid_cents: p.amountPaidCents ?? p.amount_paid_cents ?? 0,
     tech_stack: (p.techStack ?? p.tech_stack ?? []) as string[],
     created_at: p.createdAt ?? p.created_at,
+    team_member_id: Array.isArray(p.teamMemberId ?? p.team_member_id)
+      ? ((p.teamMemberId ?? p.team_member_id) as number[])
+      : [],
     client: p.client ? mapClient(p.client) : undefined,
   };
 }
@@ -131,6 +134,28 @@ export async function updateProject(
 
 export async function deleteProject(projectId: number): Promise<DbResult<null>> {
   const res = await del(`/api/projects/${projectId}`);
+  return { data: null, error: res.error };
+}
+
+// ─── Project Access (team member assignment) ───────────────────────
+
+export async function grantProjectAccess(
+  projectId: number,
+  teamMemberId: number,
+  permissionLevel: "read" | "write" | "admin" = "write",
+): Promise<DbResult<null>> {
+  const res = await post(`/api/projects/${projectId}/access`, {
+    teamMemberId,
+    permissionLevel,
+  });
+  return { data: null, error: res.error };
+}
+
+export async function revokeProjectAccess(
+  projectId: number,
+  teamMemberId: number,
+): Promise<DbResult<null>> {
+  const res = await del(`/api/projects/${projectId}/access/${teamMemberId}`);
   return { data: null, error: res.error };
 }
 

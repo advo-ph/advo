@@ -5,6 +5,7 @@ import {
   Pencil,
   Trash2,
   Loader2,
+  BadgeCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -89,6 +90,7 @@ const AdminSchedule = () => {
     createDeliverable,
     updateDeliverable,
     updateStatus,
+    setVerified,
     deleteDeliverable,
     isSaving,
   } = useAdminDeliverables();
@@ -230,6 +232,7 @@ const AdminSchedule = () => {
             <span className="hidden md:block w-28 shrink-0">Assignee</span>
             <span className="w-12 shrink-0 text-center">Pri</span>
             <span className="w-16 shrink-0 text-right">Due</span>
+            <span className="w-20 shrink-0 text-right">Verify</span>
             <span className="w-8 shrink-0" />
           </THead>
           <TBody>
@@ -320,6 +323,34 @@ const AdminSchedule = () => {
                           day: "numeric",
                         })
                       : "—"}
+                  </span>
+
+                  <span className="w-20 shrink-0 flex justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`h-7 px-2 gap-1 text-xs ${
+                        deliverable.verified_at
+                          ? "text-green-600 hover:text-green-700"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                      onClick={() =>
+                        setVerified(deliverable.deliverable_id, !deliverable.verified_at)
+                      }
+                      aria-label={
+                        deliverable.verified_at
+                          ? "Clear verification"
+                          : "Verify deliverable"
+                      }
+                      title={
+                        deliverable.verified_at
+                          ? `Verified ${new Date(deliverable.verified_at).toLocaleString()}`
+                          : "Mark verified"
+                      }
+                    >
+                      <BadgeCheck className="h-3.5 w-3.5" />
+                      {deliverable.verified_at ? "Verified" : "Verify"}
+                    </Button>
                   </span>
 
                   <span className="w-8 shrink-0 flex justify-end">

@@ -10,6 +10,7 @@ import {
   Instagram,
   FileText,
   FileSignature,
+  Mic,
   Image,
   Banknote,
   Bell,
@@ -37,6 +38,7 @@ export type AdminSection =
   | "calendar"
   | "availability"
   | "contracts"
+  | "meetings"
   | "social"
   | "content"
   | "portfolio"
@@ -73,6 +75,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { id: "calendar", label: "Calendar", icon: CalendarDays },
       { id: "availability", label: "Availability", icon: CalendarClock },
       { id: "contracts", label: "Contracts", icon: FileSignature },
+      { id: "meetings", label: "Meetings", icon: Mic },
       { id: "finance", label: "Finance", icon: Banknote },
     ],
   },

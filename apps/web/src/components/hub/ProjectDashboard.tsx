@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   ExternalLink,
   GitBranch,
@@ -7,14 +7,21 @@ import {
   RefreshCw,
   Loader2,
   FileEdit,
+  FileText,
+  Upload,
   CheckCircle2,
   Circle,
   Clock,
   AlertCircle,
   Receipt,
   Send,
+  Mic,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useRequestPreview } from "@/hooks/usePreviewLink";
+import { useProjectAssets } from "@/hooks/useProjectAssets";
+import { useMeeting } from "@/hooks/useMeeting";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -112,6 +119,18 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
   } = useGitHub(project.repository_name || null);
 
   const { requestPreview, isRequesting } = useRequestPreview();
+  const {
+    assets: projectAsset,
+    uploadFile,
+    isUploading,
+    isLoading: isAssetLoading,
+  } = useProjectAssets(project.project_id);
+  const {
+    meeting: projectMeeting,
+    isLoading: isMeetingLoading,
+  } = useMeeting(project.project_id);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [expandedMeetingId, setExpandedMeetingId] = useState<number | null>(null);
 
   // Safe defaults for optional nested arrays
   const deliverables = project.deliverables || [];
@@ -119,6 +138,8 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
   const assets = project.assets || [];
   const contacts = project.contacts || [];
   const updates = project.updates || [];
+  // Client materials = document assets from the project drive query
+  const material = projectAsset.filter((a) => a.asset_type === "document");
 
   const [deployment, setDeployment] = useState<DeploymentStatus | null>(null);
 
@@ -281,6 +302,40 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
           />
         </div>
       </Panel>
+
+      {/* Live preview — sandboxed iframe when preview_url is set */}
+      {project.preview_url && (
+        <Panel
+          title="Live preview"
+          meta={
+            deployment
+              ? `${cloudflare.getStatusBadge(deployment.state).icon} ${cloudflare.getStatusBadge(deployment.state).label}`
+              : undefined
+          }
+          action={
+            <a
+              href={project.preview_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Open in new tab
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          }
+        >
+          <div className="relative w-full aspect-[16/10] bg-secondary/30 overflow-hidden rounded-b-lg">
+            <iframe
+              src={project.preview_url}
+              title={`${project.title} live preview`}
+              className="absolute inset-0 h-full w-full border-0 bg-background"
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+        </Panel>
+      )}
 
       {/* Grid: Funding + Deliverables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -478,6 +533,146 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
         </div>
       </Panel>
 
+      {/* Client materials — upload documents for the project */}
+      <Panel
+        title="Your materials"
+        meta={material.length > 0 ? `${material.length} file${material.length === 1 ? "" : "s"}` : undefined}
+        action={
+          <Button
+            size="sm"
+            className="h-8 rounded-md bg-accent text-accent-foreground hover:bg-accent/90"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+          >
+            {isUploading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="mr-2 h-4 w-4" />
+            )}
+            Upload
+          </Button>
+        }
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept="image/*,application/pdf,video/*"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void uploadFile(f, undefined, "document");
+            e.target.value = "";
+          }}
+        />
+        <div className="p-4">
+          <p className="mb-3 text-xs text-muted-foreground">
+            Share brand assets, briefs, contracts, and other materials with the ADVO team (≤25 MB).
+          </p>
+          {isAssetLoading && material.length === 0 ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading files…
+            </div>
+          ) : material.length === 0 ? (
+            <Empty text="No materials yet. Upload a file to share with your team." icon={FileText} />
+          ) : (
+            <ul className="divide-y divide-border rounded-md border border-border">
+              {material.map((a) => (
+                <li key={a.asset_id} className="flex items-center gap-3 px-3 py-2.5">
+                  <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0 flex-1">
+                    <a
+                      href={a.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block truncate text-sm font-medium hover:text-accent"
+                    >
+                      {a.caption || a.url.split("/").pop() || "Document"}
+                    </a>
+                    {a.uploaded_at && (
+                      <p className="text-[10px] text-muted-foreground">
+                        {new Date(a.uploaded_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </p>
+                    )}
+                  </div>
+                  <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </Panel>
+
+      {/* Meeting MoM — expandable transcripts for this project */}
+      <Panel
+        title="Meeting minutes"
+        meta={
+          isMeetingLoading
+            ? "loading…"
+            : projectMeeting.length > 0
+              ? `${projectMeeting.length} MoM`
+              : undefined
+        }
+      >
+        <div className="p-4">
+          {isMeetingLoading && projectMeeting.length === 0 ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading meetings…
+            </div>
+          ) : projectMeeting.length === 0 ? (
+            <Empty text="No meeting minutes yet. Your ADVO team will share MoMs here." icon={Mic} />
+          ) : (
+            <ul className="divide-y divide-border rounded-md border border-border">
+              {projectMeeting.map((m) => {
+                const isOpen = expandedMeetingId === m.meetingId;
+                return (
+                  <li key={m.meetingId}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedMeetingId(isOpen ? null : m.meetingId)
+                      }
+                      className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-secondary/40 transition-colors"
+                    >
+                      <Mic className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">{m.title}</p>
+                        <p className="text-[10px] text-muted-foreground tabular-nums">
+                          {new Date(m.recordedAt).toLocaleString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                            hour: "numeric",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
+                      {isOpen ? (
+                        <ChevronUp className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      )}
+                    </button>
+                    {isOpen && (
+                      <div className="border-t border-border bg-secondary/20 px-3 py-3">
+                        <pre className="max-h-64 overflow-y-auto whitespace-pre-wrap font-sans text-sm text-foreground/90">
+                          {m.transcript}
+                        </pre>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </Panel>
+
       {/* Progress Photos */}
       {assets.filter((a) => a.asset_type === "progress_photo").length > 0 && (
         <Panel title="Progress photos">
@@ -504,7 +699,7 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
                       <p className="text-xs font-medium truncate">{asset.caption}</p>
                     )}
                     <p className="text-[10px] text-muted-foreground">
-                      {new Date(asset.uploaded_at).toLocaleDateString("en-US", {
+                      {new Date(asset.uploaded_at || "").toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
                         year: "numeric",
