@@ -275,5 +275,13 @@ body:has(.landing-shell) {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .landing-page * { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+  .landing-page *, .landing-page *::before, .landing-page *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+  .landing-page .landing-button:hover { transform: none; box-shadow: none; }
 }
+
+.landing-page.is-reduce-motion .landing-button:hover { transform: none; box-shadow: none; }

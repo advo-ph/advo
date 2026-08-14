@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { useReducedMotion } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
   IconArrowRight,
@@ -54,6 +55,7 @@ const socialIcon: Record<string, typeof IconMail> = {
 };
 
 const LandingShell = ({ children }: LandingShellProps) => {
+  const reduceMotion = useReducedMotion();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [socialLink, setSocialLink] = useState<SocialLink[]>(socialDefault);
   const [newsletterEmail, setNewsletterEmail] = useState("");
@@ -73,7 +75,7 @@ const LandingShell = ({ children }: LandingShellProps) => {
   const closeMenu = () => setIsMenuOpen(false);
 
   return (
-    <div className="landing-page landing-shell">
+    <div className={reduceMotion ? "landing-page landing-shell is-reduce-motion" : "landing-page landing-shell"}>
       <header className="landing-nav">
         <Link className="landing-brand" to="/" aria-label="ADVO home" onClick={closeMenu}>
           <img src="/advo-logo-black.png" alt="ADVO" />

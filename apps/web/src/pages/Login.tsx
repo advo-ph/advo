@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { Mail, ArrowRight, Loader2, Lock, Eye, EyeOff } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import LandingShell from "@/components/landing/landing-shell";
+import { destinationFor } from "@/lib/destination";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -22,14 +22,11 @@ const Login = () => {
   const explicitRedirect = searchParams.get("redirectTo");
   const { user, isLoading: authLoading, login, loginWithMagicLink, verifyMagicLink } = useAuth();
 
-  const destinationFor = (role: string | undefined) =>
-    explicitRedirect ?? (role === "admin" ? "/admin" : "/hub");
-
   useEffect(() => {
     if (!authLoading && user) {
-      navigate(destinationFor(user.role), { replace: true });
+      navigate(destinationFor(user.role, explicitRedirect), { replace: true });
     }
-  }, [authLoading, user, navigate]);
+  }, [authLoading, user, navigate, explicitRedirect]);
 
   // Handle magic link token from URL on mount
   useState(() => {
@@ -42,7 +39,7 @@ const Login = () => {
         if (error) {
           toast({ variant: "destructive", title: "Error", description: error });
         } else {
-          navigate(destinationFor(user?.role));
+          navigate(destinationFor(user?.role, explicitRedirect));
         }
       })();
     }
@@ -86,22 +83,14 @@ const Login = () => {
         description: error,
       });
     } else {
-      navigate(destinationFor(user?.role));
+      navigate(destinationFor(user?.role, explicitRedirect));
     }
   };
 
   return (
     <LandingShell>
       <div className="landing-shell-auth">
-        {/* Subtle grid background */}
-        <div className="absolute inset-0 bg-[linear-gradient(hsl(var(--border))_1px,transparent_1px),linear-gradient(90deg,hsl(var(--border))_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-20" />
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, type: "spring", damping: 20 }}
-          className="relative z-10 w-full max-w-sm"
-        >
+        <div className="relative z-10 w-full max-w-sm">
           <div className="p-8 bg-card border border-border rounded-xl shadow-card">
             <div className="text-center mb-8">
               <div className="w-12 h-12 rounded-full bg-secondary border border-border flex items-center justify-center mx-auto mb-4">
@@ -239,7 +228,7 @@ const Login = () => {
           <p className="text-center text-xs text-muted-foreground mt-6">
             {mode === "magic" ? "No password needed—we'll email you a secure link." : "Enter your credentials to sign in."}
           </p>
-        </motion.div>
+        </div>
       </div>
     </LandingShell>
   );

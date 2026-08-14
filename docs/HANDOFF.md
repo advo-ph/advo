@@ -11,6 +11,20 @@ Cross-links:
 
 ---
 
+## 2026-08-15 — site lane: reduced-motion + white interiors + destinationFor
+
+> Roadmap-remain lane `site`. Public marketing chrome honors reduced motion; `/start` `/login` `/team` `/project/:slug` interiors match the white shell; `destinationFor` is a tested pure function.
+
+- `LandingPage` + `landing-shell` use `reduceMotion` / `prefers-reduced-motion` (hover lift + remaining framer loops gated).
+- Login Linear grid (`hsl(var(--border))`) removed. ProjectDetail dropped leftover `glass` + honors reduced motion.
+- Viewport/source check for the shipped `LandingPage`: `bench/roadmap/roadmap-remain/viewport-site.mjs` (not the Stripe bench).
+- `destinationFor(role, explicitRedirect)` extracted to `apps/web/src/lib/destination.ts` + 5 vitest cases.
+
+### Honest open-items
+- Other seven lanes' ids stay FAIL. `monitor-backup` still PASS.
+- Live Playwright overflow probe in `viewport-site.mjs` skips when `@playwright/test` is not installed; source check is the gate.
+- `/hub` stays Linear / `FloatingNav`.
+
 ## 2026-08-15 — wiring leftover (W1–W5, R3–R4)
 
 > Roadmap-remain wiring lane. Close the WIRING-AUDIT half-built admin items this lane owns.
