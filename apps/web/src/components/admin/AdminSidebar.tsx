@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
@@ -19,6 +20,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Scan,
   BookOpen,
   Sun,
@@ -47,6 +49,7 @@ export type AdminSection =
   | "notifications"
   | "leads"
   | "proposals"
+  | "library"
   | "brand-scraper"
   | "fb-scraper"
   | "settings";
@@ -66,12 +69,18 @@ type NavItem = { id: AdminSection; label: string; icon: React.ElementType };
 
 const topItem: NavItem = { id: "dashboard", label: "Dashboard", icon: LayoutDashboard };
 
+const TOOLS_GROUP_LABEL = "Tools";
+
+const isToolSection = (section: AdminSection) =>
+  section === "brand-scraper" || section === "fb-scraper";
+
 const navGroups: { label: string; items: NavItem[] }[] = [
   {
     label: "Operations",
     items: [
       { id: "projects", label: "Projects", icon: FolderKanban },
       { id: "clients", label: "Clients", icon: Users },
+      { id: "library", label: "Library", icon: BookOpen },
       { id: "team", label: "Team", icon: Users2 },
       { id: "schedule", label: "Deliverables", icon: Calendar },
       { id: "calendar", label: "Calendar", icon: CalendarDays },
@@ -98,7 +107,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     ],
   },
   {
-    label: "Tools",
+    label: TOOLS_GROUP_LABEL,
     items: [
       { id: "brand-scraper", label: "Brand Scraper", icon: Scan },
       { id: "fb-scraper", label: "FB Scraper", icon: BookOpen },
@@ -116,6 +125,12 @@ const AdminSidebar = ({
   theme,
   onToggleTheme,
 }: AdminSidebarProps) => {
+  const [toolsExpanded, setToolsExpanded] = useState(() => isToolSection(activeSection));
+
+  useEffect(() => {
+    if (isToolSection(activeSection)) setToolsExpanded(true);
+  }, [activeSection]);
+
   const handleSectionChange = (s: AdminSection) => {
     onSectionChange(s);
     onMobileClose();
@@ -187,19 +202,46 @@ const AdminSidebar = ({
             return (
               <>
                 <div className="space-y-1">{renderItem(topItem)}</div>
-                {navGroups.map((group) => (
-                  <div key={group.label} className="mt-5 space-y-1">
-                    {!isCollapsed && (
-                      <div className="px-3 pb-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground/50">
-                        {group.label}
-                      </div>
-                    )}
-                    {isCollapsed && (
-                      <div className="mx-3 mb-1 h-px bg-border/50" />
-                    )}
-                    {group.items.map(renderItem)}
-                  </div>
-                ))}
+                {navGroups.map((group) => {
+                  const isToolsGroup = group.label === TOOLS_GROUP_LABEL;
+                  const showGroupItem = !isToolsGroup || isCollapsed || toolsExpanded;
+                  const toolsActive = isToolsGroup && isToolSection(activeSection);
+
+                  return (
+                    <div key={group.label} className="mt-5 space-y-1">
+                      {!isCollapsed && isToolsGroup && (
+                        <button
+                          type="button"
+                          onClick={() => setToolsExpanded((open) => !open)}
+                          aria-expanded={toolsExpanded}
+                          className={cn(
+                            "w-full flex items-center justify-between gap-2 px-3 pb-1 text-[10px] uppercase tracking-[0.16em] transition-colors",
+                            toolsActive
+                              ? "text-accent/80"
+                              : "text-muted-foreground/50 hover:text-muted-foreground",
+                          )}
+                        >
+                          <span>{group.label}</span>
+                          <ChevronDown
+                            className={cn(
+                              "h-3 w-3 flex-shrink-0 transition-transform duration-200",
+                              toolsExpanded && "rotate-180",
+                            )}
+                          />
+                        </button>
+                      )}
+                      {!isCollapsed && !isToolsGroup && (
+                        <div className="px-3 pb-1 text-[10px] uppercase tracking-[0.16em] text-muted-foreground/50">
+                          {group.label}
+                        </div>
+                      )}
+                      {isCollapsed && (
+                        <div className="mx-3 mb-1 h-px bg-border/50" />
+                      )}
+                      {showGroupItem && group.items.map(renderItem)}
+                    </div>
+                  );
+                })}
               </>
             );
           })()}

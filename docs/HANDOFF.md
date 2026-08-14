@@ -11,6 +11,21 @@ Cross-links:
 
 ---
 
+## 2026-08-15 — lane/admin: library, full-page CRUD, Tools scrapers, `/p/:token`
+
+> Roadmap-remain admin lane. Ships the P2 admin surface: Library MVP, Projects/Clients as pages, collapsed Tools scrapers, branded preview gate, controlled add-asset, scraper history delete.
+
+- **Library** — `/admin` → Library. `library_item` (011) + `/api/library` + grid/filter/drawer. Types: website / prompt / module / asset / doc.
+- **Project / client forms** — high-field create/edit is a full page (`projectFormMode` / `ClientForm`), not a dialog.
+- **Tools submenu** — Brand + FB scrapers sit behind `toolsExpanded`.
+- **Preview** — public `/p/:token` branded gate → `GET /api/preview/:token`.
+- **R2 / W7** — add-asset type/url/caption is controlled `assetType` state; scraper history has delete; new brand saves omit base64 screenshots.
+
+### Honest open-items
+- Library does **not** upload files to `/var/advo/library/` — URL metadata only. Apply `011_library_item.sql` on merge (do not use the shared 6407 DB from this lane).
+- Show-Client-Now still *mints* `api.advo.ph/api/preview/<token>` URLs; the pretty path exists for humans to share. Rewriting the mint is a follow-up (Command Center is staff-owned).
+- here.now ephemeral deploy still deferred.
+
 ## 2026-08-15 — lead lane: import, targeting, proposal tracker + template-fill
 
 > Roadmap-remain lane `lead` (`lane/lead`). Ships the P1 lead-gen + P0 proposal-pipeline items that are code-buildable.

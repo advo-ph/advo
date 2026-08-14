@@ -26,11 +26,12 @@ import {
   BarChart3,
   ArrowUpDown,
   Type,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { get } from "@/lib/api";
+import { del, get } from "@/lib/api";
 import { getAccessToken } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader, Panel, StatStrip, Stat, Empty } from "./_ui";
@@ -421,6 +422,16 @@ const AdminFacebookScraper = () => {
     }
   };
 
+  const deleteFromHistory = async (id: number) => {
+    const res = await del(`/api/scrape/history/${id}`);
+    if (res.error) {
+      toast({ title: "Delete failed", description: res.error, variant: "destructive" });
+      return;
+    }
+    setHistory((prev) => prev.filter((h) => h.scrapeResultId !== id));
+    toast({ title: "Removed from history" });
+  };
+
   const reset = () => {
     setPageInfo(null);
     setPosts([]);
@@ -732,18 +743,31 @@ const AdminFacebookScraper = () => {
           {showHistory && (
             <div className="mt-2 border border-border rounded-lg bg-card divide-y divide-border max-h-[200px] overflow-y-auto">
               {history.map((h) => (
-                <button
+                <div
                   key={h.scrapeResultId}
-                  onClick={() => loadFromHistory(h.scrapeResultId)}
-                  className="w-full text-left px-3 h-11 hover:bg-secondary/40 transition-colors flex items-center justify-between"
+                  className="flex items-center gap-1 px-1 hover:bg-secondary/40 transition-colors"
                 >
-                  <span className="text-sm truncate flex-1">
-                    {h.url.replace(/^https?:\/\/(www\.)?facebook\.com\//, "")}
-                  </span>
-                  <span className="text-xs text-muted-foreground ml-3">
-                    {new Date(h.createdAt).toLocaleDateString()}
-                  </span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => loadFromHistory(h.scrapeResultId)}
+                    className="flex-1 text-left px-2 h-11 flex items-center justify-between min-w-0"
+                  >
+                    <span className="text-sm truncate flex-1">
+                      {h.url.replace(/^https?:\/\/(www\.)?facebook\.com\//, "")}
+                    </span>
+                    <span className="text-xs text-muted-foreground ml-3">
+                      {new Date(h.createdAt).toLocaleDateString()}
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteFromHistory(h.scrapeResultId)}
+                    className="p-2 text-muted-foreground hover:text-destructive"
+                    aria-label={`Delete scrape history ${h.url}`}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               ))}
             </div>
           )}

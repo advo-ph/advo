@@ -15,6 +15,7 @@ import {
   FolderKanban,
   LayoutDashboard,
   UserPlus,
+  ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import * as db from "@/lib/db";
+import { projectFormMode } from "@/lib/project-form";
 import { useToast } from "@/hooks/use-toast";
 import type { Client, ProjectStatus } from "@/types/admin";
 import { STATUS_OPTIONS, formatCurrency } from "@/types/admin";
@@ -82,6 +84,11 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
   const [updatingProject, setUpdatingProject] = useState<MergedProject | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [assignMemberId, setAssignMemberId] = useState("");
+  const [assetType, setAssetType] = useState<"progress_photo" | "completion_photo" | "document">(
+    "progress_photo",
+  );
+  const [assetUrl, setAssetUrl] = useState("");
+  const [assetCaption, setAssetCaption] = useState("");
 
   // Command-center view: keep the id and re-derive from the live list so it
   // stays fresh after edits/refetch (and falls back to the list if deleted).
@@ -123,6 +130,9 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
       amount_paid_cents: 0,
       tech_stack: "",
     });
+    setAssetType("progress_photo");
+    setAssetUrl("");
+    setAssetCaption("");
     setIsDialogOpen(true);
   };
 
@@ -140,6 +150,9 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
       amount_paid_cents: project.amount_paid_cents,
       tech_stack: project.tech_stack.join(", "),
     });
+    setAssetType("progress_photo");
+    setAssetUrl("");
+    setAssetCaption("");
     setIsDialogOpen(true);
   };
 
@@ -338,6 +351,247 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
 
   if (openProject) {
     return <ProjectCommandCenter project={openProject} onBack={() => setOpenProjectId(null)} />;
+  }
+
+  const formMode = projectFormMode(isDialogOpen, editingProject);
+  const closeForm = () => setIsDialogOpen(false);
+
+  const handleAddAsset = async () => {
+    const url = assetUrl.trim();
+    if (!url || !editingProject) return;
+    try {
+      const { error } = await db.addProjectAsset({
+        project_id: editingProject.project_id,
+        asset_type: assetType,
+        url,
+        caption: assetCaption.trim() || null,
+      });
+      if (error) {
+        toast({ title: "Error", description: error, variant: "destructive" });
+      } else {
+        toast({ title: "Added", description: "Asset uploaded" });
+        setAssetUrl("");
+        setAssetCaption("");
+        setAssetType("progress_photo");
+        onRefresh();
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Unable to add asset",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Full-page create/edit form (replaces Dialog modal for high-field CRUD)
+  if (formMode !== "closed") {
+    return (
+      <div className="space-y-5">
+        <div>
+          <button
+            type="button"
+            onClick={closeForm}
+            className="mb-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back to projects
+          </button>
+          <PageHeader
+            title={formMode === "edit" ? "Edit project" : "New project"}
+            meta={
+              formMode === "edit" && editingProject
+                ? editingProject.title
+                : "Create a project for a client"
+            }
+            action={
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="h-9" onClick={closeForm}>
+                  <X className="h-4 w-4 mr-1.5" />
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-9 bg-accent text-accent-foreground hover:bg-accent/90"
+                  onClick={handleSave}
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                  ) : (
+                    <Save className="h-4 w-4 mr-1.5" />
+                  )}
+                  Save
+                </Button>
+              </div>
+            }
+          />
+        </div>
+
+        <div className="border border-border rounded-lg bg-card">
+          <div className="grid gap-4 p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Client</label>
+                <Select
+                  value={formData.client_id}
+                  onValueChange={(v) => setFormData({ ...formData, client_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select client" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map((c) => (
+                      <SelectItem key={c.client_id} value={c.client_id.toString()}>
+                        {c.company_name || c.contact_email || `Client ${c.client_id}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Status</label>
+                <Select
+                  value={formData.project_status}
+                  onValueChange={(v) => setFormData({ ...formData, project_status: v as ProjectStatus })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map((s) => (
+                      <SelectItem key={s} value={s}>
+                        {s.charAt(0).toUpperCase() + s.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Title</label>
+              <Input
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="Project title"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Description</label>
+              <Textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Brief description"
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">GitHub Repo Name</label>
+                <Input
+                  value={formData.repository_name}
+                  onChange={(e) => setFormData({ ...formData, repository_name: e.target.value })}
+                  placeholder="e.g. my-project"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Preview URL</label>
+                <Input
+                  value={formData.preview_url}
+                  onChange={(e) => setFormData({ ...formData, preview_url: e.target.value })}
+                  placeholder="https://..."
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Contract URL</label>
+              <Input
+                value={formData.contract_url}
+                onChange={(e) => setFormData({ ...formData, contract_url: e.target.value })}
+                placeholder="https://link-to-contract.pdf"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Total Value (PHP)</label>
+                <Input
+                  type="number"
+                  value={formData.total_value_cents / 100}
+                  onChange={(e) =>
+                    setFormData({ ...formData, total_value_cents: parseFloat(e.target.value) * 100 })
+                  }
+                  placeholder="0"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Amount Paid (PHP)</label>
+                <Input
+                  type="number"
+                  value={formData.amount_paid_cents / 100}
+                  onChange={(e) =>
+                    setFormData({ ...formData, amount_paid_cents: parseFloat(e.target.value) * 100 })
+                  }
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Tech Stack (comma-separated)</label>
+              <Input
+                value={formData.tech_stack}
+                onChange={(e) => setFormData({ ...formData, tech_stack: e.target.value })}
+                placeholder="React, Postgres, Stripe"
+              />
+            </div>
+
+            {editingProject && (
+              <div className="space-y-3 pt-3 border-t border-border">
+                <label className="text-sm font-medium">Add Project Asset</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Input
+                    value={assetUrl}
+                    onChange={(e) => setAssetUrl(e.target.value)}
+                    placeholder="Asset URL (image or doc link)"
+                    className="sm:col-span-2"
+                  />
+                  <Input
+                    value={assetCaption}
+                    onChange={(e) => setAssetCaption(e.target.value)}
+                    placeholder="Caption (optional)"
+                  />
+                  <Select
+                    value={assetType}
+                    onValueChange={(v) =>
+                      setAssetType(v as "progress_photo" | "completion_photo" | "document")
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="progress_photo">Progress Photo</SelectItem>
+                      <SelectItem value="completion_photo">Completion Photo</SelectItem>
+                      <SelectItem value="document">Document</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button variant="outline" size="sm" type="button" onClick={handleAddAsset}>
+                  <Plus className="h-4 w-4 mr-1" /> Add Asset
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const activeCount = projects.filter((p) => p.project_status !== "shipped").length;
@@ -543,221 +797,6 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
           ))}
         </div>
       )}
-
-      {/* Create/Edit Project Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-card border-border max-w-2xl rounded-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {editingProject ? "Edit Project" : "Create Project"}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Client</label>
-                <Select
-                  value={formData.client_id}
-                  onValueChange={(v) => setFormData({ ...formData, client_id: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select client" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clients.map((c) => (
-                      <SelectItem key={c.client_id} value={c.client_id.toString()}>
-                        {c.company_name || c.contact_email || `Client ${c.client_id}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Status</label>
-                <Select
-                  value={formData.project_status}
-                  onValueChange={(v) => setFormData({ ...formData, project_status: v as ProjectStatus })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUS_OPTIONS.map((s) => (
-                      <SelectItem key={s} value={s}>
-                        {s.charAt(0).toUpperCase() + s.slice(1)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Title</label>
-              <Input
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                placeholder="Project title"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Description</label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Brief description"
-                rows={2}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">GitHub Repo Name</label>
-                <Input
-                  value={formData.repository_name}
-                  onChange={(e) => setFormData({ ...formData, repository_name: e.target.value })}
-                  placeholder="e.g. my-project"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Preview URL</label>
-                <Input
-                  value={formData.preview_url}
-                  onChange={(e) => setFormData({ ...formData, preview_url: e.target.value })}
-                  placeholder="https://..."
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Contract URL</label>
-              <Input
-                value={formData.contract_url}
-                onChange={(e) => setFormData({ ...formData, contract_url: e.target.value })}
-                placeholder="https://link-to-contract.pdf"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Total Value (PHP)</label>
-                <Input
-                  type="number"
-                  value={formData.total_value_cents / 100}
-                  onChange={(e) => setFormData({ ...formData, total_value_cents: parseFloat(e.target.value) * 100 })}
-                  placeholder="0"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Amount Paid (PHP)</label>
-                <Input
-                  type="number"
-                  value={formData.amount_paid_cents / 100}
-                  onChange={(e) => setFormData({ ...formData, amount_paid_cents: parseFloat(e.target.value) * 100 })}
-                  placeholder="0"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Tech Stack (comma-separated)</label>
-              <Input
-                value={formData.tech_stack}
-                onChange={(e) => setFormData({ ...formData, tech_stack: e.target.value })}
-                placeholder="React, Postgres, Stripe"
-              />
-            </div>
-
-            {/* Asset Upload – only in edit mode */}
-            {editingProject && (
-              <div className="space-y-3 pt-3 border-t border-border">
-                <label className="text-sm font-medium">Add Project Asset</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <Input
-                    id="asset-url"
-                    placeholder="Asset URL (image or doc link)"
-                    className="col-span-2"
-                  />
-                  <Input id="asset-caption" placeholder="Caption (optional)" />
-                  <Select defaultValue="progress_photo">
-                    <SelectTrigger id="asset-type">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="progress_photo">Progress Photo</SelectItem>
-                      <SelectItem value="completion_photo">Completion Photo</SelectItem>
-                      <SelectItem value="document">Document</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  type="button"
-                  onClick={async () => {
-                    const urlEl = document.getElementById("asset-url") as HTMLInputElement;
-                    const captionEl = document.getElementById("asset-caption") as HTMLInputElement;
-                    const typeEl = document.querySelector<HTMLButtonElement>("#asset-type");
-                    const assetUrl = urlEl?.value?.trim();
-                    if (!assetUrl || !editingProject) return;
-
-                    const assetType = (typeEl?.textContent?.toLowerCase().replace(/ /g, "_") || "progress_photo") as
-                      | "progress_photo"
-                      | "completion_photo"
-                      | "document";
-
-                    try {
-                      const { error } = await db.addProjectAsset({
-                        project_id: editingProject.project_id,
-                        asset_type: assetType,
-                        url: assetUrl,
-                        caption: captionEl?.value?.trim() || null,
-                      });
-
-                      if (error) {
-                        toast({ title: "Error", description: error, variant: "destructive" });
-                      } else {
-                        toast({ title: "Added", description: "Asset uploaded" });
-                        if (urlEl) urlEl.value = "";
-                        if (captionEl) captionEl.value = "";
-                        onRefresh();
-                      }
-                    } catch (err) {
-                      toast({
-                        title: "Error",
-                        description: err instanceof Error ? err.message : "Unable to add asset",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                >
-                  <Plus className="h-4 w-4 mr-1" /> Add Asset
-                </Button>
-              </div>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              <X className="h-4 w-4 mr-2" />
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={isSaving}>
-              {isSaving ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4 mr-2" />
-              )}
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Post Update Dialog */}
       <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
