@@ -11,6 +11,20 @@ Cross-links:
 
 ---
 
+## 2026-08-15 — ops: Vertex brand-analysis gone + installable PWA
+
+> Roadmap-remain lane `ops`. Scoring: `brand-analysis-gone`, `monitor-backup`, `pwa-install` PASS. Other ids stay FAIL.
+
+- Deleted `apps/api/src/routes/brand-analysis.routes.ts` + `apps/api/src/services/brand-analysis.service.ts` and unmounted them from `apps/api/src/index.ts`. Claude contract/PM assist untouched. Structural vitest: `apps/web/src/test/brand-analysis-decommission.test.ts`.
+- PWA Tier 1: `manifest.webmanifest` (standalone, `/hub`, `#0A0A0A` / `#E67A3A`) + `vite-plugin-pwa` (`registerType: autoUpdate`). Icons 192/512/512-maskable/apple-touch from the inverted ADVO wordmark. Preview `http://127.0.0.1:6447/` serves manifest + `/sw.js` + `registerSW.js`.
+- `docs/SETUP.md` nightly `pg_dump` + `apps/api/backup.sh` left as-is (`monitor-backup` stayed green).
+
+### Honest open-items
+- Live `GET /api/brand-analysis` 404 not hit against a running local API — this worktree has no `apps/api/node_modules` or `.env`.
+- Chrome DevTools MCP could not attach (profile already running); Lighthouse + a real Android/iOS install were not run.
+- PWA Tier 2 (offline / stale-while-revalidate) is out of this tier.
+- Error tracking + uptime ping still not wired.
+
 ## 2026-08-15 — site lane: reduced-motion + white interiors + destinationFor
 
 > Roadmap-remain lane `site`. Public marketing chrome honors reduced motion; `/start` `/login` `/team` `/project/:slug` interiors match the white shell; `destinationFor` is a tested pure function.

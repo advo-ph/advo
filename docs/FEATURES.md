@@ -397,6 +397,18 @@ All data fetching uses React Query (`@tanstack/react-query` v5). Each admin CRUD
 | --------------- | --------------------------------------------------------------- |
 | `useClientData` | Client-side: projects, deliverables, invoices, assets, contacts |
 
+## Installable PWA
+
+Tier 1 from [SCOPE-PWA-MEETING.md](SCOPE-PWA-MEETING.md) — home-screen install, no offline behaviour.
+
+- `apps/web/public/manifest.webmanifest` — name/short name ADVO, `display: standalone`, `start_url: /hub`, background `#0A0A0A`, theme `#E67A3A`
+- `vite-plugin-pwa` in [`vite.config.ts`](../apps/web/vite.config.ts) with `registerType: 'autoUpdate'`; shell precached, `/api/*` network-only
+- Icons 192 / 512 / 512-maskable / apple-touch generated from the inverted `advo-logo-black.png` wordmark on the dark app surface
+
+**Files**: `apps/web/public/manifest.webmanifest`, `apps/web/vite.config.ts`, `apps/web/index.html`
+
+---
+
 ## Roadmap
 
 ### Internal Library

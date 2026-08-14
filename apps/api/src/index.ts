@@ -28,7 +28,6 @@ import healthRoutes from "./routes/health.routes.js";
 import scrapeRoutes from "./routes/scrape.routes.js";
 import fbScrapeRoutes from "./routes/fb-scrape.routes.js";
 import availabilityRoutes from "./routes/availability.routes.js";
-import brandRoutes from "./routes/brand-analysis.routes.js";
 import contractRoutes from "./routes/contracts.routes.js";
 import expenseRoutes from "./routes/expense.routes.js";
 import meetingRoutes from "./routes/meeting.routes.js";
@@ -147,7 +146,6 @@ app.route("/api/library", libraryRoutes);
 // Scrapers
 app.route("/api/scrape", scrapeRoutes);
 app.route("/api/scrape", fbScrapeRoutes);
-app.route("/api/scrape", brandRoutes);
 
 // ─── Global Error Handler ─────────────────────────────
 
