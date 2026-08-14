@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   GitBranch,
@@ -26,10 +27,19 @@ import {
   ChevronDown,
   ChevronUp,
   Plus,
+  UserPlus,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { formatCurrency } from "@/types/admin";
 import type { MergedProject } from "@/hooks/useOrgProjects";
@@ -42,6 +52,10 @@ import { useContractReview, type FlagSeverity } from "@/hooks/useContractReview"
 import { useProjectPreview } from "@/hooks/usePreviewLink";
 import { useProjectAssets } from "@/hooks/useProjectAssets";
 import { useMeeting } from "@/hooks/useMeeting";
+import { useAdminTeam } from "@/hooks/useAdminTeam";
+import { isJuniorRole } from "@/lib/project-assign";
+import { post, del } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 import { Panel, Empty, Dot } from "@/components/admin/_ui";
 
 interface ProjectCommandCenterProps {
@@ -89,8 +103,11 @@ const shortDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
 const ProjectCommandCenter = ({ project, onBack }: ProjectCommandCenterProps) => {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { deliverables } = useAdminDeliverables();
   const { invoices } = useInvoices();
+  const { activeMembers: teamMember } = useAdminTeam();
   const { review, result: contractReview, isReviewing, error: reviewError, reset: resetReview } = useContractReview();
   const [contractText, setContractText] = useState("");
   const {
@@ -120,6 +137,66 @@ const ProjectCommandCenter = ({ project, onBack }: ProjectCommandCenterProps) =>
   const [meetingRecordedAt, setMeetingRecordedAt] = useState("");
   const [meetingTranscript, setMeetingTranscript] = useState("");
   const [meetingPlaudKey, setMeetingPlaudKey] = useState("");
+
+  const [assignedId, setAssignedId] = useState<number[]>(project.team_member_id ?? []);
+  const [addMemberId, setAddMemberId] = useState("");
+  const [isAssigning, setIsAssigning] = useState(false);
+
+  useEffect(() => {
+    setAssignedId(project.team_member_id ?? []);
+  }, [project.project_id, project.team_member_id]);
+
+  const assignedMember = teamMember.filter((m) => assignedId.includes(m.team_member_id));
+  const juniorOption = teamMember.filter(
+    (m) => isJuniorRole(m.role) && !assignedId.includes(m.team_member_id),
+  );
+
+  const handleAssign = async () => {
+    const teamMemberId = Number(addMemberId);
+    if (!teamMemberId) return;
+    setIsAssigning(true);
+    try {
+      const { error } = await post(`/api/projects/${project.project_id}/team`, { teamMemberId });
+      if (error) {
+        toast({ title: "Error", description: error, variant: "destructive" });
+      } else {
+        setAssignedId((prev) => (prev.includes(teamMemberId) ? prev : [...prev, teamMemberId]));
+        setAddMemberId("");
+        void queryClient.invalidateQueries({ queryKey: ["orgProjects"] });
+        toast({ title: "Assigned", description: "Junior added to project" });
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Unable to assign",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  const handleUnassign = async (teamMemberId: number) => {
+    setIsAssigning(true);
+    try {
+      const { error } = await del(`/api/projects/${project.project_id}/team/${teamMemberId}`);
+      if (error) {
+        toast({ title: "Error", description: error, variant: "destructive" });
+      } else {
+        setAssignedId((prev) => prev.filter((id) => id !== teamMemberId));
+        void queryClient.invalidateQueries({ queryKey: ["orgProjects"] });
+        toast({ title: "Removed", description: "Team member removed from project" });
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Unable to remove",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAssigning(false);
+    }
+  };
 
   const isImageAsset = (a: { url: string; asset_type: string }) =>
     a.asset_type !== "document" || /\.(png|jpe?g|gif|webp|svg|avif|heic)$/i.test(a.url);
@@ -257,6 +334,72 @@ const ProjectCommandCenter = ({ project, onBack }: ProjectCommandCenterProps) =>
               </div>
             </Panel>
           )}
+
+          <Panel title="Team" meta={`${assignedMember.length} assigned`}>
+            <div className="p-4 space-y-3">
+              {assignedMember.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No junior assigned yet.</p>
+              ) : (
+                <div className="divide-y divide-border rounded-lg border border-border">
+                  {assignedMember.map((m) => (
+                    <div
+                      key={m.team_member_id}
+                      className="flex items-center justify-between gap-3 px-3 h-11"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{m.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{m.role}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 shrink-0"
+                        disabled={isAssigning}
+                        onClick={() => handleUnassign(m.team_member_id)}
+                        aria-label={`Remove ${m.name}`}
+                      >
+                        <X className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Select value={addMemberId} onValueChange={setAddMemberId}>
+                  <SelectTrigger className="h-9 sm:flex-1">
+                    <SelectValue placeholder="Assign a junior…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {juniorOption.length === 0 ? (
+                      <SelectItem value="__none" disabled>
+                        No juniors available
+                      </SelectItem>
+                    ) : (
+                      juniorOption.map((m) => (
+                        <SelectItem key={m.team_member_id} value={String(m.team_member_id)}>
+                          {m.name} · {m.role}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                <Button
+                  size="sm"
+                  className="h-9 bg-accent text-accent-foreground hover:bg-accent/90"
+                  disabled={!addMemberId || addMemberId === "__none" || isAssigning}
+                  onClick={handleAssign}
+                >
+                  {isAssigning ? (
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                  ) : (
+                    <UserPlus className="h-4 w-4 mr-1.5" />
+                  )}
+                  Assign
+                </Button>
+              </div>
+            </div>
+          </Panel>
         </TabsContent>
 
         {/* ── Deliverables (real) ── */}

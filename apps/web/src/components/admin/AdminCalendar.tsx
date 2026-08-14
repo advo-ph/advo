@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/select";
 import { PageHeader } from "@/components/admin/_ui";
 import { useCalendar, manualEventId, type CalEvent, type NewEvent } from "@/hooks/useCalendar";
+import { useAdminAvailability } from "@/hooks/useAdminAvailability";
+import { useAdminTeam } from "@/hooks/useAdminTeam";
 
 /* Category → colour + label. Manual categories first, then derived sources. */
 const CATEGORY: Record<string, { label: string; dot: string }> = {
@@ -39,6 +41,15 @@ const CATEGORY: Record<string, { label: string; dot: string }> = {
   contract_signed: { label: "Contract signed", dot: "bg-teal-500" },
   contract_expires: { label: "Contract expires", dot: "bg-rose-500" },
   compliance_deadline: { label: "Compliance", dot: "bg-amber-600" },
+  blackout: { label: "School blackout", dot: "bg-slate-400" },
+};
+
+const BLACKOUT_TYPE = new Set(["school", "unavailable"]);
+
+type BlackoutChip = {
+  key: string;
+  title: string;
+  startTime: string;
 };
 const cat = (k: string) => CATEGORY[k] ?? { label: k, dot: "bg-muted-foreground" };
 
@@ -118,6 +129,41 @@ const AdminCalendar = () => {
     rangeFrom,
     rangeTo,
   );
+  const { blocks } = useAdminAvailability();
+  const { activeMembers } = useAdminTeam();
+
+  const memberName = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const m of activeMembers) map.set(m.team_member_id, m.name);
+    return map;
+  }, [activeMembers]);
+
+  // Recurring school/unavailable blocks → month-grid blackout layer.
+  const blackoutByDay = useMemo(() => {
+    const m: Record<string, BlackoutChip[]> = {};
+    for (const d of cells) {
+      const dow = d.getDay();
+      const k = dayKey(d);
+      for (const b of blocks) {
+        if (!BLACKOUT_TYPE.has(b.block_type)) continue;
+        if (b.day_of_week !== dow) continue;
+        const name = memberName.get(b.team_member_id) ?? "Team";
+        const label = b.label || (b.block_type === "school" ? "School" : "Unavailable");
+        (m[k] ||= []).push({
+          key: `${b.block_id}-${k}`,
+          title: `${name}: ${label}`,
+          startTime: b.start_time.slice(0, 5),
+        });
+      }
+    }
+    return m;
+  }, [blocks, cells, memberName]);
+
+  const blackoutCount = useMemo(
+    () => Object.values(blackoutByDay).reduce((n, list) => n + list.length, 0),
+    [blackoutByDay],
+  );
+  const showBlackout = !hidden.has("blackout");
 
   const byDay = useMemo(() => {
     const m: Record<string, CalEvent[]> = {};
@@ -132,9 +178,10 @@ const AdminCalendar = () => {
   const presentCategories = useMemo(() => {
     const seen = new Set<string>();
     for (const e of events) seen.add(e.category);
+    if (blackoutCount > 0) seen.add("blackout");
     // stable order by the CATEGORY map
     return Object.keys(CATEGORY).filter((k) => seen.has(k));
-  }, [events]);
+  }, [events, blackoutCount]);
 
   const openCreate = (date: string) => {
     setForm(emptyForm(date));
@@ -191,7 +238,11 @@ const AdminCalendar = () => {
     <div className="space-y-4">
       <PageHeader
         title="Calendar"
-        meta={isLoading ? "loading…" : `${events.length} this view`}
+        meta={
+          isLoading
+            ? "loading…"
+            : `${events.length} this view${blackoutCount > 0 ? ` · ${blackoutCount} blackout` : ""}`
+        }
         action={
           <div className="flex items-center gap-1.5">
             <div className="flex items-center rounded-md border border-border">
@@ -233,35 +284,33 @@ const AdminCalendar = () => {
       {/* Mobile month label */}
       <div className="sm:hidden text-sm font-medium">{monthLabel}</div>
 
-      {/* Filter legend */}
-      {presentCategories.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5">
-          {presentCategories.map((k) => {
-            const off = hidden.has(k);
-            return (
-              <button
-                key={k}
-                onClick={() =>
-                  setHidden((s) => {
-                    const n = new Set(s);
-                    if (n.has(k)) n.delete(k);
-                    else n.add(k);
-                    return n;
-                  })
-                }
-                className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors ${
-                  off
-                    ? "border-border text-muted-foreground/50"
-                    : "border-border text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <span className={`h-1.5 w-1.5 rounded-full ${off ? "bg-muted-foreground/40" : cat(k).dot}`} />
-                {cat(k).label}
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {/* Filter legend — always include the blackout layer so timelines can hide school blocks. */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {(presentCategories.length > 0 ? presentCategories : ["blackout"]).map((k) => {
+          const off = hidden.has(k);
+          return (
+            <button
+              key={k}
+              onClick={() =>
+                setHidden((s) => {
+                  const n = new Set(s);
+                  if (n.has(k)) n.delete(k);
+                  else n.add(k);
+                  return n;
+                })
+              }
+              className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors ${
+                off
+                  ? "border-border text-muted-foreground/50"
+                  : "border-border text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${off ? "bg-muted-foreground/40" : cat(k).dot}`} />
+              {cat(k).label}
+            </button>
+          );
+        })}
+      </div>
 
       {/* Month grid */}
       <div className="border border-border rounded-lg bg-card overflow-hidden">
@@ -281,13 +330,19 @@ const AdminCalendar = () => {
             const inMonth = d.getMonth() === cursor.getMonth();
             const isToday = k === todayKey;
             const dayEvents = byDay[k] ?? [];
+            const dayBlackout = showBlackout ? (blackoutByDay[k] ?? []) : [];
+            const blackoutShown = Math.min(dayBlackout.length, 2);
+            const eventShown = Math.min(dayEvents.length, Math.max(0, 3 - blackoutShown));
+            const moreCount = dayBlackout.length - blackoutShown + dayEvents.length - eventShown;
             return (
               <div
                 key={k}
                 onClick={() => openCreate(k)}
                 className={`group min-h-[104px] border-b border-r border-border p-1.5 cursor-pointer transition-colors hover:bg-secondary/30 [&:nth-child(7n)]:border-r-0 ${
                   inMonth ? "" : "bg-background/40"
-                } ${i >= 35 ? "border-b-0" : ""}`}
+                } ${i >= 35 ? "border-b-0" : ""} ${
+                  dayBlackout.length > 0 ? "bg-slate-500/[0.06]" : ""
+                }`}
               >
                 <div className="flex items-center justify-between">
                   <span
@@ -304,7 +359,20 @@ const AdminCalendar = () => {
                   <Plus className="h-3 w-3 text-muted-foreground/0 group-hover:text-muted-foreground/50 transition-colors" />
                 </div>
                 <div className="mt-1 space-y-0.5">
-                  {dayEvents.slice(0, 3).map((e) => (
+                  {dayBlackout.slice(0, 2).map((b) => (
+                    <div
+                      key={b.key}
+                      className="w-full flex items-center gap-1.5 px-1 py-0.5 rounded text-left bg-slate-500/10"
+                      title={`Blackout — do not promise timelines into ${b.title}`}
+                    >
+                      <span className="h-1.5 w-1.5 rounded-full shrink-0 bg-slate-400" />
+                      <span className="text-[11px] truncate text-muted-foreground">
+                        <span className="tabular-nums mr-1">{b.startTime}</span>
+                        {b.title}
+                      </span>
+                    </div>
+                  ))}
+                  {dayEvents.slice(0, eventShown).map((e) => (
                     <button
                       key={e.id}
                       onClick={(ev) => {
@@ -329,9 +397,9 @@ const AdminCalendar = () => {
                       </span>
                     </button>
                   ))}
-                  {dayEvents.length > 3 && (
+                  {moreCount > 0 && (
                     <div className="px-1 text-[10px] text-muted-foreground">
-                      +{dayEvents.length - 3} more
+                      +{moreCount} more
                     </div>
                   )}
                 </div>

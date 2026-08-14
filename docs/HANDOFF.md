@@ -11,6 +11,21 @@ Cross-links:
 
 ---
 
+## 2026-08-15 — staff lane: capacity, junior assign, school blackout
+
+> Roadmap-remain lane `staff` on `lane/staff`. Scoring: `capacity-view`, `junior-assign`, `blackout-calendar` PASS; `monitor-backup` still PASS.
+
+- **Capacity** — `GET /api/projects` already returned `teamMemberId[]`; extracted `attachTeamMemberId` + `projectCountByMember` / `capacityRemaining`. Availability member tabs show active-project count + remaining (soft cap 3).
+- **Junior assign** — `POST/DELETE /api/projects/:id/team` (keeps existing `/access`). Command Center Overview **Team** panel assigns a junior (role match junior/dev/intern).
+- **Blackout** — Calendar paints a togglable **School blackout** layer from weekly school/unavailable blocks.
+
+Walked on `http://127.0.0.1:6440/admin`: Availability chip `1 proj · 2 left`, Calendar Mondays show `Angelo Revelo: pre-fi finals`, Command Center assign + remove.
+
+### Honest open-items
+- Other seven lanes still FAIL on the remain bench (expected).
+- AdminProjects still assigns via `/access` (admin lane owns that file).
+- Did not apply migrations in this commit; local preview needed 007/008 already in the repo.
+
 ## 2026-08-15 — docs: shipped `LandingPage` is the current `/`
 
 > Landing-follow docs lane. A new agent reading README + ROADMAP should be told the truth: `/` is the shipped Codex `LandingPage` (`278a65a`), not the old 3D / TechTicker / orange-blob page, and the landing is not in-progress.
