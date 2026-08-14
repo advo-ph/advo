@@ -11,6 +11,26 @@ Cross-links:
 
 ---
 
+## 2026-08-15 — test lane: coverage table
+
+> Roadmap-remain **test** lane. The bench only measures; this lane's deliverable is the tests.
+
+Closed the open coverage table in [ROADMAP.md](ROADMAP.md#open-test-coverage-gaps) plus the WIRING-AUDIT method gaps:
+
+- `settings-public-test` — anonymous `GET /api/settings/public` allowlist in `api-wiring.test.ts`
+- `asset-delete-test` — scoped `DELETE /api/projects/:id/assets/:assetId` (wrong project 404, then delete)
+- `lead-email-test` — route wires `sendLeadNotificationEmail`; mocked mailer called per admin
+- `ai-contract-test` — `contract-ai.test.ts` runs `reviewContract()` against a stubbed `@anthropic-ai/sdk` (no live key)
+- `proof-card-test` — `proof-card.test.ts` render-tree of `getProof()` fallbacks
+- `wiring-method-test` — bulk lead, convert, team reorder, broadcast, availability
+
+Full web suite **114/114**. Scoring: those six ids PASS; `monitor-backup` stays PASS.
+
+### Honest open-items
+- Site lane still owns `destination-test` (role redirect) and the leftover coverage rows it claims.
+- Mobile drawer e2e is still untested (playwright, not this lane).
+- Do not merge this branch; other lanes land first (`plan.json` merge_order).
+
 ## 2026-08-15 — ops: Vertex brand-analysis gone + installable PWA
 
 > Roadmap-remain lane `ops`. Scoring: `brand-analysis-gone`, `monitor-backup`, `pwa-install` PASS. Other ids stay FAIL.

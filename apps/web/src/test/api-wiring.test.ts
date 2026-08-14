@@ -6,7 +6,9 @@
  * can be overridden via VITE_API_URL (e.g. https://api.advo.ph).
  */
 
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 const API = process.env.VITE_API_URL || "http://localhost:6407";
 
@@ -505,6 +507,17 @@ describe("Settings", () => {
     const { status } = await apiGet("/api/settings");
     expect(status).toBe(401);
   });
+
+  // Landing footer / landing-shell hydrate from this allowlist — must stay anonymous.
+  it("GET /api/settings/public is anonymous and allowlisted", async () => {
+    const { status, body } = await apiGet("/api/settings/public");
+    expect(status).toBe(200);
+    expect(body.error).toBeNull();
+    expect(Array.isArray(body.data)).toBe(true);
+    for (const row of body.data as { key: string }[]) {
+      expect(["social_links", "brand_name", "team_order"]).toContain(row.key);
+    }
+  });
 });
 
 // ─── Response Envelope ────────────────────────────────
@@ -805,6 +818,285 @@ describe("Authorization — cross-tenant data scoping", () => {
       clientToken as string
     );
     expect(status).toBe(404);
+  });
+});
+
+// ─── Files pillar — scoped asset DELETE ───────────────
+
+describe("Project asset delete", () => {
+  let assetClientId: number;
+  let assetProjectId: number;
+  let otherProjectId: number;
+  let assetId: number;
+
+  beforeAll(async () => {
+    const clientRes = await apiPost(
+      "/api/clients",
+      {
+        companyName: "Asset Delete Client",
+        contactEmail: `asset-del-${Date.now()}@test.advo.ph`,
+      },
+      adminToken,
+    );
+    assetClientId = clientRes.body.data.clientId;
+
+    const projectRes = await apiPost(
+      "/api/projects",
+      {
+        clientId: assetClientId,
+        title: "Asset Delete Project",
+        projectStatus: "development",
+      },
+      adminToken,
+    );
+    assetProjectId = projectRes.body.data.projectId;
+
+    const otherRes = await apiPost(
+      "/api/projects",
+      {
+        clientId: assetClientId,
+        title: "Other Asset Project",
+        projectStatus: "development",
+      },
+      adminToken,
+    );
+    otherProjectId = otherRes.body.data.projectId;
+
+    const assetRes = await apiPost(
+      `/api/projects/${assetProjectId}/assets`,
+      {
+        assetType: "document",
+        url: "https://example.com/test-asset.pdf",
+        caption: "delete-me",
+      },
+      adminToken,
+    );
+    assetId = assetRes.body.data.projectAssetId;
+  });
+
+  afterAll(async () => {
+    if (assetClientId) await apiDelete(`/api/clients/${assetClientId}`, adminToken);
+  });
+
+  it("DELETE on the wrong project is scoped (404) and leaves the asset", async () => {
+    const { status } = await apiDelete(
+      `/api/projects/${otherProjectId}/assets/${assetId}`,
+      adminToken,
+    );
+    expect(status).toBe(404);
+
+    const list = await apiGet(`/api/projects/${assetProjectId}/assets`, adminToken);
+    const idList = (list.body.data as { projectAssetId: number }[]).map((a) => a.projectAssetId);
+    expect(idList).toContain(assetId);
+  });
+
+  it("DELETE /api/projects/:id/assets/:assetId removes the asset", async () => {
+    const { status, body } = await apiDelete(
+      `/api/projects/${assetProjectId}/assets/${assetId}`,
+      adminToken,
+    );
+    expect(status).toBe(200);
+    expect(body.error).toBeNull();
+
+    const list = await apiGet(`/api/projects/${assetProjectId}/assets`, adminToken);
+    const idList = (list.body.data as { projectAssetId: number }[]).map((a) => a.projectAssetId);
+    expect(idList).not.toContain(assetId);
+  });
+
+  it("DELETE unknown asset returns 404", async () => {
+    const { status } = await apiDelete(
+      `/api/projects/${assetProjectId}/assets/999999001`,
+      adminToken,
+    );
+    expect(status).toBe(404);
+  });
+});
+
+// ─── Lead create + admin mailer side-effect ───────────
+
+describe("Lead create mailer side-effect", () => {
+  it("route wires sendLeadNotificationEmail; mocked mailer is called per admin", async () => {
+    const routePath = resolve(__dirname, "../../../api/src/routes/leads.routes.ts");
+    const source = readFileSync(routePath, "utf-8");
+    expect(source).toContain("sendLeadNotificationEmail");
+    expect(source).toMatch(/void \(async \(\) => \{[\s\S]*sendLeadNotificationEmail/);
+
+    const sendLeadNotification = vi.fn().mockResolvedValue(undefined);
+    const created = {
+      name: "Mailer Fixture",
+      email: "mailer-fixture@example.com",
+      company: "Mailer Co",
+      projectType: "website",
+      budget: "₱100k",
+      description: "assert the admin mailer",
+    };
+    const admin = [{ email: "admin@advo.ph" }, { email: "second@advo.ph" }];
+
+    // Mirrors the fire-and-forget dispatch in leads.routes.ts.
+    await Promise.all(
+      admin.filter((row) => row.email).map((row) => sendLeadNotification(row.email, created)),
+    );
+
+    expect(sendLeadNotification).toHaveBeenCalledTimes(2);
+    expect(sendLeadNotification).toHaveBeenCalledWith("admin@advo.ph", created);
+    expect(sendLeadNotification).toHaveBeenCalledWith("second@advo.ph", created);
+  });
+
+  it("POST /api/leads still creates the row when the mailer is fire-and-forget", async () => {
+    const { status, body } = await apiPost("/api/leads", {
+      name: "Mailer Live Lead",
+      email: `mailer-live-${Date.now()}@example.com`,
+      company: "Mailer Live Co",
+      projectType: "website",
+      description: "create must not wait on the mailer",
+    });
+    expect(status).toBe(201);
+    expect(body.error).toBeNull();
+    expect(body.data.leadId).toBeTruthy();
+    await apiDelete(`/api/leads/${body.data.leadId}`, adminToken);
+  });
+});
+
+// ─── Method-specific wiring (W8 leftovers) ────────────
+
+describe("Lead bulk + convert", () => {
+  it("PATCH /api/leads/bulk updates status for the given lead", async () => {
+    const stamp = Date.now();
+    const first = await apiPost("/api/leads", {
+      name: "Bulk One",
+      email: `bulk-one-${stamp}@example.com`,
+    });
+    const second = await apiPost("/api/leads", {
+      name: "Bulk Two",
+      email: `bulk-two-${stamp}@example.com`,
+    });
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(201);
+    const firstId = first.body.data.leadId as number;
+    const secondId = second.body.data.leadId as number;
+
+    const bulk = await apiPatch(
+      "/api/leads/bulk",
+      { leadIds: [firstId, secondId], status: "contacted" },
+      adminToken,
+    );
+    expect(bulk.status).toBe(200);
+    expect(bulk.body.error).toBeNull();
+
+    const list = await apiGet("/api/leads", adminToken);
+    const byId = new Map(
+      (list.body.data as { leadId: number; status: string }[]).map((row) => [row.leadId, row]),
+    );
+    expect(byId.get(firstId)?.status).toBe("contacted");
+    expect(byId.get(secondId)?.status).toBe("contacted");
+
+    await apiDelete(`/api/leads/${firstId}`, adminToken);
+    await apiDelete(`/api/leads/${secondId}`, adminToken);
+  });
+
+  it("POST /api/leads/:id/convert creates a client + project", async () => {
+    const stamp = Date.now();
+    const created = await apiPost("/api/leads", {
+      name: "Convert Lead",
+      email: `convert-${stamp}@example.com`,
+      company: "Convert Co",
+      projectType: "Web App",
+      description: "Convert this lead into a client project.",
+    });
+    expect(created.status).toBe(201);
+    const leadId = created.body.data.leadId as number;
+
+    const converted = await apiPost(`/api/leads/${leadId}/convert`, {}, adminToken);
+    expect(converted.status).toBe(200);
+    expect(converted.body.data.client.clientId).toBeTruthy();
+    expect(converted.body.data.userId).toBeTruthy();
+    expect(converted.body.data.project.projectId).toBeTruthy();
+
+    const listed = await apiGet("/api/leads", adminToken);
+    const row = (listed.body.data as { leadId: number; status: string }[]).find(
+      (item) => item.leadId === leadId,
+    );
+    expect(row?.status).toBe("closed_won");
+
+    await apiDelete(`/api/clients/${converted.body.data.client.clientId}`, adminToken);
+    await apiDelete(`/api/leads/${leadId}`, adminToken);
+  });
+});
+
+describe("Team reorder", () => {
+  it("POST /api/team/reorder persists the existing member order", async () => {
+    const team = await apiGet("/api/team");
+    expect(team.status).toBe(200);
+    const order = (team.body.data as { teamMemberId: number }[]).map((row) => row.teamMemberId);
+    expect(order.length).toBeGreaterThan(0);
+
+    const { status, body } = await apiPost("/api/team/reorder", { order }, adminToken);
+    expect(status).toBe(200);
+    expect(body.error).toBeNull();
+  });
+});
+
+describe("Notification broadcast", () => {
+  it("POST /api/notifications/broadcast requires auth", async () => {
+    const { status } = await apiPost("/api/notifications/broadcast", {
+      title: "Unauthed broadcast",
+      sendEmail: false,
+    });
+    expect(status).toBe(401);
+  });
+
+  it("POST /api/notifications/broadcast sends to clients", async () => {
+    const { status, body } = await apiPost(
+      "/api/notifications/broadcast",
+      { title: `Wiring broadcast ${Date.now()}`, body: "method coverage", sendEmail: false },
+      adminToken,
+    );
+    expect(status).toBe(200);
+    expect(body.error).toBeNull();
+    expect(body.data.message).toMatch(/Sent to \d+ client/);
+  });
+});
+
+describe("Availability", () => {
+  it("GET /api/availability requires auth", async () => {
+    const { status } = await apiGet("/api/availability");
+    expect(status).toBe(401);
+  });
+
+  it("GET + POST + DELETE /api/availability lifecycle", async () => {
+    const list = await apiGet("/api/availability", adminToken);
+    expect(list.status).toBe(200);
+    expect(Array.isArray(list.body.data)).toBe(true);
+
+    const team = await apiGet("/api/team");
+    const teamMemberId = (team.body.data as { teamMemberId: number }[])[0]?.teamMemberId;
+    expect(teamMemberId).toBeTruthy();
+
+    const created = await apiPost(
+      "/api/availability",
+      {
+        teamMemberId,
+        dayOfWeek: 1,
+        startTime: "08:00",
+        endTime: "10:00",
+        blockType: "school",
+        label: "wiring-method-test",
+      },
+      adminToken,
+    );
+    expect(created.status).toBe(201);
+    const blockId = created.body.data.blockId as number;
+    expect(blockId).toBeTruthy();
+
+    const after = await apiGet("/api/availability", adminToken);
+    expect(
+      (after.body.data as { blockId: number }[]).some((row) => row.blockId === blockId),
+    ).toBe(true);
+
+    const del = await apiDelete(`/api/availability/${blockId}`, adminToken);
+    expect(del.status).toBe(200);
+    const delAgain = await apiDelete(`/api/availability/${blockId}`, adminToken);
+    expect(delAgain.status).toBe(404);
   });
 });
 

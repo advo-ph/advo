@@ -22,7 +22,7 @@ Proof on `/` is Fourlinq only. Title/meta match the hero. Footer social icons re
 
 Added because the old Footer was hitting the admin-only `/api/settings` and 401-ing on every anonymous visit. To add a new public key: extend `PUBLIC_KEYS` in [`settings.routes.ts`](../apps/api/src/routes/settings.routes.ts).
 
-**Files**: `apps/api/src/routes/settings.routes.ts`, `landing/Footer.tsx`
+**Files**: `apps/api/src/routes/settings.routes.ts`, `landing/Footer.tsx`. Anonymous GET covered in `api-wiring.test.ts`.
 
 ---
 
@@ -132,7 +132,7 @@ A per-project hub opened from the **Open** button on each project card (shipped 
 
 - **Overview** — KPIs (paid %, outstanding + invoice count, open/total deliverables, stage), payment-progress bar, brief, tech stack, and a **Team** panel: list assigned members and **assign one junior** (`POST/DELETE /api/projects/:id/team`, junior/developer/intern roles). Real data from the project.
 - **Deliverables** — this project's deliverables (status/assignee/due), filtered from `useAdminDeliverables`.
-- **Files** — **Project Drive** (shipped `bdf1a8b`): per-project file manager — upload (storage + DB record), thumbnail grid (images inline, docs/PDF as cards), download, delete. `useProjectAssets` + `DELETE /api/projects/:id/assets/:assetId` (requireTeam, scoped).
+- **Files** — **Project Drive** (shipped `bdf1a8b`): per-project file manager — upload (storage + DB record), thumbnail grid (images inline, docs/PDF as cards), download, delete. `useProjectAssets` + `DELETE /api/projects/:id/assets/:assetId` (requireTeam, scoped). Scoped delete covered in `api-wiring.test.ts`.
 - **Dev & Deploy** — GitHub repo link + latest commit, plus the **Show Client Now** flow.
 - **Contracts** — the agreement link + the **red-flag review** (below).
 - **Finance** — payment summary + this project's invoices (filtered from `useInvoices`).
@@ -141,7 +141,7 @@ A per-project hub opened from the **Open** button on each project card (shipped 
 
 Paste a contract / SOW into the Contracts tab → `POST /api/contracts/review` (requireTeam) scores it against ADVO's [CONTRACTS.md](CONTRACTS.md) policies (downpayment floor 40%/₱30k · 2 revisions/phase · change-order clause · late-payment · termination) and returns a **verdict** (good_to_go / needs_work / high_risk) + per-policy **red/amber/green** flags + a disclaimer. Catches the "contract was silent" gap that leaked revenue on Fourlinq + Felici.
 
-**AI with heuristic fallback** (`fae49dd`) — `reviewContract()` runs Claude (`claude-opus-4-8`, via `@anthropic-ai/sdk`) against the 5 policies when `ANTHROPIC_API_KEY` is set, and falls back to the heuristic presence-check on a missing key or any AI error / malformed output. Same return shape; `method` is `"ai"` vs `"heuristic"` and the disclaimer reflects which ran. **Prod has no key yet**, so live review currently runs the heuristic — add `ANTHROPIC_API_KEY` to the VPS `.env` + `pm2 restart advo-api` to activate the AI path.
+**AI with heuristic fallback** (`fae49dd`) — `reviewContract()` runs Claude (`claude-opus-4-8`, via `@anthropic-ai/sdk`) against the 5 policies when `ANTHROPIC_API_KEY` is set, and falls back to the heuristic presence-check on a missing key or any AI error / malformed output. Same return shape; `method` is `"ai"` vs `"heuristic"` and the disclaimer reflects which ran. **Prod has no key yet**, so live review currently runs the heuristic — add `ANTHROPIC_API_KEY` to the VPS `.env` + `pm2 restart advo-api` to activate the AI path. AI path covered in `contract-ai.test.ts` with a mocked SDK (no live key).
 
 #### Show Client Now (expiring preview links)
 
@@ -193,7 +193,7 @@ The all-around ADVO records calendar (Phase 1, shipped `0018c3e`/`80f076e`). A m
 
 **Phase 3 (decided, not started):** Google Calendar + ICS sync — **two-way / bidirectional** (owner decision, 2026-06-20).
 
-**Files**: `AdminCalendar.tsx`, `useCalendar.ts`, `calendar.routes.ts`, `calendar_event` table (migration `003`); `contracts.routes.ts` + `contract` table (migration `004`) for the contracts/MOA layer. Endpoint coverage in `api-wiring.test.ts`: Calendar block (auth-gate, range-GET shape, manual-event CRUD, content/social layer) + Contract records block (CRUD + signed/expiry calendar derivation).
+**Files**: `AdminCalendar.tsx`, `useCalendar.ts`, `calendar.routes.ts`, `calendar_event` table (migration `003`); `contracts.routes.ts` + `contract` table (migration `004`) for the contracts/MOA layer. Endpoint coverage in `api-wiring.test.ts`: Calendar block (auth-gate, range-GET shape, manual-event CRUD, content/social layer) + Contract records block (CRUD + signed/expiry calendar derivation) + method coverage for `PATCH /api/leads/bulk`, `POST /api/leads/:id/convert`, `POST /api/team/reorder`, `POST /api/notifications/broadcast`, `/api/availability`.
 
 ### Finance
 
