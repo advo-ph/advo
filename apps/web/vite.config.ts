@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
+import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -23,12 +24,38 @@ const appCommit =
 export default defineConfig({
   server: {
     host: "::",
-    port: 6400,
+    port: 6447,
     hmr: {
       overlay: false,
     },
   },
-  plugins: [react()],
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: "autoUpdate",
+      injectRegister: "auto",
+      includeAssets: [
+        "favicon.ico",
+        "advo-logo-black.png",
+        "icon-192.png",
+        "icon-512.png",
+        "icon-512-maskable.png",
+        "apple-touch-icon.png",
+      ],
+      manifest: false,
+      workbox: {
+        globPatterns: ["**/*.{js,css,html,ico,webmanifest,woff2}"],
+        navigateFallback: "/index.html",
+        navigateFallbackDenylist: [/^\/api\//],
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith("/api/"),
+            handler: "NetworkOnly",
+          },
+        ],
+      },
+    }),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
