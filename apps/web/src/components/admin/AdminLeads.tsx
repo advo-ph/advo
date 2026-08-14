@@ -9,6 +9,7 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
+  Target,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,10 +21,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Toggle } from "@/components/ui/toggle";
 import { formatDistanceToNow } from "date-fns";
 import { useLeads, type LeadStatus } from "@/hooks/useLeads";
 import { post, patch } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import {
+  isOutreachTarget,
+  leadTextForSignal,
+  outreachPriority,
+  signalFromLeadText,
+} from "@/lib/targeting";
 
 const statusConfig: Record<LeadStatus, { label: string; dot: string; text: string }> = {
   new: { label: "New", dot: "bg-blue-500", text: "text-blue-400" },
@@ -45,6 +53,8 @@ const AdminLeads = () => {
   const [notesDraft, setNotesDraft] = useState<Record<number, string>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  /** Prefer zero/outdated systems only (keyword heuristic on lead text). */
+  const [outdatedOnly, setOutdatedOnly] = useState(false);
   const [selectedLeads, setSelectedLeads] = useState<Set<number>>(new Set());
   const [isConverting, setIsConverting] = useState<number | null>(null);
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
@@ -56,7 +66,12 @@ const AdminLeads = () => {
       l.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (l.company || "").toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = filterStatus === "all" || l.status === filterStatus;
-    return matchesSearch && matchesStatus;
+    if (!matchesSearch || !matchesStatus) return false;
+    if (outdatedOnly) {
+      const signal = signalFromLeadText(leadTextForSignal(l));
+      return isOutreachTarget(signal);
+    }
+    return true;
   });
 
   const newLeads = leads.filter((l) => l.status === "new").length;
@@ -194,6 +209,18 @@ const AdminLeads = () => {
             ))}
           </SelectContent>
         </Select>
+        <Toggle
+          pressed={outdatedOnly}
+          onPressedChange={setOutdatedOnly}
+          size="sm"
+          variant="outline"
+          className="h-9 gap-1.5 px-3 text-xs data-[state=on]:bg-accent/15 data-[state=on]:text-accent data-[state=on]:border-accent/40"
+          aria-label="Outdated only"
+          title="Target: outdated systems only (no Shopify/Inventi/Squarespace, prefer zero/legacy)"
+        >
+          <Target className="h-3.5 w-3.5" />
+          Outdated only
+        </Toggle>
 
         {selectedLeads.size > 0 && (
           <div className="flex items-center gap-2">
@@ -236,9 +263,11 @@ const AdminLeads = () => {
         <div className="border border-border rounded-lg bg-card px-4 py-12 text-center">
           <Inbox className="h-8 w-8 text-muted-foreground/50 mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">
-            {searchQuery || filterStatus !== "all" ? "No leads match your filters" : "No leads yet"}
+            {searchQuery || filterStatus !== "all" || outdatedOnly
+              ? "No leads match your filters"
+              : "No leads yet"}
           </p>
-          {!searchQuery && filterStatus === "all" && (
+          {!searchQuery && filterStatus === "all" && !outdatedOnly && (
             <p className="text-xs text-muted-foreground mt-1.5">
               Inquiries from{" "}
               <a
@@ -275,6 +304,16 @@ const AdminLeads = () => {
               const cfg = statusConfig[lead.status];
               const assignedMember = teamMembers.find((m) => m.team_member_id === lead.assigned_to);
               const isSelected = selectedLeads.has(lead.lead_id);
+              const targetingSignal = signalFromLeadText(leadTextForSignal(lead));
+              const priority = outreachPriority(targetingSignal);
+              const hasTargetingSignal =
+                targetingSignal.hasModernStack === true ||
+                targetingSignal.hasWebsite === false ||
+                typeof targetingSignal.digitalScore === "number" ||
+                typeof targetingSignal.systemAgeYears === "number";
+              const showOutdatedBadge =
+                hasTargetingSignal && isOutreachTarget(targetingSignal);
+              const showModernBadge = targetingSignal.hasModernStack === true;
 
               return (
                 <div key={lead.lead_id} className={isSelected ? "bg-accent/[0.06]" : ""}>
@@ -298,6 +337,23 @@ const AdminLeads = () => {
                       <span className="font-medium truncate">{lead.name}</span>
                       {lead.company && (
                         <span className="text-muted-foreground truncate hidden sm:inline">· {lead.company}</span>
+                      )}
+                      {showOutdatedBadge && (
+                        <span
+                          className="hidden sm:inline-flex items-center gap-1 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-accent/15 text-accent border border-accent/30"
+                          title={`Outreach priority ${priority} — zero/outdated systems`}
+                        >
+                          <Target className="h-2.5 w-2.5" />
+                          Target
+                        </span>
+                      )}
+                      {showModernBadge && (
+                        <span
+                          className="hidden sm:inline-flex shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-muted text-muted-foreground border border-border"
+                          title="Modern stack detected — skip greenfield outreach"
+                        >
+                          Modern
+                        </span>
                       )}
                     </button>
 

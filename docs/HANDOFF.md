@@ -11,6 +11,22 @@ Cross-links:
 
 ---
 
+## 2026-08-15 — lead lane: import, targeting, proposal tracker + template-fill
+
+> Roadmap-remain lane `lead` (`lane/lead`). Ships the P1 lead-gen + P0 proposal-pipeline items that are code-buildable.
+
+- **lead-import** — `npx tsx scripts/import-clinic-lead.ts` + `data/clinic-lead/sample.json`. Dedupes by email in-file and against existing `lead` rows. The 5K Messenger dump is a path argument when present; sample fixture is 6 rows (1 duplicate) so we do not invent 5K clinics.
+- **targeting-rule** — `/admin` → Leads “Outdated only” toggle. `lib/targeting.ts` scores zero/outdated systems up and modern stacks (Shopify/Inventi/…) to 0.
+- **proposal-tracker** — `/admin` → Proposals. `proposal` table statuses: sent / opened / replied / signed.
+- **proposal-pdf** — Generate fills CONTRACTS.md clauses + lead fields into printable HTML (`POST /api/proposal`, `GET /api/proposal/:id/pdf`). AI generation deferred.
+- Surgical mount in `Admin.tsx` + `AdminSidebar.tsx` (admin-lane files) so the Proposals section is reachable and scoring `/proposal/i` is true. Merge-order is lead then admin — keep the add additive.
+
+### Honest open-items
+- Full 5K archive is not in-repo; run the importer with the dump path when it exists.
+- Proposal document is HTML print-to-PDF, not a binary PDF library.
+- Clauses stay draft until the lawyer item.
+- Local preview used lane DB `advo_lead` (API :6411) because staff already owns :6407.
+
 ## 2026-08-15 — hub: change-order form (`change-order-form`)
 
 > Lane hub. Client files a change order (scope + reason) from `/hub` against CONTRACTS.md policy 3; team lists it.

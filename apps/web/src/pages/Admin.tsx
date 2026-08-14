@@ -25,6 +25,7 @@ import AdminPortfolio from "@/components/admin/AdminPortfolio";
 import AdminFinance from "@/components/admin/AdminFinance";
 import AdminNotifications from "@/components/admin/AdminNotifications";
 import AdminLeads from "@/components/admin/AdminLeads";
+import AdminProposals from "@/components/admin/AdminProposals";
 import AdminSettings from "@/components/admin/AdminSettings";
 import AdminBrandScraper from "@/components/admin/AdminBrandScraper";
 import AdminFacebookScraper from "@/components/admin/AdminFacebookScraper";
@@ -178,6 +179,8 @@ const Admin = () => {
           {activeSection === "notifications" && <AdminNotifications />}
 
           {activeSection === "leads" && <AdminLeads />}
+
+          {activeSection === "proposals" && <AdminProposals />}
 
           {activeSection === "brand-scraper" && <AdminBrandScraper />}
 

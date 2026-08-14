@@ -1,0 +1,55 @@
+[
+  {
+    "name": "Quezon City Family Dental",
+    "email": "qc.family.dental@example.com",
+    "company": "Quezon City Family Dental",
+    "project_type": "clinic-website",
+    "budget": "₱80,000",
+    "description": "Metro Manila dental clinic. No website. Phone bookings only. Digital score 8.",
+    "notes": "no website; zero digital presence"
+  },
+  {
+    "name": "Makati Smile Center",
+    "email": "hello@makatismile.example.com",
+    "company": "Makati Smile Center",
+    "project_type": "clinic-website",
+    "budget": "₱120,000",
+    "description": "Legacy paper-based appointment book. 12 year old system. Digital score 22.",
+    "notes": "outdated system; paper-based"
+  },
+  {
+    "name": "Pasig Ortho Care",
+    "email": "pasig.ortho@example.com",
+    "company": "Pasig Ortho Care",
+    "project_type": "clinic-website",
+    "budget": "₱90,000",
+    "description": "Shopify brochure site. Digital score 70.",
+    "notes": "shopify"
+  },
+  {
+    "name": "Inventi Partner Clinic",
+    "email": "ops@inventi-clinic.example.com",
+    "company": "Inventi Partner Clinic",
+    "project_type": "clinic-website",
+    "budget": "₱150,000",
+    "description": "Already on Inventi for ops. Digital score 88.",
+    "notes": "inventi; skip greenfield outreach"
+  },
+  {
+    "name": "Mandaluyong Pedia Clinic",
+    "email": "pedia.manda@example.com",
+    "company": "Mandaluyong Pedia Clinic",
+    "project_type": "clinic-website",
+    "budget": "₱70,000",
+    "description": "Need a new booking site for the clinic. Built in 2014. Digital score 31.",
+    "notes": "old system; outdated"
+  },
+  {
+    "name": "QC Family Dental (duplicate row)",
+    "email": "qc.family.dental@example.com",
+    "company": "Quezon City Family Dental",
+    "project_type": "clinic-website",
+    "description": "Duplicate email — importer must skip this row.",
+    "notes": "duplicate of first sample"
+  }
+]
