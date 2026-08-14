@@ -114,7 +114,7 @@ Time-aware greeting ("Good morning, {name}"), today's date in mono caps, and qui
 
 **Cash flow panel**: Collected vs Outstanding progress bars + large collection rate %.
 
-**Bottom feeds** (3 columns): Recent Activity, Upcoming Deadlines (urgent badges in red), Latest Leads (avatar + submission date).
+**Bottom feeds** (3 columns): Recent Activity (progress updates via `getRecentProgressUpdates` plus latest leads), Upcoming Deadlines (urgent badges in red), Latest Leads (avatar + submission date).
 
 **Files**: `AdminDashboard.tsx`, `useAdminData.ts`
 
@@ -167,7 +167,7 @@ Client management with company name, contact email, GitHub org, brand color. **I
 
 ### Team
 
-Team member profiles with name, role, email, bio, social links (LinkedIn, GitHub). Avatar upload (max 5MB). **Drag-to-reorder** — order persists via `team_order` site config key. Applied on landing page + team page.
+Team member profiles with name, role, email, bio, social links (LinkedIn, GitHub). Avatar upload (max 5MB). **Drag-to-reorder** mutates the full member list (hidden inactive members keep their slots) and persists via `team_order`. Order is read from `GET /api/settings/public` so a `team`-role user does not 403. Applied on landing page + team page.
 
 **Penalty points** (P11): each `team_member` has `penalty_point_count` (integer, default 0). Admin Team list shows the count; edit dialog lets admin set it via `PATCH /api/team/:id` (`penaltyPointCount`). **Automatic accrual is deferred** — rules still open; no hooks from late deliverables or verify yet.
 
@@ -203,7 +203,7 @@ Invoice management with create/edit/delete. Status toggle (unpaid → paid → o
 
 ### Notifications
 
-Compose notifications to single client or broadcast to all. Auto-notification on project status change.
+Compose notifications to single client or broadcast to all. Auto-notification on project status change. Auto-rule toggles persist on `site_content.client_dashboard` and are read before send on `POST /api/notifications`; the panel is labeled **inactive / not yet** for event triggers that still live in project/invoice/deliverable routes.
 
 **Files**: `AdminNotifications.tsx`, `useNotifications.ts`
 
@@ -246,10 +246,10 @@ Admin table of template-filled proposals. Status: sent → opened → replied �
 
 ### Settings
 
-- **Domain & Branding**: agency name, domain URL, accent color, logo
+- **Domain & Branding**: agency name, domain URL, accent color, logo — hydrated from `GET /api/settings/agency_name` (and sibling keys), not only `DEFAULT_CONFIG`
 - **Social Links Editor**: add/edit/remove, saved to `site_config.social_links`, displayed in footer
 - **Security**: Change password dialog
-- **Admin Users**: manage admin email list
+- **Admin Users**: Add Admin creates a login-capable `user` with `role: "admin"` (plus a directory `team_member`) and emails a temp password
 - **Integrations**: API + VPS health status
 
 **Files**: `AdminSettings.tsx`
@@ -377,8 +377,8 @@ All data fetching uses React Query (`@tanstack/react-query` v5). Each admin CRUD
 | `useAdminData`         | Aggregated dashboard counts (projects, clients, leads, stats)                                                                            |
 | `useOrgProjects`       | Projects with GitHub enrichment (commits, PRs, tech stack)                                                                               |
 | `useAdminPortfolio`    | Portfolio CRUD (list, create, update, delete)                                                                                            |
-| `useAdminSocial`       | Social post CRUD                                                                                                                         |
-| `useAdminTeam`         | Team member CRUD + drag-reorder                                                                                                          |
+| `useAdminSocial`       | Social post CRUD; platform strip is queue counts, not fake follower stats                                                                |
+| `useAdminTeam`         | Team member CRUD + drag-reorder (full list); order from `/api/settings/public`                                                           |
 | `useAdminAvailability` | Team availability blocks CRUD                                                                                                            |
 | `useAdminDeliverables` | Deliverables CRUD + optimistic inline status                                                                                             |
 | `useInvoices`          | Invoice CRUD with optimistic status toggle                                                                                               |

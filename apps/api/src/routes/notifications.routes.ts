@@ -4,11 +4,32 @@ import { zValidator } from "@hono/zod-validator";
 import { eq, desc, and } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { db } from "../db/connection.js";
-import { notification, client } from "../db/schema.js";
+import { notification, client, siteContent } from "../db/schema.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin } from "../middleware/rbac.js";
 import { sendNotificationEmail } from "../services/email.service.js";
 import type { Variables } from "../types/context.js";
+
+/** Read auto-rule toggles from site_content.client_dashboard before send. */
+async function isAutoRuleEnabled(type: string): Promise<boolean> {
+  const key =
+    type === "progress_update"
+      ? "notify_on_progress_update"
+      : type === "invoice_issued"
+        ? "notify_on_invoice"
+        : type === "deliverable_completed"
+          ? "notify_on_deliverable_complete"
+          : null;
+  if (!key) return true;
+
+  const [row] = await db()
+    .select()
+    .from(siteContent)
+    .where(eq(siteContent.sectionId, "client_dashboard"))
+    .limit(1);
+  const content = (row?.content ?? {}) as Record<string, unknown>;
+  return content[key] !== false;
+}
 
 const notifications = new Hono<{ Variables: Variables }>();
 
@@ -86,7 +107,8 @@ notifications.post("/", requireAdmin, zValidator("json", sendSchema), async (c) 
     })
     .returning();
 
-  if (data.sendEmail) {
+  const type = data.type || "custom";
+  if (data.sendEmail && (await isAutoRuleEnabled(type))) {
     const [cl] = await d
       .select()
       .from(client)

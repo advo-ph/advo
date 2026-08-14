@@ -70,9 +70,15 @@ const AdminTeam = () => {
   const handleDragOver = (e: React.DragEvent, idx: number) => {
     e.preventDefault();
     if (draggedIdx === null || draggedIdx === idx) return;
-    const next = [...displayMembers];
-    const [moved] = next.splice(draggedIdx, 1);
-    next.splice(idx, 0, moved);
+    const fromId = displayMembers[draggedIdx]?.team_member_id;
+    const toId = displayMembers[idx]?.team_member_id;
+    if (fromId == null || toId == null) return;
+    const next = [...allMembers];
+    const fromAll = next.findIndex((m) => m.team_member_id === fromId);
+    const toAll = next.findIndex((m) => m.team_member_id === toId);
+    if (fromAll === -1 || toAll === -1) return;
+    const [moved] = next.splice(fromAll, 1);
+    next.splice(toAll, 0, moved);
     setLocalOrder(next);
     setDraggedIdx(idx);
   };

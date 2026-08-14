@@ -174,21 +174,16 @@ const AdminSocial = () => {
         }
       />
 
-      {/* Platform Stats */}
+      {/* Platform queue counts — not live follower stats */}
       <StatStrip cols={3}>
         {Object.entries(platformConfig).map(([platform]) => {
-          const stats = platform === "instagram"
-            ? { followers: "18", posts: "3" }
-            : platform === "linkedin"
-            ? { followers: "1.2K", posts: "0" }
-            : { followers: "856", posts: "0" };
-
+          const queueCount = posts.filter((p) => p.platform === platform && !p.is_published).length;
           return (
             <Stat
               key={platform}
               label={platformConfig[platform as keyof typeof platformConfig].label}
-              value={stats.followers}
-              sub="followers"
+              value={String(queueCount)}
+              sub="in queue"
             />
           );
         })}
@@ -380,9 +375,7 @@ const AdminSocial = () => {
                   </div>
                   
                   <div className="flex items-center gap-6 text-sm mb-3">
-                    <div><span className="font-semibold">{3 + instagramPosts.length}</span> posts</div>
-                    <div><span className="font-semibold">18</span> followers</div>
-                    <div><span className="font-semibold">5</span> following</div>
+                    <div><span className="font-semibold">{instagramPosts.length}</span> scheduled</div>
                   </div>
                   
                   <div className="text-sm">
