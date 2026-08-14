@@ -44,6 +44,12 @@ View issued invoices with amount, status (unpaid/paid/overdue), due dates. API e
 
 **Files**: `ProjectDashboard.tsx`, `useClientData.ts`
 
+### Change order
+
+Client files a **change order** (scope + reason) from the selected project on `/hub`, per [CONTRACTS.md](CONTRACTS.md) policy 3 — new scope, not a revision of existing work. Stored in `change_order` (migration `009`). Team lists every row at `GET /api/change-order` and quotes with `PATCH` (`price_cents`, `timeline_note`, status `filed`\|`quoted`\|`signed`\|`declined`). Work does not start until signed.
+
+**Files**: `ProjectDashboard.tsx`, `useChangeOrder.ts`, `change-order.routes.ts`, `migrations/009_change_order.sql`
+
 ### Contract Section
 
 "View Contract" button linking to `project.contract_url` when set, or "Contract pending".

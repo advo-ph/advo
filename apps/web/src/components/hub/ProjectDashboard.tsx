@@ -22,7 +22,10 @@ import {
 import { useRequestPreview } from "@/hooks/usePreviewLink";
 import { useProjectAssets } from "@/hooks/useProjectAssets";
 import { useMeeting } from "@/hooks/useMeeting";
+import { useChangeOrder } from "@/hooks/useChangeOrder";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -129,8 +132,16 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
     meeting: projectMeeting,
     isLoading: isMeetingLoading,
   } = useMeeting(project.project_id);
+  const {
+    changeOrder: projectChangeOrder,
+    isLoading: isChangeOrderLoading,
+    fileChangeOrder,
+    isFiling,
+  } = useChangeOrder(project.project_id);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [expandedMeetingId, setExpandedMeetingId] = useState<number | null>(null);
+  const [scope, setScope] = useState("");
+  const [reason, setReason] = useState("");
 
   // Safe defaults for optional nested arrays
   const deliverables = project.deliverables || [];
@@ -529,6 +540,118 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
               <Clock className="h-4 w-4" />
               Contract pending
             </div>
+          )}
+        </div>
+      </Panel>
+
+      {/* Change order — CONTRACTS.md policy 3. Client files; team lists via GET. */}
+      <Panel
+        title="Change order"
+        meta={
+          projectChangeOrder.length > 0
+            ? `${projectChangeOrder.length} filed`
+            : undefined
+        }
+      >
+        <div className="p-4 space-y-4">
+          <p className="text-xs text-muted-foreground">
+            New scope — a new page, feature, or something you saw on another site —
+            needs a written change order. Revisions to existing work stay on the
+            included rounds. The team will reply with price and timeline; work
+            does not start until you confirm.
+          </p>
+          <form
+            className="space-y-3"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const nextScope = scope.trim();
+              const nextReason = reason.trim();
+              if (!nextScope || !nextReason) return;
+              await fileChangeOrder({
+                projectId: project.project_id,
+                scope: nextScope,
+                reason: nextReason,
+              });
+              setScope("");
+              setReason("");
+            }}
+          >
+            <div className="space-y-1.5">
+              <Label htmlFor="change-order-scope" className="text-xs">
+                Scope
+              </Label>
+              <Textarea
+                id="change-order-scope"
+                value={scope}
+                onChange={(e) => setScope(e.target.value)}
+                placeholder="What is new — page, feature, or behavior not in the original spec."
+                rows={3}
+                required
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="change-order-reason" className="text-xs">
+                Reason
+              </Label>
+              <Textarea
+                id="change-order-reason"
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                placeholder="Why you want it — e.g. saw it on another site."
+                rows={3}
+                required
+              />
+            </div>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={isFiling || !scope.trim() || !reason.trim()}
+              className="h-8 rounded-md bg-accent text-accent-foreground hover:bg-accent/90"
+            >
+              {isFiling ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <FileEdit className="mr-2 h-4 w-4" />
+              )}
+              File change order
+            </Button>
+          </form>
+          {isChangeOrderLoading && projectChangeOrder.length === 0 ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading change orders…
+            </div>
+          ) : projectChangeOrder.length === 0 ? (
+            <Empty text="No change orders filed yet." />
+          ) : (
+            <ul className="divide-y divide-border rounded-md border border-border">
+              {projectChangeOrder.map((row) => (
+                <li key={row.changeOrderId} className="px-3 py-2.5 space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium capitalize text-muted-foreground">
+                      {row.status}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground tabular-nums">
+                      {new Date(row.createdAt).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </span>
+                  </div>
+                  <p className="text-sm">{row.scope}</p>
+                  <p className="text-xs text-muted-foreground">{row.reason}</p>
+                  {row.priceCents != null && (
+                    <p className="text-xs tabular-nums">
+                      ₱{(row.priceCents / 100).toLocaleString("en-PH", {
+                        minimumFractionDigits: 2,
+                      })}
+                      {row.timelineNote ? ` · ${row.timelineNote}` : ""}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
           )}
         </div>
       </Panel>
