@@ -1,0 +1,107 @@
+{
+  "tier": "landing-follow",
+  "execution": "parallel",
+  "isolation": "worktree",
+  "scope_item": [
+    "title-meta",
+    "proof-copy",
+    "social-wire",
+    "start-shell",
+    "login-shell",
+    "team-shell",
+    "project-shell",
+    "readme-state",
+    "docs-current"
+  ],
+  "design_blocked": [
+    { "item": "dashboard-redesign", "why": "Original Codex half-2. No approved spec. Hub/admin stay Linear." },
+    { "item": "newsletter-api", "why": "No subscribe endpoint exists. Do not invent one." },
+    { "item": "client-logo-strip", "why": "Root ROADMAP triage: needs real client permission." },
+    { "item": "hub-chrome", "why": "/hub is a product surface; leave FloatingNav there." }
+  ],
+  "shared_file": [
+    "bench/roadmap/landing-follow/scoring.mjs",
+    "bench/roadmap/landing-follow/task.md",
+    "docs/ROADMAP.md",
+    "apps/web/src/components/landing/landing-page.css"
+  ],
+  "merge_order": ["copy", "route", "docs"],
+  "tip_gate": "node bench/roadmap/landing-follow/scoring.mjs && npm run build && npm test",
+  "lane": [
+    {
+      "name": "copy",
+      "branch": "lane/copy",
+      "worktree": "C:/Users/maran/Antigravity/advo-lane-copy",
+      "item": ["title-meta", "proof-copy", "social-wire"],
+      "owns_file": [
+        "apps/web/index.html",
+        "apps/web/src/components/landing/LandingPage.tsx"
+      ],
+      "forbidden_file": [
+        "apps/web/src/components/landing/landing-shell.tsx",
+        "apps/web/src/pages/Start.tsx",
+        "apps/web/src/pages/Login.tsx",
+        "apps/web/src/pages/Team.tsx",
+        "apps/web/src/pages/ProjectDetail.tsx",
+        "README.md",
+        "docs/FEATURES.md",
+        "docs/HANDOFF.md",
+        "docs/MOODBOARD.md"
+      ],
+      "done_when": "node bench/roadmap/landing-follow/scoring.mjs — title-meta, proof-copy, social-wire PASS; start-shell, login-shell, team-shell, project-shell, readme-state, docs-current may stay FAIL",
+      "builder": "grok",
+      "resume": false,
+      "port": 6410
+    },
+    {
+      "name": "route",
+      "branch": "lane/route",
+      "worktree": "C:/Users/maran/Antigravity/advo-lane-route",
+      "item": ["start-shell", "login-shell", "team-shell", "project-shell"],
+      "owns_file": [
+        "apps/web/src/components/landing/landing-shell.tsx",
+        "apps/web/src/pages/Start.tsx",
+        "apps/web/src/pages/Login.tsx",
+        "apps/web/src/pages/Team.tsx",
+        "apps/web/src/pages/ProjectDetail.tsx"
+      ],
+      "forbidden_file": [
+        "apps/web/index.html",
+        "apps/web/src/components/landing/LandingPage.tsx",
+        "README.md",
+        "docs/FEATURES.md",
+        "docs/HANDOFF.md",
+        "docs/MOODBOARD.md"
+      ],
+      "done_when": "node bench/roadmap/landing-follow/scoring.mjs — start-shell, login-shell, team-shell, project-shell PASS; title-meta, proof-copy, social-wire, readme-state, docs-current may stay FAIL",
+      "builder": "grok",
+      "resume": false,
+      "port": 6420
+    },
+    {
+      "name": "docs",
+      "branch": "lane/docs",
+      "worktree": "C:/Users/maran/Antigravity/advo-lane-docs",
+      "item": ["readme-state", "docs-current"],
+      "owns_file": [
+        "README.md",
+        "docs/FEATURES.md",
+        "docs/HANDOFF.md",
+        "docs/MOODBOARD.md"
+      ],
+      "forbidden_file": [
+        "apps/web/index.html",
+        "apps/web/src/components/landing/LandingPage.tsx",
+        "apps/web/src/components/landing/landing-shell.tsx",
+        "apps/web/src/pages/Start.tsx",
+        "apps/web/src/pages/Login.tsx",
+        "apps/web/src/pages/Team.tsx",
+        "apps/web/src/pages/ProjectDetail.tsx"
+      ],
+      "done_when": "node bench/roadmap/landing-follow/scoring.mjs — readme-state, docs-current PASS; product checks may stay FAIL",
+      "builder": "grok",
+      "resume": false,
+      "port": 6430
+    }
+  ]
+}

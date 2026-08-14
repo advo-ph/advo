@@ -1,0 +1,6 @@
+{
+  "tier": "landing-follow",
+  "lane": ["copy", "route", "docs"],
+  "builder": "grok",
+  "resume": false
+}
