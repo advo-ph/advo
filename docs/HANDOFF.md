@@ -11,6 +11,19 @@ Cross-links:
 
 ---
 
+## 2026-08-15 — docs: shipped `LandingPage` is the current `/`
+
+> Landing-follow docs lane. A new agent reading README + ROADMAP should be told the truth: `/` is the shipped Codex `LandingPage` (`278a65a`), not the old 3D / TechTicker / orange-blob page, and the landing is not in-progress.
+
+- [README.md](../README.md) Features → Public Site + Design System now describe `LandingPage` / `landing-page.css` (white editorial). Admin/hub stay Linear dark.
+- [ROADMAP.md](ROADMAP.md) intro no longer calls the Codex landing in-progress or a hero+services-only copy port.
+- [FEATURES.md](FEATURES.md) Public Landing + [MOODBOARD.md](MOODBOARD.md) type/look rows match the live page.
+
+### Honest open-items
+- **Copy lane** (`lane/copy`): `title-meta`, `proof-copy` (invented testimonials still in source; Fourlinq is the shipped public client), `social-wire`.
+- **Route lane** (`lane/route`): `/start`, `/login`, `/team`, `/project/:slug` still on leftover `FloatingNav` / old `Footer`. `/hub` stays Linear.
+- Do not invent a newsletter API, client-logo strip, or dashboard redesign.
+
 ## 2026-08-14 — host `advo`, ports 6400/6407, admin/meeting/expense on `main`
 
 > User: *"i want to change the name of my contabo repos"* / *"go /cleanup commit merge to main"*. The ADVO-PH box is **`ssh advo`** (was Contabo `vmi3170887`). Local + prod API **6407**, web **6400** (claimed block 6400–6499; do not share sisia's 6107). `deploy.sh` defaults `VPS_SSH=advo`. Expense / meeting / PM-assist WIP fast-forwarded to `origin/main` (`c75fc3d`); parking-lot `wip/admin-meeting-expense` deleted after land. Three-box contract: `booted/docs/vps.md`. Ledger: `~/Antigravity/PORTS.md`.

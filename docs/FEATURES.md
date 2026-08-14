@@ -2,25 +2,23 @@
 
 ## Public Landing (`/`)
 
-The marketing site at advo.ph. Sections are CMS-driven where the React component imports defaults from a CMS section but accepts overrides from `/api/content/sections`. README.md has the in-depth section list; the entries here cover behavior the README doesn't.
+`/` is the shipped Codex `LandingPage` (`apps/web/src/components/landing/LandingPage.tsx` + `landing-page.css`). White editorial marketing page — sticky nav, hero ("Build together. Ship with *clarity.*"), workspace showcase, feature / service / process / workflow, metrics, integration grid, engagement options, FAQ, cream footer with a local-only newsletter (no subscribe API). Routed from `pages/Index.tsx`. Section list lives in [README.md](../README.md).
 
-### Portfolio Proof Cards
+The previous dark landing (FloatingNav, TechTicker, R3F infrastructure, orange-blob CTA, PortfolioCard proof grid) is **not** current `/`. Satellite public routes (`/start`, `/login`, `/team`, `/project/:slug`) still use leftover chrome and are being aligned on `lane/route`. `/hub` still uses `FloatingNav`.
 
-Each portfolio item renders as a proof card: outcome metric headline, products-used chip group, launch timeline, two result bullets, and a before/after ProofMock fallback (rendered when a project has no `image_url`). Layout is 2-column on `md+`. Pulls extended fields from `case_study` JSON: `metric` / `outcome` / `timeline` / `products_used` / `before_after`. All optional — falls back to `description`, `tech_stack`, and a hardcoded `["Website","Client Hub","Admin"]` product list when the case study is sparse. Section header: "Proof, not just screenshots."
+A testimonials block is still in the source. Invented names are not approved proof; Fourlinq is the shipped public client. Title/meta and footer social URLs are follow-through on `lane/copy`.
 
-**Files**: `landing/PortfolioCard.tsx`, `landing/PortfolioGrid.tsx`
+### Leftover landing pieces (not `/`)
 
-### Mobile Drawer
+`PortfolioCard` / `PortfolioGrid` and the old `Footer` still exist for satellite pages. `FloatingNav` is a full-screen mobile overlay on `/hub` (and leftover public routes): numbered tap rows, Escape / route-change close, body scroll lock, `prefers-reduced-motion`. **z-50**.
 
-`FloatingNav` mobile menu is a full-screen overlay (not a small popover). Three numbered nav rows (01/02/03) with large `text-2xl` labels for big tap targets, ADVO badge + tagline header at top, bottom-pinned 2-column action grid (Start a Project / Client Hub). A11y: `role="dialog"`, `aria-modal`, `aria-expanded`, `aria-controls="mobile-navigation-drawer"`. Closes on Escape, on route change, and on action-row click. Body scroll lock while open. Honors `prefers-reduced-motion`. **z-50** (one above sections — drawer was originally `z-40` same as Hero, only the bottom row peeked through, fixed in `bc0ac03`).
-
-**Files**: `landing/FloatingNav.tsx`
+**Files**: `landing/PortfolioCard.tsx`, `landing/PortfolioGrid.tsx`, `landing/FloatingNav.tsx`, `landing/Footer.tsx`
 
 ### Public Settings Endpoint
 
-`GET /api/settings/public` returns an allowlisted subset of `site_config` keys (currently `social_links`, `brand_name`, `team_order`) **without auth**. The landing Footer reads `social_links` from here. The rest of `/api/settings/*` stays admin-only.
+`GET /api/settings/public` returns an allowlisted subset of `site_config` keys (currently `social_links`, `brand_name`, `team_order`) **without auth**. The leftover `Footer` reads `social_links` from here. The shipped `LandingPage` footer is not wired to it yet (`lane/copy`). The rest of `/api/settings/*` stays admin-only.
 
-Added because the Footer was hitting the admin-only `/api/settings` and 401-ing on every anonymous visit (visible noise in console; wasted round-trip). To add a new public key: extend `PUBLIC_KEYS` in [`settings.routes.ts`](../apps/api/src/routes/settings.routes.ts).
+Added because the old Footer was hitting the admin-only `/api/settings` and 401-ing on every anonymous visit. To add a new public key: extend `PUBLIC_KEYS` in [`settings.routes.ts`](../apps/api/src/routes/settings.routes.ts).
 
 **Files**: `apps/api/src/routes/settings.routes.ts`, `landing/Footer.tsx`
 
