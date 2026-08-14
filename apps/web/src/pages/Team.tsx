@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Linkedin, Loader2 } from "lucide-react";
-import FloatingNav from "@/components/landing/FloatingNav";
-import Footer from "@/components/landing/Footer";
+import LandingShell from "@/components/landing/landing-shell";
 import { get } from "@/lib/api";
 
 interface TeamMember {
@@ -38,10 +37,8 @@ const Team = () => {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <FloatingNav />
-
-      <main className="flex-1 pt-32 pb-24 px-6">
+    <LandingShell>
+      <main className="landing-shell-main">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-20">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-[0.18em] mb-4 block">
@@ -128,9 +125,7 @@ const Team = () => {
           </div>
         </div>
       </main>
-
-      <Footer />
-    </div>
+    </LandingShell>
   );
 };
 

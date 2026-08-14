@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import FloatingNav from "@/components/landing/FloatingNav";
+import LandingShell from "@/components/landing/landing-shell";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -91,10 +91,8 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen">
-      <FloatingNav />
-      
-      <div className="min-h-screen flex items-center justify-center px-6 pt-16">
+    <LandingShell>
+      <div className="landing-shell-auth">
         {/* Subtle grid background */}
         <div className="absolute inset-0 bg-[linear-gradient(hsl(var(--border))_1px,transparent_1px),linear-gradient(90deg,hsl(var(--border))_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-20" />
 
@@ -243,7 +241,7 @@ const Login = () => {
           </p>
         </motion.div>
       </div>
-    </div>
+    </LandingShell>
   );
 };
 
