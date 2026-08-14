@@ -397,9 +397,9 @@ All data fetching uses React Query (`@tanstack/react-query` v5). Each admin CRUD
 
 ## Roadmap
 
-### Internal Library (planned)
+### Internal Library
 
-A MotionSites-style visual library at `/admin/library` — team-wide (not admin-only) — for pulling references into client conversations and reusing internal assets.
+A MotionSites-style visual library at `/admin` → Library — team-wide (not admin-only) — for pulling references into client conversations and reusing internal assets. Shipped on `lane/admin` (migration `011_library_item`, `GET/POST/PATCH/DELETE /api/library`).
 
 **Item types** (single `library_item` table, `type` enum drives render):
 
@@ -415,20 +415,20 @@ A MotionSites-style visual library at `/admin/library` — team-wide (not admin-
 - Filters: type chips + tag multi-select + search
 - Detail drawer per item (copy / link out / download)
 - Add Item modal with type selector → fields adjust by type
-- File storage on VPS at `/var/advo/library/`, served by nginx behind auth
+- File storage on VPS at `/var/advo/library/` — **not in this ship**; items store URL / thumbnail URL metadata
 
-**Out of scope v1:** versioning, comments, collections/folders, client-facing access, AI-suggested tagging — all additive later.
+**Out of scope v1:** versioning, comments, collections/folders, client-facing access, AI-suggested tagging, local file upload — all additive later.
 
 **Open question:** one unified grid (filter by type) vs tabs-per-type. Shipping unified first; revisit if it feels incoherent in practice.
 
-**Estimated effort:** ~3 days (schema + API + page + upload handling).
+**Files**: `AdminLibrary.tsx`, `apps/web/src/lib/library.ts`, `apps/api/src/routes/library.routes.ts`, `apps/api/migrations/011_library_item.sql`
 
 ### Admin UX cleanup
 
 1. ✅ **Sidebar grouping** — shipped `ae550e3` (Operations / Marketing Site / Pipeline / Tools)
-2. ⏳ **Modal → page** for high-field-count CRUD (Projects, Clients) — not started
+2. ✅ **Modal → page** for high-field-count CRUD (Projects, Clients) — full-page forms on `lane/admin`
 3. ✅ **Empty-state CTAs** — shipped `383f90b` for Projects, Clients, Notifications; AdminFinance + AdminSocial already had inline creates; AdminLeads gets a hint instead of a button (leads are user-generated, not admin-created)
-4. ⏳ **Hide experimental tools** (Brand Scraper, FB Scraper) behind a "Tools" submenu — not started (they're in the Tools group but still always visible)
+4. ✅ **Hide experimental tools** (Brand Scraper, FB Scraper) behind a collapsible Tools control (`toolsExpanded`)
 
 ### Monorepo restructure
 

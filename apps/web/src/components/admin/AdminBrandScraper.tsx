@@ -26,16 +26,32 @@ import {
   Layers,
   GitCompare,
   BarChart3,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { get, post } from "@/lib/api";
+import { del, get, post } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader, Panel, StatStrip, Stat, Empty, Dot } from "./_ui";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type BrandData = Record<string, any>;
+
+/** Drop unbounded screenshot data URLs before persisting scrape history. */
+function withoutUnboundedScreenshot(data: BrandData): BrandData {
+  const screenshot = data.screenshots;
+  if (!Array.isArray(screenshot)) return data;
+  return {
+    ...data,
+    screenshots: screenshot.map((shot: { dataUrl?: string; viewport?: string; width?: number; height?: number }) => ({
+      viewport: shot.viewport,
+      width: shot.width,
+      height: shot.height,
+      stored: typeof shot.dataUrl === "string" && shot.dataUrl.startsWith("data:") ? "omitted" : shot.dataUrl ?? null,
+    })),
+  };
+}
 
 const SectionCard = ({
   title,
@@ -128,6 +144,16 @@ const AdminBrandScraper = () => {
     }
   };
 
+  const deleteFromHistory = async (id: number) => {
+    const res = await del(`/api/scrape/history/${id}`);
+    if (res.error) {
+      toast({ title: "Delete failed", description: res.error, variant: "destructive" });
+      return;
+    }
+    setHistory((prev) => prev.filter((h) => h.scrapeResultId !== id));
+    toast({ title: "Removed from history" });
+  };
+
   const handleScrape = async () => {
     if (!url) return;
     let normalizedUrl = url.trim();
@@ -150,7 +176,11 @@ const AdminBrandScraper = () => {
         toast({ title: "Scrape failed", description: res.error, variant: "destructive" });
       } else if (res.data) {
         setResult(res.data);
-        const saveRes = await post("/api/scrape/save", { url: normalizedUrl, type: "brand", data: res.data });
+        const saveRes = await post("/api/scrape/save", {
+          url: normalizedUrl,
+          type: "brand",
+          data: withoutUnboundedScreenshot(res.data),
+        });
         if (saveRes.error) {
           toast({ title: "Scrape complete (not saved)", description: saveRes.error, variant: "destructive" });
         } else {
@@ -235,11 +265,27 @@ const AdminBrandScraper = () => {
           {showHistory && (
             <div className="mt-2 border border-border rounded-lg bg-card divide-y divide-border max-h-[200px] overflow-y-auto">
               {history.map((h) => (
-                <button key={h.scrapeResultId} onClick={() => loadFromHistory(h.scrapeResultId)}
-                  className="w-full text-left px-3 h-11 hover:bg-secondary/40 transition-colors flex items-center justify-between">
-                  <span className="text-sm truncate flex-1">{h.url.replace(/^https?:\/\//, "")}</span>
-                  <span className="text-xs text-muted-foreground ml-3 flex-shrink-0">{new Date(h.createdAt).toLocaleDateString()}</span>
-                </button>
+                <div
+                  key={h.scrapeResultId}
+                  className="flex items-center gap-1 px-1 hover:bg-secondary/40 transition-colors"
+                >
+                  <button
+                    type="button"
+                    onClick={() => loadFromHistory(h.scrapeResultId)}
+                    className="flex-1 text-left px-2 h-11 flex items-center justify-between min-w-0"
+                  >
+                    <span className="text-sm truncate flex-1">{h.url.replace(/^https?:\/\//, "")}</span>
+                    <span className="text-xs text-muted-foreground ml-3 flex-shrink-0">{new Date(h.createdAt).toLocaleDateString()}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteFromHistory(h.scrapeResultId)}
+                    className="p-2 text-muted-foreground hover:text-destructive"
+                    aria-label={`Delete scrape history ${h.url}`}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               ))}
             </div>
           )}

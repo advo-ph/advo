@@ -85,6 +85,14 @@ export const assetTypeEnum = pgEnum("asset_type", [
   "document",
 ]);
 
+export const libraryItemTypeEnum = pgEnum("library_item_type", [
+  "website",
+  "prompt",
+  "module",
+  "asset",
+  "doc",
+]);
+
 // ─── Auth ─────────────────────────────────────────────
 
 export const user = pgTable("user", {
@@ -605,4 +613,22 @@ export const proposal = pgTable(
     index("idx_proposal_status").on(t.status),
     index("idx_proposal_created").on(t.createdAt),
   ],
+);
+
+// ─── Internal Library ────────────────────────────────
+
+export const libraryItem = pgTable(
+  "library_item",
+  {
+    libraryItemId: bigserial("library_item_id", { mode: "number" }).primaryKey(),
+    itemType: libraryItemTypeEnum("item_type").notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    url: text("url"),
+    body: text("body"),
+    thumbnailUrl: text("thumbnail_url"),
+    tag: text("tag").array().notNull().default([]),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("idx_library_item_type").on(t.itemType)],
 );

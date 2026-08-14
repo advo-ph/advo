@@ -10,17 +10,10 @@ import {
   Loader2,
   Search,
   UserPlus,
+  ArrowLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,9 +26,124 @@ import {
 } from "@/components/ui/alert-dialog";
 import * as db from "@/lib/db";
 import { post } from "@/lib/api";
+import { clientFormMode } from "@/lib/project-form";
 import { useToast } from "@/hooks/use-toast";
 import type { Client } from "@/types/admin";
 import { PageHeader, Table, THead, TBody, TRow, Empty } from "./_ui";
+
+type ClientFormData = {
+  company_name: string;
+  contact_email: string;
+  github_org_name: string;
+  brand_color_hex: string;
+};
+
+function ClientForm({
+  mode,
+  formData,
+  isSaving,
+  onChange,
+  onCancel,
+  onSave,
+}: {
+  mode: "create" | "edit";
+  formData: ClientFormData;
+  isSaving: boolean;
+  onChange: (next: ClientFormData) => void;
+  onCancel: () => void;
+  onSave: () => void;
+}) {
+  return (
+    <div className="space-y-5">
+      <div>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="mb-3 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back to clients
+        </button>
+        <PageHeader
+          title={mode === "edit" ? "Edit client" : "New client"}
+          meta="Full-page client details"
+          action={
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" className="h-9" onClick={onCancel}>
+                <X className="h-4 w-4 mr-1.5" />
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                className="h-9 bg-accent text-accent-foreground hover:bg-accent/90"
+                onClick={onSave}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-1.5" />
+                )}
+                Save
+              </Button>
+            </div>
+          }
+        />
+      </div>
+
+      <div className="border border-border rounded-lg bg-card">
+        <div className="grid gap-4 p-4 max-w-xl">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Company Name</label>
+            <Input
+              value={formData.company_name}
+              onChange={(e) => onChange({ ...formData, company_name: e.target.value })}
+              placeholder="Acme Corp"
+              autoComplete="organization"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Contact Email</label>
+            <Input
+              type="email"
+              value={formData.contact_email}
+              onChange={(e) => onChange({ ...formData, contact_email: e.target.value })}
+              placeholder="contact@company.com"
+              autoComplete="email"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">GitHub Org (optional)</label>
+            <Input
+              value={formData.github_org_name}
+              onChange={(e) => onChange({ ...formData, github_org_name: e.target.value })}
+              placeholder="acme-corp"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Brand Color</label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={formData.brand_color_hex}
+                onChange={(e) => onChange({ ...formData, brand_color_hex: e.target.value })}
+                className="w-10 h-10 rounded-lg border border-border cursor-pointer"
+              />
+              <Input
+                value={formData.brand_color_hex}
+                onChange={(e) => onChange({ ...formData, brand_color_hex: e.target.value })}
+                placeholder="#22C55E"
+                className="tabular-nums"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface AdminClientsProps {
   clients: Client[];
@@ -165,6 +273,8 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
     }
   };
 
+  const formMode = clientFormMode(isDialogOpen, editingClient);
+
   const handleDelete = async () => {
     if (!deletingClient) return;
 
@@ -187,6 +297,37 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
       });
     }
   };
+
+  if (formMode !== "closed") {
+    return (
+      <>
+        <ClientForm
+          mode={formMode}
+          formData={formData}
+          isSaving={isSaving}
+          onChange={setFormData}
+          onCancel={() => setIsDialogOpen(false)}
+          onSave={handleSave}
+        />
+        <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <AlertDialogContent className="bg-card border-border rounded-lg">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Client?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete "{deletingClient?.company_name || "this client"}" and all associated projects. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -331,85 +472,6 @@ const AdminClients = ({ clients, isLoading, onRefresh }: AdminClientsProps) => {
           </TBody>
         </Table>
       )}
-
-      {/* Create/Edit Client Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-card border-border max-w-lg rounded-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {editingClient ? "Edit Client" : "New Client"}
-            </DialogTitle>
-            <DialogDescription>
-              Save the client details used across admin projects, notifications, and invites.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Company Name</label>
-              <Input
-                value={formData.company_name}
-                onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                placeholder="Acme Corp"
-                autoComplete="organization"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Contact Email</label>
-              <Input
-                type="email"
-                value={formData.contact_email}
-                onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
-                placeholder="contact@company.com"
-                autoComplete="email"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">GitHub Org (optional)</label>
-              <Input
-                value={formData.github_org_name}
-                onChange={(e) => setFormData({ ...formData, github_org_name: e.target.value })}
-                placeholder="acme-corp"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Brand Color</label>
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={formData.brand_color_hex}
-                  onChange={(e) => setFormData({ ...formData, brand_color_hex: e.target.value })}
-                  className="w-10 h-10 rounded-lg border border-border cursor-pointer"
-                />
-                <Input
-                  value={formData.brand_color_hex}
-                  onChange={(e) => setFormData({ ...formData, brand_color_hex: e.target.value })}
-                  placeholder="#22C55E"
-                  className="tabular-nums"
-                />
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-              <X className="h-4 w-4 mr-2" />
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={isSaving}>
-              {isSaving ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4 mr-2" />
-              )}
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Confirmation */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

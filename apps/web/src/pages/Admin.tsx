@@ -29,6 +29,7 @@ import AdminProposals from "@/components/admin/AdminProposals";
 import AdminSettings from "@/components/admin/AdminSettings";
 import AdminBrandScraper from "@/components/admin/AdminBrandScraper";
 import AdminFacebookScraper from "@/components/admin/AdminFacebookScraper";
+import AdminLibrary from "@/components/admin/AdminLibrary";
 
 const Admin = () => {
   const { user, isLoading: authLoading, signOut } = useAuth();
@@ -181,6 +182,8 @@ const Admin = () => {
           {activeSection === "leads" && <AdminLeads />}
 
           {activeSection === "proposals" && <AdminProposals />}
+
+          {activeSection === "library" && <AdminLibrary />}
 
           {activeSection === "brand-scraper" && <AdminBrandScraper />}
 

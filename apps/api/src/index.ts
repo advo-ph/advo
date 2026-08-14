@@ -36,6 +36,7 @@ import previewRoutes from "./routes/preview.routes.js";
 import calendarRoutes from "./routes/calendar.routes.js";
 import changeOrderRoutes from "./routes/change-order.routes.js";
 import proposalRoutes from "./routes/proposal.routes.js";
+import libraryRoutes from "./routes/library.routes.js";
 
 import type { Variables } from "./types/context.js";
 
@@ -139,6 +140,9 @@ app.route("/api/change-order", changeOrderRoutes);
 
 // Preview links (public redirect for "Show Client Now")
 app.route("/api/preview", previewRoutes);
+
+// Internal library (team-wide catalog)
+app.route("/api/library", libraryRoutes);
 
 // Scrapers
 app.route("/api/scrape", scrapeRoutes);
