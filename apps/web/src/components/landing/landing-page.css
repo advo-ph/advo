@@ -11,8 +11,62 @@
   font-family: "Geist", system-ui, sans-serif;
 }
 
+/* Interior public routes: same white tokens so existing Tailwind pages read as landing chrome. */
+.landing-shell,
+body:has(.landing-shell) {
+  color-scheme: light;
+  --background: 0 0% 100%;
+  --foreground: 40 6% 6%;
+  --card: 40 30% 99%;
+  --card-foreground: 40 6% 6%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 40 6% 6%;
+  --primary: 40 6% 6%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 40 16% 96%;
+  --secondary-foreground: 40 6% 6%;
+  --muted: 40 16% 96%;
+  --muted-foreground: 40 5% 42%;
+  --border: 40 12% 84%;
+  --input: 40 12% 88%;
+}
+
+.landing-shell {
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.landing-shell-body {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.landing-shell-body a:not([class*="text-"]) { color: inherit; }
+
+.landing-shell-main {
+  flex: 1;
+  width: min(1180px, calc(100% - 48px));
+  margin-inline: auto;
+  padding: 28px 0 80px;
+}
+
+.landing-shell-auth {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px 72px;
+}
+
 .landing-page *, .landing-page *::before, .landing-page *::after { box-sizing: border-box; }
-.landing-page a { color: inherit; text-decoration: none; }
+.landing-page a { text-decoration: none; }
+.landing-page a:not(.landing-shell-body *) { color: inherit; }
 .landing-page button, .landing-page input { font: inherit; }
 .landing-page h1, .landing-page h2, .landing-page h3, .landing-page p { margin: 0; }
 .landing-nav, .landing-section, .landing-metric, .landing-footer > :not(.landing-landscape) { width: min(1180px, calc(100% - 48px)); margin-inline: auto; }
@@ -202,7 +256,9 @@
 }
 
 @media (max-width: 680px) {
-  .landing-nav, .landing-section, .landing-metric, .landing-footer > :not(.landing-landscape) { width: min(100% - 28px, 1180px); }
+  .landing-nav, .landing-section, .landing-metric, .landing-footer > :not(.landing-landscape), .landing-shell-main { width: min(100% - 28px, 1180px); }
+  .landing-shell-main { padding: 16px 0 64px; }
+  .landing-shell-auth { padding: 28px 16px 56px; }
   .landing-nav { height: 68px; }.landing-nav-link { display: none; position: absolute; top: 62px; left: 0; right: 0; margin: 0; padding: 20px; background: white; border: 1px solid var(--landing-line); box-shadow: 0 12px 30px rgba(0,0,0,.08); flex-direction: column; gap: 18px; }.landing-nav-link.is-open { display: flex; }.landing-login { display: none; }.landing-menu { display: block; }.landing-button-small { display: none; }
   .landing-hero { margin: 44px auto 48px; }.landing-hero h1 { font-size: 52px; }.landing-hero > p { font-size: 14px; }.landing-hero-action { align-items: stretch; flex-direction: column; width: 220px; margin-inline: auto; }
   .landing-desktop-break { display: none; }

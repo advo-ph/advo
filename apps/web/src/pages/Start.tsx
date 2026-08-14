@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select";
 import * as db from "@/lib/db";
 import { useToast } from "@/hooks/use-toast";
-import FloatingNav from "@/components/landing/FloatingNav";
+import LandingShell from "@/components/landing/landing-shell";
 
 const BUDGET_RANGES = [
   { value: "under-50k", label: "Under ₱50,000" },
@@ -107,9 +107,8 @@ const Start = () => {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <FloatingNav />
-        <div className="flex items-center justify-center flex-1 p-6">
+      <LandingShell>
+        <div className="landing-shell-auth">
           <div className="max-w-md text-center">
             <div
               className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-8"
@@ -142,15 +141,13 @@ const Start = () => {
             </div>
           </div>
         </div>
-      </div>
+      </LandingShell>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <FloatingNav />
-
-      <main className="pt-28 pb-16 px-6 flex-1">
+    <LandingShell>
+      <main className="landing-shell-main">
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-20">
             {/* Left — Info */}
@@ -360,7 +357,7 @@ const Start = () => {
           </div>
         </div>
       </main>
-    </div>
+    </LandingShell>
   );
 };
 

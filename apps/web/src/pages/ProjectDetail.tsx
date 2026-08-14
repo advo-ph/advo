@@ -4,8 +4,7 @@ import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, ExternalLink, Github, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import FloatingNav from "@/components/landing/FloatingNav";
-import Footer from "@/components/landing/Footer";
+import LandingShell from "@/components/landing/landing-shell";
 import { get } from "@/lib/api";
 
 const isVideoUrl = (url: string) => /\.(mp4|webm|mov|ogg|ogv|m4v)(\?|$)/i.test(url);
@@ -59,22 +58,26 @@ const ProjectDetail = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      <LandingShell>
+        <div className="landing-shell-auth">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </LandingShell>
     );
   }
 
   if (!project) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold mb-4">Project Not Found</h1>
-          <Link to="/" className="text-accent hover:underline">
-            Return Home
-          </Link>
+      <LandingShell>
+        <div className="landing-shell-auth">
+          <div className="text-center">
+            <h1 className="text-4xl font-bold mb-4">Project Not Found</h1>
+            <Link to="/" className="text-accent hover:underline">
+              Return Home
+            </Link>
+          </div>
         </div>
-      </div>
+      </LandingShell>
     );
   }
 
@@ -82,10 +85,8 @@ const ProjectDetail = () => {
   const heroImage = project.image_urls?.[0] || project.image_url;
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <FloatingNav />
-      
-      <main className="pt-24 pb-16 px-6 flex-1">
+    <LandingShell>
+      <main className="landing-shell-main">
         <div className="max-w-4xl mx-auto">
           {/* Back Button */}
           <motion.div
@@ -263,9 +264,7 @@ const ProjectDetail = () => {
           </motion.div>
         </div>
       </main>
-
-      <Footer />
-    </div>
+    </LandingShell>
   );
 };
 
