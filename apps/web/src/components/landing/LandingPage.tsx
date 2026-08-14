@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   IconArrowRight,
+  IconBrandFacebook,
   IconBrandGithub,
   IconBrandInstagram,
   IconBrandLinkedin,
   IconBrandX,
+  IconBrandYoutube,
   IconBriefcase,
   IconBuilding,
   IconCalendarCheck,
@@ -26,7 +28,9 @@ import {
   IconReceipt,
   IconRocket,
   IconUsers,
+  IconWorld,
 } from "@tabler/icons-react";
+import { get } from "@/lib/api";
 import {
   ArrowRight,
   Lightbulb,
@@ -112,6 +116,30 @@ const floatCard = [
   { className: "invoice", label: "Outstanding invoices", value: "₱48,291", change: "+23% from last month", Icon: IconReceipt, delay: 1.35 },
 ];
 
+interface SocialLink {
+  icon: string;
+  href: string;
+  label: string;
+}
+
+const socialDefault: SocialLink[] = [
+  { icon: "Facebook", href: "https://www.facebook.com/share/1DDt8dVJUd/?mibextid=wwXIfr", label: "Facebook" },
+  { icon: "Instagram", href: "https://www.instagram.com/advo_ph/", label: "Instagram" },
+  { icon: "Linkedin", href: "https://www.linkedin.com/company/advocompany/", label: "LinkedIn" },
+  { icon: "Mail", href: "mailto:contact@advo.ph", label: "Email" },
+];
+
+const socialIcon: Record<string, typeof IconBrandInstagram> = {
+  Facebook: IconBrandFacebook,
+  Instagram: IconBrandInstagram,
+  Linkedin: IconBrandLinkedin,
+  Mail: IconMail,
+  Twitter: IconBrandX,
+  Youtube: IconBrandYoutube,
+  Globe: IconWorld,
+  Github: IconBrandGithub,
+};
+
 const SectionLabel = ({ children }: { children: React.ReactNode }) => <span className="landing-eyebrow">{children}</span>;
 
 const LandingPage = () => {
@@ -119,7 +147,20 @@ const LandingPage = () => {
   const [faqOpen, setFaqOpen] = useState(0);
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterSent, setNewsletterSent] = useState(false);
+  const [socialLink, setSocialLink] = useState<SocialLink[]>(socialDefault);
   const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await get<{ key: string; value: unknown }[]>("/api/settings/public");
+      if (data) {
+        const setting = data.find((row) => row.key === "social_links");
+        if (setting?.value && Array.isArray(setting.value) && setting.value.length > 0) {
+          setSocialLink(setting.value as SocialLink[]);
+        }
+      }
+    })();
+  }, []);
 
   const reveal = reduceMotion
     ? { initial: false as const, animate: {} }
@@ -261,11 +302,18 @@ const LandingPage = () => {
       </section>
 
       <section className="landing-section landing-proof">
-        <div className="landing-section-head"><div><SectionLabel>Testimonials</SectionLabel><h2>Trusted by teams<br />that value good work</h2><p>Clear communication, visible progress, and a team that feels like yours.</p></div></div>
+        <div className="landing-section-head"><div><SectionLabel>Work</SectionLabel><h2>A public client,<br />already live</h2><p>Fourlinq is the shipped public case. The site is live at fourlinq.ph.</p></div></div>
         <div className="landing-proof-grid">
-          <blockquote><span>“</span><p>ADVO helped us turn a scattered idea into a product our team could actually use. Every decision was visible and the launch felt calm.</p><footer><div>MC</div><cite><strong>Maria Cruz</strong><small>Operations Lead, Northstar</small></cite></footer></blockquote>
-          <blockquote><span>“</span><p>The workspace changed the relationship completely. Feedback stopped getting lost and we always knew what was next.</p><footer><div>JL</div><cite><strong>Joshua Lim</strong><small>Founder, Common Ground</small></cite></footer></blockquote>
-          <blockquote><span>“</span><p>It feels like having a senior product team beside us—thoughtful, fast, and honest about the tradeoffs that matter.</p><footer><div>AR</div><cite><strong>Andrea Reyes</strong><small>Marketing Director, Fieldwork</small></cite></footer></blockquote>
+          <blockquote>
+            <p>Public site live at fourlinq.ph. Shipped June 19, 2026. The only named public client on this page.</p>
+            <footer>
+              <div>4L</div>
+              <cite>
+                <strong>Fourlinq</strong>
+                <small><a href="https://fourlinq.ph" target="_blank" rel="noopener noreferrer">fourlinq.ph</a></small>
+              </cite>
+            </footer>
+          </blockquote>
         </div>
       </section>
 
@@ -284,7 +332,20 @@ const LandingPage = () => {
       <footer className="landing-footer" id="footer">
         <motion.div className="landing-cta" initial={reduceMotion ? false : { opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: .5 }} transition={{ duration: .55, ease: [0.22, 1, 0.36, 1] }}><div><SectionLabel>Ready to start?</SectionLabel><h2>Let’s build something<br /><em>amazing</em> together.</h2><p>Tell us about your project and we'll get back to you within one business day.</p></div><motion.img className="landing-cta-visual" src="/landing/cta-workflow.png" alt="A connected project checklist" animate={reduceMotion ? undefined : { y: [0, -3, 0] }} transition={{ duration: 4.8, repeat: Infinity, ease: "easeInOut" }} /><div className="landing-cta-action"><Link className="landing-button landing-button-primary" to="/start"><img className="landing-button-mark" src="/favicon.ico" alt="" aria-hidden="true" />Start a project <IconArrowRight size={15} stroke={1.5} /></Link><a className="landing-button landing-button-secondary" href="#showcase"><img className="landing-button-mark" src="/favicon.ico" alt="" aria-hidden="true" />See the workspace</a></div></motion.div>
         <motion.div className="landing-footer-content" initial={reduceMotion ? false : "hidden"} whileInView="visible" viewport={{ once: true, amount: .25 }} variants={{ hidden: {}, visible: { transition: { staggerChildren: .08 } } }}>
-          <motion.div className="landing-footer-brand" variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}><img src="/advo-logo-black.png" alt="ADVO" /><p>Philippine software agency helping teams build better digital products with clarity and care.</p><div className="landing-social"><a href="#" aria-label="ADVO on X"><IconBrandX size={15} stroke={1.4} /></a><a href="#" aria-label="ADVO on LinkedIn"><IconBrandLinkedin size={15} stroke={1.4} /></a><a href="#" aria-label="ADVO on Instagram"><IconBrandInstagram size={15} stroke={1.4} /></a><a href="#" aria-label="ADVO on GitHub"><IconBrandGithub size={15} stroke={1.4} /></a></div></motion.div>
+          <motion.div className="landing-footer-brand" variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}><img src="/advo-logo-black.png" alt="ADVO" /><p>Philippine software agency helping teams build better digital products with clarity and care.</p><div className="landing-social">{socialLink.map((link) => {
+            const Icon = socialIcon[link.icon] || IconWorld;
+            return (
+              <a
+                key={link.label}
+                href={link.href}
+                target={link.href.startsWith("mailto:") ? undefined : "_blank"}
+                rel={link.href.startsWith("mailto:") ? undefined : "noopener noreferrer"}
+                aria-label={link.label}
+              >
+                <Icon size={15} stroke={1.4} />
+              </a>
+            );
+          })}</div></motion.div>
           <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}><h3>Services</h3><a href="#service">Web development</a><a href="#service">Mobile development</a><a href="#service">UI / UX design</a><a href="#service">Systems integration</a></motion.div>
           <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}><h3>Company</h3><a href="#process">How we work</a><a href="#work">Work</a><a href="#engagement">Pricing</a><Link to="/start">Contact</Link></motion.div>
           <motion.div variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}><h3>Resources</h3><a href="#showcase">Client Hub</a><a href="#workflow">Guides</a><a href="#faq">FAQs</a><a href="#">Status</a></motion.div>
