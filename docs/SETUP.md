@@ -4,12 +4,12 @@
 
 ```
 Frontend (React/Vite)  →  ADVO API (Hono/Node)  →  PostgreSQL
-     port 6400                port 6407              port 5432
+     port 6447                port 6407              port 5432
      (static /var/www       (PM2 fork, localhost)
       /advo/dist via nginx)
 ```
 
-Ports: advo range `6400–6499` (sisia-app owns `6100–6199`). API is `6407`. Frontend dev is `6400`.
+Ports: advo range `6400–6499` (sisia-app owns `6100–6199`). API is `6407`. Vite dev is `6447` and proxies `/api` → `:6407`.
 
 All three tiers run on the same Contabo VPS in Singapore — host `advo` (`62.146.237.12`).
 
@@ -30,10 +30,10 @@ cp apps/api/.env.example apps/api/.env   # Edit with your local DB credentials
 npm install                              # Installs both workspaces
 npm --workspace apps/api run db:push     # Create tables in PostgreSQL
 npm --workspace apps/api run db:seed     # Seed default data
-npm run dev                              # Starts web (6400) + api (6407) concurrently
+npm run dev                              # npx concurrently: web :6447 + api :6407
 ```
 
-Open http://localhost:6400
+Open http://localhost:6447
 
 Default admin login: `admin@advo.ph` / `changeme`
 

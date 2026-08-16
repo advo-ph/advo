@@ -44,6 +44,7 @@ Proof on `/` is Fourlinq (`fourlinq.ph`) only. Title/OG match the hero. Footer s
 - **Clients** — Client management with invite flow (creates auth account + sends welcome email)
 - **Team** — Team member profiles (bio, LinkedIn, avatar upload)
 - **Deliverables** — Schedule with status tracking and assignment
+- **Meetings** — Plaud import / ADVO-folder watch / Ask Plaud → preview → confirm deliverable
 - **Availability** — Team capacity management
 - **Social** — Social media post management
 - **Content Studio** — CMS with monochrome visibility toggles (public / hub)
@@ -140,8 +141,7 @@ Default login: `admin@advo.ph` / `changeme`
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `VITE_API_URL` | Yes | API base URL (`http://localhost:6407` or `https://api.advo.ph`) |
-| `VITE_GITHUB_TOKEN` | No | GitHub PAT for commit history |
+| `VITE_API_URL` | Yes | API base URL (`http://localhost:6407` or `https://api.advo.ph`). In Vite dev, requests go to `/api` and the proxy forwards to :6407. |
 
 ### API (`apps/api/.env`)
 
@@ -155,7 +155,9 @@ Default login: `admin@advo.ph` / `changeme`
 | `GITHUB_WEBHOOK_SECRET` | No | Webhook signature verification |
 | `PRAUD_IMPORT_SECRET` | No | Shared secret for `POST /api/meeting/import/praud` |
 | `ADVO_INBOX_PROJECT_ID` | No | Fallback project for praud imports (else auto Inbox) |
-| `PLAUD_TOKEN` | No | Plaud consumer JWT for file-id import + `GET /api/meeting/plaud`. Share-URL import works without it. |
+| `PLAUD_TOKEN` | No | Plaud consumer JWT for file-id import, folder watch, and Ask Plaud. Share-URL import works without it. |
+| `PLAUD_AUTH_FILE` | No | Alternate path to `{ token }` JSON (default `~/.piper/plaud-auth.json`). |
+| `PLAUD_API_HOST` | No | Plaud API host (default `https://api-apse1.plaud.ai`). |
 | `PLAUD_POLL_SECOND` | No | Seconds between ADVO-folder probes (default 60). `0` disables. |
 
 ## Deployment
