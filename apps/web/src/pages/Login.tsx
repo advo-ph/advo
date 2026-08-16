@@ -96,7 +96,7 @@ const Login = () => {
               <div className="w-12 h-12 rounded-full bg-secondary border border-border flex items-center justify-center mx-auto mb-4">
                 <Lock className="h-6 w-6 text-foreground" />
               </div>
-              <h1 className="text-2xl font-bold mb-2">Client Hub</h1>
+              <h1 className="text-2xl font-semibold tracking-tight mb-2">Client Hub</h1>
               <p className="text-sm text-muted-foreground">
                 Sign in to access your project dashboard
               </p>
@@ -226,7 +226,7 @@ const Login = () => {
           </div>
 
           <p className="text-center text-xs text-muted-foreground mt-6">
-            {mode === "magic" ? "No password needed—we'll email you a secure link." : "Enter your credentials to sign in."}
+            {mode === "magic" ? "No password needed. We'll email you a secure link." : "Enter your credentials to sign in."}
           </p>
         </div>
       </div>

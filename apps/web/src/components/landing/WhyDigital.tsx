@@ -23,7 +23,7 @@ const DEFAULTS: { heading: string; subtitle: string; benefits: Benefit[] } = {
   benefits: [
     { icon: "Globe", title: "24/7 Online Presence", description: "Your business never sleeps. Reach customers anytime, anywhere in the world." },
     { icon: "TrendingUp", title: "Scale Effortlessly", description: "Digital systems grow with your business without the overhead of traditional expansion." },
-    { icon: "Clock", title: "Save Time & Resources", description: "Automate repetitive tasks and focus on what matters — growing your business." },
+    { icon: "Clock", title: "Save Time & Resources", description: "Automate repetitive tasks and focus on what matters: growing your business." },
     { icon: "Users", title: "Better Customer Experience", description: "Modern interfaces that your customers expect and love to use." },
   ],
 };

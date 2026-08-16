@@ -152,29 +152,24 @@ const Start = () => {
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-20">
             {/* Left — Info */}
             <div className="lg:col-span-2">
-              <div className="flex items-baseline gap-6 mb-4">
-                <span className="text-[48px] md:text-[64px] font-mono font-light text-muted-foreground/30 leading-none tracking-tighter">
-                  06
-                </span>
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-[0.18em]">
-                  Start a Project
-                </span>
-              </div>
+              <span className="text-xs font-medium text-muted-foreground uppercase tracking-[0.18em] mb-4 block">
+                Start a project
+              </span>
 
               <h1 className="text-4xl md:text-5xl font-semibold tracking-tight leading-[1.05] mb-6 text-balance">
                 Tell us what you're building.
               </h1>
 
               <p className="text-muted-foreground text-lg mb-10 leading-relaxed">
-                Sketch, napkin, bullet points — all welcome.
+                Sketch, napkin, bullet points. All welcome.
               </p>
 
               {/* What you get */}
               <div className="space-y-3 mb-10">
                 {PERKS.map((perk) => (
                   <div key={perk} className="flex items-start gap-3">
-                    <div className="mt-0.5 w-5 h-5 rounded-full bg-accent/15 border border-accent/30 flex items-center justify-center shrink-0">
-                      <Check className="h-3 w-3 text-accent" strokeWidth={3} />
+                    <div className="mt-0.5 w-5 h-5 rounded-full bg-foreground/5 border border-foreground/15 flex items-center justify-center shrink-0">
+                      <Check className="h-3 w-3 text-foreground" strokeWidth={3} />
                     </div>
                     <p className="text-sm text-foreground/85 leading-relaxed">
                       {perk}
@@ -333,10 +328,7 @@ const Start = () => {
                   <Button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full btn-press h-12 rounded-full text-base font-medium text-white"
-                    style={{
-                      backgroundColor: "hsl(16 92% 60%)",
-                    }}
+                    className="w-full btn-press h-12 rounded-md text-base font-medium bg-foreground text-background hover:bg-foreground/90"
                   >
                     {isSubmitting ? (
                       <>

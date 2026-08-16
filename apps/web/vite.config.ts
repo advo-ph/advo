@@ -28,6 +28,12 @@ export default defineConfig({
     hmr: {
       overlay: false,
     },
+    proxy: {
+      "/api": {
+        target: "http://127.0.0.1:6407",
+        changeOrigin: true,
+      },
+    },
   },
   plugins: [
     react(),
@@ -36,6 +42,9 @@ export default defineConfig({
       injectRegister: "auto",
       includeAssets: [
         "favicon.ico",
+        "favicon.svg",
+        "favicon.png",
+        "og-image.png",
         "advo-logo-black.png",
         "icon-192.png",
         "icon-512.png",

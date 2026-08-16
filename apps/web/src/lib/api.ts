@@ -5,7 +5,9 @@
  * and standardized { data, error } envelope.
  */
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:6407";
+const API_URL = import.meta.env.DEV
+  ? ""
+  : (import.meta.env.VITE_API_URL || "http://localhost:6407");
 
 // ─── Token Management ─────────────────────────────────
 
@@ -130,7 +132,11 @@ export async function api<T>(
   }
 
   if (!res.ok) {
-    const errMsg = typeof json.error === "string" ? json.error : json.error?.message || json.message || `HTTP ${res.status}`;
+    const raw = json as { error?: string | { message?: string } | null; message?: string };
+    const errMsg =
+      typeof raw.error === "string"
+        ? raw.error
+        : raw.error?.message || raw.message || `HTTP ${res.status}`;
     return { data: null as T, error: errMsg };
   }
 

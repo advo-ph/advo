@@ -51,19 +51,35 @@ const app = new Hono<{ Variables: Variables }>();
 
 app.use("*", requestId);
 
+const isDev = e.NODE_ENV !== "production";
+
 app.use(
   "*",
   cors({
-    origin: [
-      e.FRONTEND_URL,
-      "http://localhost:6400",
-      "http://localhost:6441",
-      "http://127.0.0.1:6441",
-      "http://localhost:6100",
-      "http://localhost:6101",
-      "http://localhost:5173",
-      "http://localhost:3000",
-    ],
+    origin: (origin) => {
+      if (!origin) return e.FRONTEND_URL;
+      if (
+        isDev &&
+        /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)
+      ) {
+        return origin;
+      }
+      const allow = [
+        e.FRONTEND_URL,
+        "https://advo.ph",
+        "https://www.advo.ph",
+        "http://localhost:6400",
+        "http://localhost:6441",
+        "http://127.0.0.1:6441",
+        "http://localhost:6447",
+        "http://127.0.0.1:6447",
+        "http://localhost:6100",
+        "http://localhost:6101",
+        "http://localhost:5173",
+        "http://localhost:3000",
+      ];
+      return allow.includes(origin) ? origin : "";
+    },
     credentials: true,
     allowMethods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization", "X-Request-ID"],
@@ -76,7 +92,6 @@ app.use("/uploads/*", serveStatic({ root: e.UPLOAD_DIR.replace("./uploads", ".")
 // ─── Rate Limiting ────────────────────────────────────
 // 100x higher limits in development so the integration test suite can
 // run without tripping the limiter.
-const isDev = e.NODE_ENV !== "production";
 
 const authLimiter = rateLimiter({
   windowMs: 60 * 1000,

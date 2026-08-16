@@ -56,6 +56,10 @@ const Team = () => {
             <div className="flex items-center justify-center py-20">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
+          ) : members.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground py-16">
+              Portraits will appear here shortly.
+            </p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {members.map((member) => (
