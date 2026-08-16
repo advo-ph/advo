@@ -53,7 +53,7 @@ export interface ProposedTask {
   projectId: number | null;
 }
 
-export type TaskMethod = "ai" | "heuristic" | "note";
+export type TaskMethod = "ai" | "heuristic" | "note" | "ask";
 
 /** Response from POST /api/meeting/:id/propose-task */
 export interface ProposeTaskResult {
@@ -209,7 +209,13 @@ export function useMeeting(projectId?: number | null) {
       qc.invalidateQueries({ queryKey: ["deliverables"] });
       const n = data.deliverable.length;
       const via =
-        data.method === "ai" ? "Claude" : data.method === "note" ? "Plaud note" : "heuristic";
+        data.method === "ai"
+          ? "Claude"
+          : data.method === "note"
+            ? "Plaud note"
+            : data.method === "ask"
+              ? "Ask Plaud"
+              : "heuristic";
       const assigned = data.deliverable.filter((d) => d.assignedTo != null).length;
       toast({
         title: `${n} deliverable${n === 1 ? "" : "s"} created`,

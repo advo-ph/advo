@@ -11,6 +11,16 @@ Cross-links:
 
 ---
 
+## 2026-08-16 — Ask Plaud for Advo JSON
+
+> Propose-task now calls Plaud's own Ask (`POST /ask/v2/ask`, same consumer JWT praud uses) with the live roster + glossary and expects `{"task":[...]}`. Falls back to note parse if Ask fails or returns non-JSON.
+
+Live try on meeting 20: Ask hit `ECONNRESET` (box was `ENOBUFS` from the 60s folder poll) and fell back to `method=note`. Parser path still assigned Prince / Anthony / David.
+
+### Honest open-items
+- Ask Plaud needs a healthy outbound TLS path; retry-on-reset not wired yet.
+- Poller listing `limit=99999` every 60s may be starving sockets (`ENOBUFS`).
+
 ## 2026-08-16 — Plaud note owners + multi-section + auto-preview
 
 > Fanout: assign pipeline on the real 08-16 note.

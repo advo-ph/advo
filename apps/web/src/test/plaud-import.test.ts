@@ -10,6 +10,7 @@ import {
   payloadFromDetail,
 } from "../../../api/src/services/plaud.service";
 import { importSecretOk } from "../../../api/src/utils/import-secret";
+import { jsonFromAskAnswer, parseAskStream } from "../../../api/src/services/plaud-ask.service";
 import { plaudShareUrl } from "../lib/plaud";
 
 describe("parseShareKey", () => {
@@ -107,6 +108,29 @@ describe("importSecretOk", () => {
     expect(importSecretOk(undefined, secret)).toBe(false);
     expect(importSecretOk("Bearer nope", secret)).toBe(false);
     expect(importSecretOk(`Bearer ${secret}`, "")).toBe(false);
+  });
+});
+
+describe("Ask Plaud stream", () => {
+  it("concatenates answer chunks and keeps citations", () => {
+    const stream = [
+      "event: answer",
+      `data: ${JSON.stringify({ content: '{"task":' })}`,
+      "",
+      "event: answer",
+      `data: ${JSON.stringify({ content: '[{"title":"Ship hero"}]}' })}`,
+      "",
+      "event: reference",
+      `data: ${JSON.stringify({ type: "transcribe", start_time: 0, end_time: 1000 })}`,
+      "",
+      "event: end",
+      "data: {}",
+    ].join("\n");
+    const parsed = parseAskStream(stream);
+    expect(parsed.answer).toContain("Ship hero");
+    expect(parsed.reference).toHaveLength(1);
+    const json = jsonFromAskAnswer(parsed.answer) as { task: { title: string }[] };
+    expect(json.task[0]?.title).toBe("Ship hero");
   });
 });
 

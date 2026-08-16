@@ -97,7 +97,7 @@ const proposedTaskSchema = z.object({
 
 const generateSchema = z.object({
   task: z.array(proposedTaskSchema).min(1).max(8).optional(),
-  method: z.enum(["heuristic", "ai", "note"]).optional(),
+  method: z.enum(["heuristic", "ai", "note", "ask"]).optional(),
 });
 
 async function loadGrounding(projectId: number): Promise<MeetingGrounding> {
@@ -335,6 +335,7 @@ async function loadMeetingForTask(id: number) {
       title: meeting.title,
       transcript: meeting.transcript,
       summary: meeting.summary,
+      plaudFileId: meeting.plaudFileId,
     })
     .from(meeting)
     .where(eq(meeting.meetingId, id))
@@ -362,6 +363,7 @@ meetingRoutes.post("/:id/propose-task", requireTeam, async (c) => {
     transcript,
     summary,
     grounding,
+    plaudFileId: row.plaudFileId,
   });
   if (extraction.task.length === 0) {
     throw new HTTPException(422, {
@@ -390,7 +392,7 @@ meetingRoutes.post("/:id/generate-task", requireTeam, async (c) => {
   const grounding = await loadGrounding(row.projectId);
 
   let confirmed: ProposedTask[] | null = null;
-  let methodFromBody: "heuristic" | "ai" | "note" | undefined;
+  let methodFromBody: "heuristic" | "ai" | "note" | "ask" | undefined;
   try {
     const raw = await c.req.json();
     const parsed = generateSchema.parse(raw ?? {});
@@ -402,7 +404,7 @@ meetingRoutes.post("/:id/generate-task", requireTeam, async (c) => {
     confirmed = null;
   }
 
-  let method: "heuristic" | "ai" | "note" = methodFromBody ?? "heuristic";
+  let method: "heuristic" | "ai" | "note" | "ask" = methodFromBody ?? "heuristic";
   let extracted = confirmed;
   if (!extracted) {
     const transcript = (row.transcript ?? "").trim();
@@ -416,6 +418,7 @@ meetingRoutes.post("/:id/generate-task", requireTeam, async (c) => {
       transcript,
       summary,
       grounding,
+      plaudFileId: row.plaudFileId,
     });
     extracted = extraction.task;
     method = extraction.method;

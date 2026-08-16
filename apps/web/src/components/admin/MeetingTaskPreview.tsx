@@ -10,7 +10,13 @@ import {
 import type { ProposeTaskResult } from "@/hooks/useMeeting";
 
 const viaLabel = (method: ProposeTaskResult["method"]) =>
-  method === "ai" ? "Claude" : method === "note" ? "Plaud note" : "heuristic";
+  method === "ai"
+    ? "Claude"
+    : method === "note"
+      ? "Plaud note"
+      : method === "ask"
+        ? "Ask Plaud"
+        : "heuristic";
 
 export function MeetingTaskPreview({
   proposal,

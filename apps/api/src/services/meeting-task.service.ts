@@ -6,8 +6,14 @@
  * Ground owners against the live team_member roster so assignedTo is an id.
  */
 import Anthropic from "@anthropic-ai/sdk";
+import {
+  askPlaud,
+  jsonFromAskAnswer,
+  noteIdForFile,
+} from "./plaud-ask.service.js";
+import { hasPlaudAuth } from "./plaud.service.js";
 
-export type TaskMethod = "heuristic" | "ai" | "note";
+export type TaskMethod = "heuristic" | "ai" | "note" | "ask";
 
 export interface RosterPerson {
   teamMemberId: number;
@@ -494,6 +500,63 @@ interface RawAIExtraction {
   tasks?: RawAITask[];
 }
 
+function taskFromUnknown(parsed: unknown, grounding: MeetingGrounding | null): ProposedTask[] {
+  const rec = parsed && typeof parsed === "object" ? (parsed as RawAIExtraction) : null;
+  const list = Array.isArray(rec?.task)
+    ? rec.task
+    : Array.isArray(rec?.tasks)
+      ? rec.tasks
+      : null;
+  if (!list) return [];
+  const task: ProposedTask[] = [];
+  const seen = new Set<string>();
+  for (const item of list) {
+    if (task.length >= MAX_TASK) break;
+    const t = normalizeProposed(item);
+    if (!t) continue;
+    const key = t.title.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    task.push(groundTask(t, grounding));
+  }
+  return task;
+}
+
+function askQuestion(grounding: MeetingGrounding | null): string {
+  return `Extract ADVO deliverable items from this recording.
+
+${glossaryBlock(grounding)}
+
+Terminology: deliverable not "task"; owner is a roster name or null; suggestedSkill is one of design|frontend|backend|fullstack|content|pm|devops|qa|general.
+
+Return ONLY a JSON object (no markdown fences, no prose):
+{"task":[{"title":"...","description":"...","suggestedSkill":"frontend","owner":"Prince Wagan"}]}
+
+1 to 8 items. Skip chitchat. owner must be a roster name or null. Do not invent people.`;
+}
+
+async function extractWithAsk(
+  fileId: string,
+  grounding: MeetingGrounding | null,
+): Promise<TaskExtraction | null> {
+  if (!hasPlaudAuth()) return null;
+  try {
+    const nid = await noteIdForFile(fileId);
+    const asked = await askPlaud({
+      fileId,
+      noteId: nid,
+      question: askQuestion(grounding),
+    });
+    const parsed = jsonFromAskAnswer(asked.answer);
+    const task = taskFromUnknown(parsed, grounding);
+    if (task.length === 0) return null;
+    return { task, method: "ask" };
+  } catch (err) {
+    console.error("[meeting-task] Ask Plaud failed; falling back:", err);
+    return null;
+  }
+}
+
 function normalizeProposed(raw: RawAITask): ProposedTask | null {
   const title = clampTitle(String(raw.title ?? "").trim());
   if (title.length < MIN_TITLE) return null;
@@ -570,19 +633,25 @@ export interface GenerateMeetingTaskInput {
   transcript: string;
   summary?: string | null;
   grounding?: MeetingGrounding | null;
+  plaudFileId?: string | null;
 }
 
 /**
  * Extract 1–8 deliverable-shaped items.
- * 1. Plaud note action-item section (method "note")
- * 2. Claude when ANTHROPIC_API_KEY is set (method "ai")
- * 3. Line/bullet heuristic
+ * 1. Ask Plaud (`/ask/v2/ask`) when plaudFileId + auth — method "ask"
+ * 2. Plaud note action-item section (method "note")
+ * 3. Claude when ANTHROPIC_API_KEY is set (method "ai")
+ * 4. Line/bullet heuristic
  * Then ground owners against the roster.
  */
 export async function generateTaskFromMeeting(
   input: GenerateMeetingTaskInput,
 ): Promise<TaskExtraction> {
   const grounding = input.grounding ?? null;
+  if (input.plaudFileId) {
+    const asked = await extractWithAsk(input.plaudFileId, grounding);
+    if (asked && asked.task.length > 0) return asked;
+  }
   const summary = (input.summary ?? "").trim();
   if (summary) {
     const fromNote = parseActionItem(summary).map((t) => groundTask(t, grounding));
