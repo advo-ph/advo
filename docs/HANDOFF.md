@@ -11,6 +11,15 @@ Cross-links:
 
 ---
 
+## 2026-08-16 — docs synced; deploy blocked locally
+
+> `/sync-docs` + attempted `./deploy.sh`. Web built (`api.advo.ph` in the bundle). Rsync failed: this Windows box is `ENOBUFS` / “No buffer space available” on outbound SSH. `https://api.advo.ph/api/health` is still **200** (`db: true`, uptime ~21h) — the previous `pm2 stop` did not leave prod down.
+
+### Honest open-items
+- Run `./deploy.sh` from a **fresh** terminal (not this session). Then on the VPS: apply `012_meeting_plaud_import.sql` + `013_meeting_is_visible_client.sql`.
+- Add `PLAUD_TOKEN` (or `PLAUD_AUTH_FILE`) to `/opt/advo/apps/api/.env` or folder watch + Ask stay idle. Deploy does **not** overwrite `.env`.
+- Ask Plaud live path is proven off-API; `propose-task` via the local API was `ENOBUFS` this session.
+
 ## 2026-08-16 — Ask Plaud for Advo JSON
 
 > Propose-task now calls Plaud's own Ask (`POST /ask/v2/ask`, same consumer JWT praud uses) with the live roster + glossary and expects `{"task":[...]}`. Falls back to note parse if Ask fails or returns non-JSON.
