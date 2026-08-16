@@ -15,6 +15,11 @@ const envSchema = z.object({
   GITHUB_WEBHOOK_SECRET: z.string().optional(),
   GITHUB_ORG: z.string().default("advo-ph"),
 
+  /** Shared secret for POST /api/meeting/import/praud (praud passcode `advo`). */
+  PRAUD_IMPORT_SECRET: z.string().optional(),
+  /** Fallback project for praud imports when the body omits projectId. */
+  ADVO_INBOX_PROJECT_ID: z.string().optional(),
+
   CLOUDFLARE_TOKEN: z.string().optional(),
   CLOUDFLARE_ACCOUNT_ID: z.string().optional(),
 

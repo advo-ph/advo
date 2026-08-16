@@ -373,8 +373,8 @@ export const changeOrder = pgTable(
   ]
 );
 
-// Meeting MoM records (migration 006). Full transcript per project; optional
-// plaud_share_key for Plaud share links. project_id required CASCADE.
+// Meeting MoM records (migration 006 + 012). Full transcript per project;
+// optional Plaud file id / share key / AI summary. project_id required CASCADE.
 export const meeting = pgTable(
   "meeting",
   {
@@ -385,7 +385,10 @@ export const meeting = pgTable(
     title: varchar("title", { length: 255 }).notNull(),
     recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull(),
     transcript: text("transcript").notNull(),
-    plaudShareKey: varchar("plaud_share_key", { length: 255 }),
+    summary: text("summary"),
+    plaudFileId: varchar("plaud_file_id", { length: 64 }),
+    plaudShareKey: varchar("plaud_share_key", { length: 500 }),
+    isVisibleClient: boolean("is_visible_client").notNull().default(false),
     createdBy: integer("created_by").references(() => user.userId, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -394,6 +397,7 @@ export const meeting = pgTable(
     index("idx_meeting_project").on(t.projectId),
     index("idx_meeting_recorded_at").on(t.recordedAt),
     index("idx_meeting_created_by").on(t.createdBy),
+    uniqueIndex("idx_meeting_plaud_file").on(t.plaudFileId),
   ]
 );
 

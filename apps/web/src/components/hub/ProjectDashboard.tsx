@@ -555,7 +555,7 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
       >
         <div className="p-4 space-y-4">
           <p className="text-xs text-muted-foreground">
-            New scope — a new page, feature, or something you saw on another site —
+            New scope (a new page, feature, or something you saw on another site)
             needs a written change order. Revisions to existing work stay on the
             included rounds. The team will reply with price and timeline; work
             does not start until you confirm.
@@ -584,7 +584,7 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
                 id="change-order-scope"
                 value={scope}
                 onChange={(e) => setScope(e.target.value)}
-                placeholder="What is new — page, feature, or behavior not in the original spec."
+                placeholder="What is new: page, feature, or behavior not in the original spec."
                 rows={3}
                 required
               />
@@ -597,7 +597,7 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
                 id="change-order-reason"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="Why you want it — e.g. saw it on another site."
+                placeholder="Why you want it. Example: saw it on another site."
                 rows={3}
                 required
               />
@@ -753,6 +753,7 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
             <ul className="divide-y divide-border rounded-md border border-border">
               {projectMeeting.map((m) => {
                 const isOpen = expandedMeetingId === m.meetingId;
+                const preview = (m.summary ?? m.transcript ?? "").replace(/\s+/g, " ").trim();
                 return (
                   <li key={m.meetingId}>
                     <button
@@ -774,6 +775,11 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
                             minute: "2-digit",
                           })}
                         </p>
+                        {!isOpen && preview && (
+                          <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+                            {preview}
+                          </p>
+                        )}
                       </div>
                       {isOpen ? (
                         <ChevronUp className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -782,7 +788,12 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
                       )}
                     </button>
                     {isOpen && (
-                      <div className="border-t border-border bg-secondary/20 px-3 py-3">
+                      <div className="space-y-3 border-t border-border bg-secondary/20 px-3 py-3">
+                        {m.summary?.trim() && (
+                          <div className="whitespace-pre-wrap text-sm text-foreground/90">
+                            {m.summary}
+                          </div>
+                        )}
                         <pre className="max-h-64 overflow-y-auto whitespace-pre-wrap font-sans text-sm text-foreground/90">
                           {m.transcript}
                         </pre>

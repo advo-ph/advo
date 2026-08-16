@@ -18,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -27,7 +28,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { PageHeader, StatStrip, Stat, Table, THead, TBody, TRow, Empty } from "./_ui";
-import { useMeeting, type Meeting, type MeetingInput } from "@/hooks/useMeeting";
+import {
+  useMeeting,
+  usePlaudFile,
+  type Meeting,
+  type MeetingInput,
+  type ProposeTaskResult,
+} from "@/hooks/useMeeting";
+import { plaudShareUrl } from "@/lib/plaud";
+import { MeetingTaskPreview } from "./MeetingTaskPreview";
 
 interface ProjectOption {
   project_id: number;
@@ -72,9 +81,6 @@ const fmtWhen = (iso: string) =>
     minute: "2-digit",
   });
 
-const plaudUrl = (key: string | null) =>
-  key ? `https://app.plaud.ai/share/${encodeURIComponent(key)}` : null;
-
 const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
   const {
     meeting,
@@ -83,13 +89,25 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
     updateMeeting,
     deleteMeeting,
     generateTask,
+    proposeTask,
+    importPlaudMeeting,
     isSaving,
+    isImporting,
     isGeneratingTask,
   } = useMeeting();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importProjectId, setImportProjectId] = useState("");
+  const [importRef, setImportRef] = useState("");
+  const [importQuery, setImportQuery] = useState("advo");
+  const [browseOpen, setBrowseOpen] = useState(false);
+  const { data: plaudFile = [], isLoading: isPlaudLoading, error: plaudError, refetch: refetchPlaud } =
+    usePlaudFile(importQuery, importOpen && browseOpen);
   const [form, setForm] = useState<FormState>(emptyForm());
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [generatingId, setGeneratingId] = useState<number | null>(null);
+  const [proposal, setProposal] = useState<ProposeTaskResult | null>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
 
   const projectTitle = (id: number) =>
     projects.find((p) => p.project_id === id)?.title ?? `Project #${id}`;
@@ -136,6 +154,18 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
     }
   };
 
+  const runImport = async (fileId?: string, shareUrl?: string) => {
+    if (!importProjectId) return;
+    const ref = importRef.trim();
+    await importPlaudMeeting({
+      projectId: Number(importProjectId),
+      fileId: fileId ?? (/^[a-f0-9]{24,64}$/i.test(ref) ? ref : undefined),
+      shareUrl: shareUrl ?? (ref && !/^[a-f0-9]{24,64}$/i.test(ref) ? ref : undefined),
+    });
+    setImportOpen(false);
+    setImportRef("");
+  };
+
   const handleDelete = async () => {
     if (!form.id) return;
     try {
@@ -146,24 +176,167 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
     }
   };
 
+  const openPropose = async (meetingId: number) => {
+    setGeneratingId(meetingId);
+    try {
+      const next = await proposeTask(meetingId);
+      setProposal(next);
+    } catch {
+      // toast from hook
+    } finally {
+      setGeneratingId(null);
+    }
+  };
+
+  const confirmPropose = async () => {
+    if (!proposal) return;
+    setIsConfirming(true);
+    try {
+      await generateTask(proposal.meetingId, proposal.task, proposal.method);
+      setProposal(null);
+    } catch {
+      // toast from hook
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <PageHeader
         title="Meetings"
         meta={isLoading ? "loading…" : `${meeting.length} MoM record${meeting.length === 1 ? "" : "s"}`}
         action={
-          <Button
-            size="sm"
-            className="h-9 bg-accent text-accent-foreground hover:bg-accent/90 gap-1.5"
-            onClick={openCreate}
-          >
-            <Plus className="h-4 w-4" /> New MoM
-          </Button>
+          <div className="flex gap-2">
+            <Dialog open={importOpen} onOpenChange={setImportOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="outline" className="h-9 gap-1.5">
+                  Import from Plaud
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Import from Plaud</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div>
+                    <span className="eyebrow block mb-1">Project</span>
+                    <Select
+                      value={importProjectId || undefined}
+                      onValueChange={setImportProjectId}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Select project" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {projects.map((p) => (
+                          <SelectItem key={p.project_id} value={String(p.project_id)}>
+                            {p.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Input
+                    placeholder="Plaud file id or share URL"
+                    value={importRef}
+                    onChange={(e) => setImportRef(e.target.value)}
+                    className="h-9"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8"
+                    onClick={() => {
+                      setBrowseOpen(true);
+                      void refetchPlaud();
+                    }}
+                  >
+                    Browse ADVO folder
+                  </Button>
+                  {browseOpen && (
+                    <div className="max-h-56 overflow-y-auto rounded-md border border-border divide-y divide-border">
+                      {isPlaudLoading ? (
+                        <p className="flex items-center gap-2 p-3 text-sm text-muted-foreground">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading Plaud…
+                        </p>
+                      ) : plaudError ? (
+                        <p className="p-3 text-sm text-destructive">
+                          {(plaudError as Error).message}
+                        </p>
+                      ) : plaudFile.length === 0 ? (
+                        <p className="p-3 text-sm text-muted-foreground">
+                          No recordings named "{importQuery}".
+                        </p>
+                      ) : (
+                        plaudFile.map((f) => (
+                          <button
+                            key={f.fileId}
+                            type="button"
+                            disabled={isImporting || !importProjectId}
+                            onClick={() => void runImport(f.fileId)}
+                            className="flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-secondary/40 disabled:opacity-50"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium">{f.name}</p>
+                              <p className="text-[10px] tabular-nums text-muted-foreground">
+                                {f.startAt
+                                  ? new Date(f.startAt).toLocaleDateString("en-US", {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                    })
+                                  : f.fileId.slice(0, 8)}
+                              </p>
+                            </div>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                  {browseOpen && (
+                    <Input
+                      placeholder="Folder / name filter"
+                      value={importQuery}
+                      onChange={(e) => setImportQuery(e.target.value)}
+                      className="h-8 text-xs"
+                    />
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9"
+                    onClick={() => setImportOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="h-9 bg-accent text-accent-foreground hover:bg-accent/90"
+                    disabled={isImporting || !importProjectId || !importRef.trim()}
+                    onClick={() => void runImport()}
+                  >
+                    {isImporting ? "Importing…" : "Import"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <Button
+              size="sm"
+              className="h-9 bg-accent text-accent-foreground hover:bg-accent/90 gap-1.5"
+              onClick={openCreate}
+            >
+              <Plus className="h-4 w-4" /> New MoM
+            </Button>
+          </div>
         }
       />
 
-      <StatStrip cols={3}>
+      <StatStrip cols={4}>
         <Stat label="Meetings" value={String(meeting.length)} />
+        <Stat label="Published" value={String(meeting.filter((m) => m.isVisibleClient).length)} />
         <Stat label="With Plaud link" value={String(withPlaud)} />
         <Stat
           label="Projects covered"
@@ -181,13 +354,13 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
         <TBody>
           {meeting.length === 0 ? (
             <Empty
-              text="No meeting minutes yet — paste a Plaud transcript or type MoM notes for a project."
+              text="No meeting minutes yet — import from Plaud or paste a transcript."
               icon={Mic}
             />
           ) : (
             meeting.map((m) => {
               const isOpen = expandedId === m.meetingId;
-              const share = plaudUrl(m.plaudShareKey);
+              const share = plaudShareUrl(m.plaudShareKey);
               return (
                 <div key={m.meetingId}>
                   <TRow
@@ -195,7 +368,12 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
                       setExpandedId(isOpen ? null : m.meetingId)
                     }
                   >
-                    <span className="flex-1 min-w-0 truncate font-medium">{m.title}</span>
+                    <span className="flex-1 min-w-0 truncate font-medium">
+                      {m.title}
+                      <span className="ml-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+                        {m.isVisibleClient ? "Published" : "Internal"}
+                      </span>
+                    </span>
                     <span className="w-40 truncate text-muted-foreground hidden md:block">
                       {projectTitle(m.projectId)}
                     </span>
@@ -225,21 +403,24 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
                           size="sm"
                           variant="outline"
                           className="h-8"
+                          onClick={() =>
+                            void updateMeeting(m.meetingId, {
+                              isVisibleClient: !m.isVisibleClient,
+                            })
+                          }
+                        >
+                          {m.isVisibleClient ? "Unpublish" : "Publish to client"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8"
                           disabled={
                             isGeneratingTask ||
-                            !m.transcript?.trim() ||
+                            (!m.transcript?.trim() && !m.summary?.trim()) ||
                             generatingId === m.meetingId
                           }
-                          onClick={async () => {
-                            setGeneratingId(m.meetingId);
-                            try {
-                              await generateTask(m.meetingId);
-                            } catch {
-                              // toast from hook
-                            } finally {
-                              setGeneratingId(null);
-                            }
-                          }}
+                          onClick={() => void openPropose(m.meetingId)}
                         >
                           {generatingId === m.meetingId ? (
                             <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
@@ -259,6 +440,11 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
                           </a>
                         )}
                       </div>
+                      {m.summary?.trim() && (
+                        <div className="whitespace-pre-wrap text-sm text-foreground/90 max-h-40 overflow-y-auto rounded-md border border-border bg-card p-3">
+                          {m.summary}
+                        </div>
+                      )}
                       <pre className="whitespace-pre-wrap text-sm text-foreground/90 font-sans max-h-64 overflow-y-auto rounded-md border border-border bg-card p-3">
                         {m.transcript}
                       </pre>
@@ -270,6 +456,13 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
           )}
         </TBody>
       </Table>
+
+      <MeetingTaskPreview
+        proposal={proposal}
+        isConfirming={isConfirming}
+        onClose={() => setProposal(null)}
+        onConfirm={() => void confirmPropose()}
+      />
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-lg">
@@ -371,6 +564,7 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 };

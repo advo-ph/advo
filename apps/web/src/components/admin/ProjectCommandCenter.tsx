@@ -51,8 +51,9 @@ import { useInvoices } from "@/hooks/useInvoices";
 import { useContractReview, type FlagSeverity } from "@/hooks/useContractReview";
 import { useProjectPreview } from "@/hooks/usePreviewLink";
 import { useProjectAssets } from "@/hooks/useProjectAssets";
-import { useMeeting } from "@/hooks/useMeeting";
+import { useMeeting, type ProposeTaskResult } from "@/hooks/useMeeting";
 import { useAdminTeam } from "@/hooks/useAdminTeam";
+import { MeetingTaskPreview } from "./MeetingTaskPreview";
 import { isJuniorRole } from "@/lib/project-assign";
 import { post, del } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -124,7 +125,10 @@ const ProjectCommandCenter = ({ project, onBack }: ProjectCommandCenterProps) =>
     createMeeting,
     deleteMeeting,
     generateTask,
+    proposeTask,
+    importPlaudMeeting,
     isSaving: isSavingMeeting,
+    isImporting,
     isGeneratingTask,
   } = useMeeting(project.project_id);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -132,11 +136,14 @@ const ProjectCommandCenter = ({ project, onBack }: ProjectCommandCenterProps) =>
   const [copied, setCopied] = useState(false);
   const [expandedMeetingId, setExpandedMeetingId] = useState<number | null>(null);
   const [generatingMeetingId, setGeneratingMeetingId] = useState<number | null>(null);
+  const [proposal, setProposal] = useState<ProposeTaskResult | null>(null);
+  const [isConfirmingTask, setIsConfirmingTask] = useState(false);
   const [showMeetingForm, setShowMeetingForm] = useState(false);
   const [meetingTitle, setMeetingTitle] = useState("");
   const [meetingRecordedAt, setMeetingRecordedAt] = useState("");
   const [meetingTranscript, setMeetingTranscript] = useState("");
   const [meetingPlaudKey, setMeetingPlaudKey] = useState("");
+  const [meetingImportRef, setMeetingImportRef] = useState("");
 
   const [assignedId, setAssignedId] = useState<number[]>(project.team_member_id ?? []);
   const [addMemberId, setAddMemberId] = useState("");
@@ -729,6 +736,37 @@ const ProjectCommandCenter = ({ project, onBack }: ProjectCommandCenterProps) =>
           >
             {showMeetingForm && (
               <div className="space-y-2 border-b border-border p-4">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Plaud file id or share URL"
+                    value={meetingImportRef}
+                    onChange={(e) => setMeetingImportRef(e.target.value)}
+                    className="h-9"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-9 shrink-0"
+                    disabled={isImporting || !meetingImportRef.trim()}
+                    onClick={async () => {
+                      const ref = meetingImportRef.trim();
+                      const isFile = /^[a-f0-9]{24,64}$/i.test(ref);
+                      try {
+                        await importPlaudMeeting({
+                          projectId: project.project_id,
+                          fileId: isFile ? ref : undefined,
+                          shareUrl: isFile ? undefined : ref,
+                        });
+                        setMeetingImportRef("");
+                        setShowMeetingForm(false);
+                      } catch {
+                        /* toast from hook */
+                      }
+                    }}
+                  >
+                    {isImporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Import"}
+                  </Button>
+                </div>
                 <Input
                   placeholder="Title"
                   value={meetingTitle}
@@ -834,13 +872,13 @@ const ProjectCommandCenter = ({ project, onBack }: ProjectCommandCenterProps) =>
                               className="h-7"
                               disabled={
                                 isGeneratingTask ||
-                                !m.transcript?.trim() ||
+                                (!m.transcript?.trim() && !m.summary?.trim()) ||
                                 generatingMeetingId === m.meetingId
                               }
                               onClick={async () => {
                                 setGeneratingMeetingId(m.meetingId);
                                 try {
-                                  await generateTask(m.meetingId);
+                                  setProposal(await proposeTask(m.meetingId));
                                 } catch {
                                   // toast from hook
                                 } finally {
@@ -864,6 +902,11 @@ const ProjectCommandCenter = ({ project, onBack }: ProjectCommandCenterProps) =>
                               <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
                             </Button>
                           </div>
+                          {m.summary?.trim() && (
+                            <div className="max-h-40 overflow-y-auto whitespace-pre-wrap rounded-md border border-border bg-card p-3 text-sm text-foreground/90">
+                              {m.summary}
+                            </div>
+                          )}
                           <pre className="max-h-64 overflow-y-auto whitespace-pre-wrap rounded-md border border-border bg-card p-3 font-sans text-sm text-foreground/90">
                             {m.transcript}
                           </pre>
@@ -875,6 +918,23 @@ const ProjectCommandCenter = ({ project, onBack }: ProjectCommandCenterProps) =>
               </div>
             )}
           </Panel>
+          <MeetingTaskPreview
+            proposal={proposal}
+            isConfirming={isConfirmingTask}
+            onClose={() => setProposal(null)}
+            onConfirm={async () => {
+              if (!proposal) return;
+              setIsConfirmingTask(true);
+              try {
+                await generateTask(proposal.meetingId, proposal.task, proposal.method);
+                setProposal(null);
+              } catch {
+                // toast from hook
+              } finally {
+                setIsConfirmingTask(false);
+              }
+            }}
+          />
         </TabsContent>
 
         {/* ── Finance (real) ── */}

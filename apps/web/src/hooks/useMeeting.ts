@@ -10,7 +10,10 @@ export interface Meeting {
   title: string;
   recordedAt: string;
   transcript: string;
+  summary: string | null;
+  plaudFileId: string | null;
   plaudShareKey: string | null;
+  isVisibleClient: boolean;
   createdBy: number | null;
   createdAt: string;
   updatedAt: string;
@@ -21,7 +24,43 @@ export interface MeetingInput {
   title: string;
   recordedAt: string;
   transcript: string;
+  summary?: string | null;
+  plaudFileId?: string | null;
   plaudShareKey?: string | null;
+  isVisibleClient?: boolean;
+}
+
+export interface PlaudFile {
+  fileId: string;
+  name: string;
+  startAt: string | null;
+  durationMillisecond: number | null;
+}
+
+export interface ImportPlaudInput {
+  projectId: number;
+  fileId?: string;
+  shareUrl?: string;
+}
+
+export interface ProposedTask {
+  title: string;
+  description: string;
+  suggestedSkill: string;
+  assignedTo: number | null;
+  assigneeName: string | null;
+  ownerRaw: string | null;
+  projectId: number | null;
+}
+
+export type TaskMethod = "ai" | "heuristic" | "note";
+
+/** Response from POST /api/meeting/:id/propose-task */
+export interface ProposeTaskResult {
+  task: ProposedTask[];
+  method: TaskMethod;
+  meetingId: number;
+  projectId: number;
 }
 
 /** Response from POST /api/meeting/:id/generate-task */
@@ -32,8 +71,10 @@ export interface GenerateTaskResult {
     title: string;
     description: string | null;
     status: string;
+    assignedTo: number | null;
   }>;
-  method: "ai" | "heuristic";
+  task?: ProposedTask[];
+  method: TaskMethod;
   meetingId: number;
   projectId: number;
 }
@@ -92,9 +133,16 @@ export function useMeeting(projectId?: number | null) {
       const r = await patch(`/api/meeting/${id}`, input);
       if (r.error) throw new Error(r.error);
     },
-    onSuccess: () => {
+    onSuccess: (_data, vars) => {
       invalidate();
-      toast({ title: "Meeting updated" });
+      toast({
+        title:
+          vars.input.isVisibleClient === true
+            ? "Published to client"
+            : vars.input.isVisibleClient === false
+              ? "Unpublished"
+              : "Meeting updated",
+      });
     },
     onError: onErr,
   });
@@ -111,9 +159,45 @@ export function useMeeting(projectId?: number | null) {
     onError: onErr,
   });
 
-  const generateTaskMutation = useMutation({
+  const importMutation = useMutation({
+    mutationFn: async (input: ImportPlaudInput) => {
+      const r = await post<{ meeting: Meeting; created: boolean }>("/api/meeting/import", input);
+      if (r.error) throw new Error(r.error);
+      if (!r.data?.meeting) throw new Error("Import returned no meeting");
+      return r.data;
+    },
+    onSuccess: (data) => {
+      invalidate();
+      toast({
+        title: data.created ? "Imported from Plaud" : "Updated from Plaud",
+        description: data.meeting.title,
+      });
+    },
+    onError: onErr,
+  });
+
+  const proposeTaskMutation = useMutation({
     mutationFn: async (id: number) => {
-      const r = await post<GenerateTaskResult>(`/api/meeting/${id}/generate-task`);
+      const r = await post<ProposeTaskResult>(`/api/meeting/${id}/propose-task`, {});
+      if (r.error) throw new Error(r.error);
+      if (!r.data?.task?.length) {
+        throw new Error("No tasks generated from transcript");
+      }
+      return r.data;
+    },
+    onError: onErr,
+  });
+
+  const generateTaskMutation = useMutation({
+    mutationFn: async (input: {
+      id: number;
+      task?: ProposedTask[];
+      method?: TaskMethod;
+    }) => {
+      const r = await post<GenerateTaskResult>(`/api/meeting/${input.id}/generate-task`, {
+        task: input.task,
+        method: input.method,
+      });
       if (r.error) throw new Error(r.error);
       if (!r.data?.deliverable?.length) {
         throw new Error("No tasks generated from transcript");
@@ -124,9 +208,12 @@ export function useMeeting(projectId?: number | null) {
       qc.invalidateQueries({ queryKey: ["adminDeliverables"] });
       qc.invalidateQueries({ queryKey: ["deliverables"] });
       const n = data.deliverable.length;
+      const via =
+        data.method === "ai" ? "Claude" : data.method === "note" ? "Plaud note" : "heuristic";
+      const assigned = data.deliverable.filter((d) => d.assignedTo != null).length;
       toast({
-        title: `${n} task${n === 1 ? "" : "s"} created`,
-        description: `Via ${data.method === "ai" ? "Claude" : "heuristic"} · project #${data.projectId}`,
+        title: `${n} deliverable${n === 1 ? "" : "s"} created`,
+        description: `Via ${via} · ${assigned} assigned · project #${data.projectId}`,
       });
     },
     onError: onErr,
@@ -139,8 +226,29 @@ export function useMeeting(projectId?: number | null) {
     updateMeeting: (id: number, input: Partial<MeetingInput>) =>
       updateMutation.mutateAsync({ id, input }),
     deleteMeeting: deleteMutation.mutateAsync,
-    generateTask: generateTaskMutation.mutateAsync,
+    importPlaudMeeting: importMutation.mutateAsync,
+    proposeTask: proposeTaskMutation.mutateAsync,
+    generateTask: (id: number, task?: ProposedTask[], method?: TaskMethod) =>
+      generateTaskMutation.mutateAsync({ id, task, method }),
     isSaving: createMutation.isPending || updateMutation.isPending,
-    isGeneratingTask: generateTaskMutation.isPending,
+    isImporting: importMutation.isPending,
+    isGeneratingTask: generateTaskMutation.isPending || proposeTaskMutation.isPending,
   };
+}
+
+/** List Plaud recordings. Default query is the ADVO folder name. */
+export function usePlaudFile(query = "advo", enabled = false) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ["plaud-file", query],
+    queryFn: async () => {
+      const res = await get<{ file: PlaudFile[] }>(
+        `/api/meeting/plaud?query=${encodeURIComponent(query)}`,
+      );
+      if (res.error) throw new Error(res.error);
+      return res.data?.file ?? [];
+    },
+    enabled: !!user && enabled,
+    staleTime: 30 * 1000,
+  });
 }
