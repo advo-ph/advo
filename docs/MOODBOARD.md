@@ -23,13 +23,13 @@ Not an AI studio. Not a generic web agency. Not global SaaS.
 | **Geography** | Philippines-first, developing-market comparable | Digitalization incomplete; competition thin; deals are relational |
 | **Product** | Software + replaceable mall hardware | TV queue, tablet POS, phone + Bluetooth printer — no custom silicon until a vertical is proven |
 | **Voice** | Calm, direct, engineer-owned | We ship systems people depend on; hype language undermines trust |
-| **Look** | Public `/`: white editorial, ink + cream + one orange. Admin/hub: Linear dark | `/` is the shipped Codex `LandingPage` — do not document the old black 3D page as live |
+| **Look** | Public `/`: Runway marketing language — white field, cinematic stills, ghost + dark buttons, dense black footer. Admin/hub: Linear dark | `/` is the shipped `LandingPage` — do not document the old black 3D page or the orange editorial Codex page as live |
 
 ---
 
 ## Visual system (already in code)
 
-Admin/hub tokens below live in `apps/web/src/index.css`. Public `/` tokens live in `landing-page.css` (white, `--landing-ink` / `--landing-cream` / `--landing-orange`).
+Admin/hub tokens below live in `apps/web/src/index.css`. Public `/` tokens live in `landing-page.css` (white, `--landing-ink` / `--landing-ghost` / `--landing-dark`).
 
 | Token | Value | Role |
 |-------|-------|------|
@@ -38,7 +38,7 @@ Admin/hub tokens below live in `apps/web/src/index.css`. Public `/` tokens live 
 | Text | `#FAFAFA` / `#999` muted | Body / secondary |
 | Accent | `#E67A3A` | CTAs, highlights only — never rainbow |
 | Border | `#242424` | Hairline |
-| Type | Landing: Geist on `.landing-page`. Admin/hub: Hanken Grotesk | No mono `01` numerals on `/`. Product chrome is dense sans, not display-mono |
+| Type | Landing: Inter on `.landing-page`. Admin/hub: Hanken Grotesk | No mono `01` numerals on `/`. Product chrome is dense sans, not display-mono |
 | Radius | 10px | Default |
 
 **Photography language**

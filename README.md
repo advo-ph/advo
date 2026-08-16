@@ -1,6 +1,6 @@
 # ADVO — Agency Platform
 
-Landing site, client portal, and admin CMS for ADVO — a Philippine software agency. White editorial public `/` (`LandingPage`); Linear dark admin/hub. Self-hosted stack.
+Landing site, client portal, and admin CMS for ADVO — a Philippine software agency. Runway-language public `/` (`LandingPage`); Linear dark admin/hub. Self-hosted stack.
 
 **Live**: [advo.ph](https://advo.ph) · **API**: [api.advo.ph](https://api.advo.ph/api/health)
 
@@ -8,20 +8,21 @@ Landing site, client portal, and admin CMS for ADVO — a Philippine software ag
 
 ### Public Site (`/`)
 
-Shipped Codex [`LandingPage`](apps/web/src/components/landing/LandingPage.tsx) + [`landing-page.css`](apps/web/src/components/landing/landing-page.css). Routed from [`Index.tsx`](apps/web/src/pages/Index.tsx). White editorial marketing page — not the old dark 3D / ticker / blob landing.
+Shipped [`LandingPage`](apps/web/src/components/landing/LandingPage.tsx) + [`landing-page.css`](apps/web/src/components/landing/landing-page.css). Routed from [`Index.tsx`](apps/web/src/pages/Index.tsx). Public `/` uses the Runway marketing language — white field, cinematic hero, snap-scroll cards, dense black footer. Not the old dark 3D / ticker / blob landing.
 
-- **Nav** — in-page Services / Process / Work / Pricing + Log in + Start a project. Hamburger on small viewports.
-- **Hero** — kicker "PH software agency & client workspace"; headline "Build together. Ship with *clarity.*"
-- **Showcase** — mock workspace shell (overview, tasks, approvals, invoices) with floating stat cards
-- **Features** — Plan / Create / Approve / Deliver
-- **Services** — Strategy / Design / Development / Support
-- **Process** — Discover & Plan → Design & Build → Review & Launch
-- **Workflow** — Inquiry → Scope → Build → Review → Launch
-- **Metrics** — shipped counts (projects, satisfaction, disciplines, response time)
-- **Integrations** — local brand marks (Gmail, Calendar, Notion, Slack, Trello, Drive, Zoom, Asana, Teams)
+- **Nav** — fixed blur chrome. Product / Services mega-panels + Work / Process / Pricing. Ghost Team + Log in. Dark Start a project. Hamburger on small viewports.
+- **Hero** — cinematic floor still; headline "Build together. Ship with clarity." Light Get Started.
+- **Capability** — Strategy / Design / Development / Support as a quiet icon row
+- **Showcase** — mock workspace shell (overview, tasks, approvals, invoices)
+- **Tools** — horizontal snap cards (Hub, Plan, Create, Approve, Deliver, Fourlinq)
+- **Process** — Discover → Design → Build → Review → Launch → Support with before/after stills
+- **Integrations** — name marquee (Gmail, Calendar, Notion, Slack, Trello, Drive, Zoom, Asana, Teams)
+- **Stories** — Fourlinq (`fourlinq.ph`) is the only named public client
+- **Surfaces** — Client Hub / Admin / Public site / Hardware as paginated cards
+- **Workflow** — Inquiry → Scope → Build → Review → Launch as node cards
 - **Engagement** — Project / Retainer / Hourly / Enterprise starting prices
 - **FAQ** — workspace, invites, fees, invoicing, support
-- **Footer** — CTA + sitemap + local-only newsletter (no subscribe API) + PH landscape
+- **Footer** — off-black sitemap + social from `GET /api/settings/public`
 
 Proof on `/` is Fourlinq (`fourlinq.ph`) only. Title/OG match the hero. Footer social icons use `GET /api/settings/public` plus the same real defaults as the leftover `Footer`. `/start`, `/login`, `/team`, and `/project/:slug` share `landing-shell`. `/hub` stays on the June Linear language (`FloatingNav`).
 
@@ -64,22 +65,24 @@ Proof on `/` is Fourlinq (`fourlinq.ph`) only. Title/OG match the hero. Footer s
 
 ## Design System
 
-Two languages. Public `/` is the white editorial `LandingPage`. Admin + hub stay on the June Linear dark chrome.
+Two languages. Public `/` is the Runway-language `LandingPage` (white field, cinematic stills, dense black footer). Admin + hub stay on the June Linear dark chrome.
 
 ### Public landing (`apps/web/src/components/landing/landing-page.css`)
 
 | Token | Value | Use |
 |-------|-------|-----|
-| `--landing-ink` | `#11110f` | Body text |
-| `--landing-muted` | `#6d6b65` | Secondary copy |
-| `--landing-line` | `#d9d7d0` | Hairline |
-| `--landing-orange` | `#ff5b22` | CTAs, accent word |
-| `--landing-cream` | `#f7f2e7` | Footer field |
+| `--landing-ink` | `#0c0c0c` | Body text |
+| `--landing-muted` | `#5f6673` | Secondary copy |
+| `--landing-line` | `#e4e5e6` | Hairline |
+| `--landing-ghost` | `#eef1f5` | Ghost buttons |
+| `--landing-dark` | `#262626` | Primary CTA |
+| `--landing-light` | `#f7f7f7` | Hero button |
 | background | `#fff` | Page |
+| footer | `#0c0c0c` | Off-black sitemap |
 
-**Type**: Geist on `.landing-page` (falls back to system-ui). Tight display tracking on the hero. No mono numerals.
+**Type**: Inter on `.landing-page` (ABC Normal is licensed; Inter is the Runway fallback). Tight display tracking on the hero. Weight 400 on headlines. No mono numerals.
 
-**Motion**: Framer reveal-on-view + `prefers-reduced-motion` path. Float cards / illustrations ease. No 3D scene, no logo ticker, no blob CTA.
+**Motion**: Snap-scroll tool rail + name marquee + `prefers-reduced-motion` path. No 3D scene, no blob CTA.
 
 ### Admin + hub (`apps/web/src/index.css`)
 
@@ -106,7 +109,7 @@ Two languages. Public `/` is the white editorial `LandingPage`. Admin + hub stay
 | Layer | Technology |
 |-------|-----------|
 | **Frontend** | React 18 + Vite + TypeScript |
-| **Styling** | Tailwind CSS + Shadcn/UI + Hanken Grotesk (admin/hub); `landing-page.css` + Geist (public `/`) |
+| **Styling** | Tailwind CSS + Shadcn/UI + Hanken Grotesk (admin/hub); `landing-page.css` + Inter (public `/`) |
 | **Animation** | Framer Motion (landing reveals + hub `FloatingNav` spring) |
 | **API** | Hono (Node.js) + Drizzle ORM |
 | **Database** | PostgreSQL 16 |
@@ -125,7 +128,8 @@ cp apps/api/.env.example apps/api/.env   # Edit with your DB credentials
 npm install                              # Installs both workspaces
 npm --workspace apps/api run db:push     # Create tables
 npm --workspace apps/api run db:seed     # Seed defaults
-npm run dev                              # Starts web (6400) + api (6407) together
+npm --workspace apps/api run dev         # API :6407
+npm --workspace apps/web run dev         # Vite :6447, proxies /api → :6407
 ```
 
 Default login: `admin@advo.ph` / `changeme`
@@ -149,6 +153,9 @@ Default login: `admin@advo.ph` / `changeme`
 | `RESEND_API_KEY` | No | Resend API key for email |
 | `GITHUB_TOKEN` | No | GitHub PAT (server-side) |
 | `GITHUB_WEBHOOK_SECRET` | No | Webhook signature verification |
+| `PRAUD_IMPORT_SECRET` | No | Shared secret for `POST /api/meeting/import/praud` |
+| `ADVO_INBOX_PROJECT_ID` | No | Fallback project for praud imports (else auto Inbox) |
+| `PLAUD_TOKEN` | No | Plaud consumer JWT for file-id import + `GET /api/meeting/plaud`. Share-URL import works without it. |
 
 ## Deployment
 
@@ -242,7 +249,7 @@ Concurrency cancels superseded runs per branch — no wasted minutes when you pu
 
 - [VISION.md](./docs/VISION.md) — Strategy: PH-first vertical software + hardware
 - [MOODBOARD.md](./docs/MOODBOARD.md) — Brand / startup-site direction + [visual board](./docs/moodboard/index.html)
-- [SCOPE-PWA-MEETING.md](./docs/SCOPE-PWA-MEETING.md) — Mobile PWA + meeting record (not built yet)
+- [SCOPE-PWA-MEETING.md](./docs/SCOPE-PWA-MEETING.md) — Original PWA + meeting scope (PWA Tier 1 + meeting CRUD/import shipped; attendee/action-item tables still open)
 - [SETUP.md](./docs/SETUP.md) — Development setup, deployment, VPS transfer guide
 - [SCHEMA.md](./docs/SCHEMA.md) — Full database schema
 - [FEATURES.md](./docs/FEATURES.md) — Feature documentation, auth system, hooks reference

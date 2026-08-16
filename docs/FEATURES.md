@@ -2,7 +2,7 @@
 
 ## Public Landing (`/`)
 
-`/` is the shipped Codex `LandingPage` (`apps/web/src/components/landing/LandingPage.tsx` + `landing-page.css`). White editorial marketing page — sticky nav, hero ("Build together. Ship with *clarity.*"), workspace showcase, feature / service / process / workflow, metrics, integration grid, engagement options, FAQ, cream footer with a local-only newsletter (no subscribe API). Routed from `pages/Index.tsx`. Section list lives in [README.md](../README.md).
+`/` is the shipped `LandingPage` (`apps/web/src/components/landing/LandingPage.tsx` + `landing-page.css`). Runway-language marketing page — fixed blur nav, cinematic hero ("Build together. Ship with clarity."), workspace showcase, snap-scroll tool cards, process tabs with before/after, integration marquee, Fourlinq story, engagement options, FAQ, off-black footer. Routed from `pages/Index.tsx`. Section list lives in [README.md](../README.md).
 
 The previous dark landing (FloatingNav, TechTicker, R3F infrastructure, orange-blob CTA, PortfolioCard proof grid) is **not** current `/`. Satellite public routes (`/start`, `/login`, `/team`, `/project/:slug`) use `landing-shell` with the same white tokens; interiors no longer paint the dark Linear grid. `/hub` still uses `FloatingNav`.
 
@@ -147,9 +147,17 @@ Paste a contract / SOW into the Contracts tab → `POST /api/contracts/review` (
 
 Generate a private, **20-minute** link to the project's `preview_url` to drop to a client mid-build. `POST /api/projects/:id/preview-link` (requireTeam) mints a signed HS256 token (reuses `JWT_SECRET`); the **public** `GET /api/preview/:token` verifies it and **302-redirects** to the preview, or shows a branded 410 gate page when expired. Host-agnostic (Vercel / Cloudflare Pages / here.now / VPS — ADVO just stores the URL and controls the link's lifetime). Clients can also **request** a preview from their Hub (see Client Portal) → logged to `activity_log` → the team sees it in this panel.
 
+#### Plaud / praud import
+
+Team `POST /api/meeting/import` takes `{ projectId, fileId? | shareUrl? }` (consumer JWT for file id; public `/share/access` for a `::` share URL). Rows stay unpublished (`is_visible_client = false`) until Publish.
+
+praud passcode `advo` (password required on every upload) tags the new Plaud file into folder ADVO (`POST /file/update-tags`) then `POST /api/meeting/import/praud` with `Authorization: Bearer $PRAUD_IMPORT_SECRET`. Lands on `ADVO_INBOX_PROJECT_ID` or an auto-created **Inbox** project. Admin reassigns before publishing.
+
 #### Meeting → deliverable tasks (Plaud CP3)
 
-**Generate tasks** on a meeting (AdminMeetings + Project Command Center) → `POST /api/meeting/:id/generate-task` (requireTeam). Reads `meeting.transcript`; Claude (`claude-opus-4-8`) when `ANTHROPIC_API_KEY` is set, else a line/bullet heuristic. Inserts **1–8** `deliverable` rows on `meeting.project_id` with a **Suggested skill** line in each description. Returns `{ deliverable, method, meetingId, projectId }`. **400** empty transcript; **422** no actionable tasks (no silent success).
+**Generate tasks** on a meeting (AdminMeetings + Project Command Center) opens a preview first: `POST /api/meeting/:id/propose-task` (requireTeam). Prefers the Plaud note (`meeting.summary`) action / next-arrangements section (`method: "note"`), else Claude when `ANTHROPIC_API_KEY` is set (`"ai"`), else a line/bullet heuristic. Owners resolve against active `team_member` (first name + nicknames like Gelo → Angelo). Inbox meetings can rematch `projectId` from the catalog. Confirm sends the same list to `POST /api/meeting/:id/generate-task` `{ task, method }` and inserts **1–8** `deliverable` rows with `assignedTo` set when resolved. **400** empty transcript and note; **422** no actionable tasks (no silent success).
+
+**Files** also: `MeetingTaskPreview.tsx`, `plaud.service.ts`, `plaud-import.service.ts`
 
 #### Suggest timeline (Plaud CP3)
 
@@ -159,7 +167,7 @@ Team-only `POST /api/projects/:id/suggest-timeline` accepts optional `{ delivera
 
 `POST /api/projects/:id/revision-task` (requireTeam). Body camelCase `{ revisionNote }`. Creates a deliverable titled **"Client revision"**; description = note (optional Claude polish when `ANTHROPIC_API_KEY` is set) + CONTRACTS.md **2-rounds/phase** policy reminder. Response data: `{ deliverable, method: "raw"|"ai", projectId }`.
 
-**Files**: `ProjectCommandCenter.tsx`, `AdminMeetings.tsx`, `useMeeting.ts`, `useContractReview.ts`, `usePreviewLink.ts`, `apps/api/src/services/contract-review.service.ts`, `apps/api/src/routes/contracts.routes.ts`, `apps/api/src/services/preview.service.ts`, `apps/api/src/routes/preview.routes.ts`, `apps/api/src/routes/meeting.routes.ts`, `apps/api/src/services/meeting-task.service.ts`, `apps/api/src/routes/projects.routes.ts`, `apps/api/src/services/timeline-suggestion.service.ts`, `apps/api/src/services/revision-task.service.ts`
+**Files**: `ProjectCommandCenter.tsx`, `AdminMeetings.tsx`, `MeetingTaskPreview.tsx`, `useMeeting.ts`, `useContractReview.ts`, `usePreviewLink.ts`, `apps/api/src/services/contract-review.service.ts`, `apps/api/src/routes/contracts.routes.ts`, `apps/api/src/services/preview.service.ts`, `apps/api/src/routes/preview.routes.ts`, `apps/api/src/routes/meeting.routes.ts`, `apps/api/src/services/meeting-task.service.ts`, `apps/api/src/services/plaud.service.ts`, `apps/api/src/services/plaud-import.service.ts`, `apps/api/src/routes/projects.routes.ts`, `apps/api/src/services/timeline-suggestion.service.ts`, `apps/api/src/services/revision-task.service.ts`
 
 ### Clients
 
@@ -389,7 +397,7 @@ All data fetching uses React Query (`@tanstack/react-query` v5). Each admin CRUD
 | `useSiteContent`       | CMS sections: toggle visibility, update content                                                                                          |
 | `useContractReview`    | Command Center: heuristic contract red-flag review                                                                                       |
 | `usePreviewLink`       | Command Center: mint expiring preview links + list client requests (`useProjectPreview`); client request-a-preview (`useRequestPreview`) |
-| `useMeeting`           | Meeting rows for AdminMeetings + Command Center; **Generate tasks** (`POST /api/meeting/:id/generate-task`)                              |
+| `useMeeting`           | Meeting rows + Plaud import; **propose** then **confirm** generate-task (`POST /api/meeting/:id/propose-task` → `generate-task`)         |
 
 ### Client portal
 

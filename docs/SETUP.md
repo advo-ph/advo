@@ -71,6 +71,9 @@ ANTHROPIC_API_KEY=sk-ant-...              # AI contract review (Claude); falls b
 GITHUB_TOKEN=ghp_...                      # GitHub API (server-side)
 GITHUB_WEBHOOK_SECRET=...                 # GitHub webhook verification
 GITHUB_ORG=advo-ph
+PRAUD_IMPORT_SECRET=...                   # praud passcode `advo` → POST /api/meeting/import/praud
+ADVO_INBOX_PROJECT_ID=                    # optional; else auto Inbox project
+# PLAUD_TOKEN=                            # file-id import + GET /api/meeting/plaud (share URL works without)
 CLOUDFLARE_TOKEN=...                      # Deployment status
 CLOUDFLARE_ACCOUNT_ID=...
 
@@ -79,7 +82,7 @@ PORT=6407
 NODE_ENV=development
 UPLOAD_DIR=./uploads
 API_URL=http://localhost:6407
-FRONTEND_URL=http://localhost:6400
+FRONTEND_URL=http://localhost:6447        # Vite dev (proxies /api → :6407)
 ```
 
 ## Database

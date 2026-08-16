@@ -11,6 +11,21 @@ Cross-links:
 
 ---
 
+## 2026-08-16 — Plaud import + grounded task preview; landing rewrite
+
+> Fanout of the dirty tree: ship Plaud adapters, then close the loop from note → assigned deliverable, then the already-built landing rewrite. Commits `7a98d75` + `5617afe`.
+
+- **Import** — `GET /api/meeting/plaud`, `POST /api/meeting/import`, praud `POST /api/meeting/import/praud` (Inbox). Migrations `012`/`013`. Admin Import from Plaud + Publish. Hub shows published MoMs.
+- **Grounded propose** — `POST /api/meeting/:id/propose-task` reads Plaud note first, resolves Prince/Gelo/… against `team_member`, preview dialog, confirm inserts `deliverable.assignedTo`. Tests in `meeting-task.test.ts` + `plaud-import.test.ts`.
+- **Landing** — Runway-language `/` + `landing/rw` stills. Vite `:6447` proxies `/api`.
+
+### Honest open-items
+- Apply `012`/`013` on each env (local may already match schema from earlier push). Not deployed.
+- Plaud cannot be taught Advo JSON — we consume the note, then resolve. No `meeting_action_item` / attendee table yet.
+- Prod still has no `ANTHROPIC_API_KEY` (Claude paths stay fallback).
+- `npm test` S1–S3 failed here because the seed client login fixture was missing; e2e-flow 43/43 and unit suites green.
+- Root `npm run dev` needs `concurrently` on PATH; start web + api workspaces separately.
+
 ## 2026-08-15 — test lane: coverage table
 
 > Roadmap-remain **test** lane. The bench only measures; this lane's deliverable is the tests.
