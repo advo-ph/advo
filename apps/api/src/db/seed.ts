@@ -16,19 +16,37 @@ import { hashPassword } from "../services/auth.service.js";
 loadEnv();
 initDb();
 
+async function ensureUser(
+  email: string,
+  role: "admin" | "client" | "team",
+  passwordHash: string,
+): Promise<number> {
+  const d = db();
+  const [existing] = await d
+    .select({ userId: user.userId })
+    .from(user)
+    .where(eq(user.email, email))
+    .limit(1);
+  if (existing) {
+    await d
+      .update(user)
+      .set({ passwordHash, role, isActive: true, updatedAt: new Date() })
+      .where(eq(user.userId, existing.userId));
+    return existing.userId;
+  }
+  const [created] = await d
+    .insert(user)
+    .values({ email, passwordHash, role, isActive: true })
+    .returning({ userId: user.userId });
+  if (!created) throw new Error(`Failed to create ${email}`);
+  return created.userId;
+}
+
 async function seed() {
   const d = db();
 
-  // Create admin user
   const passwordHash = await hashPassword("changeme");
-  await d
-    .insert(user)
-    .values({
-      email: "admin@advo.ph",
-      passwordHash,
-      role: "admin",
-    })
-    .onConflictDoNothing();
+  await ensureUser("admin@advo.ph", "admin", passwordHash);
 
   // Seed site content sections
   const sections = [
@@ -76,15 +94,12 @@ async function seed() {
   // project, deliverable, and notification. Used by the data-scoping tests in
   // api-wiring.test.ts to prove a client cannot read another client's rows.
   const clientPasswordHash = await hashPassword("changeme");
-  await d
-    .insert(user)
-    .values({ email: "client@advo.ph", passwordHash: clientPasswordHash, role: "client" })
-    .onConflictDoNothing();
+  const clientUserId = await ensureUser("client@advo.ph", "client", clientPasswordHash);
 
   const [clientUser] = await d
     .select()
     .from(user)
-    .where(eq(user.email, "client@advo.ph"))
+    .where(eq(user.userId, clientUserId))
     .limit(1);
 
   if (clientUser) {
