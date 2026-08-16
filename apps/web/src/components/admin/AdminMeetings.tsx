@@ -159,13 +159,14 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
   const runImport = async (fileId?: string, shareUrl?: string) => {
     if (!importProjectId) return;
     const ref = importRef.trim();
-    await importPlaudMeeting({
+    const result = await importPlaudMeeting({
       projectId: Number(importProjectId),
       fileId: fileId ?? (/^[a-f0-9]{24,64}$/i.test(ref) ? ref : undefined),
       shareUrl: shareUrl ?? (ref && !/^[a-f0-9]{24,64}$/i.test(ref) ? ref : undefined),
     });
     setImportOpen(false);
     setImportRef("");
+    if (result.meeting?.meetingId) await openPropose(result.meeting.meetingId);
   };
 
   const handleDelete = async () => {
@@ -225,7 +226,12 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
               variant="outline"
               className="h-9 gap-1.5"
               disabled={isSyncing}
-              onClick={() => void syncNow()}
+              onClick={() =>
+                void syncNow().then((s) => {
+                  const id = s.importedMeetingId?.[0];
+                  if (id) return openPropose(id);
+                })
+              }
             >
               {isSyncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
               Sync Plaud

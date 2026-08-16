@@ -11,6 +11,18 @@ Cross-links:
 
 ---
 
+## 2026-08-16 — Plaud note owners + multi-section + auto-preview
+
+> Fanout: assign pipeline on the real 08-16 note.
+
+- Parse `— *Prince*` / `*[Insert Name]* *Anthony*` suffixes; try each name until a `team_member` hits.
+- Collect **every** Action Items section (David/Cirrus no longer dropped at `## 2`).
+- Import and Sync Plaud open the propose-task preview when a new meeting row is created.
+
+### Honest open-items
+- Still no auto-insert of deliverables (preview → confirm).
+- `Speaker 1` in the transcript is still unlabeled.
+
 ## 2026-08-16 — Plaud ADVO folder watch + seed fixture
 
 > Follow-on: auto-import ADVO recordings without praud; fix `client@advo.ph` seed so S1–S3 pass.

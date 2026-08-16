@@ -752,13 +752,16 @@ const ProjectCommandCenter = ({ project, onBack }: ProjectCommandCenterProps) =>
                       const ref = meetingImportRef.trim();
                       const isFile = /^[a-f0-9]{24,64}$/i.test(ref);
                       try {
-                        await importPlaudMeeting({
+                        const result = await importPlaudMeeting({
                           projectId: project.project_id,
                           fileId: isFile ? ref : undefined,
                           shareUrl: isFile ? undefined : ref,
                         });
                         setMeetingImportRef("");
                         setShowMeetingForm(false);
+                        if (result.meeting?.meetingId) {
+                          setProposal(await proposeTask(result.meeting.meetingId));
+                        }
                       } catch {
                         /* toast from hook */
                       }

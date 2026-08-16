@@ -26,6 +26,7 @@ export type PlaudSyncStatus = {
   importedCount: number;
   skippedCount: number;
   seenCount: number;
+  importedMeetingId: number[];
 };
 
 const status: PlaudSyncStatus = {
@@ -37,6 +38,7 @@ const status: PlaudSyncStatus = {
   importedCount: 0,
   skippedCount: 0,
   seenCount: 0,
+  importedMeetingId: [],
 };
 
 let timer: ReturnType<typeof setInterval> | null = null;
@@ -84,6 +86,7 @@ export async function syncPlaudFolder(): Promise<PlaudSyncStatus> {
 
     let imported = 0;
     let skipped = existing.size;
+    const importedMeetingId: number[] = [];
     for (const f of fresh) {
       try {
         const result = await importPlaudMeeting({
@@ -91,8 +94,10 @@ export async function syncPlaudFolder(): Promise<PlaudSyncStatus> {
           fileId: f.fileId,
           createdBy,
         });
-        if (result.created) imported += 1;
-        else skipped += 1;
+        if (result.created) {
+          imported += 1;
+          if (result.meeting?.meetingId) importedMeetingId.push(result.meeting.meetingId);
+        } else skipped += 1;
       } catch (err) {
         skipped += 1;
         if (err instanceof HTTPException && (err.status === 422 || err.status === 502)) {
@@ -104,6 +109,7 @@ export async function syncPlaudFolder(): Promise<PlaudSyncStatus> {
     }
 
     status.importedCount = imported;
+    status.importedMeetingId = importedMeetingId;
     status.skippedCount = skipped;
     status.lastError = null;
     status.lastSyncAt = new Date().toISOString();

@@ -245,6 +245,7 @@ export interface PlaudSyncStatus {
   importedCount: number;
   skippedCount: number;
   seenCount: number;
+  importedMeetingId: number[];
 }
 
 export function usePlaudSync() {

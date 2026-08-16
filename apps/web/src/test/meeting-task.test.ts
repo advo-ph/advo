@@ -70,6 +70,33 @@ Ignore this.`;
     expect(task[0]?.title.toLowerCase()).toContain("hero");
   });
 
+  it("reads Plaud italic owner suffixes and later Action Items sections", () => {
+    const note = `## 1. Advo Website
+### Action Items
+- [ ] Implement front-end updates — *Prince*
+- [ ] Fix financial sheets — *[Insert Name]* *Anthony*
+- [ ] Complete back-end — *[Insert Name]*
+
+## 2. Business Development
+### Action Items
+- [ ] Talk to Sir Chris about Cirrus — *David* *Sir Chris*
+`;
+    const task = parseActionItem(note);
+    expect(task.map((t) => t.ownerRaw)).toEqual([
+      "Prince",
+      "Anthony",
+      null,
+      "David | Sir Chris",
+    ]);
+    const grounded = task.map((t) => groundTask(t, grounding));
+    expect(grounded.map((t) => t.assigneeName)).toEqual([
+      "Prince Wagan",
+      "Anthony Ramos",
+      null,
+      "David Remo",
+    ]);
+  });
+
   it("reads a Next Arrangements checkbox block", () => {
     const note = `## Meeting Notes
 - Discussion centered on a roadmap.

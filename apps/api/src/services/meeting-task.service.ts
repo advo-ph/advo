@@ -73,10 +73,24 @@ const ALIAS: Record<string, string> = {
   kenneth: "kenneth",
   ken: "kenneth",
   schiffier: "schiffier",
+  schiffer: "schiffier",
   schiff: "schiffier",
   maran: "maran",
   mar: "maran",
 };
+
+const PLACEHOLDER = new Set([
+  "insert name",
+  "tbd",
+  "todo",
+  "unknown",
+  "n a",
+  "tbc",
+  "owner",
+  "unassigned",
+  "someone",
+  "tbd later",
+]);
 
 function emptyAssign(): Pick<
   ProposedTask,
@@ -126,11 +140,10 @@ function fold(raw: string): string {
     .trim();
 }
 
-export function resolvePerson(
-  raw: string | null | undefined,
+function resolveOnePerson(
+  needle: string,
   roster: RosterPerson[],
 ): { assignedTo: number | null; assigneeName: string | null } {
-  const needle = fold(String(raw ?? ""));
   if (!needle || roster.length === 0) return { assignedTo: null, assigneeName: null };
 
   const alias = ALIAS[needle.split(" ")[0] ?? ""] ?? needle;
@@ -156,6 +169,22 @@ export function resolvePerson(
   const tie = scored.filter((s) => s.score === top.score);
   if (tie.length > 1 && top.score < 80) return { assignedTo: null, assigneeName: null };
   return { assignedTo: top.person.teamMemberId, assigneeName: top.person.name };
+}
+
+export function resolvePerson(
+  raw: string | null | undefined,
+  roster: RosterPerson[],
+): { assignedTo: number | null; assigneeName: string | null } {
+  const part = String(raw ?? "")
+    .split(/\s*\|\s*/)
+    .map((p) => fold(p))
+    .filter(Boolean);
+  if (part.length === 0) return { assignedTo: null, assigneeName: null };
+  for (const needle of part) {
+    const hit = resolveOnePerson(needle, roster);
+    if (hit.assignedTo != null) return hit;
+  }
+  return { assignedTo: null, assigneeName: null };
 }
 
 export function resolveProject(
@@ -224,15 +253,54 @@ function guessSkill(text: string): string {
   return "general";
 }
 
+function isPlaceholderName(name: string): boolean {
+  const f = fold(name);
+  if (!f) return true;
+  if (PLACEHOLDER.has(f)) return true;
+  if (f.startsWith("insert name")) return true;
+  if (/^speaker \d+$/.test(f)) return true;
+  return false;
+}
+
+/** Plaud note suffix: "do the thing — *Prince*" or "… — *[Insert Name]* *Anthony*". */
+function ownerFromSuffix(body: string): { ownerRaw: string | null; text: string } | null {
+  const suffix = body.match(/^(.*?)\s+[—–]\s+(.+)$/);
+  if (!suffix?.[1] || suffix[1].trim().length < MIN_TITLE || !suffix[2]) return null;
+  const star = [...suffix[2].matchAll(/\*([^*]+)\*/g)].map((m) => m[1].trim());
+  const raw = star.length
+    ? star
+    : suffix[2]
+        .split(/[,/&]| and /i)
+        .map((s) => s.replace(/^@/, "").trim())
+        .filter(Boolean);
+  const candidate = raw.filter((n) => !isPlaceholderName(n));
+  if (candidate.length === 0) return { ownerRaw: null, text: suffix[1].trim() };
+  return { ownerRaw: candidate.join(" | "), text: suffix[1].trim() };
+}
+
 function splitOwner(body: string): { ownerRaw: string | null; text: string } {
+  // Plaud notes put *Owner* after an em dash — prefer that over "Talk to …".
+  if (/\*[^*]+\*/.test(body)) {
+    const suffix = ownerFromSuffix(body);
+    if (suffix) return suffix;
+  }
   const ownerLine = body.match(OWNER_LINE_RE);
   if (ownerLine?.[1] && ownerLine[2] && ownerLine[2].trim().length >= MIN_TITLE) {
     return { ownerRaw: ownerLine[1].trim(), text: ownerLine[2].trim() };
   }
   const ownerTo = body.match(OWNER_TO_RE);
-  if (ownerTo?.[1] && ownerTo[2] && ownerTo[2].trim().length >= MIN_TITLE) {
+  if (
+    ownerTo?.[1] &&
+    ownerTo[2] &&
+    ownerTo[2].trim().length >= MIN_TITLE &&
+    !/^(talk|need|want|have|ask|go|try|make|get|set|add|fix|ship|implement|complete|finish|organize|initiate|hold)$/i.test(
+      ownerTo[1],
+    )
+  ) {
     return { ownerRaw: ownerTo[1].trim(), text: ownerTo[2].trim() };
   }
+  const suffix = ownerFromSuffix(body);
+  if (suffix) return suffix;
   return { ownerRaw: null, text: body };
 }
 
@@ -325,15 +393,15 @@ export function parseActionItem(summary: string): ProposedTask[] {
   const picked: string[] = [];
 
   for (const l of line) {
-    if (!l) {
-      if (inSection && picked.length) break;
-      continue;
-    }
+    if (!l) continue;
     if (SECTION_RE.test(l.replace(/\*+/g, ""))) {
       inSection = true;
       continue;
     }
-    if (inSection && /^#{1,3}\s+\S/.test(l)) break;
+    if (inSection && /^#{1,3}\s+\S/.test(l)) {
+      inSection = false;
+      continue;
+    }
     if (inSection) picked.push(l);
   }
 
