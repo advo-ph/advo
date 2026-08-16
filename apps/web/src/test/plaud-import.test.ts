@@ -4,6 +4,7 @@ import {
   extractTranscript,
   fileHasTag,
   formatTranscript,
+  isAdvoRecording,
   parseFileId,
   parseShareKey,
   payloadFromDetail,
@@ -76,6 +77,16 @@ describe("extract + format", () => {
     expect(payload.fileId).toBe("abc");
     expect(payload.summary).toContain("Import meetings");
     expect(payload.transcript).toContain("Gelo");
+  });
+});
+
+describe("isAdvoRecording", () => {
+  const advoTagId = "167d74e99a5f05affcd1e7ad8928edc4";
+  it("accepts the ADVO tag or the word advo in the name", () => {
+    expect(isAdvoRecording({ name: "Weekly standup", tagId: [advoTagId] }, advoTagId)).toBe(true);
+    expect(isAdvoRecording({ name: "07-30 Meeting: Advo website", tagId: [] }, advoTagId)).toBe(true);
+    expect(isAdvoRecording({ name: "Client call", tagId: [] }, advoTagId)).toBe(false);
+    expect(isAdvoRecording({ name: "Advocate review", tagId: [] }, advoTagId)).toBe(false);
   });
 });
 

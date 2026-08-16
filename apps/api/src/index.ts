@@ -11,6 +11,7 @@ import { logger, createLogger } from "./utils/logger.js";
 import { initDb, closeDb } from "./db/connection.js";
 import { requestId } from "./middleware/requestId.js";
 import { cleanExpiredSessions } from "./services/auth.service.js";
+import { startPlaudPoll, stopPlaudPoll } from "./services/plaud-poll.service.js";
 
 import authRoutes from "./routes/auth.routes.js";
 import projectRoutes from "./routes/projects.routes.js";
@@ -193,6 +194,7 @@ const port = e.PORT;
 
 serve({ fetch: app.fetch, port }, () => {
   log.info(`ADVO API running on port ${port} (${e.NODE_ENV})`);
+  startPlaudPoll();
 });
 
 // ─── Periodic Cleanup ─────────────────────────────────
@@ -210,6 +212,7 @@ setInterval(async () => {
 
 async function shutdown(signal: string) {
   log.info(`${signal} received, shutting down...`);
+  stopPlaudPoll();
   await closeDb();
   process.exit(0);
 }

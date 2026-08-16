@@ -156,6 +156,7 @@ Default login: `admin@advo.ph` / `changeme`
 | `PRAUD_IMPORT_SECRET` | No | Shared secret for `POST /api/meeting/import/praud` |
 | `ADVO_INBOX_PROJECT_ID` | No | Fallback project for praud imports (else auto Inbox) |
 | `PLAUD_TOKEN` | No | Plaud consumer JWT for file-id import + `GET /api/meeting/plaud`. Share-URL import works without it. |
+| `PLAUD_POLL_SECOND` | No | Seconds between ADVO-folder probes (default 60). `0` disables. |
 
 ## Deployment
 

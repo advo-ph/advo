@@ -153,6 +153,8 @@ Team `POST /api/meeting/import` takes `{ projectId, fileId? | shareUrl? }` (cons
 
 praud passcode `advo` (password required on every upload) tags the new Plaud file into folder ADVO (`POST /file/update-tags`) then `POST /api/meeting/import/praud` with `Authorization: Bearer $PRAUD_IMPORT_SECRET`. Lands on `ADVO_INBOX_PROJECT_ID` or an auto-created **Inbox** project. Admin reassigns before publishing.
 
+**Folder watch** (no praud required): the API probes Plaud every `PLAUD_POLL_SECOND` (default 60) for recordings tagged ADVO **or** named with the word “advo”. New `file_id`s import into Inbox. Team can also `POST /api/meeting/plaud/sync` (Admin Meetings → Sync Plaud). Status: `GET /api/meeting/plaud/status`. Needs `PLAUD_TOKEN` or `~/.piper/plaud-auth.json`. Set `PLAUD_POLL_SECOND=0` to disable.
+
 #### Meeting → deliverable tasks (Plaud CP3)
 
 **Generate tasks** on a meeting (AdminMeetings + Project Command Center) opens a preview first: `POST /api/meeting/:id/propose-task` (requireTeam). Prefers the Plaud note (`meeting.summary`) action / next-arrangements section (`method: "note"`), else Claude when `ANTHROPIC_API_KEY` is set (`"ai"`), else a line/bullet heuristic. Owners resolve against active `team_member` (first name + nicknames like Gelo → Angelo). Inbox meetings can rematch `projectId` from the catalog. Confirm sends the same list to `POST /api/meeting/:id/generate-task` `{ task, method }` and inserts **1–8** `deliverable` rows with `assignedTo` set when resolved. **400** empty transcript and note; **422** no actionable tasks (no silent success).

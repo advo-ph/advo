@@ -19,6 +19,8 @@ const envSchema = z.object({
   PRAUD_IMPORT_SECRET: z.string().optional(),
   /** Fallback project for praud imports when the body omits projectId. */
   ADVO_INBOX_PROJECT_ID: z.string().optional(),
+  /** Seconds between Plaud ADVO-folder probes. 0 disables. Default 60. */
+  PLAUD_POLL_SECOND: z.string().optional(),
 
   CLOUDFLARE_TOKEN: z.string().optional(),
   CLOUDFLARE_ACCOUNT_ID: z.string().optional(),

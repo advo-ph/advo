@@ -11,6 +11,19 @@ Cross-links:
 
 ---
 
+## 2026-08-16 — Plaud ADVO folder watch + seed fixture
+
+> Follow-on: auto-import ADVO recordings without praud; fix `client@advo.ph` seed so S1–S3 pass.
+
+- **Poller** — `startPlaudPoll()` on API boot. Every `PLAUD_POLL_SECOND` (default 60) lists Plaud files tagged ADVO or named with “advo”, imports unseen `file_id`s into Inbox. Manual **Sync Plaud** on Admin Meetings (`POST /api/meeting/plaud/sync`).
+- **Seed** — `ensureUser` resets `admin@advo.ph` / `client@advo.ph` password + `isActive` so `npm run db:seed` restores the wiring fixture.
+- **Dev** — root `npm run dev` uses `npx concurrently` (package was missing from `node_modules`).
+
+### Honest open-items
+- Poller needs consumer JWT on the box (`PLAUD_TOKEN` or `~/.piper/plaud-auth.json`). Prod today may still be share-URL only.
+- Apply `012`/`013` on envs that do not already have the columns (local already did).
+- Not deployed.
+
 ## 2026-08-16 — Plaud import + grounded task preview; landing rewrite
 
 > Fanout of the dirty tree: ship Plaud adapters, then close the loop from note → assigned deliverable, then the already-built landing rewrite. Commits `7a98d75` + `5617afe`.

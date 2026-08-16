@@ -74,6 +74,7 @@ GITHUB_ORG=advo-ph
 PRAUD_IMPORT_SECRET=...                   # praud passcode `advo` → POST /api/meeting/import/praud
 ADVO_INBOX_PROJECT_ID=                    # optional; else auto Inbox project
 # PLAUD_TOKEN=                            # file-id import + GET /api/meeting/plaud (share URL works without)
+# PLAUD_POLL_SECOND=60                    # ADVO-folder probe interval; 0 disables
 CLOUDFLARE_TOKEN=...                      # Deployment status
 CLOUDFLARE_ACCOUNT_ID=...
 

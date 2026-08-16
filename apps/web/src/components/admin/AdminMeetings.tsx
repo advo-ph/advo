@@ -31,6 +31,7 @@ import { PageHeader, StatStrip, Stat, Table, THead, TBody, TRow, Empty } from ".
 import {
   useMeeting,
   usePlaudFile,
+  usePlaudSync,
   type Meeting,
   type MeetingInput,
   type ProposeTaskResult,
@@ -103,6 +104,7 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
   const [browseOpen, setBrowseOpen] = useState(false);
   const { data: plaudFile = [], isLoading: isPlaudLoading, error: plaudError, refetch: refetchPlaud } =
     usePlaudFile(importQuery, importOpen && browseOpen);
+  const { status: plaudSync, syncNow, isSyncing } = usePlaudSync();
   const [form, setForm] = useState<FormState>(emptyForm());
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [generatingId, setGeneratingId] = useState<number | null>(null);
@@ -205,9 +207,29 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
     <div className="space-y-4">
       <PageHeader
         title="Meetings"
-        meta={isLoading ? "loading…" : `${meeting.length} MoM record${meeting.length === 1 ? "" : "s"}`}
+        meta={
+          isLoading
+            ? "loading…"
+            : `${meeting.length} MoM record${meeting.length === 1 ? "" : "s"}${
+                plaudSync?.lastSyncAt
+                  ? ` · folder ${plaudSync.isEnabled ? "watching" : "idle"}`
+                  : plaudSync?.isEnabled
+                    ? " · watching Plaud ADVO"
+                    : ""
+              }`
+        }
         action={
           <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-9 gap-1.5"
+              disabled={isSyncing}
+              onClick={() => void syncNow()}
+            >
+              {isSyncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+              Sync Plaud
+            </Button>
             <Dialog open={importOpen} onOpenChange={setImportOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" variant="outline" className="h-9 gap-1.5">

@@ -236,6 +236,63 @@ export function useMeeting(projectId?: number | null) {
   };
 }
 
+export interface PlaudSyncStatus {
+  isEnabled: boolean;
+  isRunning: boolean;
+  intervalSecond: number;
+  lastSyncAt: string | null;
+  lastError: string | null;
+  importedCount: number;
+  skippedCount: number;
+  seenCount: number;
+}
+
+export function usePlaudSync() {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const { user } = useAuth();
+
+  const { data: status = null, isLoading } = useQuery({
+    queryKey: ["plaud-sync"],
+    queryFn: async () => {
+      const res = await get<PlaudSyncStatus>("/api/meeting/plaud/status");
+      if (res.error) throw new Error(res.error);
+      return res.data ?? null;
+    },
+    enabled: !!user,
+    refetchInterval: 30_000,
+  });
+
+  const syncMutation = useMutation({
+    mutationFn: async () => {
+      const r = await post<PlaudSyncStatus>("/api/meeting/plaud/sync", {});
+      if (r.error) throw new Error(r.error);
+      if (!r.data) throw new Error("Sync returned no status");
+      return r.data;
+    },
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ["plaud-sync"] });
+      qc.invalidateQueries({ queryKey: ["meeting"] });
+      qc.invalidateQueries({ queryKey: ["plaud-file"] });
+      toast({
+        title: data.importedCount
+          ? `Imported ${data.importedCount} new recording${data.importedCount === 1 ? "" : "s"}`
+          : "Plaud folder is up to date",
+        description: data.lastError ?? `${data.seenCount} ADVO file${data.seenCount === 1 ? "" : "s"} seen`,
+      });
+    },
+    onError: (e: Error) =>
+      toast({ title: "Plaud sync failed", description: e.message, variant: "destructive" }),
+  });
+
+  return {
+    status,
+    isLoading,
+    syncNow: syncMutation.mutateAsync,
+    isSyncing: syncMutation.isPending,
+  };
+}
+
 /** List Plaud recordings. Default query is the ADVO folder name. */
 export function usePlaudFile(query = "advo", enabled = false) {
   const { user } = useAuth();

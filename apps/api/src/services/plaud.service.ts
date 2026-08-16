@@ -73,6 +73,7 @@ export type PlaudFile = {
   name: string;
   startAt: string | null;
   durationMillisecond: number | null;
+  tagId: string[];
 };
 
 export type TranscriptSegment = {
@@ -524,12 +525,23 @@ function mapFileRow(raw: unknown): PlaudFile | null {
     startAt = Number.isNaN(d.getTime()) ? start : d.toISOString();
   }
   const duration = row.duration ?? row.duration_ms;
+  const tagRaw = row.filetag_id_list;
   return {
     fileId,
     name,
     startAt,
     durationMillisecond: typeof duration === "number" ? duration : null,
+    tagId: Array.isArray(tagRaw) ? tagRaw.map((id) => String(id)) : [],
   };
+}
+
+/** ADVO folder tag or the word "advo" in the recording name. */
+export function isAdvoRecording(
+  file: { name: string; tagId?: string[] },
+  advoTagId: string | null,
+): boolean {
+  if (advoTagId && (file.tagId ?? []).some((id) => id === advoTagId)) return true;
+  return /\badvo\b/i.test(file.name);
 }
 
 function fileFromData(data: unknown): PlaudFile[] {
@@ -605,4 +617,15 @@ export async function listPlaudFile(query?: string): Promise<PlaudFile[]> {
         return name.toLowerCase().includes(needle.toLowerCase());
       });
   return fileFromData(filtered);
+}
+
+/** Every recording in the ADVO tag folder, plus any untitled-elsewhere file named ADVO. */
+export async function listAdvoFile(): Promise<PlaudFile[]> {
+  const envl = await plaudEnvelope<FileListEnvelope>(
+    "/file/simple/web?skip=0&limit=99999&is_trash=2&sort_by=start_time&is_desc=true",
+  );
+  const raw = envl.data_file_list ?? [];
+  const tag = await listPlaudTag();
+  const advoTagId = tag.find((t) => t.name.toLowerCase() === "advo")?.tagId ?? null;
+  return fileFromData(raw).filter((file) => isAdvoRecording(file, advoTagId));
 }

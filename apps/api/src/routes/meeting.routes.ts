@@ -20,6 +20,7 @@ import {
   importPlaudMeeting,
   resolveInboxProjectId,
 } from "../services/plaud-import.service.js";
+import { plaudSyncStatus, syncPlaudFolder } from "../services/plaud-poll.service.js";
 import { importSecretOk } from "../utils/import-secret.js";
 import type { Variables } from "../types/context.js";
 
@@ -221,6 +222,20 @@ meetingRoutes.get("/plaud", requireTeam, async (c) => {
       message: err instanceof Error ? err.message : "Plaud list failed",
     });
   }
+});
+
+meetingRoutes.get("/plaud/status", requireTeam, (c) => {
+  return c.json({ data: plaudSyncStatus(), error: null });
+});
+
+meetingRoutes.post("/plaud/sync", requireTeam, async (c) => {
+  if (!hasPlaudAuth()) {
+    throw new HTTPException(503, {
+      message: "Plaud auth is not configured (PLAUD_TOKEN or ~/.piper/plaud-auth.json)",
+    });
+  }
+  const result = await syncPlaudFolder();
+  return c.json({ data: result, error: null });
 });
 
 // Import from Plaud file id or public share URL. Team only.
