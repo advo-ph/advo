@@ -52,6 +52,8 @@ export const proposalStatusEnum = pgEnum("proposal_status", [
   "signed",
 ]);
 
+export const proposalMethodEnum = pgEnum("proposal_method", ["template", "ai"]);
+
 export const invoiceStatusEnum = pgEnum("invoice_status", [
   "unpaid",
   "paid",
@@ -605,6 +607,7 @@ export const proposal = pgTable(
     status: proposalStatusEnum("status").notNull().default("sent"),
     valueCents: integer("value_cents").notNull().default(0),
     clause: jsonb("clause"),
+    method: proposalMethodEnum("method").notNull().default("template"),
     sentAt: timestamp("sent_at", { withTimezone: true }),
     openedAt: timestamp("opened_at", { withTimezone: true }),
     repliedAt: timestamp("replied_at", { withTimezone: true }),

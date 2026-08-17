@@ -39,6 +39,7 @@ type ProposalRow = {
   title: string;
   status: string;
   valueCents: number;
+  method: string;
   createdAt: string;
   leadName: string;
   leadEmail: string;
@@ -53,6 +54,7 @@ function mapProposal(raw: Record<string, unknown>): ProposalRow {
     title: String(raw.title ?? ""),
     status: String(raw.status ?? "sent"),
     valueCents: Number(raw.valueCents ?? raw.value_cents ?? 0),
+    method: String(raw.method ?? "template"),
     createdAt: String(raw.createdAt ?? raw.created_at ?? ""),
     leadName: String(raw.leadName ?? raw.lead_name ?? ""),
     leadEmail: String(raw.leadEmail ?? raw.lead_email ?? ""),
@@ -88,14 +90,21 @@ const AdminProposals = () => {
 
   const generateMutation = useMutation({
     mutationFn: async (leadId: number) => {
-      const res = await post("/api/proposal", { leadId });
+      const res = await post<Record<string, unknown>>("/api/proposal", { leadId });
       if (res.error) throw new Error(res.error);
       return res.data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["proposal"] });
       queryClient.invalidateQueries({ queryKey: ["leads"] });
-      toast({ title: "Proposal generated", description: "Template filled from CONTRACTS.md + lead fields." });
+      const method = String((data as Record<string, unknown>)?.method ?? "template");
+      toast({
+        title: "Proposal generated",
+        description:
+          method === "ai"
+            ? "Claude wrote the body copy from this lead's scraped signals. CONTRACTS.md clauses appended verbatim — review before sending."
+            : "Template filled from CONTRACTS.md + lead fields (no ANTHROPIC_API_KEY set).",
+      });
       setGenerateLeadId("");
     },
     onError: (err: Error) => {
@@ -232,6 +241,7 @@ const AdminProposals = () => {
             <span className="flex-1 min-w-0">Company</span>
             <span className="w-44 shrink-0 hidden sm:block">Email</span>
             <span className="w-28 shrink-0">Status</span>
+            <span className="w-16 shrink-0 hidden lg:block">Copy</span>
             <span className="w-20 shrink-0 hidden md:block text-right">Value</span>
             <span className="w-16 shrink-0 text-right">Created</span>
             <span className="w-8 shrink-0" />
@@ -272,6 +282,22 @@ const AdminProposals = () => {
                         ))}
                       </SelectContent>
                     </Select>
+                  </span>
+                  <span className="w-16 shrink-0 hidden lg:block">
+                    <span
+                      className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wider ${
+                        item.method === "ai"
+                          ? "bg-accent/15 text-accent"
+                          : "bg-secondary text-muted-foreground"
+                      }`}
+                      title={
+                        item.method === "ai"
+                          ? "Body copy written by Claude from this lead's scraped signals"
+                          : "Template fill from CONTRACTS.md + lead fields"
+                      }
+                    >
+                      {item.method === "ai" ? "AI" : "Tmpl"}
+                    </span>
                   </span>
                   <span className="w-20 shrink-0 hidden md:block text-right text-xs text-muted-foreground">
                     {peso(item.valueCents)}
