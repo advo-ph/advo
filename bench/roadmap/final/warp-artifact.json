@@ -1,0 +1,39 @@
+{
+  "lane": [
+    { "name": "web",        "worktree": "C:/Users/maran/Antigravity/advo-final-web",        "builder": "claude", "resume": false, "prompt_file": ".parcel-prompt.md" },
+    { "name": "resilience", "worktree": "C:/Users/maran/Antigravity/advo-final-resilience", "builder": "claude", "resume": false, "prompt_file": ".parcel-prompt.md" },
+    { "name": "proposal",   "worktree": "C:/Users/maran/Antigravity/advo-final-proposal",   "builder": "claude", "resume": false, "prompt_file": ".parcel-prompt.md" }
+  ],
+  "config": {
+    "name": "parcel-final",
+    "active_window_index": 0,
+    "windows": [
+      {
+        "active_tab_index": 0,
+        "tabs": [
+          {
+            "title": "final:web",
+            "layout": {
+              "cwd": "C:/Users/maran/Antigravity/advo-final-web",
+              "commands": [{ "exec": "claude \"$(Get-Content .parcel-prompt.md -Raw)\"" }]
+            }
+          },
+          {
+            "title": "final:resilience",
+            "layout": {
+              "cwd": "C:/Users/maran/Antigravity/advo-final-resilience",
+              "commands": [{ "exec": "claude \"$(Get-Content .parcel-prompt.md -Raw)\"" }]
+            }
+          },
+          {
+            "title": "final:proposal",
+            "layout": {
+              "cwd": "C:/Users/maran/Antigravity/advo-final-proposal",
+              "commands": [{ "exec": "claude \"$(Get-Content .parcel-prompt.md -Raw)\"" }]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
