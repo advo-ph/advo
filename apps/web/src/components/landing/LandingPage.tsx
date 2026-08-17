@@ -16,11 +16,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Compass,
-  Layers,
   Menu,
-  PencilRuler,
-  Wrench,
   X,
 } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
@@ -65,10 +61,10 @@ const navItem: NavItem[] = [
 ];
 
 const capability = [
-  { title: "Strategy", copy: "Goals, market, plan", Icon: Compass },
-  { title: "Design", copy: "Brand, UI, content", Icon: PencilRuler },
-  { title: "Development", copy: "Web, mobile, systems", Icon: Layers },
-  { title: "Support", copy: "Launch and retain", Icon: Wrench },
+  { title: "Strategy", copy: "Goals, market, plan", icon: "/landing/icon/strategy.png" },
+  { title: "Design", copy: "Brand, UI, content", icon: "/landing/icon/design.png" },
+  { title: "Development", copy: "Web, mobile, systems", icon: "/landing/icon/development.png" },
+  { title: "Support", copy: "Launch and retain", icon: "/landing/icon/hardware.png" },
 ];
 
 const toolCard = [
@@ -163,42 +159,42 @@ const surface = [
   {
     title: "Client Hub",
     desc: "Status, files, invoices, and the team. The same truth your operators see.",
-    icon: "/favicon.svg",
+    icon: "/landing/icon/surface.png",
     thumb: "/landing/rw/after.jpg",
     href: "/login",
   },
   {
     title: "Admin",
     desc: "Projects, leads, finance, and the tools the studio runs on every day.",
-    icon: "/favicon.svg",
+    icon: "/landing/icon/development.png",
     thumb: "/landing/rw/create.jpg",
     href: "/login",
   },
   {
     title: "Public site",
     desc: "The marketing surface. Fourlinq is live at fourlinq.ph.",
-    icon: "/favicon.svg",
+    icon: "/landing/icon/design.png",
     thumb: "/landing/rw/story.jpg",
     href: "https://fourlinq.ph",
   },
   {
     title: "Hardware floor",
     desc: "Tablet, printer, TV. Commodity devices. Software that survives the counter.",
-    icon: "/favicon.svg",
+    icon: "/landing/icon/hardware.png",
     thumb: "/landing/rw/deliver.jpg",
     href: "/start",
   },
   {
     title: "Approvals",
     desc: "Sign-off on the work, not in a chat thread.",
-    icon: "/favicon.svg",
+    icon: "/landing/icon/approve.png",
     thumb: "/landing/rw/approve.jpg",
     href: "#showcase",
   },
   {
     title: "Planning",
     desc: "Briefs, timelines, and scope before a line of code.",
-    icon: "/favicon.svg",
+    icon: "/landing/icon/strategy.png",
     thumb: "/landing/rw/plan.jpg",
     href: "/start",
   },
@@ -408,6 +404,20 @@ const LandingPage = () => {
         </div>
       </section>
 
+      <section className="landing-piece" id="piece">
+        <div className="landing-piece-inner">
+          <img src="/landing/icon/missing-piece.png" alt="" />
+          <div>
+            <p className="landing-kicker">The gap</p>
+            <h3>Three pieces already exist. The system is the fourth.</h3>
+            <p>
+              Paper, Viber, tally sheets. We drop in the missing piece — software plus the
+              tablet, printer, and TV already on the counter.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <section className="landing-capability" id="service">
         <h3>Every surface you need to run the work.</h3>
         <p>
@@ -415,9 +425,9 @@ const LandingPage = () => {
           keeps the same truth on both sides of the table.
         </p>
         <div className="landing-capability-grid">
-          {capability.map(({ title, copy, Icon }) => (
+          {capability.map(({ title, copy, icon }) => (
             <div className="landing-capability-item" key={title}>
-              <Icon size={22} strokeWidth={1.4} />
+              <img src={icon} alt="" />
               <div>
                 <strong>{title}</strong>
                 <small>{copy}</small>
@@ -717,6 +727,7 @@ const LandingPage = () => {
       </section>
 
       <section className="landing-engagement" id="engagement">
+        <img className="landing-engagement-mark" src="/landing/icon/pricing.png" alt="" />
         <h3>Flexible ways to work together.</h3>
         <div className="landing-engagement-grid">
           {engagement.map((item) => (

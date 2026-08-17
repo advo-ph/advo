@@ -1,27 +1,32 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
 
-/* #root is the scroll container. html { color-scheme: dark } paints a black
-   native gutter on the white public pages — override the ancestor, not .landing-page. */
+/* Landing scrolls on the document, not #root. A #root classic scrollbar
+   shrinks in-flow content (hero) while position:fixed nav stays viewport-wide,
+   so Start a project misses the hero edge. Document scroll keeps both aligned. */
 html:has(.landing-page) {
   color-scheme: light;
   background: #fff;
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(12, 12, 12, 0.28) transparent;
 }
 html:has(.landing-page) body,
 html:has(.landing-page) #root {
   color-scheme: light;
   background: #fff;
+  overflow: visible;
+  height: auto;
+  min-height: 100dvh;
 }
-html:has(.landing-page) #root {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(12, 12, 12, 0.28) transparent;
-}
-html:has(.landing-page) #root::-webkit-scrollbar-thumb {
+html:has(.landing-page)::-webkit-scrollbar-thumb {
   background: rgba(12, 12, 12, 0.22);
 }
-html:has(.landing-page) #root:hover::-webkit-scrollbar-thumb {
+html:has(.landing-page):hover::-webkit-scrollbar-thumb {
   background: rgba(12, 12, 12, 0.38);
 }
-html:has(.landing-page) #root::-webkit-scrollbar-track {
+html:has(.landing-page)::-webkit-scrollbar-track {
   background: transparent;
 }
 
@@ -95,6 +100,12 @@ body:has(.landing-shell) {
   align-items: center;
   justify-content: center;
   padding: 48px 24px 72px;
+}
+.landing-shell-mark {
+  display: block;
+  width: min(240px, 64vw);
+  height: auto;
+  margin: 0 auto 20px;
 }
 
 .landing-page *,
@@ -268,6 +279,7 @@ body:has(.landing-shell) {
 
 .landing-capability,
 .landing-manifesto,
+.landing-piece,
 .landing-tool,
 .landing-usecase,
 .landing-story,
@@ -281,6 +293,7 @@ body:has(.landing-shell) {
 
 .landing-capability,
 .landing-manifesto,
+.landing-piece,
 .landing-tool,
 .landing-usecase,
 .landing-story,
@@ -289,6 +302,34 @@ body:has(.landing-shell) {
 .landing-faq {
   width: min(1600px, calc(100% - 40px));
   margin-inline: auto;
+}
+
+.landing-piece { padding: 56px 0 8px; }
+.landing-piece-inner {
+  max-width: 980px;
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: minmax(220px, 340px) minmax(0, 1fr);
+  gap: 40px 56px;
+  align-items: center;
+}
+.landing-piece-inner > img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.landing-piece-inner h3 {
+  font-size: clamp(26px, 3vw, 36px);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+}
+.landing-page .landing-piece-inner p:not(.landing-kicker) {
+  margin-block: 14px 0;
+  max-width: 440px;
+  font-size: 16px;
+  line-height: 1.55;
+  color: rgba(12, 12, 12, 0.8);
 }
 
 .landing-capability { padding: 64px 0 24px; text-align: center; }
@@ -302,7 +343,7 @@ body:has(.landing-shell) {
   color: var(--landing-ink);
 }
 .landing-capability-grid {
-  max-width: 880px;
+  max-width: 960px;
   margin-block: 40px 0;
   margin-inline: auto;
   display: grid;
@@ -310,7 +351,8 @@ body:has(.landing-shell) {
   gap: 24px 32px;
   text-align: left;
 }
-.landing-capability-item { display: flex; align-items: center; gap: 12px; }
+.landing-capability-item { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.landing-capability-item img { width: 72px; height: 72px; object-fit: contain; }
 .landing-capability-item strong { display: block; font-size: 15px; font-weight: 400; }
 .landing-capability-item small { display: block; color: var(--landing-muted); font-size: 11px; }
 
@@ -573,7 +615,7 @@ body:has(.landing-shell) {
   background: #fff;
   box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
 }
-.landing-surface-icon { width: 28px; height: 28px; object-fit: contain; margin-bottom: 28px; }
+.landing-surface-icon { width: 72px; height: 72px; object-fit: contain; margin-bottom: 20px; }
 .landing-surface-card h4 { font-size: 26px; font-weight: 400; letter-spacing: -0.03em; }
 .landing-page .landing-surface-card p { margin-block: 8px 20px; color: var(--landing-muted); font-size: 14px; line-height: 1.4; }
 .landing-surface-thumb { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 8px; }
@@ -626,6 +668,12 @@ body:has(.landing-shell) {
 .landing-node-run { border-radius: 4px; background: #fff; color: #000; padding: 2px 8px; font-size: 11px; font-weight: 500; }
 
 .landing-engagement { padding: 64px 0; }
+.landing-engagement-mark {
+  display: block;
+  width: min(180px, 46vw);
+  height: auto;
+  margin: 0 auto 16px;
+}
 .landing-page .landing-engagement > h3 { margin-block: 0 24px; text-align: center; font-size: 36px; font-weight: 400; letter-spacing: -0.03em; }
 .landing-engagement-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .landing-engagement-grid article {
@@ -728,6 +776,8 @@ body:has(.landing-shell) {
   .landing-approval,
   .landing-activity { display: none; }
   .landing-usecase-body { grid-template-columns: 1fr; }
+  .landing-piece-inner { grid-template-columns: 1fr; gap: 24px; }
+  .landing-piece-inner > img { width: min(280px, 70%); margin-inline: auto; }
   .landing-story-grid,
   .landing-surface-grid,
   .landing-engagement-grid { grid-template-columns: repeat(2, 1fr); }
@@ -738,6 +788,7 @@ body:has(.landing-shell) {
   .landing-nav-inner,
   .landing-capability,
   .landing-manifesto,
+  .landing-piece,
   .landing-tool,
   .landing-usecase,
   .landing-story,

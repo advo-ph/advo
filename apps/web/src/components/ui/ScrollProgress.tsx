@@ -5,17 +5,22 @@ const ScrollProgress = () => {
 
   useEffect(() => {
     let animationFrameId: number;
-    const scrollEl = document.getElementById("root");
-    if (!scrollEl) return;
+    const isLanding = Boolean(document.querySelector(".landing-page"));
+    const scrollEl = isLanding ? null : document.getElementById("root");
+    if (!isLanding && !scrollEl) return;
 
     const updateProgress = () => {
       if (!progressRef.current) return;
-      const scrollHeight = scrollEl.scrollHeight - scrollEl.clientHeight;
+      const scrollHeight = isLanding
+        ? document.documentElement.scrollHeight - window.innerHeight
+        : scrollEl!.scrollHeight - scrollEl!.clientHeight;
       if (scrollHeight <= 0) {
         progressRef.current.style.width = "0%";
         return;
       }
-      const scrolled = (scrollEl.scrollTop / scrollHeight) * 100;
+      const scrolled = isLanding
+        ? (window.scrollY / scrollHeight) * 100
+        : (scrollEl!.scrollTop / scrollHeight) * 100;
       progressRef.current.style.width = `${Math.min(scrolled, 100)}%`;
     };
 
@@ -24,11 +29,12 @@ const ScrollProgress = () => {
       animationFrameId = requestAnimationFrame(updateProgress);
     };
 
-    scrollEl.addEventListener("scroll", handleScroll, { passive: true });
+    const target: Window | HTMLElement = isLanding ? window : scrollEl!;
+    target.addEventListener("scroll", handleScroll, { passive: true });
     updateProgress();
 
     return () => {
-      scrollEl.removeEventListener("scroll", handleScroll);
+      target.removeEventListener("scroll", handleScroll);
       if (animationFrameId) cancelAnimationFrame(animationFrameId);
     };
   }, []);
