@@ -8,6 +8,7 @@ import { serveStatic } from "@hono/node-server/serve-static";
 
 import { loadEnv, env } from "./utils/env.js";
 import { logger, createLogger } from "./utils/logger.js";
+import { recordError } from "./utils/error-capture.js";
 import { initDb, closeDb } from "./db/connection.js";
 import { requestId } from "./middleware/requestId.js";
 import { cleanExpiredSessions } from "./services/auth.service.js";
@@ -175,8 +176,10 @@ app.onError((err, c) => {
     );
   }
 
-  // Unexpected error — log full details, return sanitized message
+  // Unexpected error — log full details, return sanitized message.
+  // recordError keeps a redacted, stack-free copy for GET /api/health.
   log.error({ err, requestId: reqId }, "Unhandled error");
+  recordError("http", err);
 
   return c.json(
     { data: null, error: "Internal server error" },
