@@ -17,6 +17,100 @@ const SESSION_DEAD = new Set([-419, -420, -3900, -3901]);
 const DEFAULT_HOST = "https://api-apse1.plaud.ai";
 const DEFAULT_AUTH_FILE = join(homedir(), ".piper", "plaud-auth.json");
 
+/** Bounded listing page. The account is walked newest-first, never in one shot. */
+const LISTING_PAGE_SIZE = 200;
+/** Hard ceiling on pages walked, so a pathological account cannot spin forever. */
+const LISTING_MAX_PAGE = 25;
+
+// ─── Transport ────────────────────────────────────────
+//
+// One keep-alive connection pool shared by every outbound Plaud request.
+//
+// Measured 2026-08-17 (docs/HANDOFF.md): the ADVO folder poll ticks every 60s,
+// but undici's default keep-alive idle timeout is ~4s. Every tick therefore
+// opened a brand-new TLS connection and abandoned the previous one into
+// TIME_WAIT — +1 per tick, monotonic, never plateauing. On a box near its
+// ephemeral-port ceiling that surfaces as WSAENOBUFS on the NEXT outbound
+// connect, which is what rsync/SSH and Ask Plaud actually hit.
+//
+// Holding the idle timeout above the poll interval keeps one connection warm
+// across ticks and the TIME_WAIT count flat (verified: +1/tick → 0/tick).
+
+type Dispatcher = object;
+
+let dispatcherPromise: Promise<Dispatcher | null> | null = null;
+
+function keepAliveMillisecond(): number {
+  const second = Number(process.env.PLAUD_POLL_SECOND ?? "60");
+  const poll = Number.isFinite(second) && second > 0 ? second : 60;
+  // Outlive one poll interval with room to spare, so a tick always finds the
+  // previous connection still open rather than dialing a fresh one.
+  return Math.max(90_000, poll * 1000 + 30_000);
+}
+
+/**
+ * undici ships inside Node, so this adds no dependency. If the module is not
+ * resolvable we degrade to the global dispatcher rather than fail the request.
+ */
+export async function plaudDispatcher(): Promise<Dispatcher | null> {
+  if (!dispatcherPromise) {
+    dispatcherPromise = (async () => {
+      try {
+        const undici = (await import("undici")) as {
+          Agent: new (option: Record<string, number>) => Dispatcher;
+        };
+        return new undici.Agent({
+          keepAliveTimeout: keepAliveMillisecond(),
+          keepAliveMaxTimeout: keepAliveMillisecond() * 4,
+          connections: 4,
+        });
+      } catch {
+        return null;
+      }
+    })();
+  }
+  return dispatcherPromise;
+}
+
+/** Every Plaud request goes through here so they all share the one pool. */
+export async function plaudFetch(url: string, init: RequestInit = {}): Promise<Response> {
+  const dispatcher = await plaudDispatcher();
+  return fetch(url, dispatcher ? ({ ...init, dispatcher } as RequestInit) : init);
+}
+
+// ─── Token liveness ───────────────────────────────────
+//
+// hasPlaudAuth() only proves a token STRING exists. A workspace token that the
+// API has already rejected (-419) and that cannot be reminted is configured but
+// useless — polling it every 60s forever is exactly the outbound churn above.
+
+let tokenDeadReason: string | null = null;
+
+export function markTokenDead(reason: string): void {
+  tokenDeadReason = reason;
+}
+
+export function clearTokenDead(): void {
+  tokenDeadReason = null;
+}
+
+/** Configured AND not known-rejected. The poller gates every tick on this. */
+export function isTokenUsable(): boolean {
+  return hasPlaudAuth() && tokenDeadReason === null;
+}
+
+export function plaudAuthState(): {
+  isConfigured: boolean;
+  isUsable: boolean;
+  deadReason: string | null;
+} {
+  return {
+    isConfigured: hasPlaudAuth(),
+    isUsable: isTokenUsable(),
+    deadReason: tokenDeadReason,
+  };
+}
+
 export class PlaudApiError extends Error {
   constructor(
     public readonly status: number,
@@ -164,7 +258,7 @@ function persistWorkspaceToken(token: string, refreshToken: string | undefined, 
 async function remintWorkspace(auth: Auth): Promise<Auth | null> {
   if (!auth.userToken || !auth.workspaceId) return null;
   const path = `/user-app/auth/workspace/token/${encodeURIComponent(auth.workspaceId)}`;
-  const res = await fetch(`${auth.host}${path}`, {
+  const res = await plaudFetch(`${auth.host}${path}`, {
     method: "POST",
     headers: { ...authHeader({ token: auth.userToken, host: auth.host }), "Content-Type": "application/json" },
     body: "{}",
@@ -205,7 +299,7 @@ async function plaudApi<T>(
 ): Promise<T> {
   const headers: Record<string, string> = { ...authHeader(auth) };
   if (init.body !== undefined) headers["Content-Type"] = "application/json";
-  const res = await fetch(`${auth.host}${path}`, {
+  const res = await plaudFetch(`${auth.host}${path}`, {
     method: init.method ?? "GET",
     headers,
     body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
@@ -217,11 +311,16 @@ async function plaudApi<T>(
   }
   if (SESSION_DEAD.has(json.status) && !retried) {
     const fresh = await remintWorkspace(auth);
-    if (fresh) return plaudApi(path, init, fresh, true);
+    if (fresh) {
+      clearTokenDead();
+      return plaudApi(path, init, fresh, true);
+    }
+    markTokenDead(`workspace token rejected (status ${json.status}) and cannot be reminted`);
   }
   if (json.status !== 0 && json.status !== 200) {
     throw new PlaudApiError(json.status, json.msg ?? "", path);
   }
+  clearTokenDead();
   return json.data;
 }
 
@@ -234,7 +333,7 @@ async function plaudEnvelope<T extends { status: number; msg?: string }>(
 ): Promise<T> {
   const headers: Record<string, string> = { ...authHeader(auth) };
   if (init.body !== undefined) headers["Content-Type"] = "application/json";
-  const res = await fetch(`${auth.host}${path}`, {
+  const res = await plaudFetch(`${auth.host}${path}`, {
     method: init.method ?? "GET",
     headers,
     body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
@@ -246,11 +345,16 @@ async function plaudEnvelope<T extends { status: number; msg?: string }>(
   }
   if (SESSION_DEAD.has(json.status) && !retried) {
     const fresh = await remintWorkspace(auth);
-    if (fresh) return plaudEnvelope(path, init, fresh, true);
+    if (fresh) {
+      clearTokenDead();
+      return plaudEnvelope(path, init, fresh, true);
+    }
+    markTokenDead(`workspace token rejected (status ${json.status}) and cannot be reminted`);
   }
   if (json.status !== 0 && json.status !== 200) {
     throw new PlaudApiError(json.status, json.msg ?? "", path);
   }
+  clearTokenDead();
   return json;
 }
 
@@ -361,7 +465,7 @@ export function parseFileId(raw: string): string | null {
 }
 
 async function fetchLinked(url: string): Promise<string> {
-  const res = await fetch(url, { headers: { "User-Agent": BROWSER_UA } });
+  const res = await plaudFetch(url, { headers: { "User-Agent": BROWSER_UA } });
   if (!res.ok) throw new Error(`data_link fetch ${res.status}`);
   const buf = Buffer.from(await res.arrayBuffer());
   if (buf.length >= 2 && buf[0] === 0x1f && buf[1] === 0x8b) {
@@ -426,7 +530,7 @@ type ShareAccess = {
 async function getShareAccess(shareKey: string): Promise<ShareAccess> {
   let host = "https://api.plaud.ai";
   for (let hop = 0; hop < 3; hop++) {
-    const res = await fetch(`${host}/share/access/${encodeURIComponent(shareKey)}`, {
+    const res = await plaudFetch(`${host}/share/access/${encodeURIComponent(shareKey)}`, {
       headers: {
         "User-Agent": BROWSER_UA,
         Origin: "https://web.plaud.ai",
@@ -590,18 +694,58 @@ export function fileHasTag(raw: unknown, tagId: string): boolean {
   return Array.isArray(list) && list.some((id) => String(id) === tagId);
 }
 
+/** One bounded page of the recording list, newest first. */
+async function listPage(skip: number, limit: number): Promise<Record<string, unknown>[]> {
+  const envl = await plaudEnvelope<FileListEnvelope>(
+    `/file/simple/web?skip=${skip}&limit=${limit}&is_trash=2&sort_by=start_time&is_desc=true`,
+  );
+  return envl.data_file_list ?? [];
+}
+
+/**
+ * Walk bounded pages instead of pulling the whole account in one request.
+ *
+ * `stopAt` short-circuits the walk at the first already-seen file id. The list
+ * is sorted start_time desc, so the first seen row means everything below it
+ * has been processed already — the poll only ever needs the new head.
+ */
+async function walkFile(
+  stopAt?: (file: PlaudFile) => boolean,
+): Promise<{ file: PlaudFile[]; raw: Record<string, unknown>[] }> {
+  const file: PlaudFile[] = [];
+  const raw: Record<string, unknown>[] = [];
+
+  for (let page = 0; page < LISTING_MAX_PAGE; page += 1) {
+    const row = await listPage(page * LISTING_PAGE_SIZE, LISTING_PAGE_SIZE);
+    if (row.length === 0) break;
+
+    let isHalted = false;
+    for (const one of row) {
+      const mapped = mapFileRow(one);
+      if (!mapped) continue;
+      if (stopAt?.(mapped)) {
+        isHalted = true;
+        break;
+      }
+      file.push(mapped);
+      raw.push(one);
+    }
+    if (isHalted || row.length < LISTING_PAGE_SIZE) break;
+  }
+
+  return { file, raw };
+}
+
 /**
  * List recordings. HAR 2026-08-15: GET /file/simple/web returns
  * `data_file_list` on the envelope. The ADVO "folder" is tag
  * `167d74e99a5f05affcd1e7ad8928edc4` (GET /filetag/).
  */
 export async function listPlaudFile(query?: string): Promise<PlaudFile[]> {
-  const envl = await plaudEnvelope<FileListEnvelope>(
-    "/file/simple/web?skip=0&limit=99999&is_trash=2&sort_by=start_time&is_desc=true",
-  );
-  const raw = envl.data_file_list ?? [];
+  const walked = await walkFile();
+  const raw = walked.raw;
   const needle = (query ?? "").trim();
-  if (!needle) return fileFromData(raw);
+  if (!needle) return walked.file;
 
   let tagId: string | null = /^[a-f0-9]{24,64}$/i.test(needle) ? needle.toLowerCase() : null;
   if (!tagId) {
@@ -619,13 +763,20 @@ export async function listPlaudFile(query?: string): Promise<PlaudFile[]> {
   return fileFromData(filtered);
 }
 
-/** Every recording in the ADVO tag folder, plus any untitled-elsewhere file named ADVO. */
-export async function listAdvoFile(): Promise<PlaudFile[]> {
-  const envl = await plaudEnvelope<FileListEnvelope>(
-    "/file/simple/web?skip=0&limit=99999&is_trash=2&sort_by=start_time&is_desc=true",
+/**
+ * Every recording in the ADVO tag folder, plus any untitled-elsewhere file
+ * named ADVO.
+ *
+ * `seenFileId` lets the poller stop the page walk at the first recording it has
+ * already imported, so a steady-state tick reads one short page instead of the
+ * whole account.
+ */
+export async function listAdvoFile(seenFileId?: ReadonlySet<string>): Promise<PlaudFile[]> {
+  const walked = await walkFile(
+    seenFileId && seenFileId.size > 0 ? (file) => seenFileId.has(file.fileId) : undefined,
   );
-  const raw = envl.data_file_list ?? [];
+  if (walked.file.length === 0) return [];
   const tag = await listPlaudTag();
   const advoTagId = tag.find((t) => t.name.toLowerCase() === "advo")?.tagId ?? null;
-  return fileFromData(raw).filter((file) => isAdvoRecording(file, advoTagId));
+  return walked.file.filter((file) => isAdvoRecording(file, advoTagId));
 }
