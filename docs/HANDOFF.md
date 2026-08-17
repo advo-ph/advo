@@ -11,6 +11,39 @@ Cross-links:
 
 ---
 
+## 2026-08-17 — resilience lane: ENOBUFS root-caused, poll latch, Ask retry, operational health
+
+> Lane `final/resilience`. The API now survives its own background work. Root cause of the `ENOBUFS` reported on 2026-08-16 is **measured, not guessed** — and it was not the `limit=99999` listing.
+
+**Root cause — connection churn, not payload size.** The ADVO folder poll ticks every 60s; undici's default keep-alive idle timeout is ~4s. Every tick therefore opened a brand-new TLS connection and abandoned the previous one into `TIME_WAIT`. Measured on this box against `api-apse1.plaud.ai` with ticks spaced past the idle window:
+
+| Transport | TIME_WAIT across 5 spaced ticks |
+| --- | --- |
+| default global dispatcher | 3 → 5 → 6 → 7 → 8 → 9 (**+1 per tick, monotonic, no plateau**) |
+| shared keep-alive agent (idle > poll interval) | 7 → 7 → 7 → 7 → 7 → 5 (**flat**, one connection reused) |
+
+Five *back-to-back* calls added zero `TIME_WAIT` — reuse works inside the keep-alive window. It is the 60s gap that defeats it. Windows holds `TIME_WAIT` ~120s, so the poll accumulated faster than it drained; on a box near its ephemeral-port ceiling that surfaces as `WSAENOBUFS` on the **next** outbound connect — which is what rsync/SSH and Ask Plaud actually hit. `limit=99999` makes each response big but is still **one** connection, so it is **refuted as the socket cause** (still fixed, for bandwidth and memory).
+
+**Second, compounding cause.** `hasPlaudAuth()` only proves a token *string* exists. This box's workspace token is expired (`-419`) and its auth file has no `user_token`/`workspace_id`, so `remintWorkspace()` can never succeed — the poller was firing one doomed connect every 60s, forever, each leaking a socket.
+
+- **Transport** — one shared keep-alive `undici.Agent` (`plaudFetch`) behind every Plaud request, idle timeout held above `PLAUD_POLL_SECOND`. Dynamic import, degrades to the global dispatcher if unresolvable; **no new dependency declared**.
+- **Latch** — `markTokenDead()` / `isTokenUsable()`. A rejected-and-unremintable token suppresses the poll outright instead of retrying forever. A later success clears the latch.
+- **Backoff** — self-rescheduling tick (`setTimeout`, not `setInterval`); a failed tick widens its own next delay ×2, capped at 5 steps.
+- **Paged listing** — `limit=99999` → bounded 200-row pages, walk capped at 25 pages, short-circuited at the first already-imported `file_id`. A steady-state tick reads one short page; a no-new-file tick now skips the `/filetag/` request entirely.
+- **Ask retry** — bounded 3 attempts with 400ms×2ⁿ backoff on transport faults (`ECONNRESET`/`ENOBUFS`/`ETIMEDOUT`/…). A 4xx is **never** retried (`AskClientError`) — retrying an auth rejection is the socket-burning bug, not a fix. `method` still reports the path that actually ran.
+- **Operational health** — `GET /api/health` extended: `isDegraded` + `degradedReason`, `plaud.*` poller state, `error.*` bounded ring of redacted stack-free messages, secrets as booleans only. `status` deliberately stays API-own liveness so an uptime ping does not page on an expired Plaud token.
+
+Verified live: the poller now logs `Plaud poll stopped — nothing to poll with` after **one** request instead of looping every 60s, and health reports `isDegraded: true` with `"plaud: workspace token rejected (status -419) and cannot be reminted"`.
+
+Gate: `bench/roadmap/final/resilience.mjs` 10/10 (red 1/10 before the fix), `npm run build:api` exit 0, `npm test` **16 files / 214 tests** (baseline 194 + 17 new + 3 wiring), `bench/roadmap/roadmap-remain/scoring.mjs` 35/35 still green.
+
+### Honest open-items
+- **`method: ask` is NOT proven on this box.** Ask is attempted first and fails on `-419 workspace token expired` — a credential fault, correctly not retried, correctly falling back to `method: note` (meeting 20 → 6 tasks). Proving `method: ask` needs a live Plaud token, which is on the human checklist. The retry path itself is covered by tests that stub a reset.
+- The keep-alive fix is proven by direct `TIME_WAIT` measurement, **not** by reproducing a full `ENOBUFS` — that needs a box already at its port ceiling.
+- `undici` is imported dynamically and is present as a transitive dep but **declared in no `package.json`**. If a future install prunes it, Plaud requests silently fall back to the churning global dispatcher. Declaring it is the durable fix; not done here to honor the no-new-dependency rule.
+- Poller state is in-process only — it resets on restart and is per-instance, so it will not aggregate across a multi-instance deploy.
+- Prod untouched: no deploy, no migration, no `PLAUD_TOKEN` set. Not merged.
+
 ## 2026-08-16 — docs synced; deploy blocked locally
 
 > `/sync-docs` + attempted `./deploy.sh`. Web built (`api.advo.ph` in the bundle). Rsync failed: this Windows box is `ENOBUFS` / “No buffer space available” on outbound SSH. `https://api.advo.ph/api/health` is still **200** (`db: true`, uptime ~21h) — the previous `pm2 stop` did not leave prod down.
