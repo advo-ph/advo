@@ -25,6 +25,7 @@ import {
   BookOpen,
   Sun,
   Moon,
+  Send,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -103,6 +104,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     items: [
       { id: "leads", label: "Leads", icon: UserPlus },
       { id: "proposals", label: "Proposals", icon: FileCheck2 },
+      { id: "campaign", label: "Campaigns", icon: Send },
       { id: "notifications", label: "Notifications", icon: Bell },
     ],
   },

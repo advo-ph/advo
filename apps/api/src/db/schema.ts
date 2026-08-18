@@ -639,3 +639,93 @@ export const libraryItem = pgTable(
   },
   (t) => [index("idx_library_item_type").on(t.itemType)],
 );
+
+// ─── Email campaign (mass send) ──────────────────────
+
+export const campaignStatusEnum = pgEnum("campaign_status", [
+  "draft",
+  "sending",
+  "paused",
+  "sent",
+  "failed",
+]);
+
+export const campaignRecipientStatusEnum = pgEnum("campaign_recipient_status", [
+  "queued",
+  "sent",
+  "failed",
+  "bounced",
+  "unsubscribed",
+  "complained",
+  "suppressed",
+]);
+
+export const suppressionReasonEnum = pgEnum("suppression_reason", [
+  "unsubscribe",
+  "hard_bounce",
+  "complaint",
+  "soft_bounce_limit",
+  "manual",
+]);
+
+export const campaign = pgTable(
+  "campaign",
+  {
+    campaignId: bigserial("campaign_id", { mode: "number" }).primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+    subject: varchar("subject", { length: 255 }).notNull(),
+    bodyHtml: text("body_html").notNull(),
+    segment: jsonb("segment").notNull().default({}),
+    status: campaignStatusEnum("status").notNull().default("draft"),
+    ratePerHour: integer("rate_per_hour").notNull().default(60),
+    recipientCount: integer("recipient_count").notNull().default(0),
+    sentCount: integer("sent_count").notNull().default(0),
+    failedCount: integer("failed_count").notNull().default(0),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("idx_campaign_status").on(t.status)],
+);
+
+export const campaignRecipient = pgTable(
+  "campaign_recipient",
+  {
+    campaignRecipientId: bigserial("campaign_recipient_id", { mode: "number" }).primaryKey(),
+    campaignId: integer("campaign_id")
+      .notNull()
+      .references(() => campaign.campaignId, { onDelete: "cascade" }),
+    leadId: integer("lead_id")
+      .notNull()
+      .references(() => lead.leadId, { onDelete: "cascade" }),
+    email: varchar("email", { length: 255 }).notNull(),
+    status: campaignRecipientStatusEnum("status").notNull().default("queued"),
+    unsubscribeToken: varchar("unsubscribe_token", { length: 64 }).notNull(),
+    error: text("error"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    // The double-send guard: one lead at most once per campaign, enforced by the DB.
+    uniqueIndex("idx_campaign_recipient_unique").on(t.campaignId, t.leadId),
+    uniqueIndex("idx_campaign_recipient_token").on(t.unsubscribeToken),
+    index("idx_campaign_recipient_campaign_status").on(t.campaignId, t.status),
+  ],
+);
+
+export const emailSuppression = pgTable(
+  "email_suppression",
+  {
+    emailSuppressionId: bigserial("email_suppression_id", { mode: "number" }).primaryKey(),
+    email: varchar("email", { length: 255 }).notNull(),
+    reason: suppressionReasonEnum("reason").notNull(),
+    campaignId: integer("campaign_id").references(() => campaign.campaignId, {
+      onDelete: "set null",
+    }),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("idx_email_suppression_email").on(t.email)],
+);

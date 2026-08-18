@@ -103,6 +103,12 @@ When the lawyer comes on (per Prince's Jun 2026 note), these are the open items 
 5. **Cyber-specific:** liability cap for breaches, data-handling expectations (we hold portfolio screenshots, client uploads, hosted assets), GDPR/PDPA exposure if any client serves EU/international users.
 6. Liquidated damages or service-level commitments — should we offer any uptime SLA on hosted sites, or is best-effort + the care plan enough?
 7. Care-plan termination — currently informal; should monthly maintenance plans have a 30-day cancellation clause?
+8. **Cold outreach / RA 10173 (Data Privacy Act).** ADVO holds ~5K scraped metro-Manila clinic records and now has a sender that can mail them ([ROADMAP.md](ROADMAP.md) P1, shipped). Before the first real send:
+   - What is our lawful basis for processing scraped business-contact data, and does legitimate interest cover B2B outreach here?
+   - Do we owe a notification to each data subject on first contact, and what must it say?
+   - What retention period applies to a lead we never convert, and to a suppressed address (we keep suppressed addresses forever precisely so we cannot re-contact them — is that itself defensible)?
+   - Are we required to register as a Personal Information Controller with the National Privacy Commission at this volume?
+   - Does an unsubscribe alone discharge our obligation, or is an explicit erasure path also required?
 
 ## What this doc isn't
 

@@ -37,6 +37,7 @@ import previewRoutes from "./routes/preview.routes.js";
 import calendarRoutes from "./routes/calendar.routes.js";
 import changeOrderRoutes from "./routes/change-order.routes.js";
 import proposalRoutes from "./routes/proposal.routes.js";
+import campaignRoutes from "./routes/campaign.routes.js";
 import libraryRoutes from "./routes/library.routes.js";
 
 import type { Variables } from "./types/context.js";
@@ -124,6 +125,7 @@ app.route("/api/clients", clientRoutes);
 app.route("/api/team", teamRoutes);
 app.route("/api/leads", leadRoutes);
 app.route("/api/proposal", proposalRoutes);
+app.route("/api/campaign", campaignRoutes);
 app.route("/api/invoices", invoiceRoutes);
 app.route("/api/deliverables", deliverableRoutes);
 app.route("/api/availability", availabilityRoutes);
