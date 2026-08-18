@@ -67,6 +67,24 @@ const capability = [
   { title: "Support", copy: "Launch and retain", icon: "/landing/icon/hardware.png" },
 ];
 
+const floor = [
+  {
+    title: "Clinic",
+    copy: "Queue, records, and the desk that still runs on notebooks.",
+    icon: "/landing/icon/strategy.png",
+  },
+  {
+    title: "Café",
+    copy: "Orders, receipts, and the tablet-printer pair on the counter.",
+    icon: "/landing/icon/hardware.png",
+  },
+  {
+    title: "Shop",
+    copy: "Inventory and the floor that cannot wait for a seat in the cloud.",
+    icon: "/landing/icon/surface.png",
+  },
+];
+
 const toolCard = [
   {
     title: "Client Hub",
@@ -434,6 +452,29 @@ const LandingPage = () => {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="landing-floor" id="floor">
+        <p className="landing-kicker">Built for the floor</p>
+        <h3>Clinic, café, shop. The counter on a Saturday night.</h3>
+        <p>
+          We sit with paper, Viber, and tally sheets. Then we ship software plus the
+          tablet, printer, and TV already there.
+        </p>
+        <div className="landing-floor-grid">
+          {floor.map((item) => (
+            <article className="landing-floor-card" key={item.title}>
+              <img src={item.icon} alt="" />
+              <h4>{item.title}</h4>
+              <p>{item.copy}</p>
+            </article>
+          ))}
+        </div>
+        <div className="landing-floor-cta">
+          <Link className="landing-button landing-button-primary" to="/start">
+            Start a project
+          </Link>
         </div>
       </section>
 
