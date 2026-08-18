@@ -100,7 +100,10 @@ const ProofMock = ({ before, after }: { before: string; after: string }) => {
   ];
 
   return (
-    <div className="grid h-full grid-cols-2 gap-px overflow-hidden rounded-lg border border-border/70 bg-border/70">
+    <div
+      data-viewport-check="proof-system-map"
+      className="grid h-full grid-cols-2 gap-px overflow-hidden rounded-lg border border-border/70 bg-border/70"
+    >
       {columns.map((column) => (
         <div
           key={column.label}

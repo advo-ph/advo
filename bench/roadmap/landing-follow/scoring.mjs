@@ -12,6 +12,9 @@ const read = (relativePath) => {
 
 const indexHtml = read("apps/web/index.html");
 const landingPage = read("apps/web/src/components/landing/LandingPage.tsx");
+// The footer (and with it the .landing-social row) was extracted out of
+// LandingPage.tsx so `/` and the landing-shell routes share one component.
+const landingFooter = read("apps/web/src/components/landing/landing-footer.tsx");
 const startPage = read("apps/web/src/pages/Start.tsx");
 const loginPage = read("apps/web/src/pages/Login.tsx");
 const teamPage = read("apps/web/src/pages/Team.tsx");
@@ -50,14 +53,15 @@ const check = [
     id: "social-wire",
     title: "Landing social icons are real URLs",
     passed: (() => {
-      const socialBlock = landingPage.match(/className="landing-social"[\s\S]*?<\/div>/);
+      const footerSource = `${landingPage}\n${landingFooter}`;
+      const socialBlock = footerSource.match(/className="landing-social"[\s\S]*?<\/div>/);
       if (!socialBlock) return false;
       return !/href="#"/ .test(socialBlock[0]) &&
-        (/settings\/public/.test(landingPage) ||
-          /facebook\.com|instagram\.com|linkedin\.com|advo_ph|mailto:/.test(landingPage + socialBlock[0]));
+        (/settings\/public/.test(footerSource) ||
+          /facebook\.com|instagram\.com|linkedin\.com|advo_ph|mailto:/.test(footerSource));
     })(),
     expected:
-      "The landing-social row has no href='#'. Wire GET /api/settings/public or the same real defaults Footer.tsx already uses.",
+      "The landing-social row has no href='#'. Wire GET /api/settings/public or the same real defaults, wherever the shared footer lives.",
   },
   {
     id: "start-shell",

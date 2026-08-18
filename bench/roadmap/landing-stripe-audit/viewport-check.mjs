@@ -1,9 +1,15 @@
 #!/usr/bin/env node
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
 
-const repoRoot = path.resolve(new URL("../../..", import.meta.url).pathname);
+// `new URL(...).pathname` yields `/C:/...` on Windows and resolves to
+// `C:\C:\...`; fileURLToPath is the portable form the sibling benches use.
+const repoRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../../..",
+);
 const baseUrl = process.env.ADVO_LANDING_URL || "http://127.0.0.1:6100/";
 const dateStamp =
   process.env.ADVO_BENCH_DATE ||

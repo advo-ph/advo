@@ -21,10 +21,10 @@ Shipped [`LandingPage`](apps/web/src/components/landing/LandingPage.tsx) + [`lan
 - **Surfaces** — Client Hub / Admin / Public site / Hardware as paginated cards
 - **Workflow** — Inquiry → Scope → Build → Review → Launch as node cards
 - **Engagement** — Project / Retainer / Hourly / Enterprise starting prices
-- **FAQ** — workspace, invites, fees, invoicing, support
-- **Footer** — off-black sitemap + social from `GET /api/settings/public`
+- **FAQ** — website-vs-system, client hub, admin console, self-hosted VPS stack, hardware, after-launch
+- **Footer** — off-black; system-continuity lede + "Start the system" CTA, four system columns, oversized wordmark, social from `GET /api/settings/public`
 
-Proof on `/` is Fourlinq (`fourlinq.ph`) only. Title/OG match the hero. Footer social icons use `GET /api/settings/public` plus the same real defaults as the leftover `Footer`. `/start`, `/login`, `/team`, and `/project/:slug` share `landing-shell`. `/hub` stays on the June Linear language (`FloatingNav`).
+Proof on `/` is Fourlinq (`fourlinq.ph`) only. Title/OG match the hero. The footer is one shared component (`landing/landing-footer.tsx`) mounted by both `LandingPage` and `landing-shell`, so the two can't drift; social icons use `GET /api/settings/public` plus real defaults. `/start`, `/login`, `/team`, `/project/:slug`, and `/404` share `landing-shell`. `/hub` stays on the June Linear language (`FloatingNav`).
 
 ### Client Hub (`/hub`)
 

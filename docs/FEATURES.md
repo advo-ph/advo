@@ -4,25 +4,31 @@
 
 `/` is the shipped `LandingPage` (`apps/web/src/components/landing/LandingPage.tsx` + `landing-page.css`). Runway-language marketing page — fixed blur nav, cinematic hero ("Build together. Ship with clarity."), workspace showcase, snap-scroll tool cards, process tabs with before/after, integration marquee, Fourlinq story, engagement options, FAQ, off-black footer. Routed from `pages/Index.tsx`. Section list lives in [README.md](../README.md).
 
-The previous dark landing (FloatingNav, TechTicker, R3F infrastructure, orange-blob CTA, PortfolioCard proof grid) is **not** current `/`. Satellite public routes (`/start`, `/login`, `/team`, `/project/:slug`) use `landing-shell` with the same white tokens; interiors no longer paint the dark Linear grid. `/hub` still uses `FloatingNav`.
+The previous dark landing (TechTicker, R3F infrastructure, orange-blob CTA, WhyDigital, ServiceTiers, ProcessSteps, the old Hero/FAQ/Footer) was **never** rendered by `/` and has been deleted (`landing/` now holds only what a live route mounts). Satellite public routes (`/start`, `/login`, `/team`, `/project/:slug`, `/404`) use `landing-shell` with the same white tokens; interiors no longer paint the dark Linear grid. `/hub` still uses `FloatingNav`.
 
 Post-login destination is `destinationFor(role, explicitRedirect)` in `lib/destination.ts` (admin → `/admin`, else `/hub`; `?redirectTo=` wins).
 
 Proof on `/` is Fourlinq only. Title/meta match the hero. Footer social icons read `GET /api/settings/public`.
 
-### Leftover landing pieces (not `/`)
+### Shared footer
 
-`PortfolioCard` / `PortfolioGrid` and the old `Footer` still exist for satellite pages. `FloatingNav` is a full-screen mobile overlay on `/hub` (and leftover public routes): numbered tap rows, Escape / route-change close, body scroll lock, `prefers-reduced-motion`. **z-50**.
+`landing/landing-footer.tsx` is the single footer for both `/` and every `landing-shell` route, so the sitemap and the system story can't drift between them. It carries the system-continuity lede ("Websites with client systems behind them"), the **Start the system** CTA, four columns keyed to the system rather than a service menu (The system / How it ships / Keep it running / Studio), an oversized `ADVO` wordmark (`data-viewport-check="footer-wordmark"`, `clamp(72px, 21vw, 400px)` so it can't overflow at 360), and the social row.
 
-**Files**: `landing/PortfolioCard.tsx`, `landing/PortfolioGrid.tsx`, `landing/FloatingNav.tsx`, `landing/Footer.tsx`
+`anchorPrefix` is the one prop: `""` on `/` keeps bare `#hash` links so the browser does its native in-page scroll; `"/"` on shell routes makes the anchor route home first.
+
+### Mobile nav drawer (`/hub`)
+
+`FloatingNav` is a full-screen mobile overlay on `/hub`: numbered tap rows, Escape / route-change close, body scroll lock (restoring the previous value), `prefers-reduced-motion`. **z-50**. Behaviour is covered by `src/test/mobile-nav-drawer.test.ts` — Escape close, non-Escape keys ignored, lock/restore, close on a route change it did not initiate, and close on its own link navigation.
+
+**Files**: `landing/LandingPage.tsx`, `landing/landing-footer.tsx`, `landing/landing-shell.tsx`, `landing/FloatingNav.tsx`, `landing/PortfolioCard.tsx` (proof card, unit-tested via `proof-card.test.ts`), `landing/landing-page.css`
 
 ### Public Settings Endpoint
 
-`GET /api/settings/public` returns an allowlisted subset of `site_config` keys (currently `social_links`, `brand_name`, `team_order`) **without auth**. `LandingPage` and `landing-shell` (and the leftover `Footer`) read `social_links` from here. The rest of `/api/settings/*` stays admin-only.
+`GET /api/settings/public` returns an allowlisted subset of `site_config` keys (currently `social_links`, `brand_name`, `team_order`) **without auth**. The shared `landing-footer` reads `social_links` from here — one fetch, one mount point, on `/` and every shell route. The rest of `/api/settings/*` stays admin-only.
 
 Added because the old Footer was hitting the admin-only `/api/settings` and 401-ing on every anonymous visit. To add a new public key: extend `PUBLIC_KEYS` in [`settings.routes.ts`](../apps/api/src/routes/settings.routes.ts).
 
-**Files**: `apps/api/src/routes/settings.routes.ts`, `landing/Footer.tsx`. Anonymous GET covered in `api-wiring.test.ts`.
+**Files**: `apps/api/src/routes/settings.routes.ts`, `landing/landing-footer.tsx`. Anonymous GET covered in `api-wiring.test.ts`.
 
 ---
 
