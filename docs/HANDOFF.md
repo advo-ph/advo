@@ -11,6 +11,28 @@ Cross-links:
 
 ---
 
+## 2026-08-18 — email campaign sender (lane `final/campaign`)
+
+> Last open code row in ROADMAP.md P1. Leads were imported, targeted, and a proposal could be generated — nothing sent it.
+
+- **Schema** — migration `015_campaign.sql`: `campaign`, `campaign_recipient`, `email_suppression`. Unique index on `(campaign_id, lead_id)` makes a double-send impossible at the DB level; unique index on `lower(email)` means casing cannot defeat suppression.
+- **Separate sending identity** — `email.service.ts` gains an outreach transport (`OUTREACH_SMTP_HOST` / `OUTREACH_SMTP_PORT` / `OUTREACH_SMTP_USER` / `OUTREACH_SMTP_PASS` / `OUTREACH_FROM`) configured independently of the transactional one. `sendOutreachEmail()` **throws** when unconfigured — it never borrows the mailer that carries client magic-links, and never logs-and-succeeds.
+- **Suppression is a gate, not a filter** — re-checked inside the send loop immediately before each send, so a caller holding a lead id directly still cannot reach a suppressed address. Unsubscribe / hard bounce / complaint all feed it, permanently.
+- **Throttled + resumable** — paced by `rate_per_hour`, one recipient at a time, only `queued` rows sent. No `Promise.all` over the recipient list (that is the ENOBUFS shape the resilience lane fixed the same week).
+- **Public one-click unsubscribe** — `GET /api/campaign/unsubscribe/:token`, mounted above the auth middleware. Token is 24 random bytes and does not encode the address; the page renders the same for an invalid token so it cannot be used as a guessing oracle.
+- **Surface** — `/admin` → Campaigns: dry-run a segment (post-suppression count, sends nothing), queue, then send.
+- **Bench** — `bench/roadmap/final/campaign.mjs`, 17/17. Red-proved: 1/17 on the pre-lane tree.
+
+### Honest open-items
+- **Nothing has been sent.** No outreach transport is configured anywhere, including prod. The lane shipped the mechanism, not the clearance.
+- Needs an outreach subdomain (e.g. `outreach.advo.ph`) with its own SPF/DKIM/DMARC, plus a warm-up ramp before any volume.
+- Resend's ToS prohibits scraped lists — the outreach transport likely needs a different provider than the transactional one.
+- RA 10173 questions are now item 8 on the CONTRACTS.md legal punch list and are **unanswered**.
+- Bounce/complaint arrives via `POST /api/campaign/delivery-failure`; no ESP webhook is wired to it yet, so suppression from bounces is manual until that is connected.
+- Soft-bounce escalation is modelled in the enum (`soft_bounce_limit`) but no counter increments it yet.
+
+---
+
 ## 2026-08-17 — resilience lane: ENOBUFS root-caused, poll latch, Ask retry, operational health
 
 > Lane `final/resilience`. The API now survives its own background work. Root cause of the `ENOBUFS` reported on 2026-08-16 is **measured, not guessed** — and it was not the `limit=99999` listing.

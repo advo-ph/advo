@@ -180,3 +180,109 @@ export async function sendLeadNotificationEmail(
     `),
   );
 }
+
+// ─── Outreach transport (mass send) ──────────────────
+//
+// DELIBERATELY SEPARATE from the transactional transport above.
+//
+// Everything above carries magic links, client notifications, and admin invites.
+// Cold outreach to a scraped list is the highest-risk mail this system sends, and a
+// reputation hit on it must not be able to stop a client from logging in. So outreach
+// gets its own credentials, its own sending domain, and its own failure behavior:
+//
+//   transactional  — best effort. send() catches and logs; a failed notification must
+//                    never break the request that triggered it.
+//   outreach       — THROWS. A campaign that cannot send must fail loudly, so the
+//                    recipient row records the failure and can be retried. Silently
+//                    "succeeding" would mark 5000 people as contacted who never were.
+//
+// Config is read off process.env, matching how this repo carries every other optional
+// integration key (see contract-review.service.ts). env.ts holds the validated core only.
+
+export type OutreachConfig = {
+  host: string;
+  port: number;
+  user?: string;
+  pass?: string;
+  from: string;
+};
+
+/** Resolve the outreach transport config, or null when it is not configured. */
+export function outreachConfig(): OutreachConfig | null {
+  const host = process.env.OUTREACH_SMTP_HOST;
+  const from = process.env.OUTREACH_FROM;
+  if (!host || !from) return null;
+
+  return {
+    host,
+    port: Number(process.env.OUTREACH_SMTP_PORT ?? 587),
+    user: process.env.OUTREACH_SMTP_USER,
+    pass: process.env.OUTREACH_SMTP_PASS,
+    from,
+  };
+}
+
+export function isOutreachConfigured(): boolean {
+  return outreachConfig() !== null;
+}
+
+let _outreachTransport: nodemailer.Transporter | null | undefined;
+
+function outreachTransport(): nodemailer.Transporter | null {
+  if (_outreachTransport !== undefined) return _outreachTransport;
+
+  const config = outreachConfig();
+  if (!config) {
+    _outreachTransport = null;
+    return null;
+  }
+
+  _outreachTransport = nodemailer.createTransport({
+    host: config.host,
+    port: config.port,
+    secure: config.port === 465,
+    auth: config.user ? { user: config.user, pass: config.pass } : undefined,
+  });
+  return _outreachTransport;
+}
+
+/** Test seam: drop the memoized transport so a stub can take effect. */
+export function resetOutreachTransport(): void {
+  _outreachTransport = undefined;
+}
+
+/**
+ * Send one outreach email. THROWS on any failure — including when no outreach transport
+ * is configured. It never borrows the transactional transport and never logs-and-returns.
+ */
+export async function sendOutreachEmail(to: string, subject: string, html: string): Promise<void> {
+  const config = outreachConfig();
+  const t = outreachTransport();
+
+  if (!config || !t) {
+    throw new Error(
+      "Outreach transport is not configured. Set OUTREACH_SMTP_HOST and OUTREACH_FROM. " +
+        "Campaign sending deliberately does not fall back to the transactional transport.",
+    );
+  }
+
+  await t.sendMail({ from: config.from, to, subject, html });
+  log.info({ to, subject }, "Outreach email sent");
+}
+
+/** The outreach HTML shell. Unlike wrap(), it carries a mandatory unsubscribe link. */
+export function wrapOutreach(body: string, unsubscribeUrl: string): string {
+  return `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 560px; margin: 0 auto; padding: 32px 24px;">
+      <div style="margin-bottom: 24px;">
+        <strong style="font-size: 20px; color: #1a1a1a;">ADVO</strong>
+      </div>
+      ${body}
+      <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e5e5; font-size: 12px; color: #999;">
+        ADVO &middot; advo.ph &middot; Metro Manila, Philippines<br />
+        <a href="${unsubscribeUrl}" style="color: #999; text-decoration: underline;">Unsubscribe</a>
+        — one click, no login, and we will not contact this address again.
+      </div>
+    </div>
+  `;
+}
