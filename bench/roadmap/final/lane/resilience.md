@@ -134,7 +134,9 @@ bench/roadmap/final/proposal.mjs
 ```
 docs/ROADMAP.md  docs/HANDOFF.md  docs/FEATURES.md  README.md
 package.json  package-lock.json
-apps/api/src/utils/env.ts       ← already registers PLAUD_TOKEN + PLAUD_POLL_SECOND; read them, do not re-declare
+apps/api/src/utils/env.ts       ← registers PLAUD_POLL_SECOND only. PLAUD_TOKEN is NOT in the zod schema —
+                                   this repo reads optional integration keys straight off `process.env`
+                                   (see meeting.routes.ts:213). Follow that pattern; leave env.ts alone.
 apps/web/src/test/api-wiring.test.ts  ← append your own describe block only
 bench/roadmap/roadmap-remain/scoring.mjs   ← append NOTHING; that is the old tier's registry
 ```

@@ -47,6 +47,25 @@ Currently bottlenecked: 5K scraped clinic leads but proposals are manual, so the
 | **Clinic-scraper → proposal-PDF pipeline**          | Already have 5K leads with digital scores, design feedback, perf grades. Need: feed → AI-design proposal → send.                                                                                    | ✅ **Template-fill shipped** (`/admin` → Proposals → Generate). Fills CONTRACTS.md clauses + lead fields into printable HTML. AI generation deferred. |
 | **Proposal tracker**                                | Once you send 10+/month, need to know which clinics opened, replied, signed.                                                                                                                        | ✅ **Shipped** — `proposal` table + `/admin` → Proposals. Statuses: sent / opened / replied / signed. |
 | **Targeting rule: zero/outdated systems only**      | Repeating signal: _"if a company has a system/website, we can't just offer them a new one"_ (Prince) — Personal Collection passed, AAPM has Inventi, etc.                                           | ✅ **Shipped** — `/admin` → Leads “Outdated only” filter (zero/outdated systems; skip Shopify/Inventi/etc.). |
+| **Email campaign sender (mass send)**               | The last missing link in this section. Leads are imported, targeted, and a proposal can be generated — but nothing sends it, so the 5K-lead pipeline still cannot fan out. `email.service.ts` is transactional-only (one `send()`, errors swallowed to a log, single `noreply@advo.ph` transport shared with magic links). | ⏳ **Not started** — v1 = batch send + suppression. See acceptance below. |
+
+### Acceptance — email campaign sender (v1)
+
+Scope is deliberately **batch send + suppression**, not sequences. A follow-up sequence engine is a separate, later item.
+
+| Must | Detail |
+| --- | --- |
+| **Separate sending identity** | Outreach sends from its own subdomain (e.g. `outreach.advo.ph`) via its own transport, configured independently of the transactional one. A reputation hit on cold outreach must not be able to stop a client magic-link from landing. |
+| **Segment → campaign** | Select a lead segment (reuse the existing “Outdated only” targeting filter), attach a subject + body template or a generated proposal, and materialize one recipient row per lead at send time. |
+| **Throttled send** | A configurable per-hour rate cap with the send resumable across an API restart. No unbounded `Promise.all` over 5K addresses. |
+| **Unsubscribe + suppression** | Every outreach email carries a working one-click unsubscribe. An unsubscribed, hard-bounced, or complained address is permanently suppressed and is skipped by every future campaign, with no way to send to it from the UI. |
+| **Bounce + complaint handling** | Hard bounce and spam complaint feed the suppression list. Repeated soft bounce escalates to suppression. |
+| **Per-recipient status** | queued / sent / bounced / unsubscribed / complained, visible in admin, so a campaign's real delivery is legible without opening the ESP dashboard. |
+| **Honest dry-run** | A campaign can be previewed and counted without sending, and the send path refuses to run when no outreach transport is configured — it must not silently log-and-succeed the way `email.service.ts` does today. |
+
+**Not in v1:** multi-step sequences, reply detection, A/B subject testing, click tracking, inbox rotation.
+
+**Legal:** the scraped clinic list is personal data under the PH Data Privacy Act (RA 10173). Add consent basis, retention, and unsubscribe obligations to the open-questions punch list in [CONTRACTS.md](CONTRACTS.md#open-questions-for-the-legal-advisor) for the same lawyer engagement already tracked in P0. Do not treat shipping the sender as clearance to send.
 
 ## P1 — Project management for multi-client throughput
 

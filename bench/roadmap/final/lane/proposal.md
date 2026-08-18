@@ -111,7 +111,9 @@ bench/roadmap/final/resilience.mjs
 ```
 docs/ROADMAP.md  docs/HANDOFF.md  docs/FEATURES.md  README.md  docs/CONTRACTS.md
 package.json  package-lock.json
-apps/api/src/utils/env.ts       ← already registers ANTHROPIC_API_KEY; read it, do not re-declare
+apps/api/src/utils/env.ts       ← does NOT register ANTHROPIC_API_KEY. This repo reads optional AI keys
+                                   straight off `process.env` — see contract-review.service.ts:233
+                                   (`if (!process.env.ANTHROPIC_API_KEY) return null`). Match that; leave env.ts alone.
 apps/web/src/test/api-wiring.test.ts  ← append your own describe block only
 bench/roadmap/roadmap-remain/scoring.mjs   ← append NOTHING; that is the old tier's registry
 ```
