@@ -11,6 +11,12 @@ Cross-links:
 
 ---
 
+## 2026-08-18 — raw media offloaded to 4TB
+
+`apps/web/media` is a symlink to `/Volumes/gelo's 4tb/from-macbook-pro/antigravity/advo/apps/web/media` (479 files, 21.5 GB, copy-verified). `.gitignore` now matches both `media/` and the symlink. The landing site still works only while the drive is plugged in. Fourlinq experiment folders were archived beside it on the drive; Mac copies kept (unique WIP).
+
+**Honest open-items:** `combine-media.sh` still assumes a local directory; site images in `public/` were not moved.
+
 ## 2026-08-15 — test lane: coverage table
 
 > Roadmap-remain **test** lane. The bench only measures; this lane's deliverable is the tests.
