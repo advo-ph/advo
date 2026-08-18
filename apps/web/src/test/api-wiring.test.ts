@@ -1133,3 +1133,47 @@ describe("No Supabase in Source", () => {
     expect(files).toEqual([]);
   });
 });
+
+// ─── Operational health (lane: resilience) ────────────
+
+describe("Operational health", () => {
+  it("GET /api/health reports poller state and captured errors", async () => {
+    const { status, body } = await apiGet("/api/health");
+
+    expect(status).toBe(200);
+    expect(typeof body.isDegraded).toBe("boolean");
+    expect(Array.isArray(body.degradedReason)).toBe(true);
+
+    expect(body.plaud).toBeDefined();
+    expect(typeof body.plaud.isSuppressed).toBe("boolean");
+    expect(typeof body.plaud.consecutiveFailure).toBe("number");
+    expect(typeof body.plaud.isTokenConfigured).toBe("boolean");
+    expect(typeof body.plaud.isTokenUsable).toBe("boolean");
+
+    expect(typeof body.error.totalCount).toBe("number");
+    expect(Array.isArray(body.error.recent)).toBe(true);
+  });
+
+  it("GET /api/health exposes secret presence as booleans, never values", async () => {
+    const { body } = await apiGet("/api/health");
+    const raw = JSON.stringify(body);
+
+    expect(typeof body.config.isPlaudTokenConfigured).toBe("boolean");
+    expect(typeof body.config.isAnthropicKeyConfigured).toBe("boolean");
+
+    // No credential-shaped material anywhere in a PUBLIC payload.
+    expect(raw).not.toMatch(/eyJ[\w.-]{20,}/); // JWT
+    expect(raw).not.toMatch(/\bsk-[A-Za-z0-9_-]{8,}/); // API key
+    expect(raw).not.toMatch(/postgres(?:ql)?:\/\//i); // DSN
+    expect(raw).not.toMatch(/Bearer\s+(?!<redacted>)\S+/);
+
+    for (const captured of body.error.recent ?? []) {
+      expect(captured.stack).toBeUndefined();
+    }
+  });
+
+  it("GET /api/health is reachable without auth", async () => {
+    const { status } = await apiGet("/api/health");
+    expect(status).toBe(200);
+  });
+});
