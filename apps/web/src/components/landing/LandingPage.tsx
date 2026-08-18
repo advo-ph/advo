@@ -1,17 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useReducedMotion } from "framer-motion";
-import {
-  IconBrandFacebook,
-  IconBrandGithub,
-  IconBrandInstagram,
-  IconBrandLinkedin,
-  IconBrandX,
-  IconBrandYoutube,
-  IconMail,
-  IconWorld,
-} from "@tabler/icons-react";
-import { get } from "@/lib/api";
 import {
   ChevronDown,
   ChevronLeft,
@@ -20,13 +9,8 @@ import {
   X,
 } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
+import LandingFooter from "./landing-footer";
 import "./landing-page.css";
-
-interface SocialLink {
-  icon: string;
-  href: string;
-  label: string;
-}
 
 interface NavItem {
   label: string;
@@ -226,11 +210,36 @@ const engagement = [
 ];
 
 const faq = [
-  { question: "How does the ADVO workspace work?", answer: "Every project has one shared workspace for scope, files, milestones, feedback, approvals, and delivery, so your team and ours always see the same truth." },
-  { question: "Can I invite my team and client to the workspace?", answer: "Yes. Invite collaborators by role and control what internal teams, partners, and clients can view or update." },
-  { question: "What's included in the project fee?", answer: "Your proposal defines the agreed strategy, design, development, project management, revisions, and launch support before work begins." },
-  { question: "How do payments and invoicing work?", answer: "Projects use clear milestone billing. Retainers and support plans are invoiced on a recurring schedule with transparent activity records." },
-  { question: "Do you provide ongoing support after launch?", answer: "Yes. Choose a retainer or hourly support plan for continuous optimization, fixes, reporting, and new feature work." },
+  {
+    question: "Do I get a website, or a system?",
+    answer:
+      "Both, and they are the same build. The public site is the front door. Behind it sits the client hub your customer signs into, the admin console your staff runs the day on, and the hardware on the counter. We do not ship the door without the room behind it.",
+  },
+  {
+    question: "What is the client hub, and who sees it?",
+    answer:
+      "It is the signed-in workspace holding scope, files, milestones, approvals, and invoices for one project. You invite your team and your client by role, so an operator, a partner, and the studio see the same truth without a Viber thread deciding what is current.",
+  },
+  {
+    question: "What does the admin console actually do?",
+    answer:
+      "It is the back office: projects, leads, tasks, capacity, approvals, and finance. It is the surface your studio opens every morning, not a dashboard we screenshot once for a proposal.",
+  },
+  {
+    question: "Where does it run, and do I own it?",
+    answer:
+      "On a self-hosted VPS stack we set up and operate — Postgres, Node, Nginx, TLS. No per-seat cloud tax. At handoff the whole stack moves into your name: server, domain, database, and repository.",
+  },
+  {
+    question: "Does the hardware on the floor count as your job?",
+    answer:
+      "Yes. The tablet at the counter, the receipt printer, and the TV on the wall are part of the system we install, train on, and support. Uptime on a Saturday night is the product, not an accessory to it.",
+  },
+  {
+    question: "What happens after launch?",
+    answer:
+      "A care plan or hourly support keeps it running: fixes, monitoring, and new work. The printer that dies at 8PM is covered that night, not on Monday when a ticket queue opens.",
+  },
 ];
 
 const partner = [
@@ -251,84 +260,13 @@ const chartPoint = [
   { name: "Jul", value: 52 }, { name: "Aug", value: 71 }, { name: "Sep", value: 82 },
 ];
 
-const socialDefault: SocialLink[] = [
-  { icon: "Facebook", href: "https://www.facebook.com/share/1DDt8dVJUd/?mibextid=wwXIfr", label: "Facebook" },
-  { icon: "Instagram", href: "https://www.instagram.com/advo_ph/", label: "Instagram" },
-  { icon: "Linkedin", href: "https://www.linkedin.com/company/advocompany/", label: "LinkedIn" },
-  { icon: "Mail", href: "mailto:contact@advo.ph", label: "Email" },
-];
-
-const socialIcon: Record<string, typeof IconBrandInstagram> = {
-  Facebook: IconBrandFacebook,
-  Instagram: IconBrandInstagram,
-  Linkedin: IconBrandLinkedin,
-  Mail: IconMail,
-  Twitter: IconBrandX,
-  Youtube: IconBrandYoutube,
-  Globe: IconWorld,
-  Github: IconBrandGithub,
-};
-
-const footerCol: { title: string; link: { label: string; href: string; ext?: boolean }[] }[] = [
-  {
-    title: "Product",
-    link: [
-      { label: "Client Hub", href: "/login" },
-      { label: "Admin", href: "/login" },
-      { label: "Workspace", href: "#showcase" },
-      { label: "Start a project", href: "/start" },
-      { label: "Log in", href: "/login" },
-    ],
-  },
-  {
-    title: "Services",
-    link: [
-      { label: "Strategy", href: "#service" },
-      { label: "Design", href: "#service" },
-      { label: "Development", href: "#service" },
-      { label: "Support", href: "#service" },
-    ],
-  },
-  {
-    title: "Company",
-    link: [
-      { label: "Team", href: "/team" },
-      { label: "Process", href: "#process" },
-      { label: "Work", href: "#work" },
-      { label: "Pricing", href: "#engagement" },
-      { label: "Contact", href: "/start" },
-    ],
-  },
-  {
-    title: "Resources",
-    link: [
-      { label: "FAQs", href: "#faq" },
-      { label: "Fourlinq", href: "https://fourlinq.ph", ext: true },
-      { label: "Client Hub", href: "/login" },
-    ],
-  },
-];
-
 const LandingPage = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openPanel, setOpenPanel] = useState<string | null>(null);
   const [faqOpen, setFaqOpen] = useState(0);
   const [useCaseIndex, setUseCaseIndex] = useState(0);
   const [surfacePage, setSurfacePage] = useState(0);
-  const [socialLink, setSocialLink] = useState<SocialLink[]>(socialDefault);
   const reduceMotion = useReducedMotion();
-
-  useEffect(() => {
-    (async () => {
-      const { data } = await get<{ key: string; value: unknown }[]>("/api/settings/public");
-      if (data) {
-        const setting = data.find((row) => row.key === "social_links");
-        if (setting?.value && Array.isArray(setting.value) && setting.value.length > 0) {
-          setSocialLink(setting.value as SocialLink[]);
-        }
-      }
-    })();
-  }, []);
 
   const current = useCase[useCaseIndex] ?? useCase[0];
   const surfacePer = 3;
@@ -784,7 +722,7 @@ const LandingPage = () => {
       </section>
 
       <section className="landing-faq" id="faq">
-        <h3>Got questions?</h3>
+        <h3>Questions before we build</h3>
         <div className="landing-faq-list">
           {faq.map(({ question, answer }, index) => (
             <div className={faqOpen === index ? "is-open" : ""} key={question}>
@@ -798,56 +736,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      <footer className="landing-footer" id="footer">
-        <div className="landing-footer-grid">
-          {footerCol.map((col) => (
-            <div key={col.title}>
-              <h3>{col.title}</h3>
-              {col.link.map((item) =>
-                item.href.startsWith("http") ? (
-                  <a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer">
-                    {item.label}
-                    {item.ext ? <span> ↗</span> : null}
-                  </a>
-                ) : item.href.startsWith("/") ? (
-                  <Link key={item.label} to={item.href}>
-                    {item.label}
-                  </Link>
-                ) : (
-                  <a key={item.label} href={item.href}>
-                    {item.label}
-                  </a>
-                ),
-              )}
-            </div>
-          ))}
-        </div>
-        <div className="landing-footer-bar">
-          <div>
-            <img src="/advo-logo-black.png" alt="ADVO" />
-            <p>
-              © 2026 ADVO /{" "}
-              <Link to="/start">Contact</Link> / Built with care in the Philippines.
-            </p>
-          </div>
-          <div className="landing-social">
-            {socialLink.map((link) => {
-              const Icon = socialIcon[link.icon] || IconWorld;
-              return (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  target={link.href.startsWith("mailto:") ? undefined : "_blank"}
-                  rel={link.href.startsWith("mailto:") ? undefined : "noopener noreferrer"}
-                  aria-label={link.label}
-                >
-                  <Icon size={16} stroke={1.4} />
-                </a>
-              );
-            })}
-          </div>
-        </div>
-      </footer>
+      <LandingFooter />
     </main>
   );
 };

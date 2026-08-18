@@ -222,40 +222,6 @@
       0 0 0 1px hsl(var(--border) / 0.4);
   }
 
-  /* Hover-lift card with a faint orange top glow */
-  .interactive-surface {
-    position: relative;
-    isolation: isolate;
-    overflow: hidden;
-    transition:
-      border-color 180ms ease,
-      background-color 180ms ease,
-      transform 180ms ease;
-  }
-  .interactive-surface::after {
-    content: "";
-    position: absolute;
-    inset: -1px;
-    z-index: -1;
-    pointer-events: none;
-    opacity: 0;
-    background: radial-gradient(
-      440px circle at 50% 0%,
-      hsl(var(--accent) / 0.14),
-      transparent 58%
-    );
-    transition: opacity 180ms ease;
-  }
-  @media (hover: hover) and (pointer: fine) {
-    .interactive-surface:hover {
-      border-color: hsl(var(--foreground) / 0.24);
-      transform: translateY(-1px);
-    }
-    .interactive-surface:hover::after {
-      opacity: 1;
-    }
-  }
-
   /* Faint Linear grid backdrop for hero/header zones */
   .linear-grid {
     background-image:
@@ -289,15 +255,9 @@
       transform: none !important;
     }
 
-    /* Optional, additive page-wide consistency: quiet the pre-existing ambient
-     * CSS animations (TechTicker marquee, Hero/ContactCTA blobs, scroll cue).
-     * Not part of the framing primitives; safe to remove without regressing
-     * them. */
-    .animate-marquee,
-    .animate-blob-1,
-    .animate-blob-2,
-    .animate-blob-3,
-    .animate-blob-4,
+    /* Optional, additive page-wide consistency: quiet the remaining ambient
+     * CSS animation (scroll cue). Not part of the framing primitives; safe to
+     * remove without regressing them. */
     .animate-bounce {
       animation: none !important;
     }

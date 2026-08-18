@@ -1,67 +1,102 @@
 #!/usr/bin/env node
-import fs from "node:fs";
-import path from "node:path";
+/**
+ * Landing audit — retargeted 2026-08-18.
+ *
+ * This bench was written against the Stripe-era component set (Hero.tsx,
+ * WhyDigital.tsx, ContactCTA.tsx, TechTicker.tsx, ProcessSteps.tsx,
+ * ServiceTiers.tsx, InfrastructureDiagram.tsx, FAQ.tsx, Footer.tsx). None of
+ * those were ever rendered by `/`; the shipped landing is LandingPage.tsx.
+ * They have been deleted, so the checks now assert the same *intent* against
+ * the surface that actually ships.
+ *
+ * It also used `new URL(...).pathname` for repoRoot, which yields `/C:/...` on
+ * Windows and resolved to `C:\C:\...` — every read() returned "" and all 15
+ * checks failed regardless of the code. Fixed to fileURLToPath, matching the
+ * sibling benches.
+ */
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const repoRoot = path.resolve(new URL("../../..", import.meta.url).pathname);
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 
 const read = (relativePath) => {
-  const absolutePath = path.join(repoRoot, relativePath);
-  return fs.existsSync(absolutePath) ? fs.readFileSync(absolutePath, "utf8") : "";
+  const absolutePath = join(repoRoot, relativePath);
+  return existsSync(absolutePath) ? readFileSync(absolutePath, "utf8") : "";
 };
 
+const has = (relativePath) => existsSync(join(repoRoot, relativePath));
+
 const files = {
-  serviceTiers: read("apps/web/src/components/landing/ServiceTiers.tsx"),
+  landingPage: read("apps/web/src/components/landing/LandingPage.tsx"),
+  landingFooter: read("apps/web/src/components/landing/landing-footer.tsx"),
+  landingShell: read("apps/web/src/components/landing/landing-shell.tsx"),
+  landingCss: read("apps/web/src/components/landing/landing-page.css"),
   portfolioCard: read("apps/web/src/components/landing/PortfolioCard.tsx"),
-  portfolioGrid: read("apps/web/src/components/landing/PortfolioGrid.tsx"),
   floatingNav: read("apps/web/src/components/landing/FloatingNav.tsx"),
-  whyDigital: read("apps/web/src/components/landing/WhyDigital.tsx"),
-  techTicker: read("apps/web/src/components/landing/TechTicker.tsx"),
-  contactCta: read("apps/web/src/components/landing/ContactCTA.tsx"),
-  processSteps: read("apps/web/src/components/landing/ProcessSteps.tsx"),
-  faq: read("apps/web/src/components/landing/FAQ.tsx"),
-  footer: read("apps/web/src/components/landing/Footer.tsx"),
-  infrastructure: read("apps/web/src/components/landing/InfrastructureDiagram.tsx"),
-  hero: read("apps/web/src/components/landing/Hero.tsx"),
+  drawerTest: read("apps/web/src/test/mobile-nav-drawer.test.ts"),
   indexCss: read("apps/web/src/index.css"),
   readme: read("README.md"),
 };
 
-const allLandingSource = Object.values(files).join("\n");
-
 const hasAll = (source, terms) =>
   terms.every((term) => new RegExp(term, "i").test(source));
 
+/** Components under landing/ that are allowed to exist, and why. */
+const allowedLandingModule = new Set([
+  "LandingPage.tsx", // rendered by /
+  "landing-footer.tsx", // rendered by / and by every landing-shell route
+  "landing-shell.tsx", // /start /login /team /project/:slug /404
+  "FloatingNav.tsx", // /hub
+  "PortfolioCard.tsx", // proof-card unit under test
+  "landing-page.css",
+]);
+
 const checks = [
+  {
+    id: "no-dead-landing-module",
+    title: "Nothing under landing/ is unreachable",
+    passed: (() => {
+      const dir = join(repoRoot, "apps/web/src/components/landing");
+      if (!existsSync(dir)) return false;
+      return readdirSync(dir).every((name) => allowedLandingModule.has(name));
+    })(),
+    expected:
+      "Every file under apps/web/src/components/landing is rendered by a live route (or is the PortfolioCard unit under test).",
+  },
   {
     id: "product-surfaces",
     title: "Services are ADVO product surfaces",
-    passed:
-      /PRODUCT_SURFACES/.test(files.serviceTiers) ||
-      hasAll(files.serviceTiers, ["Website", "Client Hub", "Admin", "Care Plan"]),
+    passed: hasAll(files.landingPage, [
+      "Client Hub",
+      "Admin",
+      "Public site",
+      "Hardware floor",
+    ]),
     expected:
-      "Service section exposes Website, Client Hub, Admin, and Care Plan surfaces instead of generic agency services.",
+      "The landing exposes Client Hub, Admin, public site, and hardware-floor surfaces instead of generic agency services.",
   },
   {
     id: "hero-product-system-offer",
     title: "Hero sells the website plus system offer",
     passed:
-      /HERO_LAYERS/.test(files.hero) &&
-      hasAll(files.hero, [
-        "Websites with the system behind them",
-        "Client Hub",
-        "Admin",
-        "Self-hosted stack",
+      hasAll(files.landingPage, [
+        "Build together",
+        "Ship with clarity",
+        "Philippine software agency and client workspace",
       ]) &&
-      !/We digitalize for you/.test(files.hero),
+      // The missing-piece section carries the system framing under the hero.
+      hasAll(files.landingPage, ["landing-piece", "the system is the fourth"]) &&
+      !/We digitalize for you|We Digitalize It For You/i.test(files.landingPage),
     expected:
-      "Hero headline and first-viewport rail position ADVO as a website plus client/admin/private-stack builder, not a generic agency intro.",
+      "Hero headline and the section under it position ADVO as a website-plus-system builder, not a generic agency intro.",
   },
   {
     id: "proof-metrics",
     title: "Portfolio carries case-study proof",
     passed:
       /(metric|outcome|before|after|products used|launch timeline|caseStudy)/i.test(
-        `${files.portfolioCard}\n${files.portfolioGrid}`,
+        files.portfolioCard,
       ) &&
       hasAll(files.portfolioCard, [
         'data-viewport-check="proof-system-map"',
@@ -70,7 +105,7 @@ const checks = [
         "VPS handoff",
       ]),
     expected:
-      "Portfolio/case-study components expose outcomes, before/after, products used, launch timeline data, and a non-empty system proof map.",
+      "The proof card exposes outcomes, before/after, products used, launch timeline data, and a non-empty system proof map.",
   },
   {
     id: "mobile-drawer",
@@ -84,126 +119,125 @@ const checks = [
       "Mobile nav exposes aria-expanded, occupies the viewport, and bottom-pins Start a Project / Client Hub actions.",
   },
   {
-    id: "floating-nav-document-scroll",
-    title: "Floating nav tracks document scroll",
+    id: "mobile-drawer-tested",
+    title: "Drawer escape / scroll-lock / route-close are covered by a test",
     passed:
-      /window\.scrollY\s*>\s*80/.test(files.floatingNav) &&
-      !/getElementById\("root"\)[\s\S]{0,180}scrollTop/.test(files.floatingNav),
+      has("apps/web/src/test/mobile-nav-drawer.test.ts") &&
+      hasAll(files.drawerTest, [
+        "Escape",
+        "body\\.style\\.overflow",
+        "route change",
+      ]),
     expected:
-      "Floating nav compact state follows normal document scroll after restoring browser-native page scrolling.",
+      "An automated test drives the drawer's Escape close, body scroll lock/restore, and route-change close instead of a manual phone check.",
+  },
+  {
+    id: "floating-nav-scroll-threshold",
+    title: "Floating nav tracks the page scroll container",
+    passed:
+      /scrollTop\s*\?\?\s*window\.scrollY|window\.scrollY/.test(files.floatingNav) &&
+      />\s*80/.test(files.floatingNav),
+    expected:
+      "Floating nav's compact state follows the live scroll container (#root when the app owns scrolling, window otherwise) past an 80px threshold.",
   },
   {
     id: "reduced-motion",
     title: "Landing animations respect reduced motion",
-    passed: /(useReducedMotion|prefers-reduced-motion|motion-reduce|motion-safe)/.test(
-      allLandingSource,
-    ),
+    passed:
+      /useReducedMotion/.test(files.landingPage) &&
+      /useReducedMotion/.test(files.landingShell) &&
+      /prefers-reduced-motion/.test(files.landingCss),
     expected:
-      "Landing animation code has a reduced-motion path before more scroll/motion effects are shipped.",
+      "Both landing mounts read useReducedMotion and the landing stylesheet has a prefers-reduced-motion block.",
   },
   {
     id: "docs-current-design",
     title: "README describes current design system",
     passed:
-      !/(Isometric 3D scene|organic orange blob|#E67A3A|zero scroll animations|React Three Fiber)/i.test(
+      // `#E67A3A` was in the original deny-list, but it is still the live
+      // `--accent` token in index.css — documenting it is correct. The
+      // remaining terms only appear when the README is *describing* the
+      // abandoned 3D/blob direction, not denying it.
+      !/(Isometric 3D scene|organic orange blob|zero scroll animations|React Three Fiber)/i.test(
         files.readme,
-      ) &&
-      /(advo-section-rails|editorial grid|Linear|rail)/i.test(files.readme),
+      ) && /(advo-section-rails|editorial grid|Linear|rail)/i.test(files.readme),
     expected:
-      "README no longer documents stale 3D/orange design work and describes the current rail/grid direction.",
+      "README no longer documents stale 3D/blob design work and describes the current rail/grid direction.",
   },
   {
-    id: "private-stack-product-narrative",
-    title: "Private stack is a gridded product narrative",
+    id: "private-stack-narrative",
+    title: "The stack handoff is on the page",
     passed:
-      /PRODUCT_LAYERS/.test(files.infrastructure) &&
-      hasAll(files.infrastructure, [
-        "Private deployment map",
-        "Website",
-        "Client Hub",
-        "Admin",
-        "Singapore VPS",
-      ]),
+      hasAll(files.landingPage, ["landing-workflow-section", "Inquiry", "Scope", "Build", "Review", "Launch"]) &&
+      /VPS handoff/i.test(files.landingFooter),
     expected:
-      "Self-hosted section presents public site, client hub, admin, and deployment proof as a gridded system view.",
+      "The inquiry-to-floor sequence is a rendered section and the VPS handoff is named where the system story closes.",
   },
   {
     id: "why-system-not-generic-digital",
-    title: "Why section explains the system behind the site",
+    title: "The section under the hero explains the system, not digital-transformation",
     passed:
-      hasAll(files.whyDigital, [
-        "System Logic",
-        "A website is only the front door",
-        "Public offer",
-        "Client workspace",
-        "Team controls",
-        "Private stack",
+      hasAll(files.landingPage, [
+        "Three pieces already exist",
+        "Paper, Viber, tally sheets",
       ]) &&
       !/Invest in Your Digital Future|24\/7 Online Presence|Scale Effortlessly|Better Customer Experience/.test(
-        files.whyDigital,
+        files.landingPage,
       ),
     expected:
-      "The first post-hero section explains ADVO's connected website, client hub, admin, and private-stack offer instead of generic digital-transformation benefits.",
+      "The first post-hero section names the concrete gap on the floor instead of generic digital-transformation benefits.",
   },
   {
-    id: "raw-private-stack-strip",
-    title: "Stack strip is raw and self-hosted",
+    id: "integration-strip",
+    title: "Integration strip is quiet and locally served",
     passed:
-      hasAll(files.techTicker, [
-        "React / Vite",
-        "Hono / Node",
-        "Postgres / Drizzle",
-        "TLS / JWT",
-        "VPS / Nginx",
-      ]) && !/simpleicons|Vercel|animate-marquee|cdn\.simpleicons/.test(files.techTicker),
+      /landing-marquee/.test(files.landingPage) &&
+      /\/landing\/integration\//.test(files.landingPage) &&
+      !/simpleicons|cdn\.simpleicons/.test(files.landingPage),
     expected:
-      "The technology strip uses a quiet gridded stack map and does not depend on colorful external logo marquees.",
+      "The integration strip serves its own marks and does not depend on an external logo CDN.",
   },
   {
-    id: "build-room-cta",
-    title: "Contact CTA is a build-room conversion surface",
+    id: "engagement-cta",
+    title: "Engagement section is a concrete conversion surface",
     passed:
-      /BOARD_ROWS/.test(files.contactCta) &&
-      hasAll(files.contactCta, ["Build room", "24h", "14d", "Preview link"]) &&
-      !/Ready to digitalize|Prepare your business for the future/.test(files.contactCta),
+      hasAll(files.landingPage, ["Project", "Retainer", "Hourly", "Enterprise", "₱"]) &&
+      !/Ready to digitalize|Prepare your business for the future/.test(files.landingPage),
     expected:
-      "Final CTA shows a concrete build room with response timing, preview target, task board, and handoff artifacts.",
+      "The pricing surface names real engagement shapes and peso figures rather than an aspirational CTA.",
   },
   {
     id: "process-system-sequence",
     title: "Process section is a product-system sequence",
     passed:
-      hasAll(files.processSteps, [
-        "Build Path",
-        "Build sequence",
-        "Map the offer",
-        "Design the system",
-        "Wire the stack",
-        "Ship and operate",
-      ]) &&
-      !/How We Work|Understanding your needs, goals, and vision/.test(files.processSteps),
+      hasAll(files.landingPage, [
+        "Discover",
+        "Design",
+        "Build",
+        "Review",
+        "Launch",
+        "Support",
+        "Learn the floor before we write software",
+      ]) && !/How We Work|Understanding your needs, goals, and vision/.test(files.landingPage),
     expected:
-      "Process defaults describe ADVO's website, client hub, admin, and stack delivery sequence instead of generic agency phases.",
+      "Process defaults describe ADVO's discover-to-support delivery sequence instead of generic agency phases.",
   },
   {
     id: "tasteful-interaction-layer",
-    title: "Stable sections share restrained interaction treatment",
+    title: "Landing hover treatment is restrained and reduced-motion aware",
     passed:
-      /interactive-surface/.test(files.indexCss) &&
-      /prefers-reduced-motion: reduce[\s\S]*interactive-surface/.test(files.indexCss) &&
-      /(interactive-surface[\s\S]*HERO_LAYERS|HERO_LAYERS[\s\S]*interactive-surface)/.test(files.hero) &&
-      /interactive-surface/.test(files.serviceTiers) &&
-      /interactive-surface/.test(files.portfolioCard) &&
-      /interactive-surface/.test(files.infrastructure) &&
-      /interactive-surface/.test(files.contactCta),
+      /:hover/.test(files.landingCss) &&
+      /@media \(prefers-reduced-motion: reduce\)/.test(files.landingCss) &&
+      /is-reduce-motion/.test(files.landingCss) &&
+      !/interactive-surface/.test(files.indexCss),
     expected:
-      "Hero, product, proof, private-stack, and build-room surfaces share a restrained hover treatment that is disabled under reduced motion.",
+      "The landing's own stylesheet owns hover, guards it under prefers-reduced-motion, and the orphaned Stripe-era .interactive-surface utility is gone.",
   },
   {
     id: "footer-system-continuity",
     title: "Footer continues the product-system story",
     passed:
-      hasAll(files.footer, [
+      hasAll(files.landingFooter, [
         "Start the system",
         "Websites with client systems behind them",
         "Client Hub",
@@ -211,21 +245,28 @@ const checks = [
         "VPS handoff",
         'data-viewport-check="footer-wordmark"',
       ]) &&
-      !/We digitalize for you|Web Applications|Mobile Apps|Cloud Architecture/.test(files.footer),
+      !/We digitalize for you|Web Applications|Mobile Apps|Cloud Architecture/.test(
+        files.landingFooter,
+      ) &&
+      // One footer, mounted by both the landing and the shell — no drift.
+      /LandingFooter/.test(files.landingPage) &&
+      /LandingFooter/.test(files.landingShell),
     expected:
-      "Footer uses the product-system language, includes the project CTA and large wordmark, and avoids generic service/footer copy.",
+      "A single footer component uses the product-system language, includes the project CTA and large wordmark, avoids generic service copy, and is shared by / and the shell routes.",
   },
   {
     id: "faq-product-system",
     title: "FAQ answers product-system questions",
     passed:
-      hasAll(files.faq, [
+      hasAll(files.landingPage, [
         "Questions before we build",
         "client hub",
         "admin console",
         "self-hosted VPS stack",
       ]) &&
-      !/Common Questions|web applications, mobile solutions|flexible pricing|modern cloud platforms/.test(files.faq),
+      !/Common Questions|web applications, mobile solutions|flexible pricing|modern cloud platforms/.test(
+        files.landingPage,
+      ),
     expected:
       "FAQ defaults answer concrete website, hub, admin, hosting, and timeline questions instead of generic agency questions.",
   },
@@ -234,7 +275,7 @@ const checks = [
 const passed = checks.every((check) => check.passed);
 const result = {
   benchmark: "landing-stripe-audit",
-  date: "2026-06-16",
+  date: "2026-08-18",
   passed,
   counts: {
     passed: checks.filter((check) => check.passed).length,

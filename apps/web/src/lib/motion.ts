@@ -49,12 +49,8 @@ export const DURATION = { reveal: 0.5, headline: 0.6 } as const;
 export const STAGGER = {
   /** Default between cards. */
   default: 0.08,
-  /** ProcessSteps: Discovery -> Design -> Build -> Launch progression. */
-  process: 0.12,
-  /** FAQ rows / dense nested lists. */
+  /** Dense nested lists (FAQ rows, footer link columns). */
   dense: 0.06,
-  /** Footer columns: Brand, Company, Services, Contact. */
-  footer: 0.08,
 } as const;
 
 // Usage:
