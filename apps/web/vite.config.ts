@@ -20,6 +20,12 @@ const appCommit =
     }
   })();
 
+// In dev the client always calls a relative /api (see src/lib/api.ts), so this
+// proxy decides which API a `vite` run talks to. Default is the standard local
+// API port; a parallel lane running its own API overrides it per-run with
+// VITE_API_PROXY_TARGET rather than editing this file.
+const apiProxyTarget = process.env.VITE_API_PROXY_TARGET || "http://127.0.0.1:6407";
+
 // https://vitejs.dev/config/
 export default defineConfig({
   server: {
@@ -30,7 +36,7 @@ export default defineConfig({
     },
     proxy: {
       "/api": {
-        target: "http://127.0.0.1:6407",
+        target: apiProxyTarget,
         changeOrigin: true,
       },
     },

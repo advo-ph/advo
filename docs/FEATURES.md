@@ -254,13 +254,19 @@ Pipeline view of inquiries. Status: new → contacted → qualified → proposal
 
 ### Proposals
 
-Admin table of template-filled proposals. Status: sent → opened → replied → signed.
+Admin table of generated proposals. Status: sent → opened → replied → signed.
 
-- **Generate** from a lead: fills CONTRACTS.md clauses + lead fields (no AI)
+- **Generate** from a lead → `POST /api/proposal` (requireTeam). Response data carries `method`:
+  - `ai` — Claude (`claude-opus-4-8`) writes the narrative sections from **that lead's own scraped signals**: its digital / design / performance score, industry, system age, and budget, extracted from the lead's `description` + `notes` by `lead-signal.service.ts`. Runs when `ANTHROPIC_API_KEY` is set.
+  - `template` — the original template fill, **byte-identical** to before. Runs when the key is unset, and on any AI error, malformed JSON, or a response with fewer than 2 usable sections.
+- **CONTRACTS.md clauses and the money table are never AI-written** — they are rendered by us and appended verbatim to both documents. The model is given the scraped facts only, and is told not to invent scores, prices, timelines, or case studies; its output is escaped, not trusted as HTML.
+- **Copy column** in the table shows `AI` / `TMPL` per row, backed by `proposal.method` (migration `014`, default `template` so pre-existing rows backfill correctly).
 - **Status** editable in the table
-- **View / print** the filled HTML document
+- **View / print** the generated HTML document
 
-**Files**: `AdminProposals.tsx`, `lib/proposal-tracker.ts`, `apps/api/src/routes/proposal.routes.ts`, `apps/api/src/services/proposal.service.ts`, `apps/api/migrations/010_proposal.sql`
+**Prod has no key yet**, so live generation runs the template fill — add `ANTHROPIC_API_KEY` to the VPS `.env` + `pm2 restart advo-api` to activate the AI path. AI path covered in `proposal-ai.test.ts` with a mocked SDK (no live key); signal extraction in `lead-signal.test.ts`.
+
+**Files**: `AdminProposals.tsx`, `lib/proposal-tracker.ts`, `apps/api/src/routes/proposal.routes.ts`, `apps/api/src/services/proposal.service.ts`, `apps/api/src/services/lead-signal.service.ts`, `apps/api/migrations/010_proposal.sql`, `apps/api/migrations/014_proposal_method.sql`
 
 ### Settings
 
