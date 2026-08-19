@@ -36,6 +36,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import StatusStepper from "./StatusStepper";
 import FundingBar from "./FundingBar";
+import SignoffCard from "./SignoffCard";
 import { Panel, Empty, Dot } from "@/components/admin/_ui";
 import { useGitHub } from "@/hooks/useGitHub";
 import { cloudflare, DeploymentStatus } from "@/lib/cloudflare";
@@ -449,6 +450,10 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
           )}
         </Panel>
       </div>
+
+      {/* Project Sign-off — the CLIENT-FACING final-delivery document.
+          Never deliverable.verified_at, which is internal team QA. */}
+      <SignoffCard projectId={project.project_id} />
 
       {/* Invoices */}
       {invoices.length > 0 && (

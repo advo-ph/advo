@@ -7,6 +7,7 @@ import {
   GitCommitHorizontal,
   FolderOpen,
   FileText,
+  FileSignature,
   Banknote,
   ListChecks,
   LayoutDashboard,
@@ -58,6 +59,7 @@ import { isJuniorRole } from "@/lib/project-assign";
 import { post, del } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { Panel, Empty, Dot } from "@/components/admin/_ui";
+import AdminSignoff from "./AdminSignoff";
 
 interface ProjectCommandCenterProps {
   project: MergedProject;
@@ -96,6 +98,7 @@ const TABS: { value: string; label: string; icon: React.ElementType }[] = [
   { value: "files", label: "Files", icon: FolderOpen },
   { value: "dev", label: "Dev & Deploy", icon: GitCommitHorizontal },
   { value: "contracts", label: "Contracts", icon: FileText },
+  { value: "signoff", label: "Sign-off", icon: FileSignature },
   { value: "meetings", label: "Meetings", icon: Mic },
   { value: "finance", label: "Finance", icon: Banknote },
 ];
@@ -715,6 +718,11 @@ const ProjectCommandCenter = ({ project, onBack }: ProjectCommandCenterProps) =>
         </TabsContent>
 
         {/* ── Meetings (MoM) ── */}
+        {/* ── Sign-off (client-facing final delivery; NOT deliverable.verified_at) ── */}
+        <TabsContent value="signoff" className="space-y-4 pt-4">
+          <AdminSignoff projectId={project.project_id} />
+        </TabsContent>
+
         <TabsContent value="meetings" className="pt-4">
           <Panel
             title="Meeting minutes"

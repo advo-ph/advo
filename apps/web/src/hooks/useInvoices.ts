@@ -14,6 +14,14 @@ export interface Invoice {
   due_date?: string | null;
   paid_at?: string | null;
   notes?: string | null;
+  /**
+   * Migration 017. Null = an ordinary one-shot milestone invoice. Non-null = generated
+   * by a recurring infrastructure fee, which is explicitly NOT project scope — the
+   * contract states the Total Fee "does not cover the ongoing costs". Keep these out of
+   * contract-value and collection aggregates, or every project inflates monthly.
+   */
+  recurring_fee_id?: number | null;
+  period_start_on?: string | null;
   created_at: string;
   project?: { title: string; client_id: number };
 }
@@ -29,6 +37,8 @@ function mapInvoice(i: any): Invoice {
     due_date: i.dueDate ?? i.due_date,
     paid_at: i.paidAt ?? i.paid_at,
     notes: i.notes,
+    recurring_fee_id: i.recurringFeeId ?? i.recurring_fee_id ?? null,
+    period_start_on: i.periodStartOn ?? i.period_start_on ?? null,
     created_at: i.createdAt ?? i.created_at,
     project: i.project
       ? { title: i.project.title, client_id: i.project.clientId ?? i.project.client_id }

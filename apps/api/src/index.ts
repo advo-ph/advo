@@ -36,6 +36,9 @@ import meetingRoutes from "./routes/meeting.routes.js";
 import previewRoutes from "./routes/preview.routes.js";
 import calendarRoutes from "./routes/calendar.routes.js";
 import changeOrderRoutes from "./routes/change-order.routes.js";
+import commissionRoutes from "./routes/commission.routes.js";
+import projectSignoffRoutes from "./routes/project-signoff.routes.js";
+import recurringFeeRoutes from "./routes/recurring-fee.routes.js";
 import proposalRoutes from "./routes/proposal.routes.js";
 import campaignRoutes from "./routes/campaign.routes.js";
 import libraryRoutes from "./routes/library.routes.js";
@@ -150,11 +153,22 @@ app.route("/api/contracts", contractRoutes);
 // Expense ledger (Admin Finance)
 app.route("/api/expense", expenseRoutes);
 
+// Recurring infrastructure fee (Admin Finance). Generation is an ENDPOINT, not a cron:
+// POST /api/recurring-fee/run. Nothing here starts a timer or auto-suspends hosting.
+app.route("/api/recurring-fee", recurringFeeRoutes);
+
+// Commission split — the 60/25/15 payout model (migration 018). TEAM-ONLY: no /hub path
+// reaches this router. Finalizing is an explicit admin POST, never automatic.
+app.route("/api/commission", commissionRoutes);
+
 // Meeting MoM records (Admin Meetings + Hub)
 app.route("/api/meeting", meetingRoutes);
 
 // Change orders (Hub file + team list; CONTRACTS.md policy 3)
 app.route("/api/change-order", changeOrderRoutes);
+
+// Project sign-off (client-facing final delivery; NOT deliverable.verified_at)
+app.route("/api/project-signoff", projectSignoffRoutes);
 
 // Preview links (public redirect for "Show Client Now")
 app.route("/api/preview", previewRoutes);

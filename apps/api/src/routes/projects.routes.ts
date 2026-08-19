@@ -635,7 +635,7 @@ projects.get("/:id/preview-requests", requireTeam, async (c) => {
 // ─── Client revision → deliverable ───────────────────
 // requireTeam. Body: revision_note. Creates deliverable titled "Client revision"
 // with description = (optional AI polish of note) + CONTRACTS.md policy reminder
-// (2 rounds/phase). Claude polish only when ANTHROPIC_API_KEY set; else raw note.
+// (5 rounds per deliverable). Claude polish only when ANTHROPIC_API_KEY set; else raw note.
 
 const revisionTaskBodySchema = z.object({
   revisionNote: z.string().min(1).max(4000),

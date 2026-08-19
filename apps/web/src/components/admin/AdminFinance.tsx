@@ -6,6 +6,10 @@ import {
   ChevronDown,
   ChevronUp,
   ExternalLink,
+  RefreshCw,
+  AlertTriangle,
+  PauseCircle,
+  PlayCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,8 +21,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useInvoices, type Invoice, type InvoiceStatus } from "@/hooks/useInvoices";
+import { useRecurringFee, type RecurringFee } from "@/hooks/useRecurringFee";
 import { useExpense, type ExpenseInput } from "@/hooks/useExpense";
 import { PageHeader, StatStrip, Stat, Empty, Dot } from "@/components/admin/_ui";
+import AdminCommission from "@/components/admin/AdminCommission";
 
 const EXPENSE_CATEGORIES = [
   "ai_usage",
@@ -244,6 +250,234 @@ const CreateExpenseForm = ({
   );
 };
 
+/* ─── Recurring infrastructure fee ────────────────── */
+//
+// The FourlinQ MOA commits the client to PHP 3,000.00/month for hosting, database
+// maintenance and domain renewal, billed on the 1st, suspendable after 15 days unpaid.
+//
+// Two rules this UI must not break:
+//   * A generated invoice is NOT project scope. It never enters the Collected /
+//     Contracted stats, and it is listed here rather than inside the project group.
+//   * "At risk" means the contractual remedy is AVAILABLE, not that anything happened.
+//     Suspending is an explicit click, and the API refuses it while unjustified.
+
+const feeStatusConfig: Record<string, { label: string; dot: string }> = {
+  active: { label: "Active", dot: "bg-green-500" },
+  paused: { label: "Paused", dot: "bg-yellow-500" },
+  cancelled: { label: "Cancelled", dot: "bg-muted-foreground/40" },
+};
+
+const CreateRecurringFeeForm = ({
+  projects,
+  onCreate,
+  isCreating,
+}: {
+  projects: ProjectSummary[];
+  onCreate: (input: {
+    projectId: number;
+    label: string;
+    amountCents: number;
+    startsOn: string;
+    billingDayOfMonth?: number;
+    graceDayCount?: number;
+  }) => void;
+  isCreating: boolean;
+}) => {
+  const [projectId, setProjectId] = useState("");
+  const [label, setLabel] = useState("Monthly Infrastructure Fee");
+  const [amount, setAmount] = useState("3000");
+  const [startsOn, setStartsOn] = useState("");
+  const [dayOfMonth, setDayOfMonth] = useState("1");
+  const [graceDay, setGraceDay] = useState("15");
+
+  const handleSubmit = () => {
+    if (!projectId || !label.trim() || !amount || !startsOn) return;
+    onCreate({
+      projectId: Number(projectId),
+      label: label.trim(),
+      // Integer CENTS. This is the only place a peso string becomes cents.
+      amountCents: Math.round(parseFloat(amount) * 100),
+      startsOn,
+      billingDayOfMonth: Number(dayOfMonth) || 1,
+      graceDayCount: Number(graceDay),
+    });
+    setStartsOn("");
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-t border-border bg-secondary/20">
+      <Select value={projectId} onValueChange={setProjectId}>
+        <SelectTrigger className="w-40 h-8 text-xs">
+          <SelectValue placeholder="Project" />
+        </SelectTrigger>
+        <SelectContent>
+          {projects.map((p) => (
+            <SelectItem key={p.project_id} value={String(p.project_id)}>
+              {p.title}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Input
+        placeholder="Label"
+        value={label}
+        onChange={(e) => setLabel(e.target.value)}
+        className="w-52 h-8"
+      />
+      <Input
+        placeholder="Amount"
+        type="number"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+        className="w-24 h-8"
+      />
+      <Input
+        type="date"
+        aria-label="Starts on"
+        value={startsOn}
+        onChange={(e) => setStartsOn(e.target.value)}
+        className="w-36 h-8"
+      />
+      <Input
+        type="number"
+        min={1}
+        max={28}
+        aria-label="Billing day of month"
+        title="Billing day of month (1–28)"
+        value={dayOfMonth}
+        onChange={(e) => setDayOfMonth(e.target.value)}
+        className="w-16 h-8"
+      />
+      <Input
+        type="number"
+        min={0}
+        aria-label="Grace days"
+        title="Grace days before suspension is justified"
+        value={graceDay}
+        onChange={(e) => setGraceDay(e.target.value)}
+        className="w-16 h-8"
+      />
+      <Button
+        size="sm"
+        className="h-8"
+        onClick={handleSubmit}
+        disabled={isCreating || !projectId || !label.trim() || !amount || !startsOn}
+      >
+        {isCreating ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Plus className="h-3.5 w-3.5" />
+        )}
+      </Button>
+    </div>
+  );
+};
+
+const RecurringFeeRow = ({
+  fee,
+  title,
+  onStatus,
+  onSuspend,
+  onDelete,
+}: {
+  fee: RecurringFee;
+  title: string;
+  onStatus: (status: string) => void;
+  onSuspend: (isSuspend: boolean) => void;
+  onDelete: () => void;
+}) => {
+  const cfg = feeStatusConfig[fee.status] ?? feeStatusConfig.cancelled;
+  const derived = fee.derived;
+  const graceLabel =
+    derived?.daySinceDue == null
+      ? "—"
+      : derived.graceDayRemaining! >= 0
+        ? `${derived.graceDayRemaining}d left`
+        : `${Math.abs(derived.graceDayRemaining!)}d past grace`;
+
+  return (
+    <div className="flex flex-wrap items-center gap-3 px-3 py-2 text-sm">
+      <span className="flex items-center gap-1.5 w-24 shrink-0">
+        <Dot className={cfg.dot} />
+        <span className="text-xs text-muted-foreground">{cfg.label}</span>
+      </span>
+
+      <span className="flex-1 min-w-0 flex items-baseline gap-2">
+        <span className="font-medium truncate">{fee.label}</span>
+        <span className="text-xs text-muted-foreground truncate">{title}</span>
+      </span>
+
+      <span className="w-24 shrink-0 text-right font-medium tabular-nums">
+        {formatPeso(fee.amountCents)}
+      </span>
+      <span className="hidden md:block w-16 shrink-0 text-right text-xs text-muted-foreground">
+        /{fee.billingInterval === "monthly" ? "mo" : fee.billingInterval}
+      </span>
+
+      <span className="hidden lg:block w-28 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
+        Next {fee.derived?.nextRunOn ?? fee.nextRunOn}
+      </span>
+
+      <span
+        className={`w-28 shrink-0 text-right text-xs tabular-nums ${
+          derived?.isSuspensionJustified ? "text-destructive font-medium" : "text-muted-foreground"
+        }`}
+        title="Grace window (calendar days past the due date)"
+      >
+        {graceLabel}
+      </span>
+
+      <span className="w-24 shrink-0 text-right text-xs text-muted-foreground tabular-nums">
+        {formatPeso(derived?.outstandingCents ?? 0)} out
+      </span>
+
+      <Select value={fee.status} onValueChange={onStatus}>
+        <SelectTrigger className="w-28 h-7 text-xs shrink-0">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="active">Active</SelectItem>
+          <SelectItem value="paused">Paused</SelectItem>
+          <SelectItem value="cancelled">Cancelled</SelectItem>
+        </SelectContent>
+      </Select>
+
+      {/* Records the remedy. The API returns 409 while it is not justified. */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7 shrink-0"
+        disabled={!derived?.isSuspended && !derived?.isSuspensionJustified}
+        onClick={() => onSuspend(!derived?.isSuspended)}
+        title={
+          derived?.isSuspended
+            ? "Record hosting resumed"
+            : derived?.isSuspensionJustified
+              ? "Record hosting suspended (you still take it down manually)"
+              : "Suspension is not justified yet"
+        }
+        aria-label={derived?.isSuspended ? "Resume" : "Suspend"}
+      >
+        {derived?.isSuspended ? (
+          <PlayCircle className="h-3.5 w-3.5 text-accent" />
+        ) : (
+          <PauseCircle className="h-3.5 w-3.5" />
+        )}
+      </Button>
+
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-7 w-7 shrink-0"
+        onClick={onDelete}
+        aria-label="Delete recurring fee"
+      >
+        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+      </Button>
+    </div>
+  );
+};
+
 /* ─── Main Component ──────────────────────────────────────── */
 
 const AdminFinance = ({ projects }: AdminFinanceProps) => {
@@ -256,6 +490,17 @@ const AdminFinance = ({ projects }: AdminFinanceProps) => {
     deleteExpense,
     isCreating: isCreatingExpense,
   } = useExpense();
+  const {
+    recurringFee,
+    atRisk,
+    createRecurringFee,
+    updateRecurringFee,
+    deleteRecurringFee,
+    runRecurringFee,
+    setSuspended,
+    isCreating: isCreatingFee,
+    isRunning,
+  } = useRecurringFee();
   const [expandedProject, setExpandedProject] = useState<number | null>(null);
 
   // Summary stats
@@ -269,12 +514,19 @@ const AdminFinance = ({ projects }: AdminFinanceProps) => {
   const expenseTotalCents = expense.reduce((sum, e) => sum + e.amountCents, 0);
   const reimbursableCount = expense.filter((e) => e.isReimbursable).length;
 
-  // Group invoices by project_id
+  // Group invoices by project_id — SPLIT by origin.
+  //
+  // Recurring infrastructure invoices are deliberately kept out of the project group:
+  // twelve of them a year would bury the two milestone invoices, and the contract is
+  // explicit that the Total Fee "does not cover the ongoing costs". They belong to the
+  // Recurring fees block below, not to project scope.
   const invoicesByProject = new Map<number, Invoice[]>();
+  const recurringInvoiceByProject = new Map<number, Invoice[]>();
   for (const inv of invoices) {
-    const existing = invoicesByProject.get(inv.project_id) || [];
+    const target = inv.recurring_fee_id == null ? invoicesByProject : recurringInvoiceByProject;
+    const existing = target.get(inv.project_id) || [];
     existing.push(inv);
-    invoicesByProject.set(inv.project_id, existing);
+    target.set(inv.project_id, existing);
   }
 
   if (isLoading || expenseLoading) {
@@ -298,6 +550,23 @@ const AdminFinance = ({ projects }: AdminFinanceProps) => {
         title="Finance"
         meta={`${projects.length} project${projects.length !== 1 ? "s" : ""} · ${invoices.length} invoice${invoices.length !== 1 ? "s" : ""} · ${expense.length} expense${expense.length !== 1 ? "s" : ""}`}
       />
+
+      {/* Suspension risk. AVAILABLE, not done — nothing here took anything offline. */}
+      {atRisk.length > 0 && (
+        <div className="flex items-start gap-2.5 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2.5">
+          <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+          <div className="min-w-0 text-xs leading-relaxed">
+            <span className="font-medium text-destructive">
+              {atRisk.length} recurring fee{atRisk.length !== 1 ? "s" : ""} past the grace window
+            </span>
+            <span className="text-muted-foreground">
+              {" "}
+              — {atRisk.map((f) => f.label).join(", ")}. ADVO may suspend hosting and API access
+              until the balance clears. This is a right, not an action: nothing has been suspended.
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Summary strip */}
       <StatStrip>
@@ -439,6 +708,22 @@ const AdminFinance = ({ projects }: AdminFinanceProps) => {
                       </div>
                     )}
 
+                    {/* Echo: infrastructure invoices exist but are NOT project scope. */}
+                    {(recurringInvoiceByProject.get(project.project_id)?.length ?? 0) > 0 && (
+                      <div className="px-3 py-2 border-t border-border text-xs text-muted-foreground">
+                        {recurringInvoiceByProject.get(project.project_id)!.length} infrastructure
+                        invoice ·{" "}
+                        {formatPeso(
+                          recurringInvoiceByProject
+                            .get(project.project_id)!
+                            .filter((i) => i.status !== "paid")
+                            .reduce((sum, i) => sum + i.amount_cents, 0),
+                        )}{" "}
+                        outstanding — billed by a recurring fee, excluded from this project&apos;s
+                        contract value. See Recurring fees below.
+                      </div>
+                    )}
+
                     <CreateInvoiceForm
                       projectId={project.project_id}
                       onCreate={createInvoice}
@@ -451,6 +736,71 @@ const AdminFinance = ({ projects }: AdminFinanceProps) => {
           })}
         </div>
       </div>
+
+      {/* Recurring infrastructure fees */}
+      <div className="space-y-2">
+        <div className="flex items-end justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-semibold tracking-tight">Recurring fees</h2>
+            <p className="text-xs text-muted-foreground">
+              {recurringFee.length} schedule{recurringFee.length !== 1 ? "s" : ""} ·{" "}
+              {formatPeso(recurringFee.reduce((sum, f) => sum + f.amountCents, 0))}/mo committed ·
+              generated invoices are hosting, not project scope
+            </p>
+          </div>
+          {/* Generation is an explicit click, not a cron. Idempotent — safe to double-click. */}
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8"
+            onClick={() => runRecurringFee()}
+            disabled={isRunning}
+            title="Generate any due invoice and sweep overdue ones. Runs nothing twice."
+          >
+            {isRunning ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="h-3.5 w-3.5" />
+            )}
+            <span className="ml-1.5">Run billing</span>
+          </Button>
+        </div>
+
+        <div className="border border-border rounded-lg bg-card overflow-hidden">
+          {recurringFee.length === 0 ? (
+            <Empty text="No recurring fee scheduled" />
+          ) : (
+            <div className="divide-y divide-border">
+              {recurringFee.map((fee) => (
+                <RecurringFeeRow
+                  key={fee.recurringFeeId}
+                  fee={fee}
+                  title={projectTitle(fee.projectId)}
+                  onStatus={(status) =>
+                    updateRecurringFee({
+                      recurringFeeId: fee.recurringFeeId,
+                      status: status as RecurringFee["status"],
+                    })
+                  }
+                  onSuspend={(isSuspend) => setSuspended(fee.recurringFeeId, isSuspend)}
+                  onDelete={() => deleteRecurringFee(fee.recurringFeeId)}
+                />
+              ))}
+            </div>
+          )}
+
+          <CreateRecurringFeeForm
+            projects={projects}
+            onCreate={createRecurringFee}
+            isCreating={isCreatingFee}
+          />
+        </div>
+      </div>
+
+      {/* Commission split — how the money that landed is divided (migration 018).
+          Sits between billing (money in) and expenses (money out), because that is
+          exactly where it belongs: it splits what billing collected. */}
+      <AdminCommission projects={projects} />
 
       {/* Expenses section */}
       <div className="space-y-2">
