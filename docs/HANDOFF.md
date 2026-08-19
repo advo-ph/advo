@@ -11,6 +11,34 @@ Cross-links:
 
 ---
 
+## 2026-08-19 — final tier deployed; rsync replaced with git pull
+
+> The `final` tier (web / resilience / proposal / campaign) is **live on prod**. The 2026-08-16 "deploy blocked" item is closed. Pushed `976a64a`.
+
+**The `ENOBUFS` block is gone.** SSH to `advo` connects cleanly and TIME_WAIT sat at 15 locally — the resilience lane's keep-alive agent plus the dead-token latch fixed the churn that was exhausting ephemeral ports.
+
+**`deploy.sh` is still broken on this Windows box, for a different reason.** rsync now fails with `dup() in/out/err failed` — an MSYS/Git-Bash rsync file-descriptor bug, not a network one. Because the script does `pm2 stop` **before** the sync, that failure left prod down for ~2 minutes until `pm2 restart` brought it back.
+
+**What actually worked — `/opt/advo` is a git checkout of the same origin**, so the deploy became:
+
+1. `git fetch && git reset --hard origin/main` on the box (after a tarball + `.env` copy to `/var/tmp/advo-backup/`). The 69 "modified" files were 64 of pure CRLF churn from past Windows rsyncs plus 5 real ones — the Plaud work that had been rsynced in but never committed there. All 5 are in `main`, so the reset was a superset, and `.env` / `.env.production` were untouched (`reset --hard` leaves untracked files alone).
+2. `npm install --workspace apps/api` then `pm2 restart advo-api --update-env`.
+3. Web bundle shipped as `tar czf - dist | ssh ... tar xzf -` into a staging dir, verified to reference `api.advo.ph`, then atomically swapped with the old `dist` kept as `dist.prev-*`.
+
+**Migrations applied to prod first**, before the code, since all are additive: `014_proposal_method` and `015_campaign` (012/013 were already there). Both were run as `postgres`, which reproduced the pre-existing ownership bug — the app role could not read the new objects — so ownership of all three campaign tables, four types, and three sequences was transferred to `advo`, then verified readable by the app user.
+
+**Verified live:** `advo.ph` 200 serving the new hashes (`index-iCu7RWch.js` / `index-BYWntzW-.css`); `GET /api/campaign` returns 401 (mounted + gated); `GET /api/campaign/unsubscribe/:token` returns 200 (public, one click); `/api/health` returns the new operational shape and honestly reports `isDegraded: true` with `plaud: Plaud auth is not configured`.
+
+### Honest open-items
+- **`deploy.sh` should stop using rsync from Windows.** Rewrite it around the `git pull` path above, and move the `pm2 stop` to *after* the sync so a transport failure cannot take prod down. Until then, do not run it from this box.
+- **Prod has no `PLAUD_TOKEN` and no `ANTHROPIC_API_KEY`** (`config.isPlaudTokenConfigured` / `isAnthropicKeyConfigured` both `false`). Folder watch and Ask Plaud stay latched off; contract review, meeting-to-task, timeline suggest, and the new proposal generator all run their fallback path.
+- **No outreach transport configured** — campaign sending is refused by design. Needs the `outreach.advo.ph` subdomain + DNS first, and the RA 10173 questions answered.
+- Pre-existing prod ownership bug is wider than the new tables: the app role also cannot `pg_dump` `change_order`. Worth a sweep of `ALTER TABLE ... OWNER TO advo` across the schema.
+- `package-lock.json` shows as modified on the box after every `npm install`; harmless churn, but `git pull` will need `--autostash` or a reset next time.
+- Backups from this deploy: `/var/tmp/advo-backup/advo-pre-015-*.dump`, `opt-advo-pre-pull-*.tar.gz`, and `/var/www/advo/dist.prev-*`. Clean up once this is proven stable.
+
+---
+
 ## 2026-08-18 — email campaign sender (lane `final/campaign`)
 
 > Last open code row in ROADMAP.md P1. Leads were imported, targeted, and a proposal could be generated — nothing sent it.
