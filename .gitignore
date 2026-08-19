@@ -22,8 +22,11 @@ build/
 # Claude Code per-project session state (not shared with team)
 .claude/
 
-# Media (raw photos/videos — too large for git)
+# Media (raw photos/videos — too large for git).
+# Trailing slash only matches a directory; the Mac path is now a symlink
+# to the 4TB, so also ignore the symlink itself.
 media/
+media
 
 # Planning artifacts: keep text + JSON, drop reference screenshots
 audits/**/*.png

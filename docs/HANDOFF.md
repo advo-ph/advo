@@ -33,6 +33,14 @@ Cross-links:
 
 ---
 
+## 2026-08-18 — raw media offloaded to 4TB
+
+`apps/web/media` is a symlink to `/Volumes/gelo's 4tb/from-macbook-pro/antigravity/advo/apps/web/media` (479 files, 21.5 GB, copy-verified). `.gitignore` now matches both `media/` and the symlink. The landing site still works only while the drive is plugged in. Fourlinq experiment folders were archived beside it on the drive; Mac copies kept (unique WIP).
+
+**Honest open-items:** `combine-media.sh` still assumes a local directory; site images in `public/` were not moved.
+
+---
+
 ## 2026-08-17 — resilience lane: ENOBUFS root-caused, poll latch, Ask retry, operational health
 
 > Lane `final/resilience`. The API now survives its own background work. Root cause of the `ENOBUFS` reported on 2026-08-16 is **measured, not guessed** — and it was not the `limit=99999` listing.
@@ -124,7 +132,6 @@ Live try on meeting 20: Ask hit `ECONNRESET` (box was `ENOBUFS` from the 60s fol
 - Prod still has no `ANTHROPIC_API_KEY` (Claude paths stay fallback).
 - `npm test` S1–S3 failed here because the seed client login fixture was missing; e2e-flow 43/43 and unit suites green.
 - Root `npm run dev` needs `concurrently` on PATH; start web + api workspaces separately.
-
 ## 2026-08-15 — test lane: coverage table
 
 > Roadmap-remain **test** lane. The bench only measures; this lane's deliverable is the tests.
