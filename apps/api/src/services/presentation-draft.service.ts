@@ -145,7 +145,7 @@ function templateDraft(input: PresentationDraftInput): string {
   line.push("");
   line.push("- Open the project preview URL");
   line.push("- Walk primary flows end-to-end");
-  line.push("- Note feedback for the revision round (2 rounds/phase policy)");
+  line.push("- Note feedback for the revision round (5 rounds per deliverable policy)");
   line.push("");
   line.push("## 5. Handoff & access");
   line.push("");

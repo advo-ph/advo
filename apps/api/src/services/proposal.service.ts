@@ -21,41 +21,94 @@ export type ProposalClause = {
   body: string;
 };
 
-/** Drop-in clauses from docs/CONTRACTS.md — draft, not legally binding. */
+/**
+ * Drop-in clauses from docs/CONTRACTS.md — draft, not legally binding.
+ *
+ * Reconciled 2026-08-19 against the contract ADVO is actually sending clients
+ * (50/50 milestones, 5 free rounds per deliverable, 15+15 business-day deemed
+ * approval, 2%/month late penalty, IP retained until full payment). The prior
+ * text — 40%/₱30,000 downpayment floor, 2 rounds per phase billed hourly —
+ * described terms ADVO does not offer, so the generator was emitting them.
+ *
+ * These are still DRAFT and still need legal review before binding use; the
+ * live contract went out ahead of that review. Do not soften the banner.
+ */
 export const CONTRACT_CLAUSE: ProposalClause[] = [
   {
-    clause_code: "downpayment",
-    title: "Downpayment",
-    body: "Client shall pay a non-refundable downpayment of forty percent (40%) of the Total Project Value, or thirty thousand Philippine pesos (₱30,000), whichever is higher, before any design or development work begins. The downpayment secures ADVO's scheduling, discovery work, initial design, and reservation of team capacity for this engagement.",
+    clause_code: "payment_schedule",
+    title: "Payment schedule",
+    body: "Client shall pay fifty percent (50%) of the Total Project Value upon commissioning, being the signing of this Agreement in the presence of a witness, and the remaining fifty percent (50%) upon final delivery of the deliverables and formal Client sign-off (or deemed approval as provided in the Revisions clause). Payments are strictly non-refundable once the corresponding milestone has been approved and signed off. Invoices are payable within seven (7) business days of issuance. Ongoing hosting and infrastructure are billed separately from the Total Project Value.",
   },
   {
     clause_code: "revision",
-    title: "Revision limits",
-    body: "Each phase of work — Discovery, Design, and Build — includes two (2) revision rounds. One revision round means a single batched feedback list, delivered by the Client within five (5) business days of the corresponding deliverable's preview. Feedback delivered after the 5-day window constitutes a new revision round. Revisions beyond the included rounds are billed at ADVO's then-current hourly rate, in fifteen (15) minute increments, minimum one (1) hour per round.",
+    title: "Revisions",
+    body: "Each deliverable includes up to five (5) rounds of revisions at no additional cost. All revisions must be utilized prior to the signing of the Project Sign-off document. Where included revision rounds remain unused as of final delivery, the Client may still invoke them, within the scope originally agreed, for a period of six (6) months following the signing of the Project Sign-off document. Adjustments requested thereafter fall strictly under the thirty (30) day bug-fixing warranty or a separate maintenance agreement.",
+  },
+  {
+    clause_code: "deemed_approval",
+    title: "Feedback window & deemed approval",
+    body: "If the Client fails to provide feedback within fifteen (15) business days of a review delivery, ADVO shall issue a formal Notice of Pending Deemed Approval. If no response is received within fifteen (15) subsequent business days of that Notice, the revision shall be deemed approved and finalized. Separately, delays caused by the Client — including late assets, delayed feedback, or no response within ten (10) calendar days — automatically extend the delivery timeline by the equivalent number of days without penalty to ADVO.",
   },
   {
     clause_code: "change_order",
     title: "Change orders",
-    body: "Any addition, removal, or substantive modification of scope outside the agreed Statement of Work constitutes a Change Order. Each Change Order will be documented in writing by ADVO with: (a) a description of the change; (b) the impact on price (PHP); (c) the impact on timeline; and (d) any dependent changes. No work will commence on a Change Order until the Client confirms the foregoing in writing (email reply or signed addendum). Discoveries of designs, features, or capabilities at third-party vendors or competitor sites that the Client wishes to incorporate after work has begun are governed by this Change Order process.",
+    body: "Any addition, removal, or substantive modification of scope outside the agreed Statement of Work constitutes a Change Order. New modules, redesigns, structural adjustments, or feature additions require a written addendum executed before work begins. Each Change Order will be documented in writing by ADVO with: (a) a description of the change; (b) the impact on price (PHP); (c) the impact on timeline; and (d) any dependent changes. No work will commence on a Change Order until the Client confirms the foregoing in writing (email reply or signed addendum). Designs, features, or capabilities observed at third-party vendors or competitor sites that the Client wishes to incorporate after work has begun are governed by this Change Order process.",
   },
   {
     clause_code: "late_payment",
     title: "Late payment",
-    body: "Invoices are due within fifteen (15) days of issue. Amounts unpaid after thirty (30) days accrue interest at the lower of two percent (2%) per month or the maximum rate permitted by Philippine law. ADVO may pause work on the engagement at any time after Day 30 of an unpaid invoice and shall not be liable for resulting timeline impact.",
+    body: "Invoices are payable within seven (7) business days of issuance. Unpaid balances remaining after fifteen (15) business days from the date of issuance, commencing strictly on the sixteenth (16th) business day, shall incur a penalty fee of two percent (2%) per month, calculated daily until fully settled, or the maximum rate permitted by Philippine law, whichever is lower. Where a recurring infrastructure fee remains unpaid fifteen (15) days past its due date, ADVO reserves the right to suspend server hosting and API access until the balance is cleared, and shall not be held liable for data loss or business interruption resulting from that suspension.",
+  },
+  {
+    clause_code: "intellectual_property",
+    title: "Intellectual property & ownership",
+    body: "All design files, source code, and deliverables remain the exclusive property of ADVO until full payment is received, and the Client has no right to publish or use any deliverable until the corresponding payment clears. Upon receipt of final payment, full ownership of all deliverables, including source files and codebases, transfers to the Client. Client-provided product shots, establishment photographs, and brand materials are licensed to ADVO on a limited basis solely for the purpose of building the deliverables. All private organizational data remains accessible only to the Client and strictly confidential. ADVO retains the right to display completed work in its portfolio and marketing materials unless the Client requests otherwise in writing before final delivery.",
+  },
+  {
+    clause_code: "non_abandonment",
+    title: "Non-abandonment & project continuity",
+    body: "ADVO shall not unilaterally abandon or deprioritize the project without prior written notice and a mutually agreed revised timeline. The Client shall not cease communication, withhold payment, or engage a third party to replicate or replace ADVO's work while the project is active and any payment remains outstanding; doing so constitutes a material breach of this Agreement.",
   },
   {
     clause_code: "termination",
     title: "Termination",
-    body: "Either party may terminate this engagement for convenience with fifteen (15) days' written notice. On termination: (a) the Client pays for all completed work and work-in-progress at the agreed rate, prorated to the termination date; (b) ADVO delivers all completed deliverables; (c) the downpayment is non-refundable; (d) any unbilled change orders already accepted by the Client remain payable.",
+    body: "With cause: either party may rescind this Agreement for legitimate cause by written notice, allowing a fourteen (14) day cure period to resolve the issue, and the Client remains liable for the financial value of all work completed up to the date of termination. Without cause, by the Client: upon cancellation mid-project for convenience, the Client shall compensate ADVO for the exact percentage of project completion achieved as of the cancellation date, and shall fully reimburse any non-refundable third-party integrations purchased for the project. Without cause, by ADVO: ADVO shall fully refund any advanced milestone for which work has not yet commenced, and shall surrender all paid-for code assets to the Client in their current state.",
+  },
+  {
+    clause_code: "warranty_liability",
+    title: "Warranty & limitation of liability",
+    body: "ADVO provides a thirty (30) day warranty following launch to correct bugs or defects resulting from development, at no additional cost. While ADVO commits to exercising professional diligence in project execution, it shall not be held liable for indirect commercial losses, third-party service interruptions, or events arising from forces beyond its reasonable control. Interruptions, pricing changes, or breaking changes originating with third-party providers relied upon by the deliverables do not constitute a defect under this warranty.",
+  },
+  {
+    // FORWARD STANDARD, not a reconstruction. The fortuitous-events clause in the
+    // one client contract on file is truncated mid-sentence ("In such circumstances,
+    // performance..."), so what that client actually received is unknown. The final
+    // sentence below is ADVO's own chosen wording for NEW proposals and must not be
+    // read as evidence of what any existing client agreed to.
+    // See docs/CONTRACTS.md Policy 8 and its Open Questions entry.
+    clause_code: "fortuitous_event",
+    title: "Fortuitous events",
+    body: "Neither party shall be held legally responsible for delays, defects, or failure to perform obligations under this Agreement resulting from fortuitous events, including acts of God, national connectivity outages, changes to regional regulations, and prolonged server outages beyond the reasonable control of the developer. In such circumstances, performance of the affected obligations is suspended for the duration of the event and the delivery timeline is extended by the equivalent number of days.",
   },
 ];
 
-const FLOOR_CENTS = 30_000_00; // ₱30,000
 const DEFAULT_VALUE_CENTS = 80_000_00; // ₱80,000 when budget is missing
 
+/**
+ * Downpayment due on commissioning: 50% of the Total Project Value.
+ *
+ * The former 40%-or-₱30,000-floor rule is retired — at the tier sizes ADVO
+ * actually sells, 50% of a smaller engagement lands below ₱30,000, so the
+ * floor and the offered 50/50 split could not both hold. See docs/CONTRACTS.md
+ * "What was superseded".
+ */
 export function downpaymentCents(totalValueCents: number): number {
-  const forty = Math.round(Math.max(0, totalValueCents) * 0.4);
-  return Math.max(forty, FLOOR_CENTS);
+  return Math.round(Math.max(0, totalValueCents) * 0.5);
+}
+
+/** Final payment due on delivery + sign-off — the remaining half. */
+export function finalPaymentCents(totalValueCents: number): number {
+  return Math.max(0, totalValueCents) - downpaymentCents(totalValueCents);
 }
 
 export function parseBudgetCents(budget: string | null | undefined): number | null {
@@ -98,6 +151,7 @@ export function fillProposalTemplate(
 ): { title: string; bodyHtml: string; clause: ProposalClause[]; valueCents: number } {
   const total = valueCents > 0 ? valueCents : DEFAULT_VALUE_CENTS;
   const downpayment = downpaymentCents(total);
+  const finalPayment = finalPaymentCents(total);
   const company = field.company?.trim() || field.name;
   const title = `ADVO proposal — ${company}`;
 
@@ -137,8 +191,10 @@ export function fillProposalTemplate(
     <tr><th>Project type</th><td>${escapeHtml(field.projectType || "—")}</td></tr>
     <tr><th>Quoted budget</th><td>${escapeHtml(field.budget || "—")}</td></tr>
     <tr><th>Total project value</th><td>${peso(total)}</td></tr>
-    <tr><th>Downpayment due</th><td>${peso(downpayment)} (40% or ₱30,000 floor)</td></tr>
-    <tr><th>Revision allowance</th><td>2 rounds per phase (Discovery, Design, Build)</td></tr>
+    <tr><th>Downpayment (50%)</th><td>${peso(downpayment)} · due on commissioning, witnessed signing</td></tr>
+    <tr><th>Final payment (50%)</th><td>${peso(finalPayment)} · due on final delivery + Project Sign-off</td></tr>
+    <tr><th>Revision allowance</th><td>5 rounds per deliverable, included — usable until Project Sign-off, unused rounds for 6 months after</td></tr>
+    <tr><th>Feedback window</th><td>15 business days, then a Notice of Pending Deemed Approval and 15 more</td></tr>
   </table>
   ${field.description ? `<section><h2>Notes from the lead</h2><p>${escapeHtml(field.description)}</p></section>` : ""}
   ${clauseHtml}
@@ -280,6 +336,7 @@ export function renderAiProposal(
 ): { title: string; bodyHtml: string; clause: ProposalClause[]; valueCents: number } {
   const total = valueCents > 0 ? valueCents : DEFAULT_VALUE_CENTS;
   const downpayment = downpaymentCents(total);
+  const finalPayment = finalPaymentCents(total);
   const company = field.company?.trim() || field.name;
   const title = `ADVO proposal — ${company}`;
 
@@ -330,8 +387,10 @@ export function renderAiProposal(
     <tr><th>Project type</th><td>${escapeHtml(field.projectType || "—")}</td></tr>
     <tr><th>Quoted budget</th><td>${escapeHtml(field.budget || "—")}</td></tr>
     <tr><th>Total project value</th><td>${peso(total)}</td></tr>
-    <tr><th>Downpayment due</th><td>${peso(downpayment)} (40% or ₱30,000 floor)</td></tr>
-    <tr><th>Revision allowance</th><td>2 rounds per phase (Discovery, Design, Build)</td></tr>
+    <tr><th>Downpayment (50%)</th><td>${peso(downpayment)} · due on commissioning, witnessed signing</td></tr>
+    <tr><th>Final payment (50%)</th><td>${peso(finalPayment)} · due on final delivery + Project Sign-off</td></tr>
+    <tr><th>Revision allowance</th><td>5 rounds per deliverable, included — usable until Project Sign-off, unused rounds for 6 months after</td></tr>
+    <tr><th>Feedback window</th><td>15 business days, then a Notice of Pending Deemed Approval and 15 more</td></tr>
   </table>
   <div class="signal"><strong>Scraped signal used:</strong> ${escapeHtml(describeLeadSignal(signal))}</div>
   ${narrativeHtml}

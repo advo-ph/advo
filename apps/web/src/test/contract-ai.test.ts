@@ -13,16 +13,16 @@ const SILENT_CONTRACT =
 
 const AI_FLAG = [
   {
-    policy: "Downpayment floor",
+    policy: "Payment schedule",
     severity: "green",
     present: true,
-    note: "40% downpayment named.",
+    note: "50/50 milestone split named.",
   },
   {
-    policy: "Revision limits",
+    policy: "Revisions",
     severity: "green",
     present: true,
-    note: "Two rounds per phase.",
+    note: "Five rounds per deliverable.",
   },
   {
     policy: "Change orders",
@@ -34,19 +34,44 @@ const AI_FLAG = [
     policy: "Late payment",
     severity: "green",
     present: true,
-    note: "2% interest + pause.",
+    note: "2% per month + suspension right.",
   },
   {
     policy: "Termination",
     severity: "green",
     present: true,
-    note: "15-day notice.",
+    note: "14-day cure period.",
+  },
+  {
+    policy: "Intellectual property",
+    severity: "green",
+    present: true,
+    note: "IP retained until full payment, transfers on final payment.",
+  },
+  {
+    policy: "Non-abandonment",
+    severity: "amber",
+    present: true,
+    note: "Continuity named, no third-party replication clause.",
+  },
+  {
+    policy: "Warranty and liability",
+    severity: "green",
+    present: true,
+    note: "30-day warranty; indirect loss excluded.",
   },
 ];
 
+/**
+ * A partial answer: the model returned only the first five policies and silently
+ * dropped IP, non-abandonment and warranty. Scoring this as a whole review is the
+ * exact failure the completeness gate exists to stop.
+ */
+const AI_FLAG_INCOMPLETE = AI_FLAG.slice(0, 5);
+
 const AI_BODY = {
   verdict: "needs_work",
-  summary: "Four of five policies are solid; tighten change orders.",
+  summary: "Most policy areas are solid; tighten change orders.",
   flags: AI_FLAG,
 };
 
@@ -80,7 +105,11 @@ describe("contract review AI path", () => {
     expect(review.method).toBe("ai");
     expect(review.verdict).toBe("needs_work");
     expect(review.summary).toContain("change orders");
-    expect(review.flags).toHaveLength(5);
+    // Tracks the fixture rather than a magic number: the AI path only survives the
+    // completeness gate when it answers for every policy, so this length IS the
+    // policy count. Adding a policy to the service must fail here until the
+    // fixture covers it.
+    expect(review.flags).toHaveLength(AI_FLAG.length);
     expect(review.disclaimer).toMatch(/AI-assisted/);
   });
 
@@ -109,6 +138,28 @@ describe("contract review AI path", () => {
 
     expect(review.method).toBe("heuristic");
     expect(review.verdict).toBe("high_risk");
+  });
+
+  it("falls back to heuristic when the AI answers only some of the policies", async () => {
+    // The regression this pins: a model that drops IP retention, non-abandonment
+    // and warranty used to yield five greens, zero reds, and a good_to_go verdict
+    // on a contract with no IP clause at all. An incomplete review must not be
+    // scored as a whole one.
+    stubAiText(
+      JSON.stringify({
+        verdict: "good_to_go",
+        summary: "Everything checks out.",
+        flags: AI_FLAG_INCOMPLETE,
+      }),
+    );
+
+    const review = await reviewContract(SILENT_CONTRACT);
+
+    expect(review.method).toBe("heuristic");
+    expect(review.verdict).not.toBe("good_to_go");
+    // The heuristic scores every policy, so the silent contract stays high risk.
+    expect(review.verdict).toBe("high_risk");
+    expect(review.flags.length).toBeGreaterThan(AI_FLAG_INCOMPLETE.length);
   });
 
   it("skips the SDK when ANTHROPIC_API_KEY is unset", async () => {

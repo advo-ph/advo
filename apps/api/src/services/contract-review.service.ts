@@ -38,125 +38,209 @@ const has = (t: string, re: RegExp) => re.test(t);
 
 const POLICIES: PolicyCheck[] = [
   {
-    policy: "Downpayment floor",
+    policy: "Payment schedule",
     check: (t) => {
-      const mention = has(t, /down\s?payment|deposit|initial payment|mobilization fee/);
-      const floor = has(t, /\b([4-9]\d|100)\s?%|forty percent|₱?\s?30[,.\s]?000|thirty thousand/);
-      if (!mention)
-        return {
-          severity: "red",
-          present: false,
-          note: "No downpayment/deposit terms found. Policy: ≥40% of total value or ₱30,000, whichever is higher, before any work begins.",
-        };
-      if (floor)
-        return {
-          severity: "green",
-          present: true,
-          note: "Downpayment terms present with a percentage or peso floor.",
-        };
-      return {
-        severity: "amber",
-        present: true,
-        note: "A downpayment is mentioned but no clear 40% / ₱30,000 floor was found. Confirm the amount meets the policy.",
-      };
-    },
-  },
-  {
-    policy: "Revision limits",
-    check: (t) => {
-      const mention = has(t, /revision|round of (feedback|changes)|rounds of/);
-      const cap = has(
+      const mention = has(t, /down\s?payment|deposit|initial payment|mobilization fee|payment schedule|milestone|final payment|upon commissioning|shall pay/);
+      const split = has(
         t,
-        /\b(two|2)\b[^.\n]{0,30}\b(round|revision)|\b(round|revision)[^.\n]{0,20}\b(two|2)\b|per phase|additional revision|hourly rate|then-current hourly/,
+        /\b(50|fifty)\s?(%|percent)|upon commissioning|upon (contract )?signing|final payment|upon final delivery/,
       );
       if (!mention)
         return {
           severity: "red",
           present: false,
-          note: "No revision limits found. Policy: 2 rounds per phase (discovery / design / build), then billed hourly.",
+          note: "No downpayment/milestone terms found. Policy: 50% on commissioning (witnessed signing), 50% on final delivery + Project Sign-off.",
+        };
+      if (split)
+        return {
+          severity: "green",
+          present: true,
+          note: "A milestone payment split is defined.",
+        };
+      return {
+        severity: "amber",
+        present: true,
+        note: "Payment is mentioned but no clear 50/50 commissioning-and-delivery split was found. Policy: 50% on signing, 50% on delivery + sign-off.",
+      };
+    },
+  },
+  {
+    policy: "Revisions",
+    check: (t) => {
+      const mention = has(t, /revision|round of (feedback|changes)|rounds of/);
+      const cap = has(
+        t,
+        /\b(five|5)\b[^.\n]{0,30}\b(round|revision)|\b(round|revision)[^.\n]{0,20}\b(five|5)\b|per deliverable|sign[\s-]?off|no additional cost/,
+      );
+      if (!mention)
+        return {
+          severity: "red",
+          present: false,
+          note: "No revision terms found. Policy: 5 rounds per deliverable at no cost, all used before Project Sign-off, unused rounds invocable for 6 months after.",
         };
       if (cap)
         return {
           severity: "green",
           present: true,
-          note: "Revisions are capped and/or overage is metered.",
+          note: "A revision allowance is defined and tied to a terminating event.",
         };
       return {
         severity: "amber",
         present: true,
-        note: "Revisions are mentioned but no clear cap (e.g. 2 rounds per phase) or overage rate was found.",
+        note: "Revisions are mentioned but no allowance (e.g. 5 rounds per deliverable) or terminating event (Project Sign-off) was found.",
+      };
+    },
+  },
+  {
+    policy: "Deemed approval",
+    check: (t) => {
+      const deemed = has(t, /deemed approv|deemed accept|automatically approved/);
+      const window = has(
+        t,
+        /\b\d+\s?(business )?days?\b[^.\n]{0,40}(feedback|review|respon)|feedback[^.\n]{0,40}\b\d+\s?(business )?days?/,
+      );
+      if (deemed)
+        return {
+          severity: "green",
+          present: true,
+          note: "A deemed-approval mechanism is defined — this is what makes the revision allowance finite.",
+        };
+      if (window)
+        return {
+          severity: "amber",
+          present: true,
+          note: "A feedback window exists but client silence has no defined consequence. Policy: 15 business days, then a formal Notice of Pending Deemed Approval, then 15 further business days.",
+        };
+      return {
+        severity: "red",
+        present: false,
+        note: "No feedback window or deemed-approval clause found. Without it the free revision allowance never closes, because sign-off never arrives.",
       };
     },
   },
   {
     policy: "Change orders",
     check: (t) => {
-      const formal = has(t, /change[\s-]?order/);
-      const scope = has(t, /out[\s-]?of[\s-]?scope|new scope|additional (scope|work|feature|page|section)|scope change/);
+      const formal = has(t, /change[\s-]?order|written addendum|separate addendum/);
+      const scope = has(
+        t,
+        /out[\s-]?of[\s-]?scope|new scope|additional (scope|work|feature|page|section)|scope change/,
+      );
       if (formal)
         return {
           severity: "green",
           present: true,
-          note: "A change-order process is defined for new scope.",
+          note: "A change-order / written-addendum process is defined for new scope.",
         };
       if (scope)
         return {
           severity: "amber",
           present: true,
-          note: "Scope changes are referenced but no formal written change-order process was found.",
+          note: "Scope changes are referenced but no written addendum is required before work begins.",
         };
       return {
         severity: "red",
         present: false,
-        note: "No change-order clause found. Policy: new scope (incl. competitor-inspired requests) needs a written, signed change order before work.",
+        note: "No change-order clause found. Policy: new scope (incl. competitor-inspired requests) needs a written addendum before work.",
       };
     },
   },
   {
     policy: "Late payment",
     check: (t) => {
-      const interest = has(t, /interest|late fee|penalty|\b2\s?%|per month|pause work/);
+      const interest = has(t, /interest|late fee|penalty|\b2\s?%|per month|pause work|suspend/);
       const terms = has(t, /net\s?\d+|due within \d+|within \d+ (business )?days|payable within/);
       if (interest)
         return {
           severity: "green",
           present: true,
-          note: "Late-payment consequences (interest / right to pause) are defined.",
+          note: "Late-payment consequences (penalty / right to suspend) are defined.",
         };
       if (terms)
         return {
           severity: "amber",
           present: true,
-          note: "Payment terms exist but no late-payment interest or right-to-pause was found.",
+          note: "Payment terms exist but no late-payment penalty or suspension right was found.",
         };
       return {
         severity: "red",
         present: false,
-        note: "No late-payment terms found. Policy: due in 15 days; interest after 30; ADVO may pause work.",
+        note: "No late-payment terms found. Policy: payable in 7 business days; 2% per month from the 16th business day, computed daily; hosting suspendable after 15 days overdue.",
       };
     },
   },
   {
-    policy: "Termination",
+    policy: "IP & ownership",
     check: (t) => {
-      const term = has(t, /terminat/);
-      const cancel = has(t, /cancel(l?ation|led)?|end (this|the) (agreement|engagement)/);
-      if (term)
+      const retain = has(t, /remain[^.\n]{0,40}property of|until full payment|retention of (title|ownership)/);
+      const ip = has(t, /intellectual property|ownership|source code|portfolio/);
+      if (retain)
         return {
           severity: "green",
           present: true,
-          note: "Termination terms are present.",
+          note: "IP is retained until full payment and transfers on final payment.",
         };
-      if (cancel)
+      if (ip)
         return {
           severity: "amber",
           present: true,
-          note: "Cancellation is referenced but a clear termination clause (notice, payment for WIP) was not found.",
+          note: "Ownership is referenced but IP retention until full payment was not clearly stated. Policy: ADVO retains all deliverables until paid in full; portfolio rights unless the client opts out in writing before final delivery.",
         };
       return {
         severity: "red",
         present: false,
-        note: "No termination clause found. Policy: either party may terminate with 15 days' notice; client pays completed + WIP; downpayment non-refundable.",
+        note: "No IP or ownership clause found. Policy: ADVO retains design files, source code, and deliverables until full payment; ownership transfers on final payment; ADVO keeps portfolio rights.",
+      };
+    },
+  },
+  {
+    policy: "Continuity & termination",
+    check: (t) => {
+      const term = has(t, /terminat|rescind/);
+      const continuity = has(t, /abandon|cure period|material breach|cease communication/);
+      if (term && continuity)
+        return {
+          severity: "green",
+          present: true,
+          note: "Termination and non-abandonment obligations are both present.",
+        };
+      if (term || continuity)
+        return {
+          severity: "amber",
+          present: true,
+          note: "Termination or continuity is referenced but not both. Policy: 14-day cure period with cause; client pays % of completion on convenience cancellation; ADVO refunds uncommenced milestones and surrenders paid-for code.",
+        };
+      return {
+        severity: "red",
+        present: false,
+        note: "No termination or non-abandonment clause found. Policy: 14-day cure with cause; % of completion payable on client cancellation; ADVO refunds uncommenced milestones.",
+      };
+    },
+  },
+  {
+    policy: "Liability & fortuitous events",
+    check: (t) => {
+      const force = has(t, /fortuitous|force majeure|acts? of god|beyond (its |our |the )?reasonable control/);
+      const liability = has(
+        t,
+        /liab|indirect (commercial )?loss|consequential|third[\s-]?party (service|provider|integration)/,
+      );
+      if (force && liability)
+        return {
+          severity: "green",
+          present: true,
+          note: "Force-majeure and limitation-of-liability protections are both present.",
+        };
+      if (force || liability)
+        return {
+          severity: "amber",
+          present: true,
+          note: "Only one of force majeure / limitation of liability was found. Policy needs both, plus a third-party dependency disclaimer.",
+        };
+      return {
+        severity: "red",
+        present: false,
+        note: "No liability or fortuitous-events clause found. Policy: no liability for indirect commercial loss, third-party outages, or events beyond reasonable control.",
       };
     },
   },
@@ -178,12 +262,12 @@ function reviewHeuristic(text: string): ContractReview {
   else if (reds === 1 || ambers >= 2) verdict = "needs_work";
   else verdict = "good_to_go";
 
-  const summary = `${greens}/5 ADVO protections addressed · ${ambers} partial · ${reds} missing. ${
+  const summary = `${greens}/${POLICIES.length} ADVO protections addressed · ${ambers} partial · ${reds} missing. ${
     reds > 0
       ? "Close the missing clauses before sending — these are exactly what leaked revenue on past projects."
       : ambers > 0
         ? "Tighten the partial clauses, then it's good to go."
-        : "All five policy areas are addressed."
+        : "Every policy area is addressed."
   }`;
 
   return {
@@ -203,22 +287,25 @@ function reviewHeuristic(text: string): ContractReview {
 
 const AI_SYSTEM = `You are a contract risk reviewer for ADVO, a Philippine web/design agency. Review the supplied contract or statement of work against ADVO's own contract policy and surface red flags.
 
-ADVO's five policy areas:
-1. Downpayment floor — at least 40% of total value OR PHP 30,000 (whichever is higher), due before work begins, non-refundable once design starts.
-2. Revision limits — 2 rounds of revisions per phase (discovery / design / build); anything beyond is billed hourly. A "round" is one batched feedback list within 5 business days of a preview.
-3. Change orders — new scope (a new page or feature, or competitor-inspired requests mid-build) requires a written, signed change order before work proceeds.
-4. Late payment — invoices due within 15 days; interest accrues after 30; ADVO may pause work on overdue accounts.
-5. Termination — either party may terminate with 15 days' written notice; client pays for completed work plus work-in-progress; the downpayment is non-refundable.
+ADVO's eight policy areas (reconciled 2026-08-19 against the contract ADVO actually sends; still draft, still pending legal review):
+1. Payment schedule — 50% of the Total Project Value on commissioning (signing, with a witness present) and 50% on final delivery plus formal Project Sign-off or deemed approval. Non-refundable once a milestone is approved and signed off. Invoices payable within 7 business days. There is NO peso floor and no 40% rule; flag either as outdated.
+2. Revisions — 5 rounds per deliverable at no additional cost, all of which must be used before the Project Sign-off document is signed. There is NO hourly overage rate. Unused rounds remain invocable within the original scope for 6 months after sign-off; anything later falls under the 30-day warranty or a maintenance agreement.
+3. Deemed approval — the client has 15 business days to give feedback on a review delivery; on expiry ADVO issues a formal Notice of Pending Deemed Approval, and 15 further business days of silence deems the revision approved. Separately, client-caused delay or no response within 10 calendar days extends the timeline day-for-day.
+4. Change orders — new modules, redesigns, structural adjustments, or feature additions (including competitor-inspired requests mid-build) require a written addendum executed before work begins.
+5. Late payment — invoices payable within 7 business days; balances unpaid after 15 business days incur 2% per month from the 16th business day, calculated daily; an unpaid recurring infrastructure fee lets ADVO suspend hosting and API access after 15 days.
+6. IP & ownership — all design files, source code, and deliverables remain ADVO's property until full payment, then transfer in full; client assets are licensed to ADVO only for the build; ADVO retains portfolio rights unless the client objects in writing before final delivery.
+7. Continuity & termination — neither party may abandon the project; termination with cause needs written notice plus a 14-day cure period; client cancellation for convenience is payable at the exact percentage of completion plus non-refundable third-party integrations; ADVO terminating without cause refunds uncommenced milestones and surrenders paid-for code.
+8. Liability & fortuitous events — a 30-day post-launch bug warranty; no liability for indirect commercial losses, third-party service interruptions, or fortuitous events beyond reasonable control.
 
-For EACH of the five areas, assign a severity:
+For EACH of the eight areas, assign a severity:
 - "green" = adequately addressed
-- "amber" = present but weak, ambiguous, or below policy (e.g. a downpayment is named but under the floor)
+- "amber" = present but weak, ambiguous, or below policy (e.g. a downpayment is named but below the 50% milestone, or revisions are capped with no deemed-approval mechanism to close them)
 - "red" = missing or clearly inadequate
 
 Respond with ONLY a JSON object (no prose, no markdown code fences) of exactly this shape:
 {"verdict":"good_to_go|needs_work|high_risk","summary":"<one or two sentences>","flags":[{"policy":"<area name>","severity":"red|amber|green","present":true|false,"note":"<what was found or is missing, with the policy reference>"}]}
 
-Verdict rule: "high_risk" if two or more reds; "needs_work" if exactly one red or two or more ambers; otherwise "good_to_go". Include all five policy areas in "flags", in the order listed above.`;
+Verdict rule: "high_risk" if two or more reds; "needs_work" if exactly one red or two or more ambers; otherwise "good_to_go". Include all eight policy areas in "flags", in the order listed above.`;
 
 const VALID_VERDICTS = new Set<ContractReview["verdict"]>(["good_to_go", "needs_work", "high_risk"]);
 const VALID_SEVERITIES = new Set<FlagSeverity>(["red", "amber", "green"]);
@@ -263,7 +350,21 @@ async function reviewWithClaude(text: string): Promise<ContractReview | null> {
         present: Boolean(f.present),
         note: String(f.note ?? ""),
       }));
-    if (flags.length === 0) return null;
+    // COMPLETENESS GATE — the AI path must answer for EVERY policy, not merely
+    // return some flags. Without this a model that silently omits, say, IP
+    // retention, non-abandonment and liability returns five greens and zero reds,
+    // and the verdict below reads good_to_go on a contract that has no IP clause
+    // at all. The heuristic path cannot drift this way because it maps over
+    // POLICIES directly (see :251); the AI path is free-form, so it is checked here.
+    // Falling back to the heuristic is strictly safer than reporting a partial
+    // review as a whole one.
+    if (flags.length < POLICIES.length) {
+      console.error(
+        `[contract-review] AI returned ${flags.length}/${POLICIES.length} policy flags; ` +
+          "an incomplete review cannot be scored — falling back to heuristic.",
+      );
+      return null;
+    }
 
     return {
       verdict: parsed.verdict as ContractReview["verdict"],

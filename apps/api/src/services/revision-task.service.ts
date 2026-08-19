@@ -2,7 +2,7 @@
  * Format a client revision note into a deliverable description.
  *
  * Always appends the CONTRACTS.md revision-limit policy reminder
- * (2 rounds per phase). When ANTHROPIC_API_KEY is set, polishRevisionNote()
+ * (5 rounds per deliverable). When ANTHROPIC_API_KEY is set, polishRevisionNote()
  * may clean the note into a clearer action list; on missing key or any AI
  * error the raw note is used unchanged.
  */
@@ -18,9 +18,9 @@ export interface RevisionTaskBody {
 const MAX_DESC = 5000;
 const MAX_NOTE = 4000;
 
-/** CONTRACTS.md Policy 2 — revision limits (2 rounds/phase). */
+/** CONTRACTS.md Policy 2 — revision limits (5 rounds per deliverable). */
 export const REVISION_POLICY_REMINDER =
-  "Policy reminder (CONTRACTS.md): Each phase — Discovery, Design, and Build — includes two (2) revision rounds. One round = one batched feedback list within 5 business days of the deliverable's preview. Revisions beyond the included rounds are billed at ADVO's then-current hourly rate.";
+  "Policy reminder (CONTRACTS.md): Each deliverable includes five (5) rounds of revisions at no additional cost. There is no hourly overage — the allowance must be used before the Project Sign-off document is signed, and unused rounds stay invocable for 6 months after sign-off. The client has 15 business days to give feedback; after that ADVO issues a Notice of Pending Deemed Approval and 15 further business days of silence finalises the revision.";
 
 function clampDescription(raw: string): string {
   const d = raw.trim();

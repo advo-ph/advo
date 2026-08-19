@@ -89,14 +89,23 @@ describe("proposal AI generation", () => {
     const built = await buildProposal(LEAD);
 
     expect(built.clause.map((item) => item.clause_code)).toEqual([
-      "downpayment",
+      "payment_schedule",
       "revision",
+      "deemed_approval",
       "change_order",
       "late_payment",
+      "intellectual_property",
+      "non_abandonment",
       "termination",
+      "warranty_liability",
+      "fortuitous_event",
     ]);
-    expect(built.bodyHtml).toContain("two (2) revision rounds");
-    expect(built.bodyHtml).toContain("thirty thousand Philippine pesos");
+    // Reconciled terms (docs/CONTRACTS.md, 2026-08-19) — not the retired
+    // 40% / PHP 30,000 floor and 2-rounds-per-phase draft.
+    expect(built.bodyHtml).toContain("five (5) rounds of revisions");
+    expect(built.bodyHtml).toContain("fifty percent (50%) of the Total Project Value");
+    expect(built.bodyHtml).toContain("Notice of Pending Deemed Approval");
+    expect(built.bodyHtml).not.toContain("thirty thousand Philippine pesos");
   });
 
   it("strips markdown fences from the SDK payload", async () => {
