@@ -1,0 +1,52 @@
+{
+  "lane": [
+    {
+      "name": "copy",
+      "worktree": "C:/Users/maran/Antigravity/advo-lane-copy",
+      "builder": "grok",
+      "resume": false
+    },
+    {
+      "name": "route",
+      "worktree": "C:/Users/maran/Antigravity/advo-lane-route",
+      "builder": "grok",
+      "resume": false
+    },
+    {
+      "name": "docs",
+      "worktree": "C:/Users/maran/Antigravity/advo-lane-docs",
+      "builder": "grok",
+      "resume": false
+    }
+  ],
+  "config": {
+    "name": "parcel-landing-follow",
+    "windows": [
+      {
+        "tabs": [
+          {
+            "title": "copy",
+            "layout": {
+              "cwd": "C:/Users/maran/Antigravity/advo-lane-copy",
+              "commands": [{ "exec": "grok \"Read bench/roadmap/landing-follow/PROMPT.md and follow it.\"" }]
+            }
+          },
+          {
+            "title": "route",
+            "layout": {
+              "cwd": "C:/Users/maran/Antigravity/advo-lane-route",
+              "commands": [{ "exec": "grok \"Read bench/roadmap/landing-follow/PROMPT.md and follow it.\"" }]
+            }
+          },
+          {
+            "title": "docs",
+            "layout": {
+              "cwd": "C:/Users/maran/Antigravity/advo-lane-docs",
+              "commands": [{ "exec": "grok \"Read bench/roadmap/landing-follow/PROMPT.md and follow it.\"" }]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}
