@@ -568,12 +568,12 @@ describe("Contracts red-flag review", () => {
     expect(body.data.flags.every((f: { severity: string }) => f.severity === "red")).toBe(true);
   });
 
-  it("passes a contract that covers all five policies", async () => {
+  it("passes a contract that covers every reconciled policy area", async () => {
     const { status, body } = await apiPost(
       "/api/contracts/review",
       {
         contractText:
-          "Client shall pay a non-refundable downpayment of forty percent (40%) of the Total Project Value before any work begins. Each phase includes two (2) revision rounds; additional revisions are billed at the then-current hourly rate. Any change order adding new scope must be signed before work commences. Invoices are due within fifteen (15) days; amounts unpaid after thirty (30) days accrue interest at 2% per month and ADVO may pause work. Either party may terminate with fifteen (15) days written notice.",
+          "Client shall pay fifty percent (50%) of the Total Project Value upon commissioning, with the balance due as a final payment upon final delivery and Project Sign-off. Each deliverable includes five (5) rounds of revisions at no additional cost, all of which must be used before sign-off. If the Client fails to give feedback within fifteen (15) business days of a review delivery, ADVO issues a Notice of Pending Deemed Approval and the revision is deemed approved after fifteen (15) further business days. New scope requires a written addendum or change order before work commences. Invoices are payable within seven (7) business days; balances unpaid after fifteen (15) business days incur a penalty of 2% per month, and ADVO may suspend hosting until cleared. All source code and deliverables remain the property of ADVO until full payment, after which ownership transfers to the Client; ADVO retains portfolio rights. Neither party may abandon the project, and either party may terminate for cause with a fourteen (14) day cure period. Neither party is liable for indirect commercial loss or for fortuitous events beyond its reasonable control.",
       },
       adminToken,
     );
@@ -1175,5 +1175,215 @@ describe("Operational health", () => {
   it("GET /api/health is reachable without auth", async () => {
     const { status } = await apiGet("/api/health");
     expect(status).toBe(200);
+  });
+});
+
+// ─── Project sign-off / recurring fee / commission (migrations 016-018) ───
+//
+// These three shipped with no live-API coverage: every test written alongside
+// them read the SOURCE and asserted on its text, so the invariants below were
+// only ever "documented", never exercised. This block actually calls them.
+
+describe("Project sign-off (016)", () => {
+  let projectId: number;
+  let signoffId: number;
+
+  beforeAll(async () => {
+    const client = await apiPost(
+      "/api/clients",
+      { companyName: "Sign-off Co", contactEmail: `signoff-${Date.now()}@example.test` },
+      adminToken,
+    );
+    const project = await apiPost(
+      "/api/projects",
+      { clientId: client.body.data.clientId, title: "Sign-off project", status: "in_progress" },
+      adminToken,
+    );
+    projectId = project.body.data.projectId;
+  });
+
+  it("requires auth", async () => {
+    const { status } = await apiGet("/api/project-signoff");
+    expect(status).toBe(401);
+  });
+
+  it("creates a draft sign-off", async () => {
+    const { status, body } = await apiPost(
+      "/api/project-signoff",
+      {
+        projectId,
+        title: "Phase 1 delivery",
+        scopeSummary: "HR and attendance system, phase 1.",
+        finalPaymentCents: 1500000,
+      },
+      adminToken,
+    );
+    expect(status).toBe(201);
+    expect(body.error).toBeNull();
+    expect(body.data.status).toBe("draft");
+    signoffId = body.data.projectSignoffId;
+  });
+
+  it("refuses to sign a draft that was never issued", async () => {
+    const { status } = await apiPost(
+      `/api/project-signoff/${signoffId}/sign`,
+      { signedName: "Too Early", isAgree: true, signedMethod: "client" },
+      adminToken,
+    );
+    expect(status).toBe(409);
+  });
+
+  it("issues, then signs exactly once", async () => {
+    const issued = await apiPost(`/api/project-signoff/${signoffId}/issue`, {}, adminToken);
+    expect(issued.status).toBe(200);
+    expect(issued.body.data.status).toBe("issued");
+
+    const signed = await apiPost(
+      `/api/project-signoff/${signoffId}/sign`,
+      { signedName: "Client Rep", isAgree: true, signedMethod: "client" },
+      adminToken,
+    );
+    expect(signed.status).toBe(200);
+    expect(signed.body.data.status).toBe("signed");
+    // The contract hangs the payment clock and the 6-month revision tail on this.
+    expect(signed.body.data.signedAt).toBeTruthy();
+
+    // Signing twice would restart both clocks — it must not be possible.
+    const again = await apiPost(
+      `/api/project-signoff/${signoffId}/sign`,
+      { signedName: "Client Rep", isAgree: true, signedMethod: "client" },
+      adminToken,
+    );
+    expect(again.status).toBe(409);
+  });
+});
+
+describe("Recurring infrastructure fee (017)", () => {
+  let projectId: number;
+  let feeId: number;
+
+  beforeAll(async () => {
+    const client = await apiPost(
+      "/api/clients",
+      { companyName: "Recurring Co", contactEmail: `recurring-${Date.now()}@example.test` },
+      adminToken,
+    );
+    const project = await apiPost(
+      "/api/projects",
+      { clientId: client.body.data.clientId, title: "Hosted project", status: "in_progress" },
+      adminToken,
+    );
+    projectId = project.body.data.projectId;
+  });
+
+  it("requires auth", async () => {
+    const { status } = await apiGet("/api/recurring-fee");
+    expect(status).toBe(401);
+  });
+
+  it("creates a fee in integer centavos", async () => {
+    const { status, body } = await apiPost(
+      "/api/recurring-fee",
+      { projectId, label: "Hosting + maintenance", amountCents: 300000, startsOn: "2026-01-01", isBackfill: false },
+      adminToken,
+    );
+    expect(status).toBe(201);
+    expect(body.data.amountCents).toBe(300000);
+    expect(Number.isInteger(body.data.amountCents)).toBe(true);
+    feeId = body.data.recurringFeeId;
+  });
+
+  it("preview writes nothing", async () => {
+    const before = await apiGet("/api/invoices", adminToken);
+    const preview = await apiPost(`/api/recurring-fee/${feeId}/preview`, {}, adminToken);
+    expect(preview.status).toBe(200);
+    const after = await apiGet("/api/invoices", adminToken);
+    expect(after.body.data.length).toBe(before.body.data.length);
+  });
+
+  it("generates invoices, and a second run is idempotent", async () => {
+    const first = await apiPost("/api/recurring-fee/run", {}, adminToken);
+    expect(first.status).toBe(200);
+    const countAfterFirst = (await apiGet("/api/invoices", adminToken)).body.data.length;
+
+    // Double-billing a period is the failure the unique index exists to stop.
+    const second = await apiPost("/api/recurring-fee/run", {}, adminToken);
+    expect(second.status).toBe(200);
+    const countAfterSecond = (await apiGet("/api/invoices", adminToken)).body.data.length;
+    expect(countAfterSecond).toBe(countAfterFirst);
+  });
+
+  it("refuses to suspend while suspension is not justified", async () => {
+    const fresh = await apiPost(
+      "/api/recurring-fee",
+      { projectId, label: "Future hosting", amountCents: 300000, startsOn: "2099-01-01", isBackfill: false },
+      adminToken,
+    );
+    const { status } = await apiPost(
+      `/api/recurring-fee/${fresh.body.data.recurringFeeId}/suspend`,
+      {},
+      adminToken,
+    );
+    expect(status).toBe(409);
+  });
+});
+
+describe("Commission split (018)", () => {
+  let projectId: number;
+  let planId: number;
+
+  beforeAll(async () => {
+    const client = await apiPost(
+      "/api/clients",
+      { companyName: "Commission Co", contactEmail: `commission-${Date.now()}@example.test` },
+      adminToken,
+    );
+    const project = await apiPost(
+      "/api/projects",
+      { clientId: client.body.data.clientId, title: "Split project", status: "in_progress" },
+      adminToken,
+    );
+    projectId = project.body.data.projectId;
+  });
+
+  it("requires auth", async () => {
+    const { status } = await apiGet("/api/commission");
+    expect(status).toBe(401);
+  });
+
+  it("splits an indivisible basis without creating or losing a centavo", async () => {
+    // 100003 does not divide cleanly by 60/25/15 — the largest-remainder
+    // allocator must still sum back to exactly the basis.
+    const { status, body } = await apiPost(
+      "/api/commission",
+      { projectId, basisCents: 100003 },
+      adminToken,
+    );
+    expect(status).toBe(201);
+    planId = body.data.commissionPlanId;
+
+    const plan = await apiGet(`/api/commission/${planId}`, adminToken);
+    const d = plan.body.data.derived;
+
+    // 60 / 25 / 15 of 100003 is not clean in any of the three. The largest-remainder
+    // allocator must still put every centavo somewhere and invent none.
+    expect(d.developerPoolCents + d.staffPoolCents + d.companyCents).toBe(100003);
+    for (const cents of [d.developerPoolCents, d.staffPoolCents, d.companyCents]) {
+      expect(Number.isInteger(cents)).toBe(true);
+    }
+
+    // The staff pool sub-splits 28 / 24 / 24 / 24 and must close on itself too.
+    const role = d.staffRolePoolCents;
+    expect(role.referral + role.marketing + role.accounting + role.management).toBe(
+      d.staffPoolCents,
+    );
+    for (const cents of Object.values(role)) {
+      expect(Number.isInteger(cents)).toBe(true);
+    }
+  });
+
+  it("blocks finalize while the project is unshipped", async () => {
+    const { status } = await apiPost(`/api/commission/${planId}/finalize`, {}, adminToken);
+    expect(status).toBe(409);
   });
 });

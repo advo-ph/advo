@@ -145,9 +145,9 @@ A per-project hub opened from the **Open** button on each project card (shipped 
 
 #### Contract red-flag review
 
-Paste a contract / SOW into the Contracts tab → `POST /api/contracts/review` (requireTeam) scores it against ADVO's [CONTRACTS.md](CONTRACTS.md) policies (downpayment floor 40%/₱30k · 2 revisions/phase · change-order clause · late-payment · termination) and returns a **verdict** (good_to_go / needs_work / high_risk) + per-policy **red/amber/green** flags + a disclaimer. Catches the "contract was silent" gap that leaked revenue on Fourlinq + Felici.
+Paste a contract / SOW into the Contracts tab → `POST /api/contracts/review` (requireTeam) scores it against ADVO's [CONTRACTS.md](CONTRACTS.md) **8** policies (payment schedule 50/50 · 5 revisions per deliverable · deemed approval · change-order · late-payment · IP retention & transfer · non-abandonment & termination · warranty/liability/fortuitous events) and returns a **verdict** (good_to_go / needs_work / high_risk) + per-policy **red/amber/green** flags + a disclaimer. Catches the "contract was silent" gap that leaked revenue on Fourlinq + Felici.
 
-**AI with heuristic fallback** (`fae49dd`) — `reviewContract()` runs Claude (`claude-opus-4-8`, via `@anthropic-ai/sdk`) against the 5 policies when `ANTHROPIC_API_KEY` is set, and falls back to the heuristic presence-check on a missing key or any AI error / malformed output. Same return shape; `method` is `"ai"` vs `"heuristic"` and the disclaimer reflects which ran. **Prod has no key yet**, so live review currently runs the heuristic — add `ANTHROPIC_API_KEY` to the VPS `.env` + `pm2 restart advo-api` to activate the AI path. AI path covered in `contract-ai.test.ts` with a mocked SDK (no live key).
+**AI with heuristic fallback** (`fae49dd`) — `reviewContract()` runs Claude (`claude-opus-4-8`, via `@anthropic-ai/sdk`) against all 8 policies when `ANTHROPIC_API_KEY` is set — and an AI answer covering **fewer** policies than the list is rejected and falls back to the heuristic, so a partial review can never be scored as a whole one, and falls back to the heuristic presence-check on a missing key or any AI error / malformed output. Same return shape; `method` is `"ai"` vs `"heuristic"` and the disclaimer reflects which ran. **Prod has no key yet**, so live review currently runs the heuristic — add `ANTHROPIC_API_KEY` to the VPS `.env` + `pm2 restart advo-api` to activate the AI path. AI path covered in `contract-ai.test.ts` with a mocked SDK (no live key).
 
 #### Show Client Now (expiring preview links)
 
@@ -217,7 +217,39 @@ Invoice management with create/edit/delete. Status toggle (unpaid → paid → o
 
 **Expense ledger** (migration `005`, shipped with Plaud 07-30 CP1): team logs agency spend with purpose, who authorized, `amount_cents`, location, optional `receipt_url`, and category (`ai_usage` / `media` / `subscription` / `outside_payment` / travel / meals / software / hardware / marketing / office / other). **`is_reimbursable` is derived** as `receipt_url` present — never stored, so “no receipt → no reimbursement” cannot drift. CRUD at `GET/POST/DELETE /api/expense` (requireTeam). UI: Expenses section on `AdminFinance`.
 
-**Files**: `AdminFinance.tsx`, `useInvoices.ts`, `useExpense.ts`, `expense.routes.ts`
+**Recurring infrastructure fee** (migration `017`, FourlinQ MOA 2026-08-11): a per-project schedule that generates **real `invoice` rows** — there is no parallel billing system and no new `invoice_status` value. The contract commits FourlinQ to ₱3,000.00/month (`amount_cents = 300000`) for hosting, database maintenance and domain renewal, "billed on the 1st of every month", suspendable if unpaid **within 15 days of the due date**.
+
+- **Manila calendar.** Every anchor (`starts_on`, `ends_on`, `next_run_on`, `last_generated_on`, `invoice.period_start_on`) is a `DATE` resolved through `BILLING_TIMEZONE = "Asia/Manila"` with built-in `Intl` — **no new dependency**. A UTC tick would bill the December period on Nov 30 at 16:00.
+- **Idempotent generation.** `POST /api/recurring-fee/run` is an endpoint, *not* a cron — nothing starts a timer at boot. Double-billing is blocked by the partial unique index `(recurring_fee_id, period_start_on)` plus `onConflictDoNothing`, so a double-click generates nothing twice. Catch-up is bounded by `MAX_CATCHUP_PERIOD = 24`, and a new fee anchors `next_run_on` to `max(starts_on, today)` unless `isBackfill` is passed.
+- **Suspension is DERIVED, and is a legal act.** `isSuspensionJustified` is computed at read time (active + suspension enabled + an unsettled generated invoice more than `grace_day_count` calendar days past due). A **paid** invoice never justifies suspension. `suspended_at` is written only by an explicit `POST /:id/suspend`, which returns **409** while the predicate is false. Nothing takes hosting or an API key down automatically.
+- **Not project scope.** Generated invoices are excluded from the project-grouped invoice list and from contract-value/collection stats — the contract states the Total Fee "does not cover the ongoing costs". `DELETE /api/invoices/:id` returns **409** for a generated invoice, so a billed period cannot be orphaned. Deleting the *schedule* keeps the invoices (`ON DELETE SET NULL`).
+- **Deliberately deferred**: penalty interest (the contract's 2%/month clause is a separate model), and the calendar-vs-business-days reading of the 15-day window — the hosting clause says 15 days, the payment clause says 15 *business* days; this implements **calendar** days.
+
+Endpoints (requireAuth + requireTeam; mutations requireAdmin): `GET /api/recurring-fee`, `GET /api/recurring-fee/suspension`, `GET /api/recurring-fee/:id`, `POST /api/recurring-fee/:id/preview` (honest dry run — writes nothing), `POST /api/recurring-fee`, `PATCH /api/recurring-fee/:id`, `DELETE /api/recurring-fee/:id`, `POST /api/recurring-fee/run`, `POST /api/recurring-fee/:id/suspend`, `POST /api/recurring-fee/:id/resume`. UI: **Recurring fees** block + red suspension-risk banner on `AdminFinance`.
+
+**Commission split** (migration `018`, Prince's 2026-06-19 compensation structure): on project completion a plan allocates the project basis into **60% developer / 25% staff / 15% company reserve**, with the staff pool sub-split **28% referral / 24% marketing / 24% accounting / 24% management**.
+
+- **Integer centavos end to end**, with a single rounding site — a largest-remainder allocator. Verified on an indivisible basis: ₱1,000.03 splits and sums back to exactly ₱1,000.03, no centavo created or lost.
+- **Draft then frozen.** A plan is editable while `draft`; `POST /api/commission/:id/finalize` blocks with plain-language reasons until the project is shipped and every share is agreed, and a finalized plan rejects `PATCH`/`DELETE`/void with **409**.
+- **Basis is snapshotted and overridable** — it defaults to the project's contract value, which is not the same as money collected. Set `basisCents` explicitly to split only what was actually received.
+
+Endpoints (requireAuth + requireTeam): `GET/POST /api/commission`, `GET/PATCH/DELETE /api/commission/:id`, `POST /api/commission/:id/finalize`. UI: **Commission** block on `AdminFinance`.
+
+**Files**: `AdminFinance.tsx`, `useInvoices.ts`, `useExpense.ts`, `useRecurringFee.ts`, `expense.routes.ts`, `recurring-fee.routes.ts`, `recurring-fee.service.ts`
+
+### Project sign-off
+
+**Project sign-off document** (migration `016`, FourlinQ MOA 2026-08-11): the client-facing artifact the contract hangs three things on — final payment becomes due on signing (7 days to pay), free revisions must be used *before* it, and unused rounds stay invocable for **6 months after** it.
+
+**Not to be confused with `deliverable.verified_at`** (migration `007`), which is internal team QA and stays independent.
+
+- Lifecycle `draft → issued → signed`, with `void` and a `revision` path. Signing before issuing returns **409**; a sign-off can be signed exactly once.
+- Signing stamps the signatory, the payment-due date, the revision-window expiry, and a snapshot of the scope/tier being accepted.
+- `signoff_method` is `client` / `deemed` / `offline` and is **entered by a human admin — nothing auto-fires**. The contract's 15+15 business-day *Notice of Pending Deemed Approval* is not modeled; `deemed` records that a human concluded it, it does not compute it.
+
+Endpoints (requireAuth + requireTeam): `GET/POST /api/project-signoff`, `GET/PATCH /api/project-signoff/:id`, `POST /api/project-signoff/:id/issue|sign|revision|void`. UI: **Project Sign-off** card on `/hub` project, **Sign-off** tab on `/admin → Projects → Command Center`.
+
+**Files**: `AdminSignoff.tsx`, `SignoffCard.tsx`, `useProjectSignoff.ts`, `project-signoff.routes.ts`, `project-signoff.service.ts`, `AdminCommission.tsx`, `useCommission.ts`, `commission.routes.ts`, `commission.service.ts`
 
 ### Notifications
 
@@ -478,7 +510,7 @@ A MotionSites-style visual library at `/admin` → Library — team-wide (not ad
 | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
 | [HANDOFF.md](HANDOFF.md)                                                     | Reverse-chronological session log — what shipped each session + honest open-items                                           |
 | [ROADMAP.md](ROADMAP.md)                                                     | Canonical forward-looking roadmap — synthesizes Messenger archive + landing/feature sub-roadmaps                            |
-| [CONTRACTS.md](CONTRACTS.md)                                                 | Draft contract policy + clauses (revision limits, downpayment floor, change orders). Needs legal review before binding use. |
+| [CONTRACTS.md](CONTRACTS.md)                                                 | Draft contract policy + 9 clauses (payment schedule, revisions, deemed approval, change orders, late payment, IP, non-abandonment, termination/warranty, project sign-off). Reconciled 2026-08-19 to what ADVO actually sends. Needs legal review before binding use. |
 | [CUTOVER.md](CUTOVER.md)                                                     | VPS monorepo cutover runbook + rollback plan                                                                                |
 | [SCHEMA.md](SCHEMA.md)                                                       | Database schema reference + migration log                                                                                   |
 | [SETUP.md](SETUP.md)                                                         | Dev setup + deployment commands                                                                                             |
