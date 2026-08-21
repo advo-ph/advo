@@ -1,4 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@300;400;500;600;700;800&display=swap");
+@import "./styles/advo-token.css";
 
 @tailwind base;
 @tailwind components;
@@ -29,7 +30,7 @@
     --muted: 213 7% 14%;            /* surface-3 */
     --muted-foreground: 216 6% 58%; /* #8a8f98 — Linear muted text */
 
-    --accent: 19 77% 56%;           /* #E67A3A ADVO orange — fills, borders, rings */
+    --accent: var(--advo-orange-hsl); /* #E67A3A ADVO orange — fills, borders, rings; single source: styles/advo-token.css */
     --accent-foreground: 0 0% 100%;
     --accent-ink: 19 77% 56%;       /* TEXT on light/neutral bg — same hue, dark passes on near-black canvas */
 
@@ -45,9 +46,9 @@
 
     --border: 220 9% 15%;           /* #23252a — Linear hairline */
     --input: 220 9% 18%;
-    --ring: 19 77% 56%;             /* orange focus ring */
+    --ring: var(--advo-orange-hsl);  /* single source: styles/advo-token.css */
 
-    --radius: 0.375rem;             /* 6px — tighter, toward Linear's 4px card */
+    --radius: var(--advo-radius);    /* single source: styles/advo-token.css */
 
     --sidebar-background: 210 11% 4%;
     --sidebar-foreground: 200 6% 97%;
@@ -56,7 +57,7 @@
     --sidebar-accent: 213 8% 11%;
     --sidebar-accent-foreground: 200 6% 97%;
     --sidebar-border: 220 9% 15%;
-    --sidebar-ring: 19 77% 56%;
+    --sidebar-ring: var(--advo-orange-hsl);
 
     /* ── Framing system (spine rail + travelling comet + brackets) ── */
     --spine-width: 1px;
@@ -97,7 +98,7 @@
        which fails AA. Role-split: fills keep the brand orange; text uses --accent-ink
        at 36% lightness (~5.45:1 on the accent/10 tint, 5.52:1 on white).
        --accent-foreground targets label text ON the orange fill → 5.52:1 with dark ink. */
-    --accent: 19 77% 56%;           /* brand orange fills — bg-accent, border-accent, ring */
+    --accent: var(--advo-orange-hsl); /* brand orange fills — bg-accent, border-accent, ring */
     --accent-foreground: 222 18% 11%; /* dark ink ON the orange fill → 5.52:1 */
     --accent-ink: 222 18% 11%;      /* neutral ink in light mode — orange text looked muddy on white */
 
@@ -115,7 +116,7 @@
 
     --border: 220 13% 90%;          /* cool hairline */
     --input: 220 13% 90%;
-    --ring: 19 77% 56%;
+    --ring: var(--advo-orange-hsl);
 
     --sidebar-background: 220 16% 98%;
     --sidebar-foreground: 222 18% 11%;
@@ -124,7 +125,7 @@
     --sidebar-accent: 220 14% 95%;
     --sidebar-accent-foreground: 222 18% 11%;
     --sidebar-border: 220 13% 90%;
-    --sidebar-ring: 19 77% 56%;
+    --sidebar-ring: var(--advo-orange-hsl);
   }
 }
 
