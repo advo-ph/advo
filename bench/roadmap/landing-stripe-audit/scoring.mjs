@@ -81,15 +81,14 @@ const checks = [
     title: "Hero sells the website plus system offer",
     passed:
       hasAll(files.landingPage, [
-        "Build together",
-        "Ship with clarity",
+        "We digitalize it for you",
         "Philippine software agency and client workspace",
       ]) &&
       // The missing-piece section carries the system framing under the hero.
       hasAll(files.landingPage, ["landing-piece", "the system is the fourth"]) &&
-      !/We digitalize for you|We Digitalize It For You/i.test(files.landingPage),
+      !/Build together|Ship with clarity/i.test(files.landingPage),
     expected:
-      "Hero headline and the section under it position ADVO as a website-plus-system builder, not a generic agency intro.",
+      "Hero headline and the section under it position ADVO as a website-plus-system builder, not a generic agency intro. The headline is the founder's mission line; the Stripe-era 'Build together. Ship with clarity.' is retired.",
   },
   {
     id: "proof-metrics",
@@ -201,10 +200,17 @@ const checks = [
     id: "engagement-cta",
     title: "Engagement section is a concrete conversion surface",
     passed:
-      hasAll(files.landingPage, ["Project", "Retainer", "Hourly", "Enterprise", "₱"]) &&
+      hasAll(files.landingPage, [
+        "Project",
+        "Retainer",
+        "Hourly",
+        "Enterprise",
+        "quotation",
+      ]) &&
+      !/₱|starting at/i.test(files.landingPage) &&
       !/Ready to digitalize|Prepare your business for the future/.test(files.landingPage),
     expected:
-      "The pricing surface names real engagement shapes and peso figures rather than an aspirational CTA.",
+      "The engagement surface names real engagement shapes and routes each one to a quotation request. No published rate, no aspirational CTA.",
   },
   {
     id: "process-system-sequence",

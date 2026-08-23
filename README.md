@@ -1,6 +1,6 @@
 # ADVO — Agency Platform
 
-Landing site, client portal, and admin CMS for ADVO — a Philippine software agency. Runway-language public `/` (`LandingPage`); Linear dark admin/hub. Self-hosted stack.
+Landing site, client portal, and admin CMS for ADVO — a Philippine software agency. Editorial public `/` (`LandingPage`); Linear dark admin/hub. Self-hosted stack.
 
 **Live**: [advo.ph](https://advo.ph) · **API**: [api.advo.ph](https://api.advo.ph/api/health)
 
@@ -8,23 +8,23 @@ Landing site, client portal, and admin CMS for ADVO — a Philippine software ag
 
 ### Public Site (`/`)
 
-Shipped [`LandingPage`](apps/web/src/components/landing/LandingPage.tsx) + [`landing-page.css`](apps/web/src/components/landing/landing-page.css). Routed from [`Index.tsx`](apps/web/src/pages/Index.tsx). Public `/` uses the Runway marketing language — white field, cinematic hero, snap-scroll cards, dense black footer. Not the old dark 3D / ticker / blob landing.
+Shipped [`LandingPage`](apps/web/src/components/landing/LandingPage.tsx) + [`landing-page.css`](apps/web/src/components/landing/landing-page.css). Routed from [`Index.tsx`](apps/web/src/pages/Index.tsx). Public `/` is one white ground, one bounded type scale, one vertical-rhythm token, and media doing the talking — editorial grid, cinematic hero, dense black footer. Not the old dark 3D / ticker / blob landing.
 
-- **Nav** — fixed blur chrome. Product / Services mega-panels + Work / Process / Pricing. Ghost Team + Log in. Dark Start a project. Hamburger on small viewports.
-- **Hero** — cinematic floor still; headline "Build together. Ship with clarity." Light Get Started.
+- **Nav** — fixed blur chrome. Product / Services mega-panels + Work / Process / Quotation. Ghost Team + Log in. Dark Start a project. Hamburger on small viewports.
+- **Hero** — cinematic floor still; headline "We digitalize it for you."  Light Get Started.
 - **Capability** — Strategy / Design / Development / Support as a quiet icon row
-- **Showcase** — mock workspace shell (overview, tasks, approvals, invoices)
-- **Tools** — horizontal snap cards (Hub, Plan, Create, Approve, Deliver, Fourlinq)
+- **Vision** — the mission statement verbatim: infrastructure of the technological layer for Philippine industries
+- **Showcase** — mock workspace shell (overview, tasks, approvals, open quotations)
+- **Work** (`#work`) — the sites we have already shipped, read live from `portfolio_project` via `GET /api/content/portfolio` ([`usePortfolio.ts`](apps/web/src/hooks/usePortfolio.ts)). One large screenshot, one line clamped to 120 characters, a link to the live site. An empty table renders no section — never invented client work.
 - **Process** — Discover → Design → Build → Review → Launch → Support with before/after stills
 - **Integrations** — name marquee (Gmail, Calendar, Notion, Slack, Trello, Drive, Zoom, Asana, Teams)
-- **Stories** — Fourlinq (`fourlinq.ph`) is the only named public client
 - **Surfaces** — Client Hub / Admin / Public site / Hardware as paginated cards
 - **Workflow** — Inquiry → Scope → Build → Review → Launch as node cards
-- **Engagement** — Project / Retainer / Hourly / Enterprise starting prices
+- **Engagement** — Project / Retainer / Hourly / Enterprise, each routed to a quotation request. **No price is published on the site** — pricing is a quotation conversation.
 - **FAQ** — website-vs-system, client hub, admin console, self-hosted VPS stack, hardware, after-launch
 - **Footer** — off-black; system-continuity lede + "Start the system" CTA, four system columns, oversized wordmark, social from `GET /api/settings/public`
 
-Proof on `/` is Fourlinq (`fourlinq.ph`) only. Title/OG match the hero. The footer is one shared component (`landing/landing-footer.tsx`) mounted by both `LandingPage` and `landing-shell`, so the two can't drift; social icons use `GET /api/settings/public` plus real defaults. `/start`, `/login`, `/team`, `/project/:slug`, and `/404` share `landing-shell`. `/hub` stays on the June Linear language (`FloatingNav`).
+Proof on `/` is the portfolio database — real shipped sites only, no testimonials. Title/OG match the hero ("ADVO. We digitalize it for you."). The footer is one shared component (`landing/landing-footer.tsx`) mounted by both `LandingPage` and `landing-shell`, so the two can't drift; social icons use `GET /api/settings/public` plus real defaults. `/start`, `/login`, `/team`, `/project/:slug`, and `/404` share `landing-shell`. `/hub` stays on the June Linear language (`FloatingNav`).
 
 ### Client Hub (`/hub`)
 
@@ -66,24 +66,30 @@ Proof on `/` is Fourlinq (`fourlinq.ph`) only. Title/OG match the hero. The foot
 
 ## Design System
 
-Two languages. Public `/` is the Runway-language `LandingPage` (white field, cinematic stills, dense black footer). Admin + hub stay on the June Linear dark chrome.
+Two languages. Public `/` is the editorial `LandingPage` (white ground, cinematic stills, dense black footer). Admin + hub stay on the June Linear dark chrome.
 
 ### Public landing (`apps/web/src/components/landing/landing-page.css`)
 
+Every colour and every font-size in `landing-page.css` derives from the `:root` block at the top of that file. A one-off literal in a section rule is the thing the block exists to stop, and `npm run bench:visual` fails the build past 12 hex literals or 10 distinct `font-size` values.
+
 | Token | Value | Use |
 |-------|-------|-----|
-| `--landing-ink` | `#0c0c0c` | Body text |
-| `--landing-muted` | `#5f6673` | Secondary copy |
+| `--landing-ground` | `#ffffff` | The one ground |
+| `--landing-ground-soft` | `#fafafa` | Raised panels, hero button |
+| `--landing-ground-tint` | `#f2f2f4` | Quiet fills |
+| `--landing-ink` | `#0c0c0c` | Body text, off-black footer |
+| `--landing-ink-soft` | `#5f6673` | Secondary copy (`--landing-muted`) |
+| `--landing-ink-mute` | `#9a9aa0` | Tertiary labels |
 | `--landing-line` | `#e4e5e6` | Hairline |
-| `--landing-ghost` | `#eef1f5` | Ghost buttons |
-| `--landing-dark` | `#262626` | Primary CTA |
-| `--landing-light` | `#f7f7f7` | Hero button |
-| background | `#fff` | Page |
-| footer | `#0c0c0c` | Off-black sitemap |
+| `--landing-line-soft` | `#eef1f5` | Ghost buttons (`--landing-ghost`) |
+| `--landing-dark` | `#1a1a1a` | Primary CTA |
+| `--landing-deep` | `#000000` | Media wells |
 
-**Type**: Inter on `.landing-page` (ABC Normal is licensed; Inter is the Runway fallback). Tight display tracking on the hero. Weight 400 on headlines. No mono numerals.
+**Type**: Inter on `.landing-page`. Eight steps and no one-off sizes — `--landing-text-micro` `-small` `-body` `-lead` `-title` `-heading` `-display` `-wordmark`. The hero's phone step is a `--landing-text-display` override inside the 680px query, not a ninth size. Tight display tracking, weight 400 on headlines, no mono numerals.
 
-**Motion**: Snap-scroll tool rail + name marquee + `prefers-reduced-motion` path. No 3D scene, no blob CTA.
+**Rhythm**: every section pads on `--landing-section-rhythm` (`clamp(64px, 7vw, 112px)`). No per-section magic numbers.
+
+**Motion**: name marquee + work-card hover, both under the `prefers-reduced-motion` path. No 3D scene, no blob CTA, no decorative gradient.
 
 ### Admin + hub (`apps/web/src/index.css`)
 
