@@ -11,6 +11,26 @@ Cross-links:
 
 ---
 
+## 2026-08-23 — `deploy.sh` rewritten around the git path (lane `deploy`)
+
+> Closes the first 2026-08-19 open-item: *"deploy.sh should stop using rsync from Windows. Rewrite it around the git pull path above, and move the pm2 stop to *after* the sync so a transport failure cannot take prod down. Until then, do not run it from this box."*
+
+`deploy.sh` no longer moves code with a file-copy transport, and **the `pm2 stop` is gone entirely** rather than merely reordered. `pm2 restart --update-env` is now the only lifecycle call in the script, and it runs only after the new code is already on disk — so the failure that took prod down for ~2 minutes on 2026-08-19 has no path left to reach the running service.
+
+**API** — `/opt/advo` is a checkout of the same origin, so the deploy is the path that actually worked on 2026-08-19: back up `apps/api/.env`, `apps/web/.env.production`, and a tarball of `/opt/advo` into `/var/tmp/advo-backup/`, then `git fetch --prune origin` + `git reset --hard origin/main`, then `npm install --workspace apps/api`, then `pm2 restart`. `reset --hard` stays deliberate over `pull` — it discards the tracked CRLF churn and the `package-lock.json` that every on-box `npm install` rewrites, both of which a merge would conflict on, and it leaves untracked files (`.env`, `.env.production`, `uploads`) alone.
+
+**Web** — built locally, verified to reference `api.advo.ph`, shipped over SSH into `/var/www/advo/dist.new-<stamp>`, verified again on the box, then swapped into place with the replaced tree kept as `dist.prev-<stamp>`. The live tree is never written in place, so a partial upload is never what nginx serves.
+
+**One deliberate behaviour change.** The old transport shipped your *working tree*; this ships `origin/<branch>`. That is silent-stale-deploy shaped, so the script now refuses to run when `HEAD` is not `origin/<branch>` (`DEPLOY_ANY_HEAD=1` overrides) and warns on a dirty tree. `DEPLOY_BRANCH` defaults to `main`.
+
+**Verified** — `npm run bench:deploy` 7/7. Beyond the bench, the script was dry-run end-to-end against stubbed `ssh`/`npm`/`curl` and the traced remote command order confirmed: backup → fetch/reset → install → restart → stage → verify → swap → health, with zero `pm2 stop` calls. Two induced-failure runs confirm the load-bearing property: a failed `git reset` issues **zero** lifecycle calls and never swaps the web tree, and a failed web upload leaves the live `dist` in place. Health checks now retry and a non-200 exits non-zero with the rollback commands printed.
+
+### Honest open-items
+- **Not yet run against the real box.** Everything above is bench + stubbed dry-run; the first real `./deploy.sh` should be watched, and `/var/tmp/advo-backup/` checked afterwards.
+- The atomic swap is `mv` + `mv`, so there is a sub-millisecond window where `/var/www/advo/dist` does not exist. A symlink flip would close it; not done, because nginx's `try_files` on a missing root is a 404 for that instant only.
+- Old backups still accumulate — `/var/tmp/advo-backup/*` and `dist.prev-*` are never pruned. Worth a retention sweep.
+- The remaining 2026-08-19 open-items (`PLAUD_TOKEN` / `ANTHROPIC_API_KEY` on prod, outreach transport, the wider prod ownership bug) are untouched by this lane.
+
 ## 2026-08-23 — web-aug parcel: PayMongo compliance + offer truth (2 lanes, not yet built)
 
 > Nothing shipped this session. Two founder instructions from the 08-15/08-21 Messenger threads were turned into red benches and parcelled into lanes; the lanes have not been run.
