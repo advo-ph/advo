@@ -20,6 +20,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin, requireTeam } from "../middleware/rbac.js";
 import { sendNotificationEmail } from "../services/email.service.js";
 import { signPreviewToken, PREVIEW_TTL_MINUTES } from "../services/preview.service.js";
+import { hostPreview, previewArtifactDir } from "../services/preview-host.service.js";
 import { suggestTimeline } from "../services/timeline-suggestion.service.js";
 import { buildRevisionTaskDescription } from "../services/revision-task.service.js";
 import { buildPresentationDraft } from "../services/presentation-draft.service.js";
@@ -580,14 +581,41 @@ projects.post("/:id/preview-link", requireTeam, async (c) => {
     .limit(1);
 
   if (!row) throw new HTTPException(404, { message: "Project not found" });
-  if (!row.previewUrl) {
+
+  // Goes through the hosting seam rather than reading preview_url directly, so
+  // a configured provider can deploy a fresh preview for a project that has no
+  // pasted URL. With the default (manual) provider this is exactly the old
+  // path: the stored preview_url, or the same 400 when there isn't one.
+  const hosted = await hostPreview({
+    projectId: id,
+    pastedUrl: row.previewUrl,
+    artifactDir: previewArtifactDir(id),
+  });
+
+  if (!hosted) {
     throw new HTTPException(400, { message: "Set a preview URL on the project first." });
+  }
+
+  // A freshly deployed preview has to be readable by GET /api/preview/:token,
+  // which resolves through the project row — so persist what the provider gave us.
+  if (hosted.previewUrl !== row.previewUrl) {
+    await db()
+      .update(project)
+      .set({ previewUrl: hosted.previewUrl })
+      .where(eq(project.projectId, id));
   }
 
   const { token, expiresAt } = await signPreviewToken(id);
   const origin = new URL(c.req.url).origin;
   return c.json({
-    data: { url: `${origin}/api/preview/${token}`, expiresAt, ttlMinutes: PREVIEW_TTL_MINUTES },
+    data: {
+      url: `${origin}/api/preview/${token}`,
+      expiresAt,
+      ttlMinutes: PREVIEW_TTL_MINUTES,
+      provider: hosted.provider,
+      fellBack: hosted.fellBack,
+      detail: hosted.detail,
+    },
     error: null,
   });
 });

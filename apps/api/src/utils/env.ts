@@ -22,6 +22,12 @@ const envSchema = z.object({
   /** Seconds between Plaud ADVO-folder probes. 0 disables. Default 60. */
   PLAUD_POLL_SECOND: z.string().optional(),
 
+  /** Which preview-hosting adapter serves "Show Client Now". Default manual. */
+  PREVIEW_HOST_PROVIDER: z.enum(["manual", "herenow"]).default("manual"),
+  /** here.now deploy credential. Unset → the herenow adapter falls back to manual. */
+  HERENOW_API_KEY: z.string().optional(),
+  HERENOW_API_URL: z.string().optional(),
+
   CLOUDFLARE_TOKEN: z.string().optional(),
   CLOUDFLARE_ACCOUNT_ID: z.string().optional(),
 
