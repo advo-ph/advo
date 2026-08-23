@@ -26,6 +26,14 @@ Shipped [`LandingPage`](apps/web/src/components/landing/LandingPage.tsx) + [`lan
 
 Proof on `/` is the portfolio database — real shipped sites only, no testimonials. Title/OG match the hero ("ADVO. We digitalize it for you."). The footer is one shared component (`landing/landing-footer.tsx`) mounted by both `LandingPage` and `landing-shell`, so the two can't drift; social icons use `GET /api/settings/public` plus real defaults. `/start`, `/login`, `/team`, `/project/:slug`, and `/404` share `landing-shell`. `/hub` stays on the June Linear language (`FloatingNav`).
 
+### Legal disclosures (`/terms`, `/privacy`, `/refund`, `/dispute`)
+
+Four public routes, registered outside every `ProtectedRoute` because PayMongo reviews the live site signed out before approving a merchant. They share one layout (`components/legal/LegalDocument.tsx`) inside `landing-shell`, and the shared footer carries a legal row linking all four from every page.
+
+Merchant identity — registered name, registration body and number, business address, support email and phone — lives once in [`data/legal-identity.json`](data/legal-identity.json) and is read through [`lib/legal-identity.ts`](apps/web/src/lib/legal-identity.ts). No component hardcodes a registration number. A field still set to the literal `TBD` renders as "Not yet published — request it at contact@advo.ph" rather than an invented value; filling the file is the whole change needed to publish the real facts.
+
+Measured by `npm run bench:paymongo` (**5/7** — `legal-identity-filled` and `legal-support-contact` stay red until ADVO's DTI/SEC paperwork is transcribed into that file) and covered by `apps/web/src/test/legal-compliance.test.ts`.
+
 ### Client Hub (`/hub`)
 
 - **Smart Dashboard** — Project overview with status, progress bars, and billing

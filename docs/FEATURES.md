@@ -16,11 +16,31 @@ Proof on `/` is Fourlinq only. Title/meta match the hero. Footer social icons re
 
 `anchorPrefix` is the one prop: `""` on `/` keeps bare `#hash` links so the browser does its native in-page scroll; `"/"` on shell routes makes the anchor route home first.
 
+The footer also carries a **legal row** (`.landing-footer-legal`) above the copyright bar, linking the four PayMongo disclosures. It sits on its own row rather than in `footerCol`, whose grid is fixed at four columns; at 360 it wraps to two lines without overflowing.
+
 ### Mobile nav drawer (`/hub`)
 
 `FloatingNav` is a full-screen mobile overlay on `/hub`: numbered tap rows, Escape / route-change close, body scroll lock (restoring the previous value), `prefers-reduced-motion`. **z-50**. Behaviour is covered by `src/test/mobile-nav-drawer.test.ts` — Escape close, non-Escape keys ignored, lock/restore, close on a route change it did not initiate, and close on its own link navigation.
 
 **Files**: `landing/LandingPage.tsx`, `landing/landing-footer.tsx`, `landing/landing-shell.tsx`, `landing/FloatingNav.tsx`, `landing/PortfolioCard.tsx` (proof card, unit-tested via `proof-card.test.ts`), `landing/landing-page.css`
+
+### Legal disclosures (`/terms`, `/privacy`, `/refund`, `/dispute`)
+
+The four disclosures PayMongo names in its merchant-review requirement list (sent by Prince 2026-08-21). A reviewer reads them **signed out**, so all four are registered in `App.tsx` above the `ProtectedRoute` blocks, and the shared footer reaches them from every page.
+
+One layout — `components/legal/LegalDocument.tsx` — wraps all four inside `landing-shell`, so they cannot drift apart in structure or in the merchant identity they publish. Each page renders its own prose plus a shared "Who you are transacting with" panel and a cross-link nav to the other three.
+
+Content is not boilerplate: the commercial terms restate what is already recorded in [ROADMAP.md](ROADMAP.md) and [CONTRACTS.md](CONTRACTS.md) — 50/50 milestone payment, five revision rounds with the 6-month tail, IP transferring on final payment, the ₱3,000/month infrastructure fee and its 15-day suspension rule, the 30-day warranty. Privacy describes the data this platform actually holds (the `/start` lead form fields, hashed passwords, expiring preview links) under RA 10173. **None of it is legally reviewed** — the same open item as the nine CONTRACTS.md policies.
+
+#### Merchant identity — one file, never invented
+
+`data/legal-identity.json` at the repo root is the single source; `apps/web/src/lib/legal-identity.ts` types it and exposes `identityValue()`, which returns `null` for any field still holding the placeholder vocabulary (`TBD`, `TODO`, empty, …) instead of the placeholder itself. The page then renders "Not yet published — request it at contact@advo.ph", plus an amber notice explaining that registration facts come from ADVO's DTI/SEC paperwork rather than being drafted here.
+
+This is deliberate: the lane ships the surfaces, and the facts are Prince's to supply. `npm run bench:paymongo` is **5/7** and stays red on `legal-identity-filled` and `legal-support-contact` until the file is filled — filling it is the entire remaining change, no code edit required.
+
+`resolveJsonModule` was enabled in `apps/web/tsconfig.app.json` so the web app can import that root-level JSON directly.
+
+**Files**: `pages/legal/Terms.tsx`, `pages/legal/Privacy.tsx`, `pages/legal/Refund.tsx`, `pages/legal/Dispute.tsx`, `components/legal/LegalDocument.tsx`, `lib/legal-identity.ts`, `data/legal-identity.json`, `landing/landing-footer.tsx`, `App.tsx`. Covered by `src/test/legal-compliance.test.ts` (19 cases: each route renders with no auth context, discloses the identity, invents no registration number, links exactly the other three, and shows the pending affordance once per unsupplied field).
 
 ### Public Settings Endpoint
 

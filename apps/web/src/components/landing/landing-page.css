@@ -858,6 +858,24 @@ body:has(.landing-shell) {
   letter-spacing: -0.05em;
   user-select: none;
 }
+/* The PayMongo disclosure row. Its own line above the copyright bar: a
+ * reviewer has to find all four from any page, and the 4-column footer grid
+ * above has no fifth slot to put them in. */
+.landing-footer-legal {
+  width: min(1600px, 100%);
+  margin-inline: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  padding-bottom: 20px;
+}
+.landing-footer-legal a {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}
+.landing-footer-legal a:hover { color: #fff; text-decoration: underline; }
+
 .landing-footer-bar {
   width: min(1600px, 100%);
   margin-inline: auto;

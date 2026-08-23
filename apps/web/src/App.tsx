@@ -14,6 +14,10 @@ import Team from "./pages/Team";
 import ProjectDetail from "./pages/ProjectDetail";
 import PreviewLink from "./pages/PreviewLink";
 import NotFound from "./pages/NotFound";
+import Terms from "./pages/legal/Terms";
+import Privacy from "./pages/legal/Privacy";
+import Refund from "./pages/legal/Refund";
+import Dispute from "./pages/legal/Dispute";
 
 const App = () => (
   <AuthProvider>
@@ -29,6 +33,14 @@ const App = () => (
           <Route path="/team" element={<Team />} />
           <Route path="/project/:slug" element={<ProjectDetail />} />
           <Route path="/p/:token" element={<PreviewLink />} />
+
+          {/* PayMongo merchant-review disclosures. Public on purpose — a
+              reviewer reads them signed out, so they stay outside every
+              ProtectedRoute block below. */}
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/refund" element={<Refund />} />
+          <Route path="/dispute" element={<Dispute />} />
 
           {/* Protected: requires auth */}
           <Route element={<ProtectedRoute requireAuth redirectAdminTo="/admin" />}>

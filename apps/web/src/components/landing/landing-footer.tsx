@@ -19,6 +19,18 @@ interface SocialLink {
   label: string;
 }
 
+/**
+ * The four PayMongo merchant-review disclosures. They sit on their own row
+ * rather than inside `footerCol`, whose grid is fixed at four columns — and a
+ * reviewer needs them from every page, not buried in a service menu.
+ */
+const legalLink: { label: string; href: string }[] = [
+  { label: "Terms and Conditions", href: "/terms" },
+  { label: "Privacy Policy", href: "/privacy" },
+  { label: "Return and Refund Policy", href: "/refund" },
+  { label: "Dispute Resolution Policy", href: "/dispute" },
+];
+
 interface FooterLink {
   label: string;
   href: string;
@@ -171,6 +183,14 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
       <div className="landing-footer-wordmark" data-viewport-check="footer-wordmark" aria-hidden="true">
         ADVO
       </div>
+
+      <nav className="landing-footer-legal" aria-label="Legal">
+        {legalLink.map((link) => (
+          <Link key={link.href} to={link.href}>
+            {link.label}
+          </Link>
+        ))}
+      </nav>
 
       <div className="landing-footer-bar">
         <div>
