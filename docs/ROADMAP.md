@@ -66,7 +66,7 @@ Scope is deliberately **batch send + suppression**, not sequences. A follow-up s
 | **Segment → campaign** | Select a lead segment (reuse the existing “Outdated only” targeting filter), attach a subject + body template or a generated proposal, and materialize one recipient row per lead at send time. |
 | **Throttled send** | A configurable per-hour rate cap with the send resumable across an API restart. No unbounded `Promise.all` over 5K addresses. |
 | **Unsubscribe + suppression** | Every outreach email carries a working one-click unsubscribe. An unsubscribed, hard-bounced, or complained address is permanently suppressed and is skipped by every future campaign, with no way to send to it from the UI. |
-| **Bounce + complaint handling** | Hard bounce and spam complaint feed the suppression list. Repeated soft bounce escalates to suppression. |
+| **Bounce + complaint handling** | Hard bounce and spam complaint feed the suppression list on the first report. Repeated soft bounce increments a per-address counter and escalates to a `soft_bounce_limit` suppression at `SOFT_BOUNCE_LIMIT` (3). Shipped 2026-08-23, migration 020 — the endpoint is ready, but no ESP webhook calls it yet. |
 | **Per-recipient status** | queued / sent / bounced / unsubscribed / complained, visible in admin, so a campaign's real delivery is legible without opening the ESP dashboard. |
 | **Honest dry-run** | A campaign can be previewed and counted without sending, and the send path refuses to run when no outreach transport is configured — it must not silently log-and-succeed the way `email.service.ts` does today. |
 

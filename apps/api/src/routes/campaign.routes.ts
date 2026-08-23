@@ -6,6 +6,7 @@ import { requireAuth } from "../middleware/auth.js";
 import { requireTeam } from "../middleware/rbac.js";
 import type { Variables } from "../types/context.js";
 import {
+  SOFT_BOUNCE_LIMIT,
   createCampaign,
   getCampaign,
   listCampaign,
@@ -13,6 +14,7 @@ import {
   materializeRecipient,
   previewCampaign,
   recordDeliveryFailure,
+  recordSoftBounce,
   sendCampaign,
   suppress,
   suppressionSet,
@@ -132,19 +134,46 @@ campaignRoutes.post(
   },
 );
 
-/** ESP bounce / complaint callback. Feeds the permanent suppression list. */
+/**
+ * ESP bounce / complaint callback. Feeds the permanent suppression list.
+ *
+ * Three kinds, two behaviours. A hard bounce or a complaint suppresses on the FIRST
+ * report — the address is dead or the recipient asked us to stop, and neither improves
+ * with retries. A soft bounce is temporary by definition, so it increments a per-address
+ * counter and only suppresses once that counter reaches SOFT_BOUNCE_LIMIT.
+ *
+ * The response reports the REAL outcome. It used to hard-code isSuppressed: true, which
+ * was accurate while the only kinds were terminal; a soft bounce under the limit is not
+ * suppressed, and telling the ESP otherwise would make the one field it can read a lie.
+ * softBounceCount is returned so an operator can see how close an address is to the edge.
+ */
 campaignRoutes.post(
   "/delivery-failure",
   zValidator(
     "json",
     z.object({
       email: z.string().email(),
-      kind: z.enum(["hard_bounce", "complaint"]),
+      kind: z.enum(["hard_bounce", "soft_bounce", "complaint"]),
       campaignId: z.number().int().positive().optional(),
     }),
   ),
   async (c) => {
     const { email, kind, campaignId } = c.req.valid("json");
+
+    if (kind === "soft_bounce") {
+      const result = await recordSoftBounce(email, campaignId);
+      return c.json({
+        data: {
+          email,
+          kind,
+          isSuppressed: result.isSuppressed,
+          softBounceCount: result.softBounceCount,
+          softBounceLimit: SOFT_BOUNCE_LIMIT,
+        },
+        error: null,
+      });
+    }
+
     await recordDeliveryFailure(email, kind, campaignId);
     return c.json({ data: { email, kind, isSuppressed: true }, error: null });
   },
