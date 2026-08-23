@@ -95,7 +95,15 @@ npm run db:push               # Push schema to database
 npm run db:seed               # Seed defaults (admin user, site content, config)
 npm run db:studio             # Open Drizzle Studio (DB browser)
 npm run db:generate           # Generate migration files
+npm run migration:drift       # Which migrations has this database NOT seen?
 ```
+
+Raw SQL migrations in `apps/api/migrations/` are applied by hand. `migration:drift` compares
+that directory against the `schema_migration` ledger in the target database and exits non-zero
+when any migration is unapplied — including one skipped in the *middle* of the sequence, which
+is how prod ended up serving `/api/expense` against a table that was never created. A database
+that predates the ledger needs `019_schema_ledger.sql` applied first; its backfill is guarded
+per-migration, so it is safe on an existing box. See [SCHEMA.md](SCHEMA.md#migration-log).
 
 ### Tables
 

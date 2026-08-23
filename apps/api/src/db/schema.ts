@@ -979,3 +979,32 @@ export const commissionShare = pgTable(
     // one company reserve per plan — live in 018_commission_split.sql.
   ],
 );
+
+/**
+ * The schema ledger — one row per migration a database has applied (019_schema_ledger.sql).
+ *
+ * Mirrored here for one reason beyond convention: `db:push` drops what `schema.ts` does not
+ * declare. A ledger absent from this file is a ledger the next push deletes, and the drift it
+ * exists to catch would come straight back.
+ *
+ * Nothing in the API reads this table. It is written by migrations and read by
+ * `scripts/migration-drift.mjs`; the app has no business editing its own deploy history.
+ */
+export const schemaMigration = pgTable(
+  "schema_migration",
+  {
+    schemaMigrationId: bigserial("schema_migration_id", { mode: "number" }).primaryKey(),
+    /** Exactly as the file is named in apps/api/migrations, e.g. `005_expense.sql`. */
+    filename: varchar("filename", { length: 255 }).notNull(),
+    /**
+     * On a backfilled row this is when the ledger was created, NOT when the migration ran —
+     * that timestamp predates the ledger and inventing one would be a lie. Read it as
+     * "known applied by".
+     */
+    appliedAt: timestamp("applied_at", { withTimezone: true }).notNull().defaultNow(),
+    /** True when the row was inferred from a sentinel object rather than written as it ran. */
+    isBackfilled: boolean("is_backfilled").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("idx_schema_migration_filename").on(t.filename)],
+);

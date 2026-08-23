@@ -21,6 +21,7 @@
     "bench:paymongo": "node bench/roadmap/paymongo-compliance/scoring.mjs",
     "bench:offer": "node bench/roadmap/offer-truth/scoring.mjs",
     "bench:deploy": "node bench/roadmap/deploy-safety/scoring.mjs",
+    "migration:drift": "node scripts/migration-drift.mjs",
     "bench:drift": "node bench/roadmap/migration-drift/scoring.mjs",
     "bench:bounce": "node bench/roadmap/soft-bounce/scoring.mjs",
     "bench:ship": "node bench/roadmap/prod-ship/scoring.mjs",
