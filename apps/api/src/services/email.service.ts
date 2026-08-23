@@ -1,4 +1,7 @@
 import nodemailer from "nodemailer";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { env } from "../utils/env.js";
 import { createLogger } from "../utils/logger.js";
 
@@ -222,8 +225,114 @@ export function outreachConfig(): OutreachConfig | null {
   };
 }
 
+/** Env vars are present. Says nothing about whether the receiving world will accept the mail. */
 export function isOutreachConfigured(): boolean {
   return outreachConfig() !== null;
+}
+
+// ─── DNS clearance ───────────────────────────────────
+//
+// Env vars present + DNS absent is exactly the state that burns a domain: the transport
+// connects, 5000 messages go out unauthenticated, and the domain is blocked on its first
+// campaign. So configuration is not permission. Permission is SPF + DKIM + DMARC actually
+// resolving, which only a live lookup can establish.
+//
+// `npm run outreach:preflight` does those lookups and records the verdict to
+// docs/outreach-preflight.json. This reads that artifact. Nothing here touches DNS — a
+// per-send resolver call would put a network dependency in the send loop and would let a
+// transient SOA timeout stop a campaign mid-flight. The artifact is the committed answer.
+//
+// It expires. DNS is mutable, a record can be dropped or a key rotated after clearance, so
+// a verdict older than MAX_VERIFICATION_AGE_DAY is treated as unknown rather than as yes.
+
+const MAX_VERIFICATION_AGE_DAY = 30;
+
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
+const PREFLIGHT_ARTIFACT_PATH = join(REPO_ROOT, "docs/outreach-preflight.json");
+
+export type OutreachDnsVerification = {
+  isVerified: boolean;
+  /** Why not, in the operator's words. Empty when verified. */
+  reason: string;
+  domain: string | null;
+  checkedAt: string | null;
+};
+
+const REMEDY = "Run `npm run outreach:preflight` and publish whatever it reports missing.";
+
+/** Read the recorded DNS verdict and decide whether it clears the domain configured right now. */
+export function outreachDnsVerification(): OutreachDnsVerification {
+  const config = outreachConfig();
+  const configuredDomain = config ? (config.from.match(/@([^>\s]+)/)?.[1]?.toLowerCase() ?? null) : null;
+  const unverified = (reason: string): OutreachDnsVerification => ({
+    isVerified: false,
+    reason,
+    domain: configuredDomain,
+    checkedAt: null,
+  });
+
+  if (!existsSync(PREFLIGHT_ARTIFACT_PATH)) {
+    return unverified(`No outreach DNS preflight has ever been recorded. ${REMEDY}`);
+  }
+
+  let artifact: {
+    passed?: boolean;
+    domain?: string | null;
+    checkedAt?: string | null;
+    count?: { failed?: number };
+  };
+  try {
+    artifact = JSON.parse(readFileSync(PREFLIGHT_ARTIFACT_PATH, "utf8"));
+  } catch {
+    return unverified(`The recorded outreach DNS preflight is unreadable. ${REMEDY}`);
+  }
+
+  const checkedAt = artifact.checkedAt ?? null;
+
+  if (!artifact.passed) {
+    const failedCount = artifact.count?.failed ?? 0;
+    return {
+      isVerified: false,
+      reason:
+        `The last outreach DNS preflight failed${failedCount ? ` (${failedCount} check failing)` : ""}. ` +
+        REMEDY,
+      domain: configuredDomain,
+      checkedAt,
+    };
+  }
+
+  // A pass for a domain we are no longer sending from clears nothing.
+  if (!configuredDomain || artifact.domain?.toLowerCase() !== configuredDomain) {
+    return {
+      isVerified: false,
+      reason:
+        `The recorded preflight cleared ${artifact.domain ?? "(no domain)"}, but OUTREACH_FROM now ` +
+        `sends from ${configuredDomain ?? "(no domain)"}. ${REMEDY}`,
+      domain: configuredDomain,
+      checkedAt,
+    };
+  }
+
+  const ageDay = checkedAt
+    ? (Date.now() - new Date(checkedAt).getTime()) / 86_400_000
+    : Number.POSITIVE_INFINITY;
+  if (!(ageDay >= 0) || ageDay > MAX_VERIFICATION_AGE_DAY) {
+    return {
+      isVerified: false,
+      reason:
+        `The outreach DNS clearance for ${configuredDomain} is stale (checked ${checkedAt ?? "never"}, ` +
+        `max ${MAX_VERIFICATION_AGE_DAY} days). Records can be dropped or keys rotated after clearance. ${REMEDY}`,
+      domain: configuredDomain,
+      checkedAt,
+    };
+  }
+
+  return { isVerified: true, reason: "", domain: configuredDomain, checkedAt };
+}
+
+/** True only when SPF, DKIM and DMARC were verified for the domain currently configured. */
+export function isOutreachDnsVerified(): boolean {
+  return outreachDnsVerification().isVerified;
 }
 
 let _outreachTransport: nodemailer.Transporter | null | undefined;
@@ -253,7 +362,8 @@ export function resetOutreachTransport(): void {
 
 /**
  * Send one outreach email. THROWS on any failure — including when no outreach transport
- * is configured. It never borrows the transactional transport and never logs-and-returns.
+ * is configured, and including when the outreach domain has no recorded DNS clearance.
+ * It never borrows the transactional transport and never logs-and-returns.
  */
 export async function sendOutreachEmail(to: string, subject: string, html: string): Promise<void> {
   const config = outreachConfig();
@@ -264,6 +374,13 @@ export async function sendOutreachEmail(to: string, subject: string, html: strin
       "Outreach transport is not configured. Set OUTREACH_SMTP_HOST and OUTREACH_FROM. " +
         "Campaign sending deliberately does not fall back to the transactional transport.",
     );
+  }
+
+  // Configured is not cleared. Refuse rather than send unauthenticated mail from a domain
+  // the receiving world has no reason to trust.
+  const verification = outreachDnsVerification();
+  if (!verification.isVerified) {
+    throw new Error(`Outreach domain is not DNS-verified. ${verification.reason}`);
   }
 
   await t.sendMail({ from: config.from, to, subject, html });

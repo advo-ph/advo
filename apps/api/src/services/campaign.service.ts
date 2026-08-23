@@ -31,7 +31,12 @@ import {
   emailSuppression,
   lead,
 } from "../db/schema.js";
-import { isOutreachConfigured, sendOutreachEmail, wrapOutreach } from "./email.service.js";
+import {
+  isOutreachConfigured,
+  outreachDnsVerification,
+  sendOutreachEmail,
+  wrapOutreach,
+} from "./email.service.js";
 import { createLogger } from "../utils/logger.js";
 
 const log = createLogger("campaign");
@@ -174,11 +179,16 @@ export async function resolveSegment(segment: Segment) {
 export async function previewCampaign(segment: Segment) {
   const candidate = await resolveSegment(segment);
   const suppressed = await suppressionSet();
+  const dnsVerification = outreachDnsVerification();
 
   return {
     recipientCount: candidate.length,
     suppressedCount: suppressed.size,
     isOutreachConfigured: isOutreachConfigured(),
+    // Two separate answers on purpose. Configured says the transport exists; verified says the
+    // receiving world will accept what it sends. The UI needs to be able to say which is missing.
+    isOutreachDnsVerified: dnsVerification.isVerified,
+    dnsUnverifiedReason: dnsVerification.reason || null,
     sample: candidate.slice(0, 5).map((r) => ({ name: r.name, email: r.email, company: r.company })),
   };
 }
@@ -288,6 +298,18 @@ export async function sendCampaign(
         "Outreach transport is not configured (OUTREACH_SMTP_HOST + OUTREACH_FROM). " +
         "Campaign sending does not fall back to the transactional transport.",
     });
+  }
+
+  // Checked once, up front, rather than left to fail per-recipient: a domain with no SPF/DKIM/
+  // DMARC fails for every row, and flipping 5000 recipients to "failed" is not a useful way to
+  // learn that a TXT record is missing.
+  if (!option.sender) {
+    const verification = outreachDnsVerification();
+    if (!verification.isVerified) {
+      throw new HTTPException(400, {
+        message: `Outreach domain is not DNS-verified. ${verification.reason}`,
+      });
+    }
   }
 
   await db()
