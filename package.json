@@ -22,7 +22,12 @@
     "bench:offer": "node bench/roadmap/offer-truth/scoring.mjs",
     "bench:deploy": "node bench/roadmap/deploy-safety/scoring.mjs",
     "bench:drift": "node bench/roadmap/migration-drift/scoring.mjs",
-    "bench:bounce": "node bench/roadmap/soft-bounce/scoring.mjs"
+    "bench:bounce": "node bench/roadmap/soft-bounce/scoring.mjs",
+    "bench:ship": "node bench/roadmap/prod-ship/scoring.mjs",
+    "bench:outreach": "node bench/roadmap/outreach-preflight/scoring.mjs",
+    "bench:legal": "node bench/roadmap/legal-pack/scoring.mjs",
+    "bench:preview": "node bench/roadmap/preview-hosting/scoring.mjs",
+    "bench:visual": "node bench/roadmap/landing-visual/scoring.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.0",

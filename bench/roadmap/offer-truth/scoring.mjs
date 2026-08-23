@@ -34,6 +34,7 @@ const read = (relativePath) => {
 const files = {
   landingPage: read("apps/web/src/components/landing/LandingPage.tsx"),
   stripeBench: read("bench/roadmap/landing-stripe-audit/scoring.mjs"),
+  indexHtml: read("apps/web/index.html"),
 };
 
 /** Every description string rendered by the work section, for the length cap. */
@@ -86,6 +87,34 @@ const checks = [
       /screenshot|screen_url|screenshotUrl/i.test(files.landingPage),
     expected:
       "Work cards render a large per-project screenshot. The generic /landing/rw/*.jpg workspace stock is gone from the work rail.",
+  },
+  {
+    id: "tagline-is-the-mission-line",
+    title: "The tagline is the founder's mission line",
+    passed:
+      /We digitalize it for you/i.test(files.landingPage) &&
+      /We digitalize it for you/i.test(files.indexHtml),
+    expected:
+      'Prince asked twice (2026-08-19, 08-21) for the mission line "We digitalize it for you." as the tagline. Angelo settled the hardware objection on 2026-08-23 in favour of shipping it verbatim. It appears on the landing AND in the document title/OG, which currently say "Build together. Ship with clarity."',
+  },
+  {
+    id: "vision-line-present",
+    title: "The vision statement is on the page",
+    passed:
+      /infrastructure of the technological layer/i.test(files.landingPage) &&
+      /modernize the Philippines/i.test(files.landingPage),
+    expected:
+      'The vision Prince supplied verbatim: "To become the infrastructure of the technological layer for industries around the Philippines. We will modernize the Philippines."',
+  },
+  {
+    id: "stale-tagline-retired",
+    title: "The old Stripe-era tagline is gone everywhere",
+    passed:
+      !/Build together/i.test(files.landingPage) &&
+      !/Build together/i.test(files.indexHtml) &&
+      !/Ship with clarity/i.test(files.indexHtml),
+    expected:
+      '"Build together. Ship with clarity." is removed from the hero, the <title>, and the OG tags. Note this deliberately reverses the shipped `title-meta` row in docs/ROADMAP.md P2, which dropped this line — record that in your close-out.',
   },
   {
     id: "work-desc-concise",
