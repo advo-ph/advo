@@ -240,7 +240,11 @@ const LandingPage = () => {
           <a className="landing-brand" href="#top" aria-label="ADVO home">
             <img src="/advo-logo-black.png" alt="ADVO" />
           </a>
-          <nav className={isMenuOpen ? "landing-nav-link is-open" : "landing-nav-link"} aria-label="Main navigation">
+          <nav
+            id="mobile-navigation-drawer"
+            className={isMenuOpen ? "landing-nav-link is-open" : "landing-nav-link"}
+            aria-label="Main navigation"
+          >
             {navItem.map((item) => (
               <div
                 className="landing-nav-item"
@@ -285,8 +289,9 @@ const LandingPage = () => {
             <button
               className="landing-menu"
               onClick={() => setIsMenuOpen((value) => !value)}
-              aria-label="Toggle navigation"
+              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={isMenuOpen}
+              aria-controls="mobile-navigation-drawer"
             >
               {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
