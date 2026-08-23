@@ -34,13 +34,20 @@ const inventedProof = [
 const check = [
   {
     id: "title-meta",
-    title: "Document title matches the shipped landing offer",
+    title: "Document title carries the founder's mission line",
     passed:
-      !/We Digitalize It For You/i.test(indexHtml) &&
-      /<title>[^<]*(ADVO|workspace|clarity|Build together)[^<]*<\/title>/i.test(indexHtml) &&
-      !/og:title" content="[^"]*Digitalize/i.test(indexHtml),
+      /<title>[^<]*We digitalize it for you[^<]*<\/title>/i.test(indexHtml) &&
+      /og:title" content="[^"]*We digitalize it for you/i.test(indexHtml) &&
+      !/Build together|Ship with clarity/i.test(indexHtml),
     expected:
-      "apps/web/index.html title and og:title drop 'We Digitalize It For You' and name the live landing offer.",
+      // REVERSED 2026-08-23, deliberately. This check used to assert the exact
+      // opposite — that the title DROPPED "We Digitalize It For You" — which was
+      // right when it was written and became wrong when the founders settled the
+      // tagline. Prince asked twice for the mission line; Angelo, who had
+      // objected that it reads software-only, settled it in favour of shipping
+      // his copy verbatim. Retiring the assertion, not the check: the id
+      // survives so the title stays governed rather than becoming unguarded.
+      "apps/web/index.html title and og:title carry 'We digitalize it for you.' and no longer carry the Stripe-era 'Build together. Ship with clarity.'",
   },
   {
     id: "proof-copy",
