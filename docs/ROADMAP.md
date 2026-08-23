@@ -112,6 +112,24 @@ Mostly captured in the two sub-roadmaps; surfaced here so you don't lose them.
 | Pretty preview route `advo.ph/p/:token`                                         | [HANDOFF.md](HANDOFF.md) (Show-Client-Now)          | ✅ Lane admin — frontend `/p/:token` branded gate then 302 via `GET /api/preview/:token`.                                                                                       |
 | here.now fresh-deploy path (instant ephemeral preview)                          | [HANDOFF.md](HANDOFF.md) (Show-Client-Now)          | ⏳ Deferred — the original "instant temp deploy" ask. Current expiring-link approach is host-agnostic + works today; here.now needs an API key + per-project build artifacts. |
 
+### Acceptance — web-aug parcel (PayMongo compliance + offer truth)
+
+Parcelled 2026-08-23 from the 08-15/08-21 Messenger threads; see [HANDOFF.md](HANDOFF.md#2026-08-23--web-aug-parcel-paymongo-compliance--offer-truth-2-lanes-not-yet-built). Both benches are committed **red** (`6ddb931`) and neither lane has been run.
+
+| Item | Why | Effort | Status |
+| --- | --- | --- | --- |
+| **PayMongo disclosure routes** (`/terms`, `/privacy`, `/refund`, `/dispute`) | PayMongo reviews the live site before approving a merchant and names six required disclosures. None exist. Prince, 08-21: _"sir can u put all this to advo website"_. | M | ⏳ Lane `compliance`. **Acceptance:** each disclosure is a signed-out-reachable route registered outside `ProtectedRoute`, linked from `landing-footer.tsx`, rendering from one shared identity module — `npm run bench:paymongo` 6/7. |
+| **Merchant identity of record** (`data/legal-identity.json`) | The registration number, registered business address, and support contact are not anywhere in this repo, and PayMongo requires all three. | S | ⏳ **Blocked on Prince**, not on code. `legal-identity-filled` stays red by design; the lane is forbidden from inventing a registration number. |
+| **Remove published pricing** | Prince, 08-21: _"remove the price boi we dont put the pricing on the website, its always get a quotation"_. The landing publishes ₱60,000 / ₱80,000/mo / ₱800/hr. | S | ⏳ Lane `offer`. **Acceptance:** no peso figure, "starting at", `/mo` or `/hr` on the landing; the four engagement shapes survive as quotation requests — `npm run bench:offer`. Requires re-authoring `bench:landing`'s `engagement-cta`, which currently asserts the opposite. |
+| **Work section reads the portfolio database** | Prince, 08-21: _"keep only the section for the websites that we've already created … large screenshot images, get them from the advo portfolio database … short and concise and simple descs only"_. `LandingPage.tsx` is fully static and the work rail is four hardcoded cards over `/landing/rw/*.jpg` stock. | M | ⏳ Lane `offer`. **Acceptance:** work cards render per-project screenshots sourced from `portfolio_project` with descriptions ≤120 chars, and render nothing rather than invented work when the table is empty. Needs a public read route the API does not have yet. |
+
+**Excluded from the parcel** — design-blocked, do not fan these out:
+
+- **Tagline → "We digitalize it for you."** Asked for twice by Prince (08-19, 08-21). Angelo objected in-thread that it reads software-only when ADVO also ships hardware, and [VISION.md](VISION.md) agrees. It would also revert the shipped `title-meta` row above, which deliberately dropped "We Digitalize It For You". Founder decision.
+- **runway.com UI direction.** A visual reference, not acceptance criteria — no instrument can be authored.
+- **Food / Medical / Education industry sections.** Blocked on the AI customer-journey videos Prince said he was still producing.
+
+
 ## Infra & Ops
 
 Operational items running live prod — none of this is tracked elsewhere despite advo.ph + api.advo.ph + Postgres all being live.

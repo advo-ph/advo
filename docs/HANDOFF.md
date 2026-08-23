@@ -11,6 +11,50 @@ Cross-links:
 
 ---
 
+## 2026-08-23 — web-aug parcel: PayMongo compliance + offer truth (2 lanes, not yet built)
+
+> Nothing shipped this session. Two founder instructions from the 08-15/08-21 Messenger threads were turned into red benches and parcelled into lanes; the lanes have not been run.
+
+**Where these came from.** A scan of the polkadoc vault (`Messenger/ADVO Core 💪`, `Messenger/Prince A Wagan`) for advo.ph traffic. Six asks surfaced; three are parcellable and three are not. The two that became lanes:
+
+- **PayMongo merchant review.** ADVO is submitting advo.ph for approval. Prince, 08-21: _"sir can u put all this to advo website"_ over a screenshot of PayMongo's requirement list — DTI/SEC/CDA registration number, Terms, Privacy, Return and Refund, customer-service contact **including business address**, Dispute Resolution. His stated worry: _"they may take longer or deny us if the website looks ai or they dont get what were doing"_. None of the four policy routes exist today.
+- **Offer truth.** Prince, 08-21: _"remove the price boi we dont put the pricing on the website, its always get a quotation"_ and _"lets just keep only the section for the websites that we've already created, put emphasis on each project that weve made (large screenshot images, get them from the advo portfolio database) with short and concise and simple descs only"_. The landing currently publishes ₱60,000 / ₱80,000/mo / ₱800/hr, and its work rail is four hardcoded cards over `/landing/rw/*.jpg` stock.
+
+**The committed benches are RED by design** (`6ddb931`):
+
+- `bench/roadmap/paymongo-compliance/scoring.mjs` — 0/7. Six checks are lane work. **`legal-identity-filled` is meant to stay red**: it requires a real registration number and business address in `data/legal-identity.json`, and those facts are not in this repo. The lane is explicitly told not to invent them — a fabricated registration number on a page submitted to a payment processor is the worst outcome available here.
+- `bench/roadmap/offer-truth/scoring.mjs` — 1/6.
+
+**`bench:landing` currently asserts the opposite of the pricing instruction.** Its `engagement-cta` check requires the landing to carry `₱` and the four engagement shapes. Removing the prices turns a green check red, so the `offer` lane owns both files and re-authors that check to assert quotation language instead. `stale-price-check-retired` in the new bench is what forces that resolution rather than letting the lane delete a sibling bench to get green.
+
+**Lanes** — parallel, worktree, `link-main` (junction to the main `node_modules`; no per-lane install), teardown via `/cleanup`. Builder is `claude` in both.
+
+| Lane | Branch | Owns | Done when |
+|---|---|---|---|
+| `offer` | `lane/offer` | `LandingPage.tsx`, `PortfolioCard.tsx`, `landing-page.css`, `bench:offer`, `bench:landing` scoring | `bench:offer` 6/6 with `bench:landing` still green |
+| `compliance` | `lane/compliance` | `pages/legal/**`, `lib/legal-identity.ts`, `data/legal-identity.json`, `App.tsx`, `landing-footer.tsx`, `bench:paymongo` | `bench:paymongo` 6/7; `legal-identity-filled` stays red |
+
+`offer` merges **first** — it re-pins `bench:landing`. Tip gate is the full suite plus all five benches at the merged tip.
+
+Both lane plans pass the parcel contracts: `lane-plan-check.mjs` → PASS, `warp-config-check.mjs` → PASS. Warp launch config at `%APPDATA%\warp\Warp\data\launch_configurations\parcel-web-aug.yaml`, two tabs, each booting `claude` with `.parcel-prompt.md` already in the prompt.
+
+**Not parcelled, deliberately:**
+
+- **Vision/tagline swap.** Prince asked twice for _"We digitalize it for you."_ as the tagline. Angelo objected in-thread that it reads software-only when ADVO also ships hardware; [VISION.md](VISION.md) agrees with Angelo. It would also revert the shipped `title-meta` row in [ROADMAP.md](ROADMAP.md#p2--platform-polish-ux--landing), which deliberately dropped "We Digitalize It For You" from the document title. Founder decision, not a lane.
+- **runway.com UI redesign.** A visual reference, not acceptance criteria. No instrument can be authored, so no lane.
+- **Food / Medical / Education industry sections.** Blocked on the AI customer-journey videos Prince said he was still making.
+
+### Honest open-items
+- **Neither lane has been run.** This session produced benches, worktrees, prompts and a launch config — no product code. Every check above is still red.
+- **`data/legal-identity.json` needs Prince.** Registration body + number, registered business address, support email, support phone. Until those land, `bench:paymongo` cannot go fully green and the PayMongo submission is not complete regardless of what the lane builds.
+- **The policy prose has no legal review.** These four pages join the nine CONTRACTS.md policies already waiting on the Philippine corporate/cyber lawyer (P0, still ⏳). Publishing a Refund and a Dispute Resolution policy is a binding-ish public commitment; the lane is told to stay consistent with CONTRACTS.md, which is itself unreviewed.
+- **`offer` needs a public portfolio read path that does not exist.** `LandingPage.tsx` is entirely static and `portfolio_project` is only read by the admin hook. The lane will have to add one API route outside its owned set.
+- **The portfolio table may be empty.** The lane is told to render nothing rather than invent client work, so the section could ship blank until real screenshots are loaded.
+- **12 stale worktrees are still on disk** from earlier tiers (`advo-lane-{admin,copy,docs,hub,lead,ops,route,site,staff,test,wiring}`, `advo-final-*`). Unrelated to this parcel, but `/cleanup` has never been run on them.
+- The polkadoc vault this scan read is itself incomplete — it was rebuilt from empty on 08-23 and only backfills to 07-20 for ADVO Core and 08-19 for the Wagan DM. Older advo.ph discussion exists only in `~/polkadoc.bak-20260821-214330` and was not scanned.
+
+---
+
 ## 2026-08-19 — final tier deployed; rsync replaced with git pull
 
 > The `final` tier (web / resilience / proposal / campaign) is **live on prod**. The 2026-08-16 "deploy blocked" item is closed. Pushed `976a64a`.

@@ -3,6 +3,21 @@
 Date: 2026-06-16
 Scope: Stripe landing audit -> ADVO public landing, navigation, proof, and design-system follow-through.
 
+> **Status 2026-08-23 — this tier is closed, and its prose is stale.** Every item
+> below is implemented, but the shipped landing was rebuilt after this cut: the
+> sections described here (product surfaces, proof cards, private stack, build
+> room) are not the sections `LandingPage.tsx` renders today. The **benchmark**
+> was retargeted to the shipped surface on 2026-08-18 and is current — the
+> **prose was not**. Read the bench, not this table, when you need to know what
+> the landing does.
+>
+> Live landing work is now tracked in
+> [docs/ROADMAP.md → Acceptance — web-aug parcel](docs/ROADMAP.md#acceptance--web-aug-parcel-paymongo-compliance--offer-truth),
+> with two red benches: `npm run bench:paymongo` and `npm run bench:offer`.
+> Note that `engagement-cta` in this tier's bench asserts the landing carries
+> peso figures — the 2026-08-21 instruction is to remove them, so that check is
+> scheduled to be re-authored by lane `offer`.
+
 ## Discovery Summary
 
 Signals used:
