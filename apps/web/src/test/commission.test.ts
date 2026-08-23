@@ -31,7 +31,15 @@ import {
 } from "../../../api/src/services/commission.service.js";
 
 const monorepoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
-const readSource = (path: string) => readFileSync(join(monorepoRoot, path), "utf-8");
+/**
+ * Source assertions below match multi-line snippets written with `\n`. This repo
+ * has no `.gitattributes` and `core.autocrlf` is true, so on Windows every
+ * checked-out source file has CRLF and those assertions fail on the line ending
+ * rather than on the thing they are testing. Normalize on read: the assertions
+ * are about what the source declares, never about how its lines terminate.
+ */
+const readSource = (path: string) =>
+  readFileSync(join(monorepoRoot, path), "utf-8").replace(/\r\n/g, "\n");
 
 /* ─── Fixtures ────────────────────────────────────────────── */
 
