@@ -1,0 +1,11 @@
+{
+  "_note": "Merchant identity for the PayMongo review surfaces. The registration and address fields come from ADVO's DTI/SEC paperwork and are NOT invented here — they stay the literal string \"TBD\" until Prince supplies them, which keeps bench:paymongo honestly red rather than falsely green.",
+  "trade_name": "ADVO",
+  "legal_name": "TBD",
+  "registration_number": "TBD",
+  "registration_body": "TBD",
+  "business_address": "TBD",
+  "support_email": "contact@advo.ph",
+  "support_phone": "TBD",
+  "effective_date": "2026-08-23"
+}
