@@ -187,13 +187,15 @@ Host: `advo`. Remote: `/opt/advo`. PM2: `advo-api` (`/opt/advo/apps/api`). Web: 
 ssh advo "sudo -u postgres pg_dump -Fc advo > /var/backups/advo/advo_$(date +%Y%m%d).dump"
 ```
 
+Deploys `origin/main`, **not your working tree** — commit and push first. `/opt/advo` is a checkout of the same origin, so the API deploy is `git fetch` + `git reset --hard origin/main` + `pm2 restart`; the web bundle is built locally and swapped into `/var/www/advo/dist` with the previous tree kept as `dist.prev-<stamp>`. There is no `pm2 stop`, so a failed transport cannot leave prod down. Detail in [docs/SETUP.md](./docs/SETUP.md).
+
 > `advo` is the SSH alias for this VPS (`62.146.237.12`). Add `Host advo` to `~/.ssh/config` — see [docs/SETUP.md](./docs/SETUP.md).
 
 ## Project Structure
 
 ```
 advo/                          # Monorepo root (npm workspaces)
-├── deploy.sh                  # VPS deploy (host advo; --api-only / --frontend-only)
+├── deploy.sh                  # VPS deploy — git reset on the box (host advo; --api-only / --frontend-only)
 ├── apps/
 │   ├── web/                   # Frontend (React/Vite)
 │   │   ├── src/

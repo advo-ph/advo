@@ -152,11 +152,21 @@ Monorepo cutover is done (see [CUTOVER.md](./CUTOVER.md)). Live API cwd is `/opt
 ./deploy.sh --api-only
 ./deploy.sh --frontend-only
 
-# Override host if needed:
+# Override host / branch if needed:
 VPS_SSH=advo ./deploy.sh
+DEPLOY_BRANCH=main ./deploy.sh
 ```
 
-The script rsyncs the monorepo (does not clobber `apps/api/.env` or `apps/web/.env.production`), restarts PM2 `advo-api` from `/opt/advo/apps/api`, builds web locally with `VITE_API_URL=https://api.advo.ph`, and rsyncs `apps/web/dist/` → `/var/www/advo/dist/`.
+**The deploy ships `origin/<branch>` (default `main`), not your working tree.** `/opt/advo` is a checkout of the same origin, so the API deploy is `git fetch` + `git reset --hard origin/main` on the box, then `npm install --workspace apps/api` and `pm2 restart advo-api --update-env`. Commit and push before deploying — the script refuses to run when `HEAD` is not `origin/<branch>` (override with `DEPLOY_ANY_HEAD=1`) and warns when the tree is dirty.
+
+The web half builds locally with `VITE_API_URL=https://api.advo.ph`, is verified to reference `api.advo.ph`, ships over SSH into `/var/www/advo/dist.new-<stamp>`, is verified again on the box, and is then swapped into place — the replaced tree is kept as `dist.prev-<stamp>`.
+
+Two ordering guarantees, both from the 2026-08-19 outage (see [HANDOFF.md](HANDOFF.md)):
+
+- **There is no `pm2 stop`.** `pm2 restart` is the only lifecycle call and it runs only after the new code is on disk, so a transport failure can no longer leave the API stopped.
+- **The live web tree is swapped, never written in place**, so a partial upload is never what nginx serves.
+
+`apps/api/.env` and `apps/web/.env.production` are untracked on the box, so `git reset --hard` leaves them alone; both are copied to `/var/tmp/advo-backup/` before the reset regardless, along with a tarball of `/opt/advo`. Rollback commands are printed if the post-deploy health check is not 200.
 
 `apps/api/deploy.sh` forwards to `./deploy.sh --api-only`. Do not use the legacy `advo-api` repo script except for rollback.
 
