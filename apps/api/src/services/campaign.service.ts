@@ -24,7 +24,13 @@ import { randomBytes } from "node:crypto";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { db } from "../db/connection.js";
-import { campaign, campaignRecipient, emailSuppression, lead } from "../db/schema.js";
+import {
+  campaign,
+  campaignRecipient,
+  emailSoftBounce,
+  emailSuppression,
+  lead,
+} from "../db/schema.js";
 import { isOutreachConfigured, sendOutreachEmail, wrapOutreach } from "./email.service.js";
 import { createLogger } from "../utils/logger.js";
 
@@ -367,6 +373,110 @@ export async function sendCampaign(
     "Campaign send pass complete",
   );
   return { campaignId, sentCount, failedCount, skippedCount, isComplete };
+}
+
+// ─── Soft-bounce escalation ──────────────────────────
+//
+// A hard bounce is self-announcing: one report, one suppression. A soft bounce is the
+// dangerous one because each individual instance is forgivable — a full mailbox, a
+// greylist, a temporary reject — and retrying them against a warming domain is the most
+// reliable way to get a sender blocked. Until now `soft_bounce_limit` was an enum arm
+// nothing could ever write; this is the counter that makes it reachable.
+//
+// RESET, deliberately absent: a mature ESP counts CONSECUTIVE failures and zeroes the
+// count on a successful delivery. We receive no delivery event — campaignRecipient.status
+// "sent" means handed to the transport, not delivered — so resetting on it would zero the
+// counter for exactly the accept-then-defer addresses this is meant to catch. The count is
+// therefore cumulative, which errs toward suppressing sooner rather than later. When a
+// delivery webhook is wired, the reset belongs there and nowhere else.
+
+/**
+ * Soft bounces tolerated per address before it joins the do-not-send list.
+ *
+ * Three, not five: the industry default assumes an established sender with reputation to
+ * spend. ADVO's outreach domain is warming and has none, so the cheap mistake is
+ * suppressing a recoverable address and the expensive one is being blocked. Single-source
+ * and named so the policy is legible in the log line and settable in one place.
+ */
+export const SOFT_BOUNCE_LIMIT = 3;
+
+/**
+ * Increment the address's cumulative soft-bounce count and return the value AFTER this
+ * bounce. The address is normalized before it is written — chk_email_soft_bounce_email_lower
+ * (migration 020) rejects it otherwise — so the plain-column upsert IS case-insensitive. The
+ * conflict on idx_email_soft_bounce_email is what makes the increment safe: two ESP webhooks
+ * landing at once increment twice rather than racing to insert two rows that each count one.
+ */
+export async function bumpSoftBounceCount(email: string): Promise<number> {
+  const [row] = await db()
+    .insert(emailSoftBounce)
+    .values({ email: normalizeEmail(email), softBounceCount: 1, lastSoftBounceAt: new Date() })
+    .onConflictDoUpdate({
+      target: emailSoftBounce.email,
+      set: {
+        softBounceCount: sql`${emailSoftBounce.softBounceCount} + 1`,
+        lastSoftBounceAt: new Date(),
+        updatedAt: new Date(),
+      },
+    })
+    .returning({ softBounceCount: emailSoftBounce.softBounceCount });
+
+  return row?.softBounceCount ?? 0;
+}
+
+export type SoftBounceResult = {
+  email: string;
+  softBounceCount: number;
+  /** True once the address is on the do-not-send list — including on a repeat past it. */
+  isSuppressed: boolean;
+};
+
+/**
+ * Record one soft bounce and escalate to a permanent suppression at the limit.
+ *
+ * IDEMPOTENT PAST THE LIMIT, which is not decoration: an ESP retries a webhook it did not
+ * see acknowledged, so the fourth, fifth and sixth soft bounce for an address already
+ * suppressed at three all arrive here. Each one increments the count and re-suppresses;
+ * suppress() is an onConflictDoNothing upsert, so re-suppressing is a no-op rather than a
+ * unique-violation, and the caller gets isSuppressed true every time instead of a 500 that
+ * makes the ESP retry harder.
+ */
+export async function recordSoftBounce(
+  email: string,
+  campaignId?: number,
+): Promise<SoftBounceResult> {
+  const softBounceCount = await bumpSoftBounceCount(email);
+
+  if (softBounceCount < SOFT_BOUNCE_LIMIT) {
+    log.info({ email, softBounceCount, limit: SOFT_BOUNCE_LIMIT }, "Soft bounce recorded");
+    await db()
+      .update(campaignRecipient)
+      .set({ status: "failed", updatedAt: new Date() })
+      .where(
+        and(
+          sql`lower(${campaignRecipient.email}) = ${normalizeEmail(email)}`,
+          eq(campaignRecipient.status, "sent"),
+        ),
+      );
+    return { email, softBounceCount, isSuppressed: false };
+  }
+
+  await suppress(
+    email,
+    "soft_bounce_limit",
+    campaignId,
+    `${softBounceCount} soft bounces reported by transport (limit ${SOFT_BOUNCE_LIMIT})`,
+  );
+  await db()
+    .update(campaignRecipient)
+    .set({ status: "bounced", updatedAt: new Date() })
+    .where(sql`lower(${campaignRecipient.email}) = ${normalizeEmail(email)}`);
+
+  log.warn(
+    { email, softBounceCount, limit: SOFT_BOUNCE_LIMIT },
+    "Soft-bounce limit reached — address suppressed",
+  );
+  return { email, softBounceCount, isSuppressed: true };
 }
 
 /** Record a hard bounce or complaint from the ESP and suppress the address. */

@@ -107,6 +107,39 @@ Both lane plans pass the parcel contracts: `lane-plan-check.mjs` → PASS, `warp
 
 ---
 
+## 2026-08-23 — soft-bounce escalation: the unreachable enum arm is now reachable
+
+> Closes the second 2026-08-18 campaign open-item. `soft_bounce_limit` had been a suppression reason that nothing on earth could write.
+
+**The gap.** Migration 015 shipped `suppression_reason` with five arms. Four were writable — an unsubscribe click, the delivery-failure callback's `hard_bounce` and `complaint`, an operator's `manual`. The fifth, `soft_bounce_limit`, appeared in exactly two places in the repo: the enum, and the reason union in `suppress()`'s own signature. No call site. The delivery-failure route's zod enum did not even accept `soft_bounce`, so an ESP reporting one got a 400.
+
+**Why it mattered before the first send, not after.** A hard bounce is self-announcing: one report, one suppression, done. A soft bounce is the dangerous one precisely because each instance is individually forgivable — a full mailbox, a greylist, a temporary reject — and retrying them against a warming domain is the most reliable way to get a sender blocked. The mechanism had to exist before the first campaign, because after it the reputation damage is already priced in.
+
+**What shipped**
+- **Migration 020** — `email_soft_bounce`, keyed on the address. 019 was left untouched for the drift lane.
+- **`SOFT_BOUNCE_LIMIT = 3`** in `campaign.service.ts` — a named single-source constant, not an inline number. Three rather than the industry five: the industry default assumes an established sender with reputation to spend, and the outreach domain has none.
+- **`recordSoftBounce()`** — upserts the counter, and at the limit calls `suppress(email, "soft_bounce_limit", …)`. That enum arm now has a producer.
+- **Route** — `POST /api/campaign/delivery-failure` accepts `soft_bounce` alongside the two terminal kinds, and returns the **real** outcome. It used to hard-code `isSuppressed: true`, which was accurate while every kind was terminal; a soft bounce under the limit is not suppressed, and the response now says so and reports `softBounceCount` / `softBounceLimit`.
+- **Six behavioural tests + four wiring tests** in `campaign.test.ts` (383/383 suite green).
+
+**Three decisions worth arguing with**
+1. **The count belongs to the ADDRESS, not the recipient row.** `campaign_recipient` was the cheaper place for an integer and would have been wrong: the count would reset at every campaign boundary, so an address soft-bouncing twice per campaign forever would sit at 2 and never escalate. That is exactly the address that must escalate.
+2. **The count is CUMULATIVE, not consecutive.** A mature ESP resets on a successful delivery. Nothing here receives a delivery event — `status = "sent"` means handed to the transport — so resetting on it would zero the counter for precisely the accept-then-defer addresses this catches. Cumulative errs toward suppressing sooner, never later. **When a delivery webhook lands, the reset belongs there and nowhere else.**
+3. **Normalization is a DB CHECK here, not a convention.** Migration 015 used a `lower(email)` expression index and trusted the app to normalize. `ON CONFLICT` can only infer a plain-column index through the query builder, so 020 puts uniqueness on the bare column and enforces `email = lower(email)` as a constraint. Same guarantee, arrived at from the other side — a non-normalized write is now rejected rather than merely deduplicated.
+
+**Bench** — `npm run bench:bounce` 8/8, red-proved at 1/8 on the untouched tree (only `suppression-still-a-gate`, which asserts the v1 invariant this lane must not break). `bench/roadmap/final/campaign.mjs` still 17/17: the v1 invariant that suppression is re-checked *inside* the send loop survived the change.
+
+**Verified against real Postgres**, not only the test stand-in: driven against `advo_bounce`, five reports for one address gave `count=1,2,3,4,5` with `suppressed=false,false,true,true,true`, one `soft_bounce_limit` row, no error on the retries past the limit, and an uppercase input counted as the same address.
+
+### Honest open-items
+- **Still nothing has been sent.** This lane shipped escalation, not clearance. Every 2026-08-18 transport item stands: no outreach subdomain, no SPF/DKIM/DMARC, no warm-up ramp, no provider whose ToS permits the list.
+- **No ESP webhook calls the endpoint.** All three kinds are now accepted and correct, and all three are still driven by hand until a webhook is wired. That is the remaining half of the original open-item.
+- **The endpoint is unauthenticated for the ESP's benefit and nothing verifies the caller.** A signed-webhook check belongs on it before it is exposed to a real provider — anyone who can reach it can suppress an arbitrary address.
+- **No reset path**, by decision 2 above. The counter only rises until a delivery event exists to reset it.
+- **No admin surface for the counter.** `softBounceCount` is returned by the callback but is not rendered anywhere; an operator cannot see which addresses are one bounce from suppression without a query.
+
+---
+
 ## 2026-08-19 — final tier deployed; rsync replaced with git pull
 
 > The `final` tier (web / resilience / proposal / campaign) is **live on prod**. The 2026-08-16 "deploy blocked" item is closed. Pushed `976a64a`.
@@ -152,8 +185,8 @@ Both lane plans pass the parcel contracts: `lane-plan-check.mjs` → PASS, `warp
 - Needs an outreach subdomain (e.g. `outreach.advo.ph`) with its own SPF/DKIM/DMARC, plus a warm-up ramp before any volume.
 - Resend's ToS prohibits scraped lists — the outreach transport likely needs a different provider than the transactional one.
 - RA 10173 questions are now item 8 on the CONTRACTS.md legal punch list and are **unanswered**.
-- Bounce/complaint arrives via `POST /api/campaign/delivery-failure`; no ESP webhook is wired to it yet, so suppression from bounces is manual until that is connected.
-- Soft-bounce escalation is modelled in the enum (`soft_bounce_limit`) but no counter increments it yet.
+- Bounce/complaint/soft-bounce all arrive via `POST /api/campaign/delivery-failure`; no ESP webhook is wired to it yet, so suppression from bounces is still manual until that is connected. The endpoint is ready for one; nothing calls it.
+- ~~Soft-bounce escalation is modelled in the enum (`soft_bounce_limit`) but no counter increments it yet.~~ **Closed 2026-08-23** — migration 020, see the entry at the top of this file.
 
 ---
 

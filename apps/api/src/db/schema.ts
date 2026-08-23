@@ -745,6 +745,32 @@ export const emailSuppression = pgTable(
   (t) => [uniqueIndex("idx_email_suppression_email").on(t.email)],
 );
 
+// ─── Soft-bounce counter (migration 020) ─────────────
+//
+// Keyed on the ADDRESS, deliberately, not on campaign_recipient. A per-recipient counter
+// resets at every campaign boundary, so the address that soft-bounces twice per campaign
+// forever would never cross a threshold — and that is precisely the address that has to.
+//
+// The count is CUMULATIVE, never reset. Nothing in this repo receives a delivery event
+// (status = "sent" means handed to the transport, not delivered), so a consecutive-failure
+// counter cannot be implemented honestly yet. Cumulative errs toward suppressing sooner.
+//
+// The threshold lives in campaign.service.ts as SOFT_BOUNCE_LIMIT, not in a column: no
+// already-written suppression changes meaning when the policy is retuned.
+
+export const emailSoftBounce = pgTable(
+  "email_soft_bounce",
+  {
+    emailSoftBounceId: bigserial("email_soft_bounce_id", { mode: "number" }).primaryKey(),
+    email: varchar("email", { length: 255 }).notNull(),
+    softBounceCount: integer("soft_bounce_count").notNull().default(0),
+    lastSoftBounceAt: timestamp("last_soft_bounce_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("idx_email_soft_bounce_email").on(t.email)],
+);
+
 // ─── Project sign-off (migration 016) ────────────────
 //
 // The CLIENT-FACING final-delivery document. NOT deliverable.verifiedAt, which is
