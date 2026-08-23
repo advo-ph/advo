@@ -140,6 +140,61 @@ Both lane plans pass the parcel contracts: `lane-plan-check.mjs` → PASS, `warp
 
 ---
 
+## 2026-08-23 — outreach DNS preflight (lane `outreach`)
+
+The campaign sender was 17/17 and had never sent anything. The missing piece was never a
+mechanism — it was clearance: an outreach subdomain whose SPF, DKIM and DMARC actually
+resolve. `isOutreachConfigured()` only ever proved that SMTP env vars were present, and env
+present + DNS absent is precisely the state that gets a domain blocked on its first campaign.
+
+- **`scripts/outreach-preflight.mjs`** — `npm run outreach:preflight`. Live TXT lookups, not a
+  config-presence check:
+  - **SPF** — exactly one `v=spf1` on the outreach domain. Two records is a PermError, which
+    receivers treat as no SPF at all, so a second record fails rather than passes.
+  - **DKIM** — `<selector>._domainkey.<domain>`, with the selector from
+    `OUTREACH_DKIM_SELECTOR`. No default: a guessed selector checks the wrong name. A record
+    present with an empty `p=` (a revoked key) fails — it signs nothing.
+  - **DMARC** — `_dmarc.<domain>`, with `p=` surfaced. `p=none` passes but is called out as
+    publishing a record and enforcing nothing. If the subdomain has no record of its own, the
+    org policy that would apply by inheritance is reported in the failure so it is actionable.
+  - **Separation** — an outreach domain equal to the transactional one is refused outright.
+    `advo.ph` carries client magic-links; a blocked outreach domain must not take logins with it.
+  - Exits non-zero on any failure, so it gates rather than informs.
+- **The verdict is written down** — `docs/outreach-preflight.json` records the records found,
+  the domain, and the timestamp, so "is the domain cleared?" still has an answer after the
+  terminal closes.
+- **The sender reads it.** `outreachDnsVerification()` / `isOutreachDnsVerified()` in
+  `email.service.ts` clear a send only when the recorded preflight **passed**, for the domain
+  `OUTREACH_FROM` names **right now**, within **30 days**. `sendOutreachEmail()` throws
+  otherwise, and `sendCampaign()` refuses up front rather than flipping 5000 rows to `failed`
+  one at a time. `isOutreachConfigured()` is deliberately unchanged — configured and cleared
+  are two different questions and the UI needs to say which is missing.
+- **No per-send DNS call.** A resolver call inside the send loop would let a transient SOA
+  timeout stop a campaign mid-flight. The committed artifact is the answer; it expires instead.
+- **Surface** — `/admin` → Campaigns shows a red "outreach domain is not DNS-verified" banner,
+  with the specific reason and the command to fix it, distinct from the existing amber
+  "no transport configured" one.
+- **Bench** — `npm run bench:outreach` 8/8 (was 0/8). `bench/roadmap/final/campaign.mjs` still
+  17/17, `bench:roadmap-remain` still 35/35.
+- **Proved live** — `resend.com`/`resend` clears 6/6; `google.com`/`20230601` correctly fails on
+  a revoked (empty `p=`) key; `advo.ph` as the outreach domain is refused for equality.
+
+### Honest open-items
+- **Still nothing sent, and now the refusal is enforced rather than advised.** The
+  `outreach.advo.ph` subdomain does not exist yet — the recorded preflight is 0/3 because
+  `OUTREACH_FROM` is unset everywhere, including prod.
+- `advo.ph` has **no SPF record at all** (`ENODATA`). Unrelated to outreach, but it means
+  transactional mail is unauthenticated today.
+- The preflight is not wired into CI or the deploy, and nothing re-runs it on the 30-day
+  expiry — an operator has to run it. A scheduled run that keeps the artifact fresh is the
+  obvious next step.
+- No warm-up ramp is enforced. Clearance is not reputation; the first campaign on a new
+  subdomain still needs volume staged by hand.
+- Still blocked on the RA 10173 questions in CONTRACTS.md and on an ESP whose ToS permits the
+  list — Resend's does not.
+
+---
+
 ## 2026-08-19 — final tier deployed; rsync replaced with git pull
 
 > The `final` tier (web / resilience / proposal / campaign) is **live on prod**. The 2026-08-16 "deploy blocked" item is closed. Pushed `976a64a`.
@@ -161,7 +216,7 @@ Both lane plans pass the parcel contracts: `lane-plan-check.mjs` → PASS, `warp
 ### Honest open-items
 - **`deploy.sh` should stop using rsync from Windows.** Rewrite it around the `git pull` path above, and move the `pm2 stop` to *after* the sync so a transport failure cannot take prod down. Until then, do not run it from this box.
 - **Prod has no `PLAUD_TOKEN` and no `ANTHROPIC_API_KEY`** (`config.isPlaudTokenConfigured` / `isAnthropicKeyConfigured` both `false`). Folder watch and Ask Plaud stay latched off; contract review, meeting-to-task, timeline suggest, and the new proposal generator all run their fallback path.
-- **No outreach transport configured** — campaign sending is refused by design. Needs the `outreach.advo.ph` subdomain + DNS first, and the RA 10173 questions answered.
+- **No outreach transport configured** — campaign sending is refused by design. Needs the `outreach.advo.ph` subdomain + DNS first, and the RA 10173 questions answered. The DNS half is now checkable: `npm run outreach:preflight` resolves SPF/DKIM/DMARC live and the sender refuses until it passes.
 - Pre-existing prod ownership bug is wider than the new tables: the app role also cannot `pg_dump` `change_order`. Worth a sweep of `ALTER TABLE ... OWNER TO advo` across the schema.
 - `package-lock.json` shows as modified on the box after every `npm install`; harmless churn, but `git pull` will need `--autostash` or a reset next time.
 - Backups from this deploy: `/var/tmp/advo-backup/advo-pre-015-*.dump`, `opt-advo-pre-pull-*.tar.gz`, and `/var/www/advo/dist.prev-*`. Clean up once this is proven stable.
@@ -182,7 +237,8 @@ Both lane plans pass the parcel contracts: `lane-plan-check.mjs` → PASS, `warp
 
 ### Honest open-items
 - **Nothing has been sent.** No outreach transport is configured anywhere, including prod. The lane shipped the mechanism, not the clearance.
-- Needs an outreach subdomain (e.g. `outreach.advo.ph`) with its own SPF/DKIM/DMARC, plus a warm-up ramp before any volume.
+- Needs an outreach subdomain (e.g. `outreach.advo.ph`) with its own SPF/DKIM/DMARC, plus a warm-up ramp before any volume. **The clearance is now enforced, not just advised** — see the preflight section below.
+- `advo.ph` itself has **no SPF record** today (`ENODATA` on the TXT lookup). That is a transactional-mail problem independent of outreach, and worth fixing on its own.
 - Resend's ToS prohibits scraped lists — the outreach transport likely needs a different provider than the transactional one.
 - RA 10173 questions are now item 8 on the CONTRACTS.md legal punch list and are **unanswered**.
 - Bounce/complaint/soft-bounce all arrive via `POST /api/campaign/delivery-failure`; no ESP webhook is wired to it yet, so suppression from bounces is still manual until that is connected. The endpoint is ready for one; nothing calls it.

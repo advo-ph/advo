@@ -12,7 +12,7 @@
  *   4. honest dry-run     — preview counts post-suppression and sends nothing
  */
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -65,6 +65,85 @@ describe("Campaign — outreach transport separation", () => {
     process.env.OUTREACH_FROM = "ADVO <hello@outreach.advo.ph>";
     const { outreachConfig } = await import("../../../api/src/services/email.service.js");
     expect(outreachConfig()?.from).not.toContain("noreply@advo.ph");
+  });
+});
+
+describe("Campaign — outreach DNS clearance", () => {
+  const ORIGINAL = { ...process.env };
+  const ARTIFACT = join(monorepoRoot, "docs/outreach-preflight.json");
+  let saved: string | null = null;
+
+  beforeEach(() => {
+    process.env.OUTREACH_SMTP_HOST = "smtp.example.test";
+    process.env.OUTREACH_FROM = "ADVO <hello@outreach.advo.ph>";
+    saved = existsSync(ARTIFACT) ? readFileSync(ARTIFACT, "utf-8") : null;
+    vi.resetModules();
+  });
+
+  afterEach(() => {
+    if (saved === null) rmSync(ARTIFACT, { force: true });
+    else writeFileSync(ARTIFACT, saved, "utf-8");
+    process.env = { ...ORIGINAL };
+  });
+
+  const writeArtifact = (patch: Record<string, unknown>) =>
+    writeFileSync(
+      ARTIFACT,
+      JSON.stringify({
+        preflight: "outreach-preflight",
+        checkedAt: new Date().toISOString(),
+        domain: "outreach.advo.ph",
+        passed: true,
+        count: { passed: 6, failed: 0, total: 6 },
+        check: [],
+        ...patch,
+      }),
+      "utf-8",
+    );
+
+  it("treats a fully configured transport with a failing preflight as unverified", async () => {
+    writeArtifact({ passed: false, count: { passed: 4, failed: 2, total: 6 } });
+    const { isOutreachConfigured, isOutreachDnsVerified } = await import(
+      "../../../api/src/services/email.service.js"
+    );
+    // The dangerous state: env present, DNS absent. Configured must not imply cleared.
+    expect(isOutreachConfigured()).toBe(true);
+    expect(isOutreachDnsVerified()).toBe(false);
+  });
+
+  it("REFUSES to send when the domain has no DNS clearance", async () => {
+    writeArtifact({ passed: false });
+    const { sendOutreachEmail } = await import("../../../api/src/services/email.service.js");
+    await expect(sendOutreachEmail("someone@example.test", "hi", "<p>hi</p>")).rejects.toThrow(
+      /not DNS-verified/i,
+    );
+  });
+
+  it("does not accept a clearance recorded for a different domain", async () => {
+    writeArtifact({ domain: "outreach.example.test" });
+    const { outreachDnsVerification } = await import(
+      "../../../api/src/services/email.service.js"
+    );
+    const verification = outreachDnsVerification();
+    expect(verification.isVerified).toBe(false);
+    expect(verification.reason).toMatch(/outreach\.example\.test/);
+  });
+
+  it("expires a clearance rather than trusting it forever", async () => {
+    const longAgo = new Date(Date.now() - 400 * 86_400_000).toISOString();
+    writeArtifact({ checkedAt: longAgo });
+    const { outreachDnsVerification } = await import(
+      "../../../api/src/services/email.service.js"
+    );
+    const verification = outreachDnsVerification();
+    expect(verification.isVerified).toBe(false);
+    expect(verification.reason).toMatch(/stale/i);
+  });
+
+  it("clears the send only when the preflight passed for this exact domain, recently", async () => {
+    writeArtifact({});
+    const { isOutreachDnsVerified } = await import("../../../api/src/services/email.service.js");
+    expect(isOutreachDnsVerified()).toBe(true);
   });
 });
 

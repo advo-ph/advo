@@ -1,0 +1,37 @@
+{
+  "preflight": "outreach-preflight",
+  "checkedAt": "2026-08-23T11:36:32.530Z",
+  "domain": null,
+  "transactionalDomain": "advo.ph",
+  "selector": null,
+  "passed": false,
+  "isEnforcing": false,
+  "count": {
+    "passed": 0,
+    "failed": 3,
+    "total": 3
+  },
+  "check": [
+    {
+      "id": "outreach-domain-resolved",
+      "title": "An outreach domain is configured",
+      "passed": false,
+      "detail": "OUTREACH_FROM is unset or carries no @domain. Nothing can be checked without it.",
+      "record": []
+    },
+    {
+      "id": "dkim-selector-configured",
+      "title": "A DKIM selector is configured",
+      "passed": false,
+      "detail": "OUTREACH_DKIM_SELECTOR is unset. DKIM is selector-scoped and there is no safe default — set the selector the ESP issued (Resend uses resend, Google Workspace google).",
+      "record": []
+    },
+    {
+      "id": "separate-from-transactional",
+      "title": "The outreach domain is distinct from the transactional one",
+      "passed": false,
+      "detail": "Outreach sends from (unset), transactional from advo.ph.",
+      "record": []
+    }
+  ]
+}

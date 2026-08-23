@@ -23,6 +23,8 @@ type Preview = {
   recipientCount: number;
   suppressedCount: number;
   isOutreachConfigured: boolean;
+  isOutreachDnsVerified: boolean;
+  dnsUnverifiedReason: string | null;
   sample: { name: string; email: string; company: string | null }[];
 };
 
@@ -156,6 +158,24 @@ const AdminCampaign = () => {
           <code className="rounded bg-amber-100 px-1">OUTREACH_FROM</code> on the API. Sending is
           refused until then — it deliberately does not fall back to the transactional mailer that
           carries client login links.
+        </div>
+      )}
+
+      {/* Configured but not cleared is the dangerous state: the transport would connect and the
+          mail would go out unauthenticated. Say so separately from "not configured". */}
+      {preview && preview.isOutreachConfigured && !preview.isOutreachDnsVerified && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+          <strong className="font-semibold">Outreach domain is not DNS-verified.</strong> The
+          transport is configured, but SPF, DKIM and DMARC have not been confirmed to resolve for
+          the sending domain — sending now is how a domain gets blocked on its first campaign.
+          Sending stays refused.
+          {preview.dnsUnverifiedReason && (
+            <p className="mt-2 text-red-800">{preview.dnsUnverifiedReason}</p>
+          )}
+          <p className="mt-2 text-red-800">
+            Run <code className="rounded bg-red-100 px-1">npm run outreach:preflight</code> to check
+            the records and record the result.
+          </p>
         </div>
       )}
 
