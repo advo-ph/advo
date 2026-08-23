@@ -494,6 +494,22 @@ API: `GET/POST /api/project-signoff`, `GET/PATCH /api/project-signoff/:id`, `POS
 
 ---
 
+### schema_migration
+
+One row per migration file a database has applied. Written by `019_schema_ledger.sql` and by every migration after it; read by `scripts/migration-drift.mjs`. **No API route touches it** — the app has no business editing its own deploy history.
+
+| Column                | Type           | Description                                                                                                    |
+| --------------------- | -------------- | -------------------------------------------------------------------------------------------------------------- |
+| `schema_migration_id` | BIGSERIAL (PK) |                                                                                                                  |
+| `filename`            | VARCHAR(255)   | Exactly as named in `apps/api/migrations`, e.g. `005_expense.sql`. UNIQUE.                                        |
+| `applied_at`          | TIMESTAMPTZ    | On a backfilled row this is when the ledger was created, **not** when the migration ran — read as "known applied by". |
+| `is_backfilled`       | BOOLEAN        | True when inferred from a sentinel object rather than written as the migration ran.                              |
+| `created_at`          | TIMESTAMPTZ    |                                                                                                                  |
+
+The ordinal in `filename` is data, not order: a database can hold 018 and not 005, and that hole is the whole reason the table exists.
+
+---
+
 ## Migration log
 
 Drizzle-kit `push` syncs `schema.ts` → Postgres. For schema changes that need explicit SQL (ON DELETE alterations, COMMENTs, conditional adds), a raw migration file lives in `apps/api/migrations/NNN_descriptive.sql` and is applied directly via `psql`, then mirrored back into `schema.ts`.
@@ -512,3 +528,20 @@ Drizzle-kit `push` syncs `schema.ts` → Postgres. For schema changes that need 
 | `016_project_signoff.sql` | 2026-08-19 | Created `project_signoff` + `signoff_revision` — the CLIENT-FACING final-delivery document the FourlinQ MOA names 5 times (final payment due on signing with 7 days to pay; all free revisions used before signing; unused rounds invocable 6 months after). Distinct from `deliverable.verified_at` (internal QA). `status`/`signed_method` app-validated varchar, money in integer cents, two partial unique indexes (one open sign-off per project; no duplicate title), UNIQUE `(project_signoff_id, round_number)` as the revision double-spend guard. used/remaining and every clock are DERIVED at read time. Signing is one transaction guarded by `UPDATE ... WHERE signed_at IS NULL RETURNING`, which mints the final-payment invoice exactly once. |
 | `017_recurring_fee.sql` | 2026-08-19 | Created `recurring_fee` + `recurring_fee_status` ENUM and ALTERed `invoice` with two nullable columns (`recurring_fee_id` SET NULL, `period_start_on` DATE) — the FIRST recurring money in the repo, backing the FourlinQ MOA ₱3,000.00/month infrastructure fee billed on the 1st with a 15-day suspension window. **No parallel billing system** and **no new `invoice_status` value**: the generated charge IS an `invoice` row. Every billing anchor is DATE (Asia/Manila), never timestamptz. Double-billing is blocked by the partial UNIQUE `(recurring_fee_id, period_start_on) WHERE recurring_fee_id IS NOT NULL` plus `onConflictDoNothing`; catch-up is bounded by `MAX_CATCHUP_PERIOD = 24`. `billing_day_of_month` CHECKed 1..28 so no month skips. Suspension is DERIVED at read time — `suspended_at` is written only by an explicit admin POST that 409s when unjustified, and nothing auto-suspends hosting. `DELETE /api/invoices/:id` now 409s for a generated invoice so a billed period cannot be orphaned. |
 | `018_commission_split.sql` | 2026-08-19 | Created `commission_plan` + `commission_share` — the FIRST model of how ADVO pays itself (Prince, 2026-06-19: 60% developer / 25% staff / 15% company; staff sub-split 28/24/24/24 referral/marketing/accounting/management). Every percentage is integer BASIS POINTS stored **as columns on the plan**, snapshotted per project, so renegotiating the structure can never rewrite an already-finalized plan. The 15% company reserve is a real share row with `team_member_id` NULL, which is what makes `SUM(share.amount_cents) = plan.basis_cents` provable with no residue. Rounding is largest-remainder (Hamilton) applied recursively and exact at every level — no centavo is lost, invented, or absorbed; cents belonging to an unheld role surface as `unallocatedCents` and block finalize. `amount_cents` is NULL while draft (derived on read) and frozen at finalize, which is atomic and single-shot via `UPDATE ... WHERE finalized_at IS NULL RETURNING`. Cardinality (1 main developer, 1 assistant, 1 company reserve, 1 live plan per project) is enforced by partial unique indexes. `team_member_id` is `ON DELETE RESTRICT`, diverging from the house CASCADE on purpose. **No payout, no disbursement, no scheduler** — a finalized plan states who is owed what; moving the money is a separate human act. |
+| `019_schema_ledger.sql` | 2026-08-23 | Created `schema_migration` — the first record this repo keeps of what a database has actually seen. Prod's health payload carried `relation "expense" does not exist` on 2026-08-19 while 012–015 were on the box: `005_expense.sql` had been skipped and nothing could say so, because migrations are applied by hand and the only evidence one ran was the schema it left behind. **The backfill is deliberately not a blanket insert** — each of the 18 prior rows is gated on a SENTINEL (the table, column or FK action that migration creates), so a database missing `expense` gets no 005 row and reports the gap instead of being handed a clean bill. `is_backfilled` marks an inferred row, whose `applied_at` means "known applied by", never "applied at". Mirrored into `schema.ts` because `db:push` drops what that file does not declare. Checked by `npm run migration:drift`. |
+
+### Which migration has this database seen?
+
+```bash
+npm run migration:drift                          # target: apps/api/.env DATABASE_URL
+npm run migration:drift -- --url postgres://…    # target: an explicit database
+npm run migration:drift -- --json                # machine-readable, for a deploy gate
+```
+
+Exit `0` clean · `1` drift · `2` could not check. Three findings, and the distinction matters:
+
+- **GAP** — unapplied, but a *later* migration is applied. The database moved past it. This is prod's `005_expense.sql`, and it is the alarming one.
+- **UNAPPLIED** — nothing later is applied either; an ordinary not-yet-deployed migration.
+- **ORPHAN** — recorded applied but no longer in the tree; a deleted or renamed migration.
+
+On a database that predates the ledger the detector reports no-ledger and exits `1`. Apply `019_schema_ledger.sql` first — its backfill is guarded, so it is safe on an existing box.
