@@ -8,6 +8,38 @@ Cross-links:
 - VPS deploy state → [CUTOVER.md](CUTOVER.md)
 - Schema reference → [SCHEMA.md](SCHEMA.md)
 - Contracts/policy → [CONTRACTS.md](CONTRACTS.md)
+- Brief for counsel → [LEGAL-BRIEF.md](LEGAL-BRIEF.md)
+
+---
+
+## 2026-08-23 — the legal packet: something you can actually send a lawyer
+
+> `docs/LEGAL-BRIEF.md`. `npm run bench:legal` 9/9 (was 0/9). Docs-only lane — no code, no migration, no API surface.
+
+**The problem this closes.** "Engage Philippine corporate/cyber lawyer" was the oldest ⏳ on the roadmap and the only P0 still open, and it had been open because it was framed as a hiring task. It isn't. The part that had never been done is *preparing what you hand one* — the questions were living as a 16-item punch list buried at the bottom of a 30KB policy document. Nobody can send that to counsel and get a bounded quote back.
+
+**What shipped.** One self-contained document a Philippine lawyer can price and answer without reading this repo or opening a single attachment:
+
+- **The live exposure is the first thing on the page** — that substantially this language already went to a client ahead of review. That is what turns the engagement from drafting into remediation, and it belongs above the fold, not in an appendix.
+- **All nine policies, each with its operative clause language quoted inline.** Counsel validates text, not a summary of text, so the packet carries the words that actually went out.
+- **49 numbered questions**, each phrased to be answerable *yes / no / yes-with-modification* — not "please review our contracts."
+- **The commercial figures**, because a payment clause cannot be judged without the money it governs: ₱45,000 / ₱70,000 tiers, the 50/50 milestone split, the ₱3,000/month infrastructure fee, and the honest note that these are five-figure engagements where the proportionate answer may differ from the optimal one.
+- **The RA 10173 outreach block carried over whole** — lawful basis for ~5K scraped clinic records, legitimate interest for B2B, first-contact notification, retention for an unconverted lead and for a permanently-suppressed address, NPC registration at this volume, unsubscribe-versus-erasure. Section 8 is marked separable because it is the half gating revenue.
+- **Both known defects in the sent contract** named as questions, not as regrets: the contradictory deemed-approval clock (10 days in the payment table, 15 + 15 in the revisions clause) and the fortuitous-events clause that is truncated mid-sentence in our copy.
+- **The instruments named** so counsel can scope: RA 10173, RA 8792, the Civil Code, RA 8293, RA 11967, and the Rules on Electronic Evidence — offered as a list to correct, not as an assertion of law.
+- **A bounded ask** — fixed fee, turnaround, whether the executed contract is needed to start, conflict check, and a range for the follow-on MSA.
+
+**What it deliberately does not contain.** Annex A is a table of nine blanks: entity legal name, registration particulars, registered address, signatory, correspondence address, the executed contract, the full fortuitous-events wording, and which tier the client selected. None of that is in this repo. Guessing a company identifier in a document going to counsel is the one failure mode that would make the whole packet worse than not sending it, so every one of them is marked **TODO — to be supplied**. The bench enforces this.
+
+**The sharpest question in it** is #18: whether "full ownership of all deliverables, including source files and codebases" on final payment silently transfers ADVO's reusable internal components. We have shipped the same internal scaffolding to more than one client under that language. That was an open question in the June draft, survived the August reconciliation unanswered, and is flagged in the packet as the one we are most worried about.
+
+**Honest open-items**
+
+- **No lawyer has been contacted.** The packet is written; nobody has sent it. The remaining work on this P0 is human — pick counsel, fill Annex A, send. The roadmap row stays ⏳ for exactly that reason.
+- **Annex A is still nine blanks.** They are not knowable from this repo. Someone with access to the corporate file has to fill them before the packet goes out.
+- **The executed 11 August contract has not been retrieved**, so questions 26 and 10–11 are asked against a copy we know to be incomplete.
+- **Nothing in the packet has been reviewed by a lawyer** — including its own assumptions about which statutes are engaged. That list is offered to counsel for correction, and question 49 explicitly invites them to tell us what we failed to ask.
+- **CONTRACTS.md and LEGAL-BRIEF.md can now drift.** The punch list is the source; the packet is built from it. A note in CONTRACTS.md says anything added there must be carried across, but nothing enforces it.
 
 ---
 

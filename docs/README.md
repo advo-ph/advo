@@ -11,4 +11,5 @@
 | [ROADMAP.md](./ROADMAP.md) | Product roadmap |
 | [HANDOFF.md](./HANDOFF.md) | Session handoff / open items |
 | [CONTRACTS.md](./CONTRACTS.md) | Contract policy draft |
+| [LEGAL-BRIEF.md](./LEGAL-BRIEF.md) | Sendable brief for a PH corporate/cyber lawyer — the nine policies, 49 closed-form questions, the engagement ask |
 | [CUTOVER.md](./CUTOVER.md) | Monorepo VPS cutover runbook |

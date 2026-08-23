@@ -217,6 +217,8 @@ The pivot the whole engagement turns on. Policies 1, 2 and 3 all reference it, a
 
 ## Open questions for the legal advisor
 
+> 📬 **These questions now exist as a sendable packet:** [LEGAL-BRIEF.md](LEGAL-BRIEF.md) — self-contained, quotes the operative clause language inline, carries the commercial figures a lawyer needs to judge a payment clause, and closes with the bounded engagement being requested. Send that; this list is the source it was built from. Anything added here must be carried across, or counsel answers a shorter list than we have.
+
 When the lawyer comes on (per Prince's Jun 2026 note), these are the open items they should weigh in on. Items 1–3 are new and urgent because the language is already in a client's hands.
 
 1. **Which deemed-approval clock governs?** The sent contract states 15 + 15 business days in the Revisions section and "10-day non-response" in the payment table. Which one binds, and how do we correct it on an executed contract?
