@@ -176,13 +176,22 @@ http_status() {
 WEB_STATUS="n/a"
 API_STATUS="n/a"
 
-for attempt in 1 2 3; do
+# Retry until BOTH probes are actually healthy, not merely answering. `pm2 restart` returns
+# as soon as the process is spawned, but `npx tsx` needs a few seconds more before it
+# listens — during which nginx answers 502. The old loop broke on any status that was not
+# 000, so it read that boot window as a failed deploy and reported red on a green ship
+# (observed 2026-08-24). A still-booting API and a dead one look identical for ~5s, so the
+# only honest way to tell them apart is to wait and ask again.
+for attempt in 1 2 3 4 5 6 7 8; do
   if $DEPLOY_FRONTEND; then WEB_STATUS="$(http_status "https://${DOMAIN}/")"; fi
   if $DEPLOY_API; then API_STATUS="$(http_status "https://api.${DOMAIN}/api/health")"; fi
-  if [[ "$WEB_STATUS" != "000" && "$API_STATUS" != "000" ]]; then
+  WEB_OK=true; API_OK=true
+  if $DEPLOY_FRONTEND && [[ "$WEB_STATUS" != "200" ]]; then WEB_OK=false; fi
+  if $DEPLOY_API && [[ "$API_STATUS" != "200" ]]; then API_OK=false; fi
+  if $WEB_OK && $API_OK; then
     break
   fi
-  if [[ $attempt -lt 3 ]]; then
+  if [[ $attempt -lt 8 ]]; then
     sleep 3
   fi
 done

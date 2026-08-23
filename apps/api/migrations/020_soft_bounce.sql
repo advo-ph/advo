@@ -54,6 +54,8 @@
 -- nothing to snapshot: no historical row's meaning changes when the policy is retuned. A
 -- suppression already written stays written whatever the limit becomes.
 
+BEGIN;
+
 CREATE TABLE IF NOT EXISTS email_soft_bounce (
     email_soft_bounce_id  BIGSERIAL PRIMARY KEY,
     email                 VARCHAR(255) NOT NULL,
@@ -80,3 +82,13 @@ CREATE TABLE IF NOT EXISTS email_soft_bounce (
 -- once each instead of racing to write two rows that each count to one.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_email_soft_bounce_email
     ON email_soft_bounce (email);
+
+-- This migration writes its own row as it runs, per the contract 019 set out: from 020
+-- on, application is recorded rather than inferred from a sentinel. Without this the
+-- drift detector reports 020 as unapplied on every database that HAS applied it — a
+-- false positive on its first real use, which is how a detector gets learned as noise.
+INSERT INTO schema_migration (filename, is_backfilled)
+VALUES ('020_soft_bounce.sql', false)
+ON CONFLICT (filename) DO NOTHING;
+
+COMMIT;
