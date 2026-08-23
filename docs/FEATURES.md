@@ -173,6 +173,51 @@ Paste a contract / SOW into the Contracts tab → `POST /api/contracts/review` (
 
 Generate a private, **20-minute** link to the project's `preview_url` to drop to a client mid-build. `POST /api/projects/:id/preview-link` (requireTeam) mints a signed HS256 token (reuses `JWT_SECRET`); the **public** `GET /api/preview/:token` verifies it and **302-redirects** to the preview, or shows a branded 410 gate page when expired. Host-agnostic (Vercel / Cloudflare Pages / here.now / VPS — ADVO just stores the URL and controls the link's lifetime). Clients can also **request** a preview from their Hub (see Client Portal) → logged to `activity_log` → the team sees it in this panel.
 
+#### Preview artifact upload + deploying providers
+
+The half that makes the seam real. `previewArtifactDir()` always named a directory, but
+nothing ever wrote one — so every deploying adapter found it empty, declined, and the
+seam fell back to `manual` forever.
+
+**`POST /api/projects/:id/preview-artifact`** (requireTeam) takes the build. Send
+`multipart/form-data` with one `file` entry per build file, each entry NAMED with its path
+relative to the build root:
+
+```bash
+curl -X POST https://api.advo.ph/api/projects/12/preview-artifact \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@dist/index.html;filename=index.html" \
+  -F "file=@dist/assets/app.js;filename=assets/app.js"
+```
+
+No zip, deliberately — extracting an archive server-side means a new dependency and a
+zip-slip surface to get wrong. Every path is validated and **refused** rather than
+sanitized (no `..` in any segment, no absolute / drive-letter / UNC path, no NUL); one bad
+path rejects the **whole** upload, because silently skipping a file turns a broken site
+into an apparently successful deploy. An artifact with no root `index.html` is refused as
+a wrong-directory mistake. The artifact is staged and swapped in atomically, so a partial
+upload is never what gets deployed. Caps: 2000 files / 200MB.
+
+`PREVIEW_HOST_PROVIDER` picks who deploys it — `manual` (default, today's behaviour),
+`cloudflare`, or `herenow`. A provider that is unconfigured, declines, or throws **falls
+back to manual** rather than losing a working feature; the response says so
+(`provider`, `fellBack`).
+
+**Cloudflare Pages** is the one deploying adapter whose credential ADVO can issue for
+itself (`CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_API_TOKEN` with *Cloudflare Pages: Edit* /
+`CLOUDFLARE_PAGES_PROJECT`). It POSTs the artifact to Pages' Create Deployment endpoint and
+returns the per-deployment `.pages.dev` URL — a fresh immutable URL per deploy, which is
+exactly the ephemeral shape this seam wants.
+
+> ⚠️ **Neither deploying adapter has completed a real deploy.** A live call with an invalid
+> token was confirmed to reach Cloudflare and return a structured `9106: Authentication
+> failed`, so the endpoint and method are right and the error surfacing works — but auth is
+> checked before the request shape, so the multipart body is still unproven. If Cloudflare
+> rejects the shape, the supported fallback is
+> `npx wrangler pages deploy <dir> --project-name=<name>`. `bench:preview`'s
+> `provider-credential-live` stays **RED by design** until someone runs it with a real
+> token — do not stub one to turn it green.
+
 #### Plaud / praud import
 
 Team `POST /api/meeting/import` takes `{ projectId, fileId? | shareUrl? }` (consumer JWT for file id; public `/share/access` for a `::` share URL). Rows stay unpublished (`is_visible_client = false`) until Publish.

@@ -20,7 +20,14 @@ import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin, requireTeam } from "../middleware/rbac.js";
 import { sendNotificationEmail } from "../services/email.service.js";
 import { signPreviewToken, PREVIEW_TTL_MINUTES } from "../services/preview.service.js";
-import { hostPreview, previewArtifactDir } from "../services/preview-host.service.js";
+import {
+  activeProviderName,
+  hostPreview,
+  previewArtifactDir,
+  safeArtifactPath,
+  writePreviewArtifact,
+} from "../services/preview-host.service.js";
+import type { PreviewArtifactEntry } from "../services/preview-host.service.js";
 import { suggestTimeline } from "../services/timeline-suggestion.service.js";
 import { buildRevisionTaskDescription } from "../services/revision-task.service.js";
 import { buildPresentationDraft } from "../services/presentation-draft.service.js";
@@ -926,3 +933,79 @@ projects.post(
 );
 
 export default projects;
+
+// ─── Preview artifact intake ──────────────────────────
+//
+// Upload a project's built output so a deploying provider has something to deploy.
+// Until this existed, previewArtifactDir() named a directory nothing ever wrote, so every
+// deploying adapter declined and the seam fell back to manual forever.
+//
+// Send multipart/form-data with one `file` entry per build file, each entry NAMED with its
+// path relative to the build root:
+//
+//   curl -X POST https://api.advo.ph/api/projects/12/preview-artifact \
+//     -H "Authorization: Bearer $TOKEN" \
+//     -F "file=@dist/index.html;filename=index.html" \
+//     -F "file=@dist/assets/app.js;filename=assets/app.js"
+//
+// requireTeam, not requireAdmin: uploading a build is routine delivery work. It is also
+// why there is no client-facing door here — a client may REQUEST a preview, but only ADVO
+// decides what code gets served under an advo.ph-adjacent URL.
+projects.post("/:id/preview-artifact", requireTeam, async (c) => {
+  const id = Number(c.req.param("id"));
+  const [row] = await db()
+    .select({ projectId: project.projectId })
+    .from(project)
+    .where(eq(project.projectId, id))
+    .limit(1);
+  if (!row) throw new HTTPException(404, { message: "Project not found" });
+
+  const formData = await c.req.formData();
+  const uploaded = formData.getAll("file").filter((v): v is File => v instanceof File);
+
+  if (uploaded.length === 0) {
+    throw new HTTPException(400, {
+      message: 'No "file" entries in the upload. Send one multipart file per build file.',
+    });
+  }
+
+  const entry: PreviewArtifactEntry[] = [];
+  const refused: string[] = [];
+
+  for (const file of uploaded) {
+    const path = safeArtifactPath(file.name);
+    if (!path) {
+      refused.push(file.name);
+      continue;
+    }
+    entry.push({ path, byte: new Uint8Array(await file.arrayBuffer()) });
+  }
+
+  // Refuse the whole upload rather than deploying a partial one. A dropped file is a
+  // broken site, and silently skipping it would make that look like a successful deploy.
+  if (refused.length > 0) {
+    throw new HTTPException(400, {
+      message: `Refused ${refused.length} unsafe path(s): ${refused.slice(0, 5).join(", ")}`,
+    });
+  }
+
+  const written = await writePreviewArtifact(id, entry);
+
+  await db().insert(activityLog).values({
+    userId: c.get("user").userId,
+    action: "preview_artifact_uploaded",
+    entityType: "project",
+    entityId: id,
+  });
+
+  return c.json({
+    data: {
+      projectId: id,
+      fileCount: written.fileCount,
+      totalByte: written.totalByte,
+      isReplaced: written.isReplaced,
+      provider: activeProviderName(),
+    },
+    error: null,
+  });
+});

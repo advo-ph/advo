@@ -23,7 +23,10 @@ const envSchema = z.object({
   PLAUD_POLL_SECOND: z.string().optional(),
 
   /** Which preview-hosting adapter serves "Show Client Now". Default manual. */
-  PREVIEW_HOST_PROVIDER: z.enum(["manual", "herenow"]).default("manual"),
+  PREVIEW_HOST_PROVIDER: z.enum(["manual", "herenow", "cloudflare"]).default("manual"),
+  CLOUDFLARE_ACCOUNT_ID: z.string().optional(),
+  CLOUDFLARE_API_TOKEN: z.string().optional(),
+  CLOUDFLARE_PAGES_PROJECT: z.string().optional(),
   /** here.now deploy credential. Unset → the herenow adapter falls back to manual. */
   HERENOW_API_KEY: z.string().optional(),
   HERENOW_API_URL: z.string().optional(),
