@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
+import { usePortfolio } from "@/hooks/usePortfolio";
 import LandingFooter from "./landing-footer";
 import "./landing-page.css";
 
@@ -41,7 +42,7 @@ const navItem: NavItem[] = [
   },
   { label: "Work", href: "#work" },
   { label: "Process", href: "#process" },
-  { label: "Pricing", href: "#engagement" },
+  { label: "Quotation", href: "#engagement" },
 ];
 
 const capability = [
@@ -66,55 +67,6 @@ const floor = [
     title: "Shop",
     copy: "Inventory and the floor that cannot wait for a seat in the cloud.",
     icon: "/landing/icon/surface.png",
-  },
-];
-
-const toolCard = [
-  {
-    title: "Client Hub",
-    desc: "One workspace for scope, files, milestones, and approvals.",
-    image: "/landing/rw/after.jpg",
-    cta: "Open hub",
-    href: "/login",
-    more: true,
-  },
-  {
-    title: "Plan",
-    desc: "Capture briefs, set timelines, and lock scope before build.",
-    image: "/landing/rw/plan.jpg",
-    cta: "Start a project",
-    href: "/start",
-  },
-  {
-    title: "Create",
-    desc: "Design and develop in one shared place, not a thread of files.",
-    image: "/landing/rw/create.jpg",
-    cta: "See the workspace",
-    href: "#showcase",
-    more: true,
-  },
-  {
-    title: "Approve",
-    desc: "Share work, gather feedback, and get sign-off without the chase.",
-    image: "/landing/rw/approve.jpg",
-    cta: "See approvals",
-    href: "#showcase",
-    more: true,
-  },
-  {
-    title: "Deliver",
-    desc: "Handoff, launch, and bill without the back-and-forth.",
-    image: "/landing/rw/deliver.jpg",
-    cta: "Start a project",
-    href: "/start",
-  },
-  {
-    title: "Public site",
-    desc: "The site your customers see. Shipped and live.",
-    image: "/landing/rw/story.jpg",
-    cta: "See Fourlinq",
-    href: "https://fourlinq.ph",
-    more: true,
   },
 ];
 
@@ -162,14 +114,14 @@ const surface = [
     title: "Client Hub",
     desc: "Status, files, invoices, and the team. The same truth your operators see.",
     icon: "/landing/icon/surface.png",
-    thumb: "/landing/rw/after.jpg",
+    thumb: "/landing/feature-create.png",
     href: "/login",
   },
   {
     title: "Admin",
     desc: "Projects, leads, finance, and the tools the studio runs on every day.",
     icon: "/landing/icon/development.png",
-    thumb: "/landing/rw/create.jpg",
+    thumb: "/landing/feature-deliver.png",
     href: "/login",
   },
   {
@@ -190,23 +142,23 @@ const surface = [
     title: "Approvals",
     desc: "Sign-off on the work, not in a chat thread.",
     icon: "/landing/icon/approve.png",
-    thumb: "/landing/rw/approve.jpg",
+    thumb: "/landing/feature-approve.png",
     href: "#showcase",
   },
   {
     title: "Planning",
     desc: "Briefs, timelines, and scope before a line of code.",
     icon: "/landing/icon/strategy.png",
-    thumb: "/landing/rw/plan.jpg",
+    thumb: "/landing/feature-plan.png",
     href: "/start",
   },
 ];
 
 const engagement = [
-  { title: "Project", copy: "Fixed scope, timeline, and deliverables.", price: "₱60,000", suffix: "starting at", action: "Get a quote" },
-  { title: "Retainer", copy: "Dedicated team for ongoing work.", price: "₱80,000/mo", suffix: "starting at", action: "Book a call" },
-  { title: "Hourly", copy: "On-demand help when you need it.", price: "₱800/hr", suffix: "starting at", action: "Request access" },
-  { title: "Enterprise", copy: "Custom solutions for large teams.", price: "Custom", suffix: "talk to us", action: "Contact us" },
+  { title: "Project", copy: "Fixed scope, timeline, and deliverables.", action: "Request a quotation" },
+  { title: "Retainer", copy: "A dedicated team for ongoing work.", action: "Request a quotation" },
+  { title: "Hourly", copy: "On-demand help when you need it.", action: "Request a quotation" },
+  { title: "Enterprise", copy: "Custom systems for large teams.", action: "Talk to us" },
 ];
 
 const faq = [
@@ -267,6 +219,9 @@ const LandingPage = () => {
   const [useCaseIndex, setUseCaseIndex] = useState(0);
   const [surfacePage, setSurfacePage] = useState(0);
   const reduceMotion = useReducedMotion();
+  // Prince, 08-21: "keep only the section for the websites that we've already
+  // created". Real rows or nothing — an empty table renders no work section.
+  const { project: shippedProject } = usePortfolio();
 
   const current = useCase[useCaseIndex] ?? useCase[0];
   const surfacePer = 3;
@@ -344,11 +299,7 @@ const LandingPage = () => {
           <img src="/landing/rw/hero.jpg" alt="" />
           <div className="landing-hero-shade" />
           <div className="landing-hero-copy">
-            <h1>
-              Build together.
-              <br />
-              Ship with clarity.
-            </h1>
+            <h1>We digitalize it for you.</h1>
             <div className="landing-hero-action">
               <Link className="landing-button landing-button-light" to="/start">
                 Get Started
@@ -418,8 +369,8 @@ const LandingPage = () => {
 
       <section className="landing-manifesto">
         <h2>
-          A new kind of studio toolkit: website, client hub, admin, and the hardware
-          on the floor, so Philippine teams can ship with clarity.
+          To become the infrastructure of the technological layer for industries
+          around the Philippines. We will modernize the Philippines.
         </h2>
       </section>
 
@@ -450,7 +401,7 @@ const LandingPage = () => {
               <div><small>Active projects</small><strong>24</strong></div>
               <div><small>Total tasks</small><strong>1,284</strong></div>
               <div><small>Pending approvals</small><strong>32</strong></div>
-              <div><small>Outstanding invoices</small><strong>₱48,291</strong></div>
+              <div><small>Open quotations</small><strong>7</strong></div>
             </div>
             <div className="landing-app-grid">
               <div className="landing-chart-card">
@@ -485,61 +436,46 @@ const LandingPage = () => {
         </div>
       </section>
 
-      <section className="landing-tool" id="work">
-        <h3>The surfaces we ship with</h3>
-        <div className={reduceMotion ? "landing-tool-rail is-static" : "landing-tool-rail"}>
-          {toolCard.map((card, index) => (
-            <article key={card.title}>
-              {card.href.startsWith("http") ? (
-                <a href={card.href} target="_blank" rel="noopener noreferrer">
-                  <div className="landing-tool-media">
-                    <img src={card.image} alt="" />
-                    {index === 0 ? (
-                      <span>
-                        Try now <ChevronRight size={12} />
-                      </span>
-                    ) : null}
+      <section className="landing-work" id="work">
+        <h3>The sites we have already shipped.</h3>
+        <p>
+          Live Philippine businesses, read from the ADVO portfolio database. One
+          large screenshot, one short line, nothing invented.
+        </p>
+        {shippedProject.length > 0 ? (
+          <div className="landing-work-grid">
+            {shippedProject.map((item) => {
+              const shot = (
+                <>
+                  <div className="landing-work-shot">
+                    <img
+                      src={item.screenshotUrl ?? ""}
+                      alt={`${item.title} screenshot`}
+                      loading="lazy"
+                    />
                   </div>
-                  <h4>{card.title}</h4>
-                  <p>{card.desc}</p>
-                  <div className="landing-tool-cta">
-                    <span className="landing-chip-dark">{card.cta}</span>
-                    {card.more ? <span className="landing-chip-line">Learn more</span> : null}
-                  </div>
-                </a>
-              ) : card.href.startsWith("/") ? (
-                <Link to={card.href}>
-                  <div className="landing-tool-media">
-                    <img src={card.image} alt="" />
-                    {index === 0 ? (
-                      <span>
-                        Try now <ChevronRight size={12} />
-                      </span>
-                    ) : null}
-                  </div>
-                  <h4>{card.title}</h4>
-                  <p>{card.desc}</p>
-                  <div className="landing-tool-cta">
-                    <span className="landing-chip-dark">{card.cta}</span>
-                    {card.more ? <span className="landing-chip-line">Learn more</span> : null}
-                  </div>
-                </Link>
-              ) : (
-                <a href={card.href}>
-                  <div className="landing-tool-media">
-                    <img src={card.image} alt="" />
-                  </div>
-                  <h4>{card.title}</h4>
-                  <p>{card.desc}</p>
-                  <div className="landing-tool-cta">
-                    <span className="landing-chip-dark">{card.cta}</span>
-                    {card.more ? <span className="landing-chip-line">Learn more</span> : null}
-                  </div>
-                </a>
-              )}
-            </article>
-          ))}
-        </div>
+                  <h4>{item.title}</h4>
+                  <p>{item.blurb}</p>
+                </>
+              );
+
+              return (
+                <article className="landing-work-card" key={item.portfolio_project_id}>
+                  {item.live_url ? (
+                    <a href={item.live_url} target="_blank" rel="noopener noreferrer">
+                      {shot}
+                      <span className="landing-chip-line">Visit the site</span>
+                    </a>
+                  ) : item.slug ? (
+                    <Link to={`/project/${item.slug}`}>{shot}</Link>
+                  ) : (
+                    <div>{shot}</div>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        ) : null}
       </section>
 
       <section className="landing-usecase" id="process">
@@ -571,7 +507,7 @@ const LandingPage = () => {
               <figcaption>Before</figcaption>
             </figure>
             <figure>
-              <img src="/landing/rw/after.jpg" alt="After" />
+              <img src="/landing/rw/deliver.jpg" alt="After" />
               <figcaption>After</figcaption>
             </figure>
           </div>
@@ -586,38 +522,6 @@ const LandingPage = () => {
               {item.name}
             </span>
           ))}
-        </div>
-      </section>
-
-      <section className="landing-story">
-        <p className="landing-kicker">Customer Stories</p>
-        <div className="landing-story-grid">
-          <article>
-            <div className="landing-story-media">
-              <img src="/landing/rw/story.jpg" alt="" />
-            </div>
-            <p className="landing-kicker">Customer Stories</p>
-            <h4>Fourlinq is live at fourlinq.ph. Shipped June 19, 2026. The only named public client on this page.</h4>
-            <a href="https://fourlinq.ph" target="_blank" rel="noopener noreferrer">
-              Read More
-            </a>
-          </article>
-          <article>
-            <div className="landing-story-media">
-              <img src="/landing/rw/hero.jpg" alt="" />
-            </div>
-            <p className="landing-kicker">Floor</p>
-            <h4>Software plus the tablet, printer, and TV already on the counter, not a seat in the cloud.</h4>
-            <Link to="/start">Start a project</Link>
-          </article>
-          <article>
-            <div className="landing-story-media">
-              <img src="/team/group.jpg" alt="The ADVO team" />
-            </div>
-            <p className="landing-kicker">Studio</p>
-            <h4>A Philippine product-engineering team. Faces, not stock. The people who show up on the floor.</h4>
-            <Link to="/team">Meet the team</Link>
-          </article>
         </div>
       </section>
 
@@ -680,11 +584,11 @@ const LandingPage = () => {
           </article>
           <article className="landing-node">
             <header>Scope</header>
-            <img src="/landing/rw/plan.jpg" alt="" />
+            <img src="/landing/feature-plan.png" alt="" />
           </article>
           <article className="landing-node">
             <header>Build</header>
-            <img src="/landing/rw/create.jpg" alt="" />
+            <img src="/landing/feature-create.png" alt="" />
             <footer>
               <span>workspace</span>
               <span className="landing-node-run">Run</span>
@@ -692,7 +596,7 @@ const LandingPage = () => {
           </article>
           <article className="landing-node">
             <header>Review</header>
-            <img src="/landing/rw/approve.jpg" alt="" />
+            <img src="/landing/feature-approve.png" alt="" />
           </article>
           <article className="landing-node">
             <header>Launch</header>
@@ -708,13 +612,15 @@ const LandingPage = () => {
       <section className="landing-engagement" id="engagement">
         <img className="landing-engagement-mark" src="/landing/icon/pricing.png" alt="" />
         <h3>Flexible ways to work together.</h3>
+        <p>
+          We do not publish rates. Tell us what the floor has to do and we send a
+          quotation built on your scope.
+        </p>
         <div className="landing-engagement-grid">
           {engagement.map((item) => (
             <article key={item.title}>
               <h4>{item.title}</h4>
               <p>{item.copy}</p>
-              <small>{item.suffix}</small>
-              <strong>{item.price}</strong>
               <Link to="/start">{item.action}</Link>
             </article>
           ))}
