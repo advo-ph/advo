@@ -78,6 +78,32 @@ export function addDay(from: Date, dayCount: number): Date {
   return d;
 }
 
+/**
+ * Add N BUSINESS days, counting Mon-Fri and skipping weekends.
+ *
+ * ⚠️ PHILIPPINE PUBLIC HOLIDAYS ARE NOT SUBTRACTED, and the direction of that error
+ * matters. Holidays are business days here that are not business days in law, so every
+ * date this returns is EARLIER than or equal to the true contractual deadline — never
+ * later. Treating an early date as "the deadline passed" is exactly how a party forfeits
+ * a deemed-approval claim, so nothing in this codebase may act on these dates
+ * automatically. They are advisory inputs to a human decision, which is also what
+ * CONTRACTS.md Policy 3 requires ("recorded by a human, never automatically").
+ *
+ * The honest fix is a sourced PH holiday calendar (regular + special non-working days are
+ * proclaimed annually, so it cannot be computed). apps/api/src/data/compliance-deadlines.ts
+ * carries the same limitation and says so. Until that exists, `isEarliest` on the derived
+ * shape stays true and the UI must not present these as certain.
+ */
+export function addBusinessDay(from: Date, dayCount: number): Date {
+  const d = new Date(from.getTime());
+  let remaining = Math.max(0, dayCount);
+  while (remaining > 0) {
+    d.setUTCDate(d.getUTCDate() + 1);
+    const day = d.getUTCDay();
+    if (day !== 0 && day !== 6) remaining -= 1;
+  }
+  return d;
+}
 /** Calendar month add with end-of-month clamping (31 Aug + 6 => 28/29 Feb). */
 export function addMonth(from: Date, monthCount: number): Date {
   const d = new Date(from.getTime());
@@ -129,6 +155,97 @@ export function deriveWindow(
   };
 }
 
+// ─── Deemed approval (CONTRACTS.md Policy 3) ─────────
+//
+// The whole mechanism in one derivation. Nothing here is stored, and nothing here writes:
+// the notice and the deemed-approval record are both human acts, and this only says where
+// a round currently stands.
+
+export type DeemedStage =
+  | "no_clock"
+  | "awaiting_feedback"
+  | "notice_due"
+  | "awaiting_notice_response"
+  | "deemed_approvable"
+  | "responded"
+  | "deemed_approved";
+
+export interface DeemedDerived {
+  stage: DeemedStage;
+  /** Earliest date a Notice may be issued. Null when no delivery date was captured. */
+  noticeEligibleOn: string | null;
+  /** Earliest date deemed approval may be recorded. Null until a notice exists. */
+  deemedEligibleOn: string | null;
+  /** True while the mechanism is still live and unforfeited for this round. */
+  isNoticeRequired: boolean;
+  /**
+   * Always true. Both dates ignore PH holidays and so are the EARLIEST possible, never
+   * authoritative — see addBusinessDay. Carried on the payload so a client rendering it
+   * cannot quietly present it as a hard deadline.
+   */
+  isEarliest: true;
+}
+
+export function deriveDeemed(
+  revision: Pick<
+    SignoffRevisionRow,
+    | "reviewDeliveredOn"
+    | "clientRespondedAt"
+    | "noticeIssuedAt"
+    | "deemedApprovedAt"
+  >,
+  window: Pick<
+    SignoffRow,
+    "feedbackWindowBusinessDayCount" | "noticeWindowBusinessDayCount"
+  >,
+  now: Date = new Date(),
+): DeemedDerived {
+  const delivered = revision.reviewDeliveredOn ? new Date(revision.reviewDeliveredOn) : null;
+  const noticeAt = revision.noticeIssuedAt ? new Date(revision.noticeIssuedAt) : null;
+
+  const noticeEligible = delivered
+    ? addBusinessDay(delivered, window.feedbackWindowBusinessDayCount)
+    : null;
+  const deemedEligible = noticeAt
+    ? addBusinessDay(noticeAt, window.noticeWindowBusinessDayCount)
+    : null;
+
+  const base = {
+    noticeEligibleOn: noticeEligible ? noticeEligible.toISOString() : null,
+    deemedEligibleOn: deemedEligible ? deemedEligible.toISOString() : null,
+    isEarliest: true as const,
+  };
+
+  // Terminal states first — an outcome already recorded is not a running clock.
+  if (revision.deemedApprovedAt) {
+    return { ...base, stage: "deemed_approved", isNoticeRequired: false };
+  }
+  if (revision.clientRespondedAt) {
+    return { ...base, stage: "responded", isNoticeRequired: false };
+  }
+  if (!delivered) {
+    // No delivery date means clock 1 never started. This is the common case for rounds
+    // logged before 021 shipped, and it is reported honestly rather than assumed.
+    return { ...base, stage: "no_clock", isNoticeRequired: false };
+  }
+
+  if (!noticeAt) {
+    const due = noticeEligible !== null && now.getTime() >= noticeEligible.getTime();
+    return {
+      ...base,
+      stage: due ? "notice_due" : "awaiting_feedback",
+      // The mechanism is live and the notice is the next act ADVO must take to keep it.
+      isNoticeRequired: due,
+    };
+  }
+
+  const ripe = deemedEligible !== null && now.getTime() >= deemedEligible.getTime();
+  return {
+    ...base,
+    stage: ripe ? "deemed_approvable" : "awaiting_notice_response",
+    isNoticeRequired: false,
+  };
+}
 // ─── Read ────────────────────────────────────────────
 
 async function paidInvoiceIdSet(row: SignoffRow[]): Promise<Set<number>> {
@@ -247,10 +364,18 @@ export async function getSignoff(id: number, role: string, userId: number) {
     .where(eq(signoffRevision.projectSignoffId, id))
     .orderBy(desc(signoffRevision.createdAt));
 
+  // Each round carries its own deemed-approval state. Derived per read, never stored, so
+  // a change to the window counts is reflected everywhere at once.
+  const decoratedRevision = revision.map((r) => ({ ...r, deemed: deriveDeemed(r, row) }));
+
   if (role === "client") {
-    return { ...toClientShape(decorated), derived: decorated.derived, revision };
+    return {
+      ...toClientShape(decorated),
+      derived: decorated.derived,
+      revision: decoratedRevision,
+    };
   }
-  return { ...decorated, revision };
+  return { ...decorated, revision: decoratedRevision };
 }
 
 // ─── Write (team) ────────────────────────────────────
@@ -699,4 +824,158 @@ export async function voidSignoff(id: number, reason: string, userId: number) {
 
   const [decorated] = await decorate([updated]);
   return decorated;
+}
+
+// ─── Deemed-approval writes ──────────────────────────
+//
+// Four separate human acts, each its own row-locked transaction. None of them is a job,
+// and none derives its own permission: every guard below restates a sentence from
+// CONTRACTS.md Policy 3 so the reason a write is refused is legible at the call site.
+
+/** The signoff a revision belongs to, locked, alongside the round itself. */
+async function lockRevision(revisionId: number) {
+  const [rev] = await db()
+    .select()
+    .from(signoffRevision)
+    .where(eq(signoffRevision.signoffRevisionId, revisionId))
+    .limit(1);
+  if (!rev) throw new HTTPException(404, { message: "Revision round not found" });
+
+  const [row] = await db()
+    .select()
+    .from(projectSignoff)
+    .where(eq(projectSignoff.projectSignoffId, rev.projectSignoffId))
+    .limit(1);
+  if (!row) throw new HTTPException(404, { message: "Sign-off not found" });
+  if (row.status === "void") {
+    throw new HTTPException(409, { message: "This sign-off was voided" });
+  }
+  return { rev, row };
+}
+
+/** Capture the delivery date. This is what starts clock 1; without it no clock runs. */
+export async function recordReviewDelivery(revisionId: number, deliveredOn: string) {
+  const { rev } = await lockRevision(revisionId);
+  if (rev.deemedApprovedAt) {
+    throw new HTTPException(409, {
+      message:
+        "This round is already recorded as deemed approved — its dates are the paper trail and cannot be re-dated.",
+    });
+  }
+  const [updated] = await db()
+    .update(signoffRevision)
+    .set({ reviewDeliveredOn: deliveredOn, updatedAt: new Date() })
+    .where(eq(signoffRevision.signoffRevisionId, revisionId))
+    .returning();
+  return updated;
+}
+
+/** A client answered. Stops both clocks permanently for this round. */
+export async function recordClientResponse(revisionId: number, now: Date = new Date()) {
+  const { rev } = await lockRevision(revisionId);
+  if (rev.deemedApprovedAt) {
+    throw new HTTPException(409, {
+      message:
+        "This round was already recorded as deemed approved. A late response does not undo that record — resolve it as a change order or void the sign-off.",
+    });
+  }
+  if (rev.clientRespondedAt) return rev;
+  const [updated] = await db()
+    .update(signoffRevision)
+    .set({ clientRespondedAt: now, updatedAt: now })
+    .where(eq(signoffRevision.signoffRevisionId, revisionId))
+    .returning();
+  return updated;
+}
+
+/**
+ * Issue the formal Notice of Pending Deemed Approval.
+ *
+ * `reference` is mandatory and is the whole point: Policy 3 requires the notice be issued
+ * "formally and in writing", so a row that claims a notice must be able to produce it.
+ */
+export async function issueDeemedNotice(
+  revisionId: number,
+  reference: string,
+  now: Date = new Date(),
+) {
+  const { rev, row } = await lockRevision(revisionId);
+
+  if (rev.noticeIssuedAt) {
+    throw new HTTPException(409, {
+      message:
+        "A Notice has already been issued for this round. Re-issuing would restart clock 2 and weaken the claim, not strengthen it.",
+    });
+  }
+  if (rev.clientRespondedAt) {
+    throw new HTTPException(409, {
+      message: "The client responded to this round, so there is nothing to give notice about.",
+    });
+  }
+  if (!rev.reviewDeliveredOn) {
+    throw new HTTPException(409, {
+      message:
+        "No review delivery date is recorded for this round, so the feedback window has not started. Record the delivery date first.",
+    });
+  }
+
+  const derived = deriveDeemed(rev, row, now);
+  if (derived.stage !== "notice_due") {
+    throw new HTTPException(409, {
+      message:
+        `The ${row.feedbackWindowBusinessDayCount}-business-day feedback window is still open ` +
+        `(not before ${derived.noticeEligibleOn?.slice(0, 10)}). Issuing the Notice early is what ` +
+        "makes it contestable.",
+    });
+  }
+
+  const [updated] = await db()
+    .update(signoffRevision)
+    .set({ noticeIssuedAt: now, noticeReference: reference.trim(), updatedAt: now })
+    .where(eq(signoffRevision.signoffRevisionId, revisionId))
+    .returning();
+  return updated;
+}
+
+/**
+ * Record that a round is deemed approved. A HUMAN act — nothing schedules this.
+ *
+ * Refuses without the notice even though the DB also refuses, because the error a person
+ * needs here is the reason ("the mechanism is forfeit without it"), not a constraint name.
+ */
+export async function recordDeemedApproval(
+  revisionId: number,
+  userId: number,
+  now: Date = new Date(),
+) {
+  const { rev, row } = await lockRevision(revisionId);
+
+  if (rev.deemedApprovedAt) return rev;
+  if (rev.clientRespondedAt) {
+    throw new HTTPException(409, {
+      message: "The client responded to this round. Deemed approval applies to silence only.",
+    });
+  }
+  if (!rev.noticeIssuedAt) {
+    throw new HTTPException(409, {
+      message:
+        "No Notice of Pending Deemed Approval was issued for this round. CONTRACTS.md Policy 3 makes the Notice mandatory — without it the deemed-approval mechanism is forfeit no matter how long the silence ran.",
+    });
+  }
+
+  const derived = deriveDeemed(rev, row, now);
+  if (derived.stage !== "deemed_approvable") {
+    throw new HTTPException(409, {
+      message:
+        `The ${row.noticeWindowBusinessDayCount}-business-day window after the Notice has not elapsed ` +
+        `(not before ${derived.deemedEligibleOn?.slice(0, 10)}).`,
+    });
+  }
+
+  const [updated] = await db()
+    .update(signoffRevision)
+    .set({ deemedApprovedAt: now, deemedApprovedBy: userId, updatedAt: now })
+    .where(eq(signoffRevision.signoffRevisionId, revisionId))
+    .returning();
+  return updated;
 }

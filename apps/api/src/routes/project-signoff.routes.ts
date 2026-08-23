@@ -23,6 +23,10 @@ import {
   issueSignoff,
   listSignoff,
   loadSignoff,
+  issueDeemedNotice,
+  recordClientResponse,
+  recordDeemedApproval,
+  recordReviewDelivery,
   recordRevision,
   signSignoff,
   updateSignoff,
@@ -201,5 +205,66 @@ projectSignoffRoutes.post(
     return c.json({ data: voided, error: null });
   },
 );
+
+// ─── Deemed approval (CONTRACTS.md Policy 3) ──────────
+//
+// Four routes, one per human act. All are requireTeam: the whole mechanism turns on ADVO
+// having acted and being able to show it, so none of these may be driven by a client.
+// The service holds the policy guards; these only parse and delegate.
+
+const deliverySchema = z.object({
+  // Date-only: the contract counts business DAYS from delivery, so an instant would imply
+  // a precision the clause does not have.
+  deliveredOn: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "deliveredOn must be YYYY-MM-DD"),
+});
+
+const noticeSchema = z.object({
+  // Mandatory by policy, not by convenience — see issueDeemedNotice.
+  reference: z
+    .string()
+    .trim()
+    .min(1, "A reference is required — the Notice must be producible in writing."),
+});
+
+projectSignoffRoutes.post(
+  "/revision/:revisionId/delivery",
+  requireTeam,
+  zValidator("json", deliverySchema),
+  async (c) => {
+    const updated = await recordReviewDelivery(
+      parseId(c.req.param("revisionId")),
+      c.req.valid("json").deliveredOn,
+    );
+    return c.json({ data: updated, error: null });
+  },
+);
+
+projectSignoffRoutes.post("/revision/:revisionId/response", requireTeam, async (c) => {
+  const updated = await recordClientResponse(parseId(c.req.param("revisionId")));
+  return c.json({ data: updated, error: null });
+});
+
+projectSignoffRoutes.post(
+  "/revision/:revisionId/notice",
+  requireTeam,
+  zValidator("json", noticeSchema),
+  async (c) => {
+    const updated = await issueDeemedNotice(
+      parseId(c.req.param("revisionId")),
+      c.req.valid("json").reference,
+    );
+    return c.json({ data: updated, error: null });
+  },
+);
+
+// Admin, not team: this one asserts a contractual position against a client, and is the
+// act a dispute would turn on.
+projectSignoffRoutes.post("/revision/:revisionId/deemed", requireAdmin, async (c) => {
+  const user = c.get("user");
+  const updated = await recordDeemedApproval(parseId(c.req.param("revisionId")), user.userId);
+  return c.json({ data: updated, error: null });
+});
 
 export default projectSignoffRoutes;

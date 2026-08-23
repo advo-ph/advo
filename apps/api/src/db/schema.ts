@@ -802,6 +802,13 @@ export const projectSignoff = pgTable(
     revisionWindowMonthCount: integer("revision_window_month_count").notNull().default(6),
     /** The ALLOWANCE only. used/remaining are counted from signoffRevision. */
     freeRevisionTotalCount: integer("free_revision_total_count").notNull().default(5),
+
+    /** Business days to respond to a review delivery before a Notice may issue (Policy 3 step 1). */
+    feedbackWindowBusinessDayCount: integer("feedback_window_business_day_count")
+      .notNull()
+      .default(15),
+    /** Business days after the Notice before deemed approval may be recorded (Policy 3 step 3). */
+    noticeWindowBusinessDayCount: integer("notice_window_business_day_count").notNull().default(15),
     deliverableSnapshot: jsonb("deliverable_snapshot").notNull().default([]),
     documentUrl: varchar("document_url", { length: 500 }),
     issuedAt: timestamp("issued_at", { withTimezone: true }),
@@ -843,6 +850,19 @@ export const signoffRevision = pgTable(
     note: text("note").notNull(),
     /** True when invoked inside the 6-month post-signature window. */
     isPostSignoff: boolean("is_post_signoff").notNull().default(false),
+    /** Date the review went to the client. Starts the feedback clock; NULL means no clock runs. */
+    reviewDeliveredOn: date("review_delivered_on"),
+    /** First client response. Stops both clocks — a answered round can never be deemed approved. */
+    clientRespondedAt: timestamp("client_responded_at", { withTimezone: true }),
+    /** When the formal Notice of Pending Deemed Approval issued. Without it, the mechanism is forfeit. */
+    noticeIssuedAt: timestamp("notice_issued_at", { withTimezone: true }),
+    /** Where the notice can be produced from. Required whenever noticeIssuedAt is set (DB CHECK). */
+    noticeReference: text("notice_reference"),
+    /** Recorded by a human, never by a job. See migration 021. */
+    deemedApprovedAt: timestamp("deemed_approved_at", { withTimezone: true }),
+    deemedApprovedBy: integer("deemed_approved_by").references(() => user.userId, {
+      onDelete: "set null",
+    }),
     requestedBy: integer("requested_by").references(() => user.userId, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
