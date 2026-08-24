@@ -1,0 +1,336 @@
+{
+  "benchmark": "landing-stripe-audit-viewport",
+  "baseUrl": "http://127.0.0.1:6100/",
+  "date": "2026-08-24",
+  "passed": true,
+  "counts": {
+    "passed": 24,
+    "failed": 0,
+    "total": 24
+  },
+  "screenshots": "bench\\roadmap\\landing-stripe-audit\\screenshots\\2026-08-24",
+  "results": [
+    {
+      "viewport": {
+        "width": 360,
+        "height": 780,
+        "name": "mobile-360"
+      },
+      "passed": true,
+      "checks": [
+        {
+          "id": "no-horizontal-overflow",
+          "passed": true,
+          "details": {
+            "maxScrollWidth": 360,
+            "viewportWidth": 360
+          }
+        },
+        {
+          "id": "document-scrolls-full-landing",
+          "passed": true,
+          "details": {
+            "maxScrollHeight": 13805,
+            "viewportHeight": 780
+          }
+        },
+        {
+          "id": "hero-cta-visible",
+          "passed": true,
+          "details": {
+            "expected": "Hero primary CTA is visible without relying on scroll."
+          }
+        },
+        {
+          "id": "fixed-header-fits",
+          "passed": true,
+          "details": {
+            "headerRect": {
+              "left": 0,
+              "right": 360,
+              "top": 0,
+              "width": 360,
+              "height": 64
+            }
+          }
+        },
+        {
+          "id": "mobile-drawer-expanded",
+          "passed": true,
+          "details": {
+            "expanded": "true",
+            "panelBackground": "rgb(255, 255, 255)",
+            "drawerRect": {
+              "left": 14,
+              "right": 346,
+              "top": 64,
+              "bottom": 368,
+              "width": 332,
+              "height": 304
+            },
+            "startRect": null,
+            "hubRect": {
+              "top": 13189.078125,
+              "bottom": 13209.328125,
+              "width": 74.171875,
+              "height": 20.25
+            }
+          }
+        },
+        {
+          "id": "mobile-drawer-panel-opaque",
+          "passed": true,
+          "details": {
+            "expanded": "true",
+            "panelBackground": "rgb(255, 255, 255)",
+            "drawerRect": {
+              "left": 14,
+              "right": 346,
+              "top": 64,
+              "bottom": 368,
+              "width": 332,
+              "height": 304
+            },
+            "startRect": null,
+            "hubRect": {
+              "top": 13189.078125,
+              "bottom": 13209.328125,
+              "width": 74.171875,
+              "height": 20.25
+            }
+          }
+        }
+      ]
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "name": "mobile-390"
+      },
+      "passed": true,
+      "checks": [
+        {
+          "id": "no-horizontal-overflow",
+          "passed": true,
+          "details": {
+            "maxScrollWidth": 390,
+            "viewportWidth": 390
+          }
+        },
+        {
+          "id": "document-scrolls-full-landing",
+          "passed": true,
+          "details": {
+            "maxScrollHeight": 13936,
+            "viewportHeight": 844
+          }
+        },
+        {
+          "id": "hero-cta-visible",
+          "passed": true,
+          "details": {
+            "expected": "Hero primary CTA is visible without relying on scroll."
+          }
+        },
+        {
+          "id": "fixed-header-fits",
+          "passed": true,
+          "details": {
+            "headerRect": {
+              "left": 0,
+              "right": 390,
+              "top": 0,
+              "width": 390,
+              "height": 64
+            }
+          }
+        },
+        {
+          "id": "mobile-drawer-expanded",
+          "passed": true,
+          "details": {
+            "expanded": "true",
+            "panelBackground": "rgb(255, 255, 255)",
+            "drawerRect": {
+              "left": 14,
+              "right": 376,
+              "top": 64,
+              "bottom": 368,
+              "width": 362,
+              "height": 304
+            },
+            "startRect": null,
+            "hubRect": {
+              "top": 13341.34375,
+              "bottom": 13361.59375,
+              "width": 74.171875,
+              "height": 20.25
+            }
+          }
+        },
+        {
+          "id": "mobile-drawer-panel-opaque",
+          "passed": true,
+          "details": {
+            "expanded": "true",
+            "panelBackground": "rgb(255, 255, 255)",
+            "drawerRect": {
+              "left": 14,
+              "right": 376,
+              "top": 64,
+              "bottom": 368,
+              "width": 362,
+              "height": 304
+            },
+            "startRect": null,
+            "hubRect": {
+              "top": 13341.34375,
+              "bottom": 13361.59375,
+              "width": 74.171875,
+              "height": 20.25
+            }
+          }
+        }
+      ]
+    },
+    {
+      "viewport": {
+        "width": 768,
+        "height": 900,
+        "name": "tablet-768"
+      },
+      "passed": true,
+      "checks": [
+        {
+          "id": "no-horizontal-overflow",
+          "passed": true,
+          "details": {
+            "maxScrollWidth": 768,
+            "viewportWidth": 768
+          }
+        },
+        {
+          "id": "document-scrolls-full-landing",
+          "passed": true,
+          "details": {
+            "maxScrollHeight": 10261,
+            "viewportHeight": 900
+          }
+        },
+        {
+          "id": "hero-cta-visible",
+          "passed": true,
+          "details": {
+            "expected": "Hero primary CTA is visible without relying on scroll."
+          }
+        },
+        {
+          "id": "fixed-header-fits",
+          "passed": true,
+          "details": {
+            "headerRect": {
+              "left": 0,
+              "right": 768,
+              "top": 0,
+              "width": 768,
+              "height": 64
+            }
+          }
+        }
+      ]
+    },
+    {
+      "viewport": {
+        "width": 1280,
+        "height": 900,
+        "name": "desktop-1280"
+      },
+      "passed": true,
+      "checks": [
+        {
+          "id": "no-horizontal-overflow",
+          "passed": true,
+          "details": {
+            "maxScrollWidth": 1280,
+            "viewportWidth": 1280
+          }
+        },
+        {
+          "id": "document-scrolls-full-landing",
+          "passed": true,
+          "details": {
+            "maxScrollHeight": 9618,
+            "viewportHeight": 900
+          }
+        },
+        {
+          "id": "hero-cta-visible",
+          "passed": true,
+          "details": {
+            "expected": "Hero primary CTA is visible without relying on scroll."
+          }
+        },
+        {
+          "id": "fixed-header-fits",
+          "passed": true,
+          "details": {
+            "headerRect": {
+              "left": 0,
+              "right": 1280,
+              "top": 0,
+              "width": 1280,
+              "height": 64
+            }
+          }
+        }
+      ]
+    },
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 960,
+        "name": "desktop-1440"
+      },
+      "passed": true,
+      "checks": [
+        {
+          "id": "no-horizontal-overflow",
+          "passed": true,
+          "details": {
+            "maxScrollWidth": 1440,
+            "viewportWidth": 1440
+          }
+        },
+        {
+          "id": "document-scrolls-full-landing",
+          "passed": true,
+          "details": {
+            "maxScrollHeight": 10038,
+            "viewportHeight": 960
+          }
+        },
+        {
+          "id": "hero-cta-visible",
+          "passed": true,
+          "details": {
+            "expected": "Hero primary CTA is visible without relying on scroll."
+          }
+        },
+        {
+          "id": "fixed-header-fits",
+          "passed": true,
+          "details": {
+            "headerRect": {
+              "left": 0,
+              "right": 1440,
+              "top": 0,
+              "width": 1440,
+              "height": 64
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

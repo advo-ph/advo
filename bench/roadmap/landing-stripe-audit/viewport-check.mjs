@@ -1,4 +1,40 @@
 #!/usr/bin/env node
+/**
+ * Landing viewport check — RESPONSIVE STRUCTURE, not editorial composition.
+ *
+ * SCOPE DECISION, 2026-08-25. This bench was authored at 68d033f against the landing tree
+ * that `offer-truth` deleted at 780485c. It went to 22/63 and stayed there: 41 of its
+ * checks asserted the old page's composition — a hero "system rail", named product
+ * surfaces, a proof section, a full-width footer wordmark, specific footer copy, specific
+ * section headings — on a page that is live, correct, and deliberately different.
+ *
+ * The failing checks were NOT re-authored to agree with whatever the new page renders.
+ * That would have produced a bench that measures nothing: a mirror passes by construction
+ * and catches no regression. Instead the bench was NARROWED, and the line is drawn here:
+ *
+ *   KEPT — guarantees that survive any redesign, because they are about the page working
+ *   at a size rather than the page saying a thing: no horizontal overflow, the document
+ *   scrolls its full height, the primary CTA is reachable without scrolling, the fixed
+ *   header fits its viewport, the mobile drawer expands, and the drawer is opaque (a
+ *   transparent drawer over content is unreadable — a real bug class, so it was retargeted
+ *   to the new drawer rather than dropped).
+ *
+ *   REMOVED — assertions about what the landing SAYS and which sections it has. Those are
+ *   editorial decisions owned by whoever owns the landing, and they changed on purpose
+ *   (see ROADMAP "quote instead of price, show the sites we shipped"). A viewport bench is
+ *   the wrong instrument for them: it cannot tell a deliberate rewrite from a regression,
+ *   so it reported a correct page as broken for two days.
+ *
+ *   ALSO REMOVED — `mobile-drawer-fills-viewport` and `mobile-drawer-actions-bottom-pinned`.
+ *   Both described the old FloatingNav drawer's specific visual treatment. The landing
+ *   drawer is a different design; asserting the old one's geometry is not a guarantee, it
+ *   is a memory.
+ *
+ * If the landing needs content guarantees again, they belong in a bench that is explicitly
+ * about landing CONTENT (bench/roadmap/offer-truth and landing-follow already are), where a
+ * copy change is expected to require a deliberate bench change. Drawer BEHAVIOUR — escape,
+ * scroll lock, route-change close — lives in bench/roadmap/drawer-a11y.
+ */
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -131,7 +167,11 @@ const getPageMetrics = async (page) =>
 const getMobileDrawerMetrics = async (page) =>
   page.evaluate(() => {
     const drawer = document.getElementById("mobile-navigation-drawer");
-    const panel = document.querySelector('[data-viewport-check="mobile-drawer-panel"]');
+    // The old FloatingNav drawer carried a dedicated panel node; the landing nav that
+    // replaced it IS the panel. Fall back to the drawer element so the opacity guarantee
+    // survives the redesign instead of silently reading null.
+    const panel =
+      document.querySelector('[data-viewport-check="mobile-drawer-panel"]') ?? drawer;
     const navToggle = document.querySelector('[aria-controls="mobile-navigation-drawer"]');
     const drawerRect = drawer?.getBoundingClientRect();
     const panelStyle = panel ? getComputedStyle(panel) : null;
@@ -194,7 +234,13 @@ const run = async () => {
       });
       page.setDefaultTimeout(10_000);
 
-      await page.goto(baseUrl, { waitUntil: "networkidle" });
+      // `networkidle` is the wrong signal here and Playwright says so: the dev server
+      // holds an HMR websocket open and the landing fetches its portfolio row, so "no
+      // network for 500ms" is not reliably reached inside the 10s default and the whole
+      // bench dies on a page that rendered fine. Wait for the thing being measured to
+      // exist instead — deterministic, and faster.
+      await page.goto(baseUrl, { waitUntil: "load" });
+      await page.waitForSelector("header.landing-nav", { state: "attached" });
       await page.screenshot({
         path: path.join(screenshotDir, `${viewport.name}.png`),
         fullPage: true,
@@ -236,18 +282,6 @@ const run = async () => {
         check("hero-cta-visible", heroCtaVisible, {
           expected: "Hero primary CTA is visible without relying on scroll.",
         }),
-        check("hero-system-rail-visible", heroSystemRailVisible, {
-          expected: "Hero exposes the Website / Client Hub / Admin / VPS system rail in the first viewport flow.",
-        }),
-        check("product-surfaces-visible", labelsPresent.every((item) => item.visible), {
-          labelsPresent,
-        }),
-        check("product-section-centered", metrics.productRect?.width <= viewport.width + widthSlack, {
-          productRect: metrics.productRect,
-        }),
-        check("proof-section-visible", proofHeadingVisible, {
-          proofRect: metrics.proofRect,
-        }),
         check(
           "fixed-header-fits",
           Boolean(
@@ -258,27 +292,6 @@ const run = async () => {
           ),
           { headerRect: metrics.headerRect },
         ),
-        check(
-          "footer-wordmark-present",
-          Boolean(
-            metrics.footerLogoRect &&
-              metrics.footerLogoRect.width >= viewport.width * 0.82 &&
-              metrics.footerLogoRect.height >= 48,
-          ),
-          { footerLogoRect: metrics.footerLogoRect },
-        ),
-        check(
-          "footer-system-continuity",
-          /Start the system/.test(metrics.footerText) &&
-            /Websites with client systems behind them/.test(metrics.footerText) &&
-            /Admin Console/.test(metrics.footerText) &&
-            !/We digitalize for you|Web Applications|Mobile Apps|Cloud Architecture/.test(metrics.footerText),
-          { footerTextIncludesSystemCopy: true },
-        ),
-        check("section-headings-visible", serviceHeadingVisible && proofHeadingVisible, {
-          serviceHeadingVisible,
-          proofHeadingVisible,
-        }),
       ];
 
       if (viewport.width <= 390) {
@@ -295,27 +308,6 @@ const run = async () => {
         checks.push(
           check("mobile-drawer-expanded", drawerMetrics.expanded === "true", drawerMetrics),
           check("mobile-drawer-panel-opaque", panelOpaque, drawerMetrics),
-          check(
-            "mobile-drawer-fills-viewport",
-            Boolean(
-              drawerMetrics.drawerRect &&
-                drawerMetrics.drawerRect.left <= widthSlack &&
-                drawerMetrics.drawerRect.right >= viewport.width - widthSlack &&
-                drawerMetrics.drawerRect.top <= widthSlack &&
-                drawerMetrics.drawerRect.bottom >= viewport.height - widthSlack,
-            ),
-            drawerMetrics,
-          ),
-          check(
-            "mobile-drawer-actions-bottom-pinned",
-            Boolean(
-              drawerMetrics.startRect &&
-                drawerMetrics.hubRect &&
-                drawerMetrics.startRect.bottom > viewport.height - 96 &&
-                drawerMetrics.hubRect.bottom > viewport.height - 96,
-            ),
-            drawerMetrics,
-          ),
         );
       }
 

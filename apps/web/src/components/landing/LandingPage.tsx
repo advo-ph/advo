@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { useReducedMotion } from "framer-motion";
 import {
   ChevronDown,
@@ -232,6 +232,41 @@ const LandingPage = () => {
     setIsMenuOpen(false);
     setOpenPanel(null);
   };
+
+  // The three drawer behaviours the nav rewrite dropped. FloatingNav (still mounted on
+  // /hub) carries all of them; the landing nav that replaced it on / carried none, so a
+  // keyboard user could open the drawer and have no way to dismiss it, and the page
+  // scrolled underneath the overlay on touch. Same regression class as the missing
+  // aria-controls, restored the same way — by porting the behaviour, not re-inventing it.
+
+  // 1. Escape closes it, and 2. the body does not scroll behind it. Both live in one
+  // effect because both must be undone by the same cleanup: an early return while closed
+  // means neither the listener nor the style lock is ever left attached.
+  useEffect(() => {
+    if (!isMenuOpen) return;
+
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeMenu();
+    };
+    // Restore the PREVIOUS value rather than clearing to "": another overlay may hold its
+    // own lock, and clearing would release theirs too.
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [isMenuOpen]);
+
+  // 3. Navigating closes it. The landing nav mixes in-page anchors with real routes, so a
+  // client-side navigation would otherwise leave the drawer covering the page it just
+  // opened.
+  const { pathname } = useLocation();
+  useEffect(() => {
+    closeMenu();
+  }, [pathname]);
 
   return (
     <main className="landing-page">
