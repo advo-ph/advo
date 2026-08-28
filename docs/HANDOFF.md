@@ -11,6 +11,7 @@ Cross-links:
 - Brief for counsel → [LEGAL-BRIEF.md](LEGAL-BRIEF.md)
 - Sending that brief → [LAWYER-OUTREACH.md](LAWYER-OUTREACH.md)
 - The identity facts everything is waiting on → [ASK-IDENTITY.md](ASK-IDENTITY.md)
+- Missing keys/accounts → [CREDENTIALS.md](CREDENTIALS.md)
 
 ---
 

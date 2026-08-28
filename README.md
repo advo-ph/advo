@@ -288,6 +288,7 @@ Concurrency cancels superseded runs per branch — no wasted minutes when you pu
 - [FEATURES.md](./docs/FEATURES.md) — Feature documentation, auth system, hooks reference
 - [ROADMAP.md](./docs/ROADMAP.md) — Product roadmap
 - [HANDOFF.md](./docs/HANDOFF.md) — Session handoff / open items
+- [CREDENTIALS.md](./docs/CREDENTIALS.md) — Every missing key, account and setup step, and how to get each
 - [CONTRACTS.md](./docs/CONTRACTS.md) — The nine contract policies (none lawyer-reviewed)
 - [LEGAL-BRIEF.md](./docs/LEGAL-BRIEF.md) — Self-contained packet for counsel
 - [LAWYER-OUTREACH.md](./docs/LAWYER-OUTREACH.md) — Who to send that packet to, and the covering email
