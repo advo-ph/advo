@@ -9,6 +9,32 @@ Cross-links:
 - Schema reference → [SCHEMA.md](SCHEMA.md)
 - Contracts/policy → [CONTRACTS.md](CONTRACTS.md)
 - Brief for counsel → [LEGAL-BRIEF.md](LEGAL-BRIEF.md)
+- Sending that brief → [LAWYER-OUTREACH.md](LAWYER-OUTREACH.md)
+- The identity facts everything is waiting on → [ASK-IDENTITY.md](ASK-IDENTITY.md)
+
+---
+
+## 2026-08-28 — the two blockers are one ask, and `main` could not build
+
+> Started as "what's next": run every bench and read the reds honestly. Eleven of thirteen were green, both reds were human-blocked as documented — and then the gate found that `npm run build` had been failing on `main` since `b0af285`.
+
+**The build was broken and nothing said so.** `apps/api/src/utils/env.ts` declared `CLOUDFLARE_ACCOUNT_ID` twice: the preview-hosting commit added it beside `CLOUDFLARE_API_TOKEN`, while an older `CLOUDFLARE_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` pair was still sitting six lines below it. `TS1117`, so `tsc` refused the API and `npm run build` exited 2. Every bench stayed green through this, because no bench compiles the API — they read source and drive the browser. The stale pair is deleted rather than the new one: `CLOUDFLARE_TOKEN` is read nowhere in `apps/api/src`, and `preview-host.service.ts` reads `CLOUDFLARE_API_TOKEN`. `apps/api/.env.example` was still advertising the dead name; it now names the trio the adapter actually reads and says which `PREVIEW_HOST_PROVIDER` value selects them.
+
+**`bench:drawer` could not be run the way its own docstring says to run it.** It defaulted to `127.0.0.1:6100`; `apps/web` serves `6447`. Following the documented two-step — `npm run dev:web`, then `npm run bench:drawer` — produced a playwright `ERR_CONNECTION_REFUSED` stack, which reads exactly like a failing a11y gate rather than a missing server. The default now tracks `server.port` in `vite.config.ts` with a comment saying it must, and an unreachable server exits `2` printing the two commands to run instead of a stack. Verified both directions: 7/7 green against a live server, and the instruction plus `exit=2` against a dead port. The a11y behaviours themselves were never in question — this only made the instrument runnable.
+
+**The three human-blocked rows are one chase, not three.** "Merchant identity of record", the PayMongo disclosure row, and LEGAL-BRIEF Annex A were tracked as separate ⏳ items and read as three things to chase Prince about. They are the same five facts off one DTI/SEC certificate — which also fill the contract's own signatory block. [ASK-IDENTITY.md](ASK-IDENTITY.md) consolidates them into one message with a table of which answer lands in which file, and the note that a photo of the certificate covers four of the five on its own. It also asks for the sent 11 August PDF, which answers the three open contract questions (executed?, the truncated fortuitous-events clause, which tier the client selected) at once.
+
+**The legal packet now has a recipient plan.** [LEGAL-BRIEF.md](LEGAL-BRIEF.md) has been send-ready since 08-23 and nobody has sent it, because "pick a lawyer" was the whole remaining instruction. [LAWYER-OUTREACH.md](LAWYER-OUTREACH.md) is that instruction written down: four screening criteria (PH commercial practice, RA 10173 experience, willing to quote fixed, SME-sized), the covering email drafted to keep Section 10's framing without apologising for the small budget, and a table of what to update *here* when an opinion comes back — because an answer on Policy 3 is a migration, not a copy edit. The pre-send checklist says to send **despite** the blank Annex A: waiting on the identity ask delays the RA 10173 half, which is the half gating revenue, for a reason counsel does not need resolved to quote.
+
+**Docs the fix exposed as stale.** The root `.env.example` still told operators to set `VITE_GITHUB_TOKEN` — removed by S4 (`9574820`), read nowhere, and the exact footgun S4 closed, since Vite inlines `VITE_*` into the public bundle. Deleted. `SETUP.md` still documented `CLOUDFLARE_TOKEN=... # Deployment status` and documented neither the outreach transport nor preview hosting. The README's API env table was missing eight live variables including the entire `OUTREACH_*` block, so the one property that block exists to guarantee — that a cold-outreach reputation hit cannot take client magic-links down with it — was undocumented in the front door.
+
+**Honest open-items**
+
+- **Nothing was sent.** Both new documents are drafts waiting on a human: the identity message has not gone to Prince, and no lawyer has been contacted. `bench:paymongo` stays 5/7 and the P0 legal row stays ⏳ until then.
+- **No bench compiles the API.** That is how a `tsc` error survived on `main` across a green bench sweep. A build check belongs in the gate; none was added here.
+- **`npm test` fails two files on any box without a local API** — `api-wiring` and `e2e-flow` need one on `:6407`. `npm run test:local` boots one but needs `DATABASE_URL` and the JWT secrets, which this box does not have. Pre-existing, environmental, and unrelated to these changes, but it means a bare `npm test` is not a clean signal.
+- **The ESP bounce webhook is still not wired.** Migration `020`'s endpoint has had no caller since 08-23.
+- **`bench:preview` stays red on `provider-credential-live`** by design — no here.now key exists.
 
 ---
 

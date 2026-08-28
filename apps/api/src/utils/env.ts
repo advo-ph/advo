@@ -31,9 +31,6 @@ const envSchema = z.object({
   HERENOW_API_KEY: z.string().optional(),
   HERENOW_API_URL: z.string().optional(),
 
-  CLOUDFLARE_TOKEN: z.string().optional(),
-  CLOUDFLARE_ACCOUNT_ID: z.string().optional(),
-
   PORT: z.coerce.number().default(6407),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   UPLOAD_DIR: z.string().default("./uploads"),

@@ -20,8 +20,12 @@
  * only honest check, which is also why the roadmap row estimated playwright.
  *
  * Requires the web dev server. Start it first:
- *   npm run dev:web        (or set ADVO_LANDING_URL)
+ *   npm run dev:web        (serves apps/web/vite.config.ts -> port 6447)
  *   npm run bench:drawer
+ *
+ * The default below tracks that vite port. If 6447 is already taken vite silently
+ * moves to the next free one and prints it, so pass the port it actually chose:
+ *   ADVO_LANDING_URL=http://127.0.0.1:6448/ npm run bench:drawer
  */
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -29,7 +33,8 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../../..");
-const baseUrl = process.env.ADVO_LANDING_URL || "http://127.0.0.1:6100/";
+/** Must track `server.port` in apps/web/vite.config.ts, or the documented run above cannot connect. */
+const baseUrl = process.env.ADVO_LANDING_URL || "http://127.0.0.1:6447/";
 
 /** Narrow enough that the drawer toggle is the only nav affordance. */
 const MOBILE = { width: 375, height: 812 };
@@ -57,7 +62,26 @@ async function run() {
   const page = await browser.newPage({ viewport: MOBILE });
 
   try {
-    await page.goto(baseUrl, { waitUntil: "networkidle" });
+    try {
+      await page.goto(baseUrl, { waitUntil: "networkidle" });
+    } catch (error) {
+      // A refused connection is not an accessibility failure, but the raw playwright
+      // stack reads exactly like one. Say which server is missing instead.
+      await browser.close();
+      // Printed line by line so the message stays readable in a CI log.
+      for (const line of [
+        `drawer-a11y could not reach ${baseUrl}`,
+        "",
+        "This bench drives the real page; it does not start a server.",
+        "  1. npm run dev:web",
+        "  2. npm run bench:drawer   (or ADVO_LANDING_URL=<the port vite printed> npm run bench:drawer)",
+        "",
+        `Underlying error: ${error.message.split(String.fromCharCode(10))[0]}`,
+      ]) {
+        console.error(line);
+      }
+      process.exit(2);
+    }
 
     // ── the toggle is wired to the drawer it controls ──
     const toggle = page.locator(TOGGLE).first();

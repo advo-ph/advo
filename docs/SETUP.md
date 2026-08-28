@@ -55,6 +55,8 @@ VITE_API_URL=http://localhost:6407        # Local
 # VITE_API_URL=https://api.advo.ph       # Production
 # (S4, 9574820) VITE_GITHUB_TOKEN / VITE_CLOUDFLARE_TOKEN removed — the GitHub
 # feed routes through the backend now; no API tokens in the browser bundle.
+# Do not reintroduce either: Vite inlines VITE_* into the public bundle.
+# VITE_API_PROXY_TARGET=http://127.0.0.1:6407  # which API `npm run dev:web` proxies /api to
 ```
 
 ### API (`apps/api/.env`)
@@ -75,8 +77,24 @@ PRAUD_IMPORT_SECRET=...                   # praud passcode `advo` → POST /api/
 ADVO_INBOX_PROJECT_ID=                    # optional; else auto Inbox project
 # PLAUD_TOKEN=                            # file-id import + GET /api/meeting/plaud (share URL works without)
 # PLAUD_POLL_SECOND=60                    # ADVO-folder probe interval; 0 disables
-CLOUDFLARE_TOKEN=...                      # Deployment status
-CLOUDFLARE_ACCOUNT_ID=...
+
+# Preview hosting for "Show Client Now". Unset = manual: the team pastes
+# preview_url onto the project. `cloudflare` deploys the built artifact to Pages
+# (token needs "Cloudflare Pages: Edit"); `herenow` has no issuable key today and
+# falls back to manual rather than failing the endpoint.
+# PREVIEW_HOST_PROVIDER=manual
+# CLOUDFLARE_ACCOUNT_ID=...
+# CLOUDFLARE_API_TOKEN=...
+# CLOUDFLARE_PAGES_PROJECT=...
+# HERENOW_API_KEY=
+
+# Outreach transport — deliberately separate from the transactional mailer above,
+# which carries client magic-links. Campaign sending is REFUSED when these are
+# unset and never falls back to the transactional transport. Setting them is not
+# clearance to send: run `npm run outreach:preflight` first.
+# OUTREACH_SMTP_HOST=... / OUTREACH_SMTP_PORT=587 / OUTREACH_SMTP_USER=...
+# OUTREACH_SMTP_PASS=... / OUTREACH_FROM=ADVO <hello@outreach.advo.ph>
+# OUTREACH_DKIM_SELECTOR=...                # no safe default; the ESP issues it
 
 # Server (advo = 6400–6499; API ends in 07)
 PORT=6407

@@ -165,6 +165,7 @@ Default login: `admin@advo.ph` / `changeme`
 | `JWT_SECRET` | Yes | 32+ char random string |
 | `JWT_REFRESH_SECRET` | Yes | 32+ char random string |
 | `RESEND_API_KEY` | No | Resend API key for email |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | No | SMTP alternative to Resend for **transactional** mail (magic-links, invites, lead notifications). Not the outreach transport — see `OUTREACH_*` below. |
 | `GITHUB_TOKEN` | No | GitHub PAT (server-side) |
 | `GITHUB_WEBHOOK_SECRET` | No | Webhook signature verification |
 | `PRAUD_IMPORT_SECRET` | No | Shared secret for `POST /api/meeting/import/praud` |
@@ -173,6 +174,19 @@ Default login: `admin@advo.ph` / `changeme`
 | `PLAUD_AUTH_FILE` | No | Alternate path to `{ token }` JSON (default `~/.piper/plaud-auth.json`). |
 | `PLAUD_API_HOST` | No | Plaud API host (default `https://api-apse1.plaud.ai`). |
 | `PLAUD_POLL_SECOND` | No | Seconds between ADVO-folder probes (default 60). `0` disables. |
+| `ANTHROPIC_API_KEY` | No | Claude — contract review, meeting → tasks, timeline + revision-note assist, proposal copy. Every one falls back to a heuristic/template path when unset. |
+| `GITHUB_ORG` | No | GitHub org for the engineering feed (default `advo-ph`) |
+| `FB_SESSION_PATH` | No | Facebook session JSON for the experimental FB scraper (default `/root/blead/data/facebook-session.json`). Admin → Tools. |
+| `PREVIEW_HOST_PROVIDER` | No | Which adapter serves "Show Client Now": `manual` (default — the team pastes `preview_url`), `cloudflare`, or `herenow`. An unconfigured provider degrades to `manual` rather than failing. |
+| `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_PAGES_PROJECT` | No | Cloudflare Pages preview deploys. Token needs *Cloudflare Pages: Edit*; the Pages project must exist first. |
+| `HERENOW_API_KEY` / `HERENOW_API_URL` | No | here.now preview deploys. No key is issuable today, so this adapter falls back to `manual`. |
+| `OUTREACH_SMTP_HOST` / `_PORT` / `_USER` / `_PASS` / `OUTREACH_FROM` | No | Campaign sending identity, **deliberately separate** from the transactional mailer that carries client magic-links. Campaign send is refused when unset and never falls back to the transactional transport. |
+| `OUTREACH_DKIM_SELECTOR` | No | The selector the outreach ESP issued. No safe default — a guessed one checks the wrong DNS name. |
+
+Setting the `OUTREACH_*` variables is **not** clearance to send. Configuration proves the
+transport exists; it says nothing about whether the receiving world will accept the mail. Run
+`npm run outreach:preflight` to resolve SPF, DKIM and DMARC for the outreach domain — campaign
+sending stays refused until that verdict passes for the exact domain and is under 30 days old.
 
 ## Deployment
 
@@ -274,6 +288,10 @@ Concurrency cancels superseded runs per branch — no wasted minutes when you pu
 - [FEATURES.md](./docs/FEATURES.md) — Feature documentation, auth system, hooks reference
 - [ROADMAP.md](./docs/ROADMAP.md) — Product roadmap
 - [HANDOFF.md](./docs/HANDOFF.md) — Session handoff / open items
+- [CONTRACTS.md](./docs/CONTRACTS.md) — The nine contract policies (none lawyer-reviewed)
+- [LEGAL-BRIEF.md](./docs/LEGAL-BRIEF.md) — Self-contained packet for counsel
+- [LAWYER-OUTREACH.md](./docs/LAWYER-OUTREACH.md) — Who to send that packet to, and the covering email
+- [ASK-IDENTITY.md](./docs/ASK-IDENTITY.md) — The merchant-identity facts blocking PayMongo, the legal brief, and the contract signatory block
 
 ## License
 
