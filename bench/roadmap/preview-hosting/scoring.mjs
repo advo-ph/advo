@@ -18,6 +18,18 @@
  * 2026-08-23 they cannot supply one, so `provider-credential-live` STAYS RED by
  * design — the same shape as paymongo's legal-identity-filled. Build the seam
  * and the adapter; do not stub a key and do not delete the check.
+ *
+ * RE-AUTHORED 2026-08-29. The row above is kept for the record but no longer
+ * describes what this checks. here.now was closed on 08-24 — superseded by the
+ * Cloudflare Pages adapter, chosen precisely because its credential is
+ * self-issuable where here.now's never was. A row hard-coded to
+ * HERENOW_API_KEY was therefore asserting a credential nobody intends to
+ * obtain, which is a permanently-red check measuring a decision that has
+ * already been made. It now asserts a live credential for whichever provider
+ * PREVIEW_HOST_PROVIDER actually selects. It is no longer red-by-design: a
+ * real Cloudflare token was issued 2026-08-29 and the Pages project
+ * `advo-preview` created with it, so this row is now falsifiable in the
+ * ordinary way.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -31,6 +43,37 @@ const read = (relativePath) => {
 };
 
 const has = (relativePath) => existsSync(join(repoRoot, relativePath));
+
+/**
+ * The credential lives in apps/api/.env (gitignored), not in the shell that runs
+ * the bench. Read it from there when the process env does not carry it, so the
+ * check reflects the machine's real configuration rather than how it was invoked.
+ * Presence only — the value is never printed.
+ */
+const localEnv = (() => {
+  const raw = read("apps/api/.env");
+  const map = {};
+  for (const line of raw.split(/\r?\n/)) {
+    const match = /^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(.*)$/.exec(line);
+    if (match) map[match[1]] = match[2].trim();
+  }
+  return map;
+})();
+
+const configured = (name) => Boolean(process.env[name] || localEnv[name]);
+
+/** Which adapter the credential check should hold to account. */
+const activeProvider = process.env.PREVIEW_HOST_PROVIDER || localEnv.PREVIEW_HOST_PROVIDER || "manual";
+
+/** manual needs no credential at all — that is the whole point of the fallback. */
+const credentialByProvider = {
+  manual: () => true,
+  herenow: () => configured("HERENOW_API_KEY"),
+  cloudflare: () =>
+    configured("CLOUDFLARE_ACCOUNT_ID") &&
+    configured("CLOUDFLARE_API_TOKEN") &&
+    configured("CLOUDFLARE_PAGES_PROJECT"),
+};
 
 const files = {
   service: read("apps/api/src/services/preview-host.service.ts"),
@@ -94,10 +137,10 @@ const checks = [
   },
   {
     id: "provider-credential-live",
-    title: "A live here.now credential is configured",
-    passed: Boolean(process.env.HERENOW_API_KEY),
+    title: `A live credential is configured for the selected provider (${activeProvider})`,
+    passed: (credentialByProvider[activeProvider] ?? (() => false))(),
     expected:
-      "RED BY DESIGN. No here.now key exists and the operator confirmed on 2026-08-23 they cannot supply one. Ship the seam and leave this red.",
+      "The provider named by PREVIEW_HOST_PROVIDER has the credential it needs, read from the process env or apps/api/.env. `manual` passes with no credential by design — it is the no-network fallback. `cloudflare` needs the account id, API token and Pages project name together: a token without a project deploys into nothing.",
   },
 ];
 

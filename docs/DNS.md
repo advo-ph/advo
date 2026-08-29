@@ -1,7 +1,7 @@
 # DNS — mail authentication
 
-What is published today, what is missing, and the exact records to add. Read off live DNS
-on **2026-08-24**; re-check before acting on it, because DNS is the one thing in this repo
+What is published today, what is missing, and the exact records to add. Re-read off live DNS
+on **2026-08-29**; re-check before acting on it, because DNS is the one thing in this repo
 that changes without a commit.
 
 Two separate problems live here and they should not be conflated:
@@ -24,11 +24,19 @@ Two separate problems live here and they should not be conflated:
 | `google._domainkey.advo.ph` | TXT | *(none — `NXDOMAIN`)* | ❌ **Workspace DKIM never enabled** |
 | `_dmarc.advo.ph` | TXT | `v=DMARC1; p=none;` | ⚠️ Publishes a record, enforces nothing, and has no `rua=` so no reports are collected either |
 | `send.advo.ph` | TXT | `v=spf1 include:amazonses.com ~all` | ✅ Resend's sending subdomain is correctly set up |
+| `send.advo.ph` | MX | `10 feedback-smtp.ap-northeast-1.amazonses.com` | ✅ **New 2026-08-29.** The custom return path Resend issues when a domain is verified — this is how bounce and complaint feedback gets back to the domain. Region is Tokyo (`ap-northeast-1`). |
 
 So the apex sends mail two ways — Google Workspace for humans, Resend for transactional
 (`noreply@advo.ph`) — and **neither is covered by SPF.** Resend's mail still passes DMARC
 on DKIM alignment alone; Google's mail passes nothing. It is only landing because `p=none`
 asks receivers to do nothing about it.
+
+**2026-08-29 — the apex is now a verified Resend domain, and that changed nothing above.**
+`advo.ph` was added and verified in Resend on 08-29, which is what finally let
+`noreply@advo.ph` send (see [HANDOFF.md](HANDOFF.md) — prod had no mail transport at all
+until that day). Verification only proves DKIM; it does not publish SPF, and the two ❌ rows
+above are still open. Do not read "Domain verified" in the Resend dashboard as "apex mail is
+authenticated" — those are different claims.
 
 ---
 
