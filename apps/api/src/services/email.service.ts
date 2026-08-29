@@ -39,10 +39,62 @@ function transport() {
   return _transport;
 }
 
+/**
+ * Delivery state, surfaced on GET /api/health.
+ *
+ * WHY THIS EXISTS. On 2026-08-29 prod was found with no mail transport configured at
+ * all — neither RESEND_API_KEY nor SMTP_HOST. `send()` logged and returned, callers saw
+ * success, and every magic link, invite and lead notification was silently dropped for an
+ * unknown length of time while /api/health reported `status: ok`. It was found by reading
+ * the prod .env for an unrelated reason, not by any alarm.
+ *
+ * `send()` still must not throw: a lead POST failing because a notification bounced would
+ * turn a delivery problem into a data-loss problem. So the fix is not propagation, it is
+ * VISIBILITY — every outcome is recorded here and reported, so the next missing key,
+ * unverified domain or expired credential announces itself instead of waiting to be
+ * stumbled over.
+ *
+ * Note that an unverified sending domain fails at sendMail with a 403, which lands in
+ * `lastError` rather than in `isTransportConfigured` — a valid key on an unverified domain
+ * looks exactly like a working one until something actually sends.
+ */
+const mailState = {
+  lastSuccessAt: null as string | null,
+  lastFailureAt: null as string | null,
+  lastError: null as string | null,
+  consecutiveFailure: 0,
+  sentCount: 0,
+  failedCount: 0,
+};
+
+/** Public, unauthenticated surface — presence and counts only, never an address or a key. */
+export function mailHealth() {
+  return {
+    isTransportConfigured: transport() !== null,
+    lastSuccessAt: mailState.lastSuccessAt,
+    lastFailureAt: mailState.lastFailureAt,
+    lastError: mailState.lastError,
+    consecutiveFailure: mailState.consecutiveFailure,
+    sentCount: mailState.sentCount,
+    failedCount: mailState.failedCount,
+  };
+}
+
+/** Recipients are not health data. Keep the reason, drop everything identifying. */
+function recordFailure(reason: string) {
+  mailState.lastFailureAt = new Date().toISOString();
+  mailState.lastError = reason.slice(0, 200);
+  mailState.consecutiveFailure += 1;
+  mailState.failedCount += 1;
+}
+
 async function send(to: string, subject: string, html: string) {
   const t = transport();
   if (!t) {
-    log.info({ to, subject }, "Email (no transport, logged only)");
+    // Deliberately error, not info. This is a dropped email, and it used to read as
+    // routine housekeeping in a log nobody greps.
+    log.error({ to, subject }, "Email DROPPED — no transport configured");
+    recordFailure("No email transport configured (RESEND_API_KEY / SMTP_HOST both unset)");
     return;
   }
 
@@ -53,9 +105,13 @@ async function send(to: string, subject: string, html: string) {
       subject,
       html,
     });
+    mailState.lastSuccessAt = new Date().toISOString();
+    mailState.consecutiveFailure = 0;
+    mailState.sentCount += 1;
     log.info({ to, subject }, "Email sent");
   } catch (err) {
     log.error({ to, subject, err }, "Failed to send email");
+    recordFailure(err instanceof Error ? err.message : String(err));
   }
 }
 
