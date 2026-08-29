@@ -48,8 +48,14 @@ async function polishWithClaude(note: string): Promise<string | null> {
   try {
     const client = new Anthropic();
     const res = await client.messages.create({
-      model: "claude-opus-4-8",
-      max_tokens: 1024,
+      model: "claude-opus-5",
+      // Opus 5 runs adaptive thinking when `thinking` is omitted; Opus 4.8 ran
+      // none. Thinking tokens come out of max_tokens, so the old 1024 would
+      // now be spent reasoning and truncate the JSON this parses — which fails
+      // silently into the heuristic path. Headroom + a step down from the
+      // default `high` effort: this is structured extraction, not open reasoning.
+      max_tokens: 4000,
+      output_config: { effort: "medium" },
       system: AI_SYSTEM,
       messages: [
         {
