@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import ScrollProgress from "@/components/ui/ScrollProgress";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import ScrollReset from "@/components/ScrollReset";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Hub from "./pages/Hub";
@@ -27,6 +28,9 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        {/* Inside the router so it can read the location, and BEFORE <Routes> so the
+            reset is queued before the new page's own effects run. Renders nothing. */}
+        <ScrollReset />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/login" element={<Login />} />
