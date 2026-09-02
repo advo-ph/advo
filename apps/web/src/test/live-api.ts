@@ -17,7 +17,7 @@
  * and an unreachable API fails loudly, which is what a deploy gate wants.
  */
 
-export const API = process.env.VITE_API_URL || "http://localhost:6407";
+export const API = process.env.VITE_API_URL || "http://127.0.0.1:6407";
 
 /** A dead port should cost a second, not the platform default. */
 const PROBE_TIMEOUT_MS = 2000;

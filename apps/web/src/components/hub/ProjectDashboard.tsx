@@ -15,6 +15,8 @@ import {
   AlertCircle,
   Receipt,
   Send,
+  CreditCard,
+  History,
   Mic,
   ChevronDown,
   ChevronUp,
@@ -23,6 +25,9 @@ import { useRequestPreview } from "@/hooks/usePreviewLink";
 import { useProjectAssets } from "@/hooks/useProjectAssets";
 import { useMeeting } from "@/hooks/useMeeting";
 import { useChangeOrder } from "@/hooks/useChangeOrder";
+import { usePayableIntent } from "@/hooks/usePaymentIntent";
+import { usePreviewHistory } from "@/hooks/usePreviewHistory";
+import ProjectThread from "./ProjectThread";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -102,6 +107,20 @@ const statusConfig: Record<
   },
 };
 
+/**
+ * Hosts we deploy previews to allow being framed by the hub. Anything else is
+ * a client's live production domain, which almost always sends
+ * X-Frame-Options and would render as an empty frame.
+ */
+const isFramable = (url: string) => {
+  try {
+    const host = new URL(url).hostname;
+    return /(\.|^)(pages\.dev|advo\.ph|vercel\.app|netlify\.app|localhost)$/.test(host);
+  } catch {
+    return false;
+  }
+};
+
 const getInitials = (name: string) =>
   name
     .split(" ")
@@ -139,6 +158,7 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
     fileChangeOrder,
     isFiling,
   } = useChangeOrder(project.project_id);
+  const { previewLink } = usePreviewHistory(project.project_id);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [expandedMeetingId, setExpandedMeetingId] = useState<number | null>(null);
   const [scope, setScope] = useState("");
@@ -147,6 +167,10 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
   // Safe defaults for optional nested arrays
   const deliverables = project.deliverables || [];
   const invoices = project.invoices || [];
+  // One pay button per open invoice, only when a checkout link actually exists.
+  const payable = usePayableIntent(
+    invoices.filter((inv) => inv.status !== "paid").map((inv) => inv.invoice_id),
+  );
   const assets = project.assets || [];
   const contacts = project.contacts || [];
   const updates = project.updates || [];
@@ -315,8 +339,32 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
         </div>
       </Panel>
 
-      {/* Live preview — sandboxed iframe when preview_url is set */}
-      {project.preview_url && (
+      {/* The conversation about this project, on this project. */}
+      <ProjectThread projectId={project.project_id} />
+
+      {/* Live preview — sandboxed iframe when preview_url is set. Only for
+          hosts that allow framing: a production site behind X-Frame-Options
+          renders as a blank white box, and a blank box reads as "broken",
+          so those get a link card instead. */}
+      {project.preview_url && !isFramable(project.preview_url) && (
+        <Panel title="Live preview">
+          <a
+            href={project.preview_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between gap-3 px-4 py-4 hover:bg-secondary/40 transition-colors"
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-medium truncate">{project.preview_url.replace(/^https?:\/\//, "")}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                This site does not allow embedding. It opens in a new tab.
+              </p>
+            </div>
+            <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
+          </a>
+        </Panel>
+      )}
+      {project.preview_url && isFramable(project.preview_url) && (
         <Panel
           title="Live preview"
           meta={
@@ -346,6 +394,49 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
               referrerPolicy="no-referrer"
             />
           </div>
+        </Panel>
+      )}
+
+      {/* Every preview the team has issued, newest first, so "which one did
+          you mean" has an answer. */}
+      {previewLink.length > 0 && (
+        <Panel title="Preview history" meta={`${previewLink.length} issued`}>
+          <ul className="divide-y divide-border">
+            {previewLink.map((row) => {
+              const isExpired = row.expiresAt ? new Date(row.expiresAt).getTime() < Date.now() : false;
+              return (
+                <li key={row.previewLinkId} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <History className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0">
+                      <p className="text-sm truncate">
+                        {new Date(row.issuedAt).toLocaleString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          hour: "numeric",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                      {row.note && <p className="text-xs text-muted-foreground truncate">{row.note}</p>}
+                    </div>
+                  </div>
+                  {isExpired ? (
+                    <span className="text-xs text-muted-foreground shrink-0">Expired</span>
+                  ) : (
+                    <a
+                      href={row.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                    >
+                      Open
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         </Panel>
       )}
 
@@ -507,6 +598,17 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
                     )}
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
+                    {payable[inv.invoice_id] && (
+                      <a
+                        href={payable[inv.invoice_id].checkoutUrl ?? "#"}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-accent text-accent-foreground text-xs font-medium hover:bg-accent/90 transition-colors"
+                      >
+                        <CreditCard className="h-3.5 w-3.5" />
+                        Pay now
+                      </a>
+                    )}
                     <span className="text-sm font-medium tabular-nums">
                       ₱{(inv.amount_cents / 100).toLocaleString("en-PH", {
                         minimumFractionDigits: 2,

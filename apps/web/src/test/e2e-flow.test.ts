@@ -1,4 +1,6 @@
 /**
+ * @vitest-environment node
+ *
  * End-to-End Flow Tests
  *
  * Tests the complete ADVO app flow against the live API:

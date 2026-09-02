@@ -32,6 +32,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import ProjectThread from "@/components/hub/ProjectThread";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -410,6 +411,9 @@ const ProjectCommandCenter = ({ project, onBack }: ProjectCommandCenterProps) =>
               </div>
             </div>
           </Panel>
+
+          {/* What the client wrote on the hub, and the reply that reaches them by email. */}
+          <ProjectThread projectId={project.project_id} title="Client thread" />
         </TabsContent>
 
         {/* ── Deliverables (real) ── */}

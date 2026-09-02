@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   LogOut,
@@ -49,6 +49,14 @@ const Hub = () => {
   const { notifications, unreadCount, markRead } = useClientNotifications();
   const [selectedProject, setSelectedProject] = useState<ClientProject | null>(null);
   const [bellOpen, setBellOpen] = useState(false);
+  // The contracts fold is a <details>; its open state follows the breakpoint.
+  const [isWide, setIsWide] = useState(() => typeof window !== "undefined" && window.innerWidth >= 1024);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const apply = () => setIsWide(mq.matches);
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
 
   // Auto-select first project once loaded
   if (!selectedProject && projects.length > 0) {
@@ -197,24 +205,24 @@ const Hub = () => {
                           Your projects
                         </span>
                       </div>
-                      <nav className="divide-y divide-border">
+                      <nav className="flex overflow-x-auto lg:block lg:overflow-visible divide-x lg:divide-x-0 lg:divide-y divide-border">
                         {projects.map((project) => {
                           const isActive = selectedProject?.project_id === project.project_id;
                           return (
                             <button
                               key={project.project_id}
                               onClick={() => setSelectedProject(project)}
-                              className={`relative w-full text-left flex items-center justify-between gap-2 px-3 h-11 text-sm transition-colors ${
+                              className={`relative shrink-0 lg:w-full text-left flex items-center justify-between gap-2 px-3 h-11 text-sm transition-colors ${
                                 isActive
                                   ? "bg-accent/[0.06] text-foreground"
                                   : "text-muted-foreground hover:bg-secondary/40 hover:text-foreground"
                               }`}
                             >
                               {isActive && (
-                                <span className="absolute left-0 top-0 bottom-0 w-0.5 bg-accent" />
+                                <span className="absolute left-0 right-0 bottom-0 h-0.5 lg:top-0 lg:right-auto lg:h-auto lg:w-0.5 bg-accent" />
                               )}
-                              <span className="font-medium truncate">{project.title}</span>
-                              <ChevronRight className="h-4 w-4 shrink-0 opacity-60" />
+                              <span className="font-medium truncate max-w-[60vw] lg:max-w-none">{project.title}</span>
+                              <ChevronRight className="hidden lg:block h-4 w-4 shrink-0 opacity-60" />
                             </button>
                           );
                         })}
@@ -222,14 +230,16 @@ const Hub = () => {
                     </div>
                   )}
 
-                  {/* Contracts list — open document_url when present */}
-                  <div className="bg-card border border-border rounded-lg overflow-hidden">
-                    <div className="px-3 h-9 border-b border-border flex items-center gap-1.5">
+                  {/* Contracts list — open document_url when present. Folded on
+                      phones so the dashboard is one swipe away, open on a laptop. */}
+                  <details className="bg-card border border-border rounded-lg overflow-hidden" open={isWide}>
+                    <summary className="list-none cursor-pointer px-3 h-9 border-b border-border flex items-center gap-1.5 lg:cursor-default">
                       <FileSignature className="h-3 w-3 text-muted-foreground/70" />
                       <span className="text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/70">
                         Contracts
                       </span>
-                    </div>
+                      <span className="ml-auto text-[11px] text-muted-foreground lg:hidden">{contract.length}</span>
+                    </summary>
                     {contract.length === 0 ? (
                       <p className="px-3 py-6 text-xs text-muted-foreground text-center">
                         No contracts yet
@@ -278,7 +288,7 @@ const Hub = () => {
                         })}
                       </ul>
                     )}
-                  </div>
+                  </details>
                 </div>
               </div>
 

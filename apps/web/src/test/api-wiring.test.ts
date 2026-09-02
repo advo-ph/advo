@@ -1,4 +1,6 @@
 /**
+ * @vitest-environment node
+ *
  * API Wiring Validation Tests
  *
  * These tests verify that all frontend modules correctly call the ADVO
