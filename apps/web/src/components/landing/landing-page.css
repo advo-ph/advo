@@ -40,7 +40,12 @@
 
 /* Landing scrolls on the document, not #root. A #root classic scrollbar
    shrinks in-flow content (hero) while position:fixed nav stays viewport-wide,
-   so Start a project misses the hero edge. Document scroll keeps both aligned. */
+   so Start a project misses the hero edge. Document scroll keeps both aligned.
+
+   The native scrollbar is hidden outright (the sisia system): a classic bar
+   consumes layout on Windows, weights the page to the right, and shifts it
+   whenever the drawer locks scrolling. LandingScrollbar draws a thin overlay
+   thumb in its place that takes no layout at all. */
 html:has(.landing-page) {
   color-scheme: light;
   background: var(--landing-ground);
@@ -48,14 +53,9 @@ html:has(.landing-page) {
   overflow-x: hidden;
   height: auto;
   scroll-behavior: smooth;
-  /* The drawer lock hides the scrollbar; useDrawerLock measures its width
-   * into --drawer-scrollbar so the page and the bar pad by exactly that
-   * while locked, and by nothing otherwise. (scrollbar-gutter: stable was
-   * tried and reserves a permanent strip under Windows overlay scrollbars.) */
-  padding-right: var(--drawer-scrollbar, 0px);
-  scrollbar-width: thin;
-  scrollbar-color: rgba(12, 12, 12, 0.28) transparent;
+  scrollbar-width: none;
 }
+html:has(.landing-page)::-webkit-scrollbar { display: none; }
 html:has(.landing-page) body,
 html:has(.landing-page) #root {
   color-scheme: light;
@@ -64,9 +64,25 @@ html:has(.landing-page) #root {
   height: auto;
   min-height: 100dvh;
 }
-html:has(.landing-page)::-webkit-scrollbar-thumb { background: rgba(12, 12, 12, 0.22); }
-html:has(.landing-page):hover::-webkit-scrollbar-thumb { background: rgba(12, 12, 12, 0.38); }
-html:has(.landing-page)::-webkit-scrollbar-track { background: transparent; }
+
+.landing-scrollbar {
+  position: fixed;
+  top: 6px;
+  right: 4px;
+  bottom: 6px;
+  z-index: 60;
+  width: 3px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s var(--landing-ease);
+}
+.landing-scrollbar[data-state="active"] { opacity: 1; transition-duration: 0.12s; }
+.landing-scrollbar > div {
+  width: 100%;
+  border-radius: 999px;
+  background: rgba(12, 12, 12, 0.35);
+  will-change: transform;
+}
 
 .landing-page {
   overflow: hidden;
@@ -155,7 +171,6 @@ body:has(.landing-shell) {
   right: 0;
   z-index: 40;
   height: var(--landing-nav-height);
-  padding-right: var(--drawer-scrollbar, 0px);
   color: var(--landing-ink);
   transition: color 0.25s var(--landing-ease);
 }

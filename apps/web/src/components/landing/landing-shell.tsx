@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { useReducedMotion } from "framer-motion";
 import LandingNav from "@/components/LandingNav";
+import LandingScrollbar from "@/components/LandingScrollbar";
 import LandingFooter from "./landing-footer";
 import "./landing-page.css";
 
@@ -20,6 +21,7 @@ const LandingShell = ({ children }: LandingShellProps) => {
   return (
     <div className={reduceMotion ? "landing-page landing-shell is-reduce-motion" : "landing-page landing-shell"}>
       <LandingNav anchorPrefix="/" />
+      <LandingScrollbar />
       <div className="landing-shell-body">{children}</div>
       <LandingFooter anchorPrefix="/" />
     </div>

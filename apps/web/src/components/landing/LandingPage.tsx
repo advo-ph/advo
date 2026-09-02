@@ -5,6 +5,7 @@ import { ArrowUpRight, ChevronDown, ChevronRight } from "lucide-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { getCaseStudy } from "@/data/case-study";
 import LandingNav from "@/components/LandingNav";
+import LandingScrollbar from "@/components/LandingScrollbar";
 import { Reveal, RevealGroup } from "@/components/motion/Reveal";
 import { EASE } from "@/lib/motion";
 import LandingFooter from "./landing-footer";
@@ -205,6 +206,7 @@ const LandingPage = () => {
   return (
     <main className={reduceMotion ? "landing-page is-reduce-motion" : "landing-page"}>
       <LandingNav overlayHero />
+      <LandingScrollbar />
 
       <section className="landing-hero" id="top">
         <div className="landing-hero-frame" ref={heroRef}>
