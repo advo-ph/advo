@@ -61,9 +61,13 @@ const report = { base: BASE, widths: {}, drawer: {}, navPanel: {}, routes: {} };
   });
   await page.screenshot({ path: `${OUT}/drawer-open.png` });
 
-  // scroll-lock check: try scrolling while open
-  const scrollYWhileOpen = await page.evaluate(() => { window.scrollTo(0, 400); return window.scrollY; });
-  report.drawer.scrollYWhileOpen = scrollYWhileOpen;
+  // scroll-lock check: a real wheel, not window.scrollTo — programmatic scroll
+  // bypasses overflow:hidden by spec, so it would "fail" a correct lock.
+  const scrollYWhileOpen = await page.evaluate(() => window.scrollY);
+  await page.mouse.wheel(0, 400);
+  await page.waitForTimeout(150);
+  const scrolledWhileOpen = await page.evaluate(() => window.scrollY);
+  report.drawer.scrollLocked = scrolledWhileOpen === 0 && scrollYWhileOpen === 0;
 
   // ESC closes?
   await page.keyboard.press("Escape");
