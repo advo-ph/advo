@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Panel, Empty } from "@/components/admin/_ui";
+import RevisionBurndown from "@/components/hub/RevisionBurndown";
 import {
   useProjectSignoff,
   formatPeso,
@@ -107,12 +108,18 @@ const SignoffBlock = ({ row }: { row: ProjectSignoff }) => {
           </div>
         )}
 
-        {/* ─── Unsigned: use the rounds first, then sign ─── */}
+        {/* ─── Unsigned: use the rounds first, then sign ───
+            Drawn rather than only stated. This number's job is to register BEFORE
+            somebody asks for a fourth round, not to be produced afterwards during an
+            argument — and the FourlinQ dispute was two parties holding different counts.
+            The same component renders on the team side, from the same props, so the
+            two can never disagree. */}
         {!isSigned && (
-          <p className="text-xs text-muted-foreground">
-            You have {d.freeRevisionRemainingCount} of {row.freeRevisionTotalCount} complementary
-            revisions left — use them before you sign.
-          </p>
+          <RevisionBurndown
+            usedCount={d.freeRevisionUsedCount}
+            totalCount={row.freeRevisionTotalCount}
+            audience="client"
+          />
         )}
 
         {/* ─── Revision request ─── */}

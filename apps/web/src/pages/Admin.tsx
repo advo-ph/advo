@@ -11,6 +11,8 @@ import { formatCurrency } from "@/types/admin";
 // Admin Components
 import AdminSidebar, { type AdminSection } from "@/components/admin/AdminSidebar";
 import AdminDashboard from "@/components/admin/AdminDashboard";
+import AdminRiskPanel from "@/components/admin/AdminRiskPanel";
+import AdminCommandPalette from "@/components/admin/AdminCommandPalette";
 import AdminProjects from "@/components/admin/AdminProjects";
 import AdminClients from "@/components/admin/AdminClients";
 import AdminTeam from "@/components/admin/AdminTeam";
@@ -111,6 +113,11 @@ const Admin = () => {
       </header>
 
       {/* Sidebar */}
+      {/* ⌘K. Mounted at page level rather than inside a section, so reaching any
+          destination costs the same from anywhere in admin — which is the whole point
+          of a palette once the sidebar has twenty entries. */}
+      <AdminCommandPalette onNavigate={setActiveSection} />
+
       <AdminSidebar
         activeSection={activeSection}
         onSectionChange={setActiveSection}
@@ -129,16 +136,30 @@ const Admin = () => {
       >
         <div className="max-w-6xl mx-auto">
           {activeSection === "dashboard" && (
-            <AdminDashboard
-              projects={projects}
-              clients={clients}
-              leads={leads}
-              formatCurrency={formatCurrency}
-              recentActivity={recentActivity}
-              upcomingDeadlines={upcomingDeadlines}
-              userName={user?.email}
-              onNavigate={setActiveSection}
-            />
+            <>
+              {/* Above the pipeline, deliberately. Coffee Rush went into development
+                  with no signed contract and nothing on this screen said so, even
+                  though every fact needed to say it was already in the database.
+                  The panel renders NOTHING when there is nothing to report — a
+                  permanent "0 issues" tile is furniture, and furniture is invisible
+                  by the time it finally has something on it. */}
+              <div className="mb-5">
+                <AdminRiskPanel
+                  formatCurrency={formatCurrency}
+                  onOpenProject={() => setActiveSection("projects")}
+                />
+              </div>
+              <AdminDashboard
+                projects={projects}
+                clients={clients}
+                leads={leads}
+                formatCurrency={formatCurrency}
+                recentActivity={recentActivity}
+                upcomingDeadlines={upcomingDeadlines}
+                userName={user?.email}
+                onNavigate={setActiveSection}
+              />
+            </>
           )}
 
           {activeSection === "projects" && (
