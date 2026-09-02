@@ -65,23 +65,66 @@ html:has(.landing-page) #root {
   min-height: 100dvh;
 }
 
+/* The track is a HIT AREA, wider than the thumb it draws.
+   A 3px bar was unreadable and untouchable; a thumb you can see is a thumb
+   people will try to grab, so the track carries enough width to catch a mouse
+   that is merely close. The thumb itself stays visually restrained. */
 .landing-scrollbar {
   position: fixed;
   top: 6px;
-  right: 4px;
+  right: 0;
   bottom: 6px;
   z-index: 60;
-  width: 3px;
+  width: 16px;
+  display: flex;
+  justify-content: center;
+  /* Touch does not get a grabbable strip down the right edge — it would swallow
+     taps and swipes near the screen border. Re-enabled for fine pointers only. */
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.35s var(--landing-ease);
 }
 .landing-scrollbar[data-state="active"] { opacity: 1; transition-duration: 0.12s; }
+
 .landing-scrollbar > div {
-  width: 100%;
+  width: 8px;
   border-radius: 999px;
-  background: rgba(12, 12, 12, 0.35);
+  background: rgba(12, 12, 12, 0.32);
+  transition: width 0.14s var(--landing-ease), background-color 0.14s var(--landing-ease);
   will-change: transform;
+}
+
+@media (pointer: fine) {
+  .landing-scrollbar {
+    pointer-events: auto;
+  }
+  /* Approaching it, or dragging it, holds it open and thickens the thumb —
+     the macOS overlay behaviour people already expect from an overlay bar. */
+  .landing-scrollbar:hover,
+  .landing-scrollbar[data-drag="true"] {
+    opacity: 1;
+    transition-duration: 0.08s;
+  }
+  .landing-scrollbar:hover > div,
+  .landing-scrollbar[data-drag="true"] > div {
+    width: 11px;
+    background: rgba(12, 12, 12, 0.55);
+  }
+  .landing-scrollbar[data-drag="true"] {
+    cursor: grabbing;
+  }
+  .landing-scrollbar:hover {
+    cursor: grab;
+  }
+}
+
+/* A drawn bar is decoration when the person has asked for less motion; the
+   width transition is the only thing dropped, not the bar itself. */
+@media (prefers-reduced-motion: reduce) {
+  .landing-scrollbar,
+  .landing-scrollbar > div {
+    transition: none;
+  }
 }
 
 .landing-page {
@@ -121,8 +164,30 @@ body:has(.landing-shell) {
   --input: 220 10% 90%;
 }
 
-.landing-shell { overflow: visible; display: flex; flex-direction: column; min-height: 100%; }
-.landing-shell-body { flex: 1; min-width: 0; width: 100%; display: flex; flex-direction: column; padding-top: 68px; }
+/* `min-height: 100dvh`, NOT `100%`.
+   A percentage min-height resolves against the parent's HEIGHT, and both body
+   and #root are `height: auto` on landing routes — so `100%` computed to auto
+   and did nothing at all. The sticky-footer column below never engaged, and a
+   short page (login, a legal stub) let the footer climb straight up under the
+   card. A viewport unit has nothing to resolve against and just works. */
+.landing-shell { overflow: visible; display: flex; flex-direction: column; min-height: 100dvh; }
+/* `min-height: 100dvh` on the BODY, not just the column.
+   A sticky-footer flex column only pushes the footer down when there is free
+   space left over — and this footer is ~1040px tall on its own, so on a short
+   page (login, a legal stub) the total already exceeded the viewport and the
+   footer climbed straight up under the card. Giving the body its own viewport
+   minimum makes the first screen always a full screen, whatever the footer
+   weighs. `padding-top` is inside it (border-box), so the footer begins at
+   exactly one viewport rather than 68px past it. */
+.landing-shell-body {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding-top: 68px;
+}
 .landing-shell-body a:not([class*="text-"]) { color: inherit; }
 .landing-shell-main { flex: 1; width: min(1180px, calc(100% - 48px)); margin-inline: auto; padding: 32px 0 80px; }
 .landing-shell-auth { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; padding: 48px 24px 72px; }
@@ -685,7 +750,21 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   letter-spacing: -0.02em;
 }
 .landing-footer-lede p { color: rgba(255, 255, 255, 0.62); font-size: var(--landing-text-lead); line-height: 1.55; max-width: 50ch; }
-.landing-footer-cta { margin-top: 24px; }
+/* `inline-flex`, not the default inline.
+   As an inline element the `margin-top` below was simply ignored — vertical
+   margins do not apply to inline boxes — and the ChevronRight after the label
+   was treated as another inline word, so it wrapped onto its own line and sat
+   under the text. Flex keeps the label and its chevron on one baseline, and
+   makes the margin real. */
+.landing-footer-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 24px;
+  white-space: nowrap;
+}
+/* The chevron must never be the thing that shrinks when space is tight. */
+.landing-footer-cta svg { flex: none; }
 .landing-footer-grid {
   width: min(1440px, 100%);
   margin-inline: auto;
