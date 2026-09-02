@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } fr
 import { ArrowUpRight, ChevronDown, ChevronRight } from "lucide-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { getCaseStudy } from "@/data/case-study";
+import WorkMedia from "@/components/WorkMedia";
 import LandingNav from "@/components/LandingNav";
 import LandingScrollbar from "@/components/LandingScrollbar";
 import { Reveal, RevealGroup } from "@/components/motion/Reveal";
@@ -423,9 +424,7 @@ const LandingPage = () => {
               const isExternal = !study && Boolean(item.live_url);
               const body = (
                 <>
-                  <div className="landing-still landing-work-shot">
-                    <img src={item.screenshotUrl ?? ""} alt={`${item.title} screenshot`} loading="lazy" />
-                  </div>
+                  <WorkMedia slug={item.slug} title={item.title} fallback={item.screenshotUrl} />
                   <h3>{item.title}</h3>
                   <p>{item.blurb}</p>
                   {href ? (

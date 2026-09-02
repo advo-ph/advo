@@ -641,9 +641,24 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 }
 .landing-work-card > a,
 .landing-work-card > div { display: block; }
-.landing-work-shot { border: 1px solid var(--landing-line); }
-.landing-work-shot img { object-position: top left; }
-.landing-work-card:hover .landing-still img { transform: scale(1.02); }
+/* The product's share frame in a hairline card, its inner screens along the
+ * bottom. The card is the object; the type sits under it. */
+.landing-work-media {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--landing-line);
+  border-radius: 14px;
+  background: var(--landing-ground);
+}
+.landing-work-og { aspect-ratio: 1200 / 630; border-radius: 8px; }
+.landing-work-media.is-single .landing-work-og { aspect-ratio: 16 / 10; }
+.landing-work-media.is-single img { object-position: top left; }
+.landing-work-strip { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.landing-work-strip .landing-still { aspect-ratio: 16 / 10; border-radius: 6px; }
+.landing-work-strip img { object-position: top; }
+.landing-work-card:hover .landing-work-og img { transform: scale(1.02); }
 .landing-work-card h3 { margin-top: 20px; font-size: var(--landing-text-title); letter-spacing: -0.015em; }
 .landing-page .landing-work-card p { margin-top: 8px; max-width: 48ch; color: var(--landing-ink-soft); line-height: 1.5; }
 
@@ -682,8 +697,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-case-head h1 { font-size: var(--landing-text-heading); line-height: 1.1; letter-spacing: -0.02em; }
 .landing-page .landing-case-head > p { margin-top: 18px; font-size: var(--landing-text-lead); line-height: 1.5; color: var(--landing-ink-soft); }
 .landing-case-head .landing-button { margin-top: 24px; }
-.landing-case-shot { margin-top: 48px; border: 1px solid var(--landing-line); aspect-ratio: 16 / 9; }
-.landing-case-shot img { object-position: top left; }
+.landing-case-shot { margin-top: 48px; }
 .landing-case-row {
   display: grid;
   grid-template-columns: 200px minmax(0, 1fr);

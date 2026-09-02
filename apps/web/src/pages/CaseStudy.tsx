@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { getCaseStudy } from "@/data/case-study";
 import LandingShell from "@/components/landing/landing-shell";
+import WorkMedia from "@/components/WorkMedia";
 import { Reveal, RevealGroup } from "@/components/motion/Reveal";
 
 /**
@@ -62,11 +63,9 @@ const CaseStudy = () => {
               ) : null}
             </Reveal>
 
-            {entry.screenshotUrl ? (
-              <Reveal className="landing-still landing-case-shot" delay={0.1}>
-                <img src={entry.screenshotUrl} alt={entry.title} />
-              </Reveal>
-            ) : null}
+            <Reveal className="landing-case-shot" delay={0.1}>
+              <WorkMedia slug={entry.slug} title={entry.title} fallback={entry.screenshotUrl} />
+            </Reveal>
 
             {study ? (
               <>
