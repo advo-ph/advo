@@ -15,6 +15,30 @@ Cross-links:
 
 ---
 
+## 2026-09-02 — the runway landing, the client hub tier, and the tooling that gates them
+
+> Thirty commits across two sessions on one day. Public `/` rebuilt in the runway grammar with real proof and no generated art; the client hub gained the thread, preview history, event notifications and Pay now; the API gained the ESP bounce webhook; the dev loop gained a one-command local database, an env-drift gate and a design-brief bench. `vitest` 770/770 with the 118 integration tests that used to skip now running. Deployed to prod at the end of the day.
+
+**The landing.** *"durastically improve the UI of the fronten … removing all the unnescsary words/ai-generated slop + keeping this 'runway' feel."* Thirteen sections became six. Every isometric PNG under `public/landing` is gone; the page runs on the cinematic stills and real client marks. Hero copy staggers in and the still drifts on scroll; sections fade up once; the process panel cross-fades; buttons press to 96%. Then the brief from the owner's Dribbble agent — *"serious monotone, not friendly campus UI … Chrome is 1px hairline, no glass, no shadow, no mesh … Lucide at strokeWidth={1}"* — turned the blurred bar into a solid one with a hairline, the mission band flat `#0c0c0c`, every icon an absolute 1px. The footer floor is the traced lockup (`public/advo-wordmark.svg`, contours lifted from the 1024px mark) set to the column width through a CSS mask, the way tripi sets its footer mark to the rule above it. The first screen is cut from the viewport so the client strip is always on it; the strip is an infinite marquee by the owner's call, reduced-motion or not. The native scrollbar is hidden outright (the sisia system) and a draggable overlay thumb drawn instead, which also removed the page shift the drawer lock used to cause. Work cards are each product's 1200×630 share frame over two inner screens, captured from the live sites with cookie banners dismissed, and open `/work/:slug` case studies read out of the client repos.
+
+**The hub.** *"what else is missing for advo for the team, the client and for the devs … do all, make sure each feature works."* One `ProjectThread` component mounted on the hub and in the admin command center, against `project_message` (026); a team reply notifies the client by row and email. `preview_link` records every mint and the hub lists them. `notify.service.ts` is the single writer of client notifications — deliverable completion, change orders, preview mints, thread replies, and the admin POST all go through it. Pay now appears only when a pending intent carries a live checkout URL; the manual rail shows nothing. The live-preview iframe was rendering as a blank white box for any client domain that sends `X-Frame-Options`, which is all of them; it is a link card now. Driven in the browser as `contact@fourlinq.com` and as admin, both directions.
+
+**The devs.** `scripts/db-local.mjs` creates, pushes, migrates and prints the drift verdict; SETUP.md carries the Windows Postgres path. `scripts/env-drift.mjs` found ten keys documented in `.env.example` but never declared in `env.ts`; `bench:env` grades it and CI runs it. `bench:visual` now asserts no glass, no shadow, stroke-1 icons, one gradient. `live-api.ts` targeted `localhost`, which Node resolves to `::1` while the API listens on `127.0.0.1`, so `e2e-flow` and `api-wiring` had skipped on every run; they target `127.0.0.1` and run in the node environment now. The ESP webhook (`POST /api/campaign/esp-webhook`) sits above the team-auth line, Svix-verified, and refuses with 503 until `RESEND_WEBHOOK_SECRET` is set. Migration 026 was first written with its CHECKs inside `CREATE TABLE IF NOT EXISTS` — exactly the 025 defect — and was rewritten to guarded `ALTER` before it shipped.
+
+**Two sessions on one tree.** Commits from this session and the connector-suite session interleaved on the same branch twice, once sweeping a half-done landing into a test commit and once sweeping an API schema change into a CSS commit (split back out). Everything landed on `feat/connector-suite`, which had no upstream, so nothing reached GitHub until the end-of-day fast-forward. A friend who believed they had pushed had not; no push from anyone else reached the repo today.
+
+**Honest open-items**
+
+- **Prod migrations are applied by hand** — 022 through 026 were streamed over ssh before the deploy because `deploy.sh` does not run them. That is the same gap that produced the 025 defect; `db-local` closes it locally and nothing closes it on the box.
+- **The hub components have no render tests.** `ProjectThread`, the pay button and the preview list are covered only by the live API suite and by browser probes done by hand.
+- **Pay now has never been exercised against a real provider.** `PAYMENT_PROVIDER` is `manual` in prod; the button was proven with a fixture intent carrying a placeholder URL.
+- **`RESEND_WEBHOOK_SECRET` and `ANTHROPIC_API_KEY` are still unset in prod**, so the bounce webhook refuses with 503 and the AI paths stay on fallbacks.
+- **The admin has no unread badge for client threads** outside the project's Overview tab.
+- **Camps PH's home page errors server-side** (`Something went wrong`), which is why its work card shows the listing page. That is their site, not ours, but it is what a visitor sees.
+- **PayMongo identity, the lawyer, the FourlinQ tier, outreach DNS** — unchanged, all on a person.
+
+---
+
 ## 2026-08-29 — the credentials session: three keys, and a mail outage nobody knew about
 
 > Cloudflare Pages token + project, a Resend key and a verified sending domain, a GitHub PAT and webhook. Every one proved by exercising the real path rather than reading a config. `bench:preview` 8/8. Prod env: 17 set, 14 unset, and only one of the fourteen matters.

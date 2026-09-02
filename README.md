@@ -173,7 +173,11 @@ Default login: `admin@advo.ph` / `changeme`
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
 | `JWT_SECRET` | Yes | 32+ char random string |
 | `JWT_REFRESH_SECRET` | Yes | 32+ char random string |
+| `PORT` / `API_URL` / `FRONTEND_URL` | No | Listen port (default `6407`), the API's own public origin (used in minted preview links), and the web origin (used in emailed links). |
+| `NODE_ENV` | No | `development` (default), `production`, or `test`. |
+| `UPLOAD_DIR` | No | Where uploads are written (default `./uploads`; prod uses `/var/www/advo/uploads`). |
 | `RESEND_API_KEY` | No | Resend API key for email |
+| `RESEND_WEBHOOK_SECRET` | No | Svix secret from the Resend webhook page. `POST /api/campaign/esp-webhook` refuses with 503 until it is set. |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | No | SMTP alternative to Resend for **transactional** mail (magic-links, invites, lead notifications). Not the outreach transport — see `OUTREACH_*` below. |
 | `GITHUB_TOKEN` | No | GitHub PAT (server-side) |
 | `GITHUB_WEBHOOK_SECRET` | No | Webhook signature verification |
