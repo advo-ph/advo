@@ -457,13 +457,8 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-marquee-item { display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; }
 .landing-marquee-item img { height: 26px; width: auto; max-width: 140px; object-fit: contain; filter: grayscale(1); }
 .landing-marquee-item.is-wide img { height: 30px; }
-/* Reduced motion: the same single row, still a marquee to look at, just not
- * moving on its own. The duplicate loop copy is dropped and the row can be
- * dragged or scrolled by hand instead. */
-.landing-marquee-track.is-static { animation: none; width: 100%; justify-content: center; }
-.landing-marquee-track.is-static [aria-hidden="true"] { display: none; }
-.landing-marquee-mask:has(.is-static) { overflow-x: auto; scrollbar-width: none; }
-.landing-marquee-mask:has(.is-static)::-webkit-scrollbar { display: none; }
+/* The strip loops regardless of the reduced-motion setting, by the owner's
+ * call: it is the one continuous motion on the page and it stays. */
 @keyframes landing-marquee {
   from { transform: translate3d(0, 0, 0); }
   to { transform: translate3d(-50%, 0, 0); }
@@ -961,7 +956,6 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
-  .landing-marquee-track { animation: none; }
   .landing-still img { transition: none; }
   .landing-surface-card:hover .landing-still img,
   .landing-work-card:hover .landing-still img { transform: none; }
@@ -969,5 +963,4 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 
 .landing-page.is-reduce-motion .landing-button:active,
 .landing-page.is-reduce-motion .landing-login:active { transform: none; }
-.landing-page.is-reduce-motion .landing-marquee-track { animation: none; }
 .landing-page.is-reduce-motion .landing-still img { transition: none; transform: none; }

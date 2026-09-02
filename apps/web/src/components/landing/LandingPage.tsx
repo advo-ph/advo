@@ -248,7 +248,7 @@ const LandingPage = () => {
         <section className="landing-marquee" aria-label="Businesses running on ADVO">
           <p>Businesses already running on ADVO</p>
           <div className="landing-marquee-mask">
-            <div className={reduceMotion ? "landing-marquee-track is-static" : "landing-marquee-track"}>
+            <div className="landing-marquee-track">
               {[...shippedProject, ...shippedProject].map((item, index) => {
                 const logo = item.slug ? clientLogo[item.slug] : undefined;
                 return (
