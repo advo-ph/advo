@@ -232,3 +232,64 @@ describe("wiring", () => {
     expect(readCode(TIME).length).toBeGreaterThan(0);
   });
 });
+
+// ─── The payment-link button ─────────────────────────
+
+describe("invoice payment link", () => {
+  const LINK = "apps/web/src/components/admin/InvoicePaymentLink.tsx";
+  const FINANCE = "apps/web/src/components/admin/AdminFinance.tsx";
+  const source = readSource(LINK);
+  const code = readCode(LINK);
+
+  it("treats a missing checkout URL as SUCCESS, not an error", () => {
+    // The default manual rail returns no URL. That is the business's actual process,
+    // and a button that showed an error there would be lying about a working path.
+    expect(code).toContain('title: "Collectable recorded"');
+
+    // Exactly ONE destructive toast in the file, and it belongs to the `res.error`
+    // branch — a genuine API failure. Counting rather than pattern-matching around
+    // the no-URL path, because a loose regex here catches that legitimate branch and
+    // asserts the opposite of what is meant.
+    expect(code.match(/variant: "destructive"/g) ?? []).toHaveLength(1);
+    const destructiveAt = code.indexOf('variant: "destructive"');
+    const errorBranchAt = code.indexOf("if (res.error)");
+    const successAt = code.indexOf('title: "Collectable recorded"');
+    expect(errorBranchAt).toBeGreaterThan(-1);
+    expect(destructiveAt).toBeGreaterThan(errorBranchAt);
+    expect(destructiveAt).toBeLessThan(successAt);
+  });
+
+  it("names a fallback rather than swallowing it", () => {
+    // Swallowing it lets an operator believe PayMongo is live while every invoice
+    // quietly becomes a manual row — the exact shape of the mail outage.
+    expect(code).toContain("res.data?.fellBack");
+  });
+
+  it("renders nothing on an already-paid invoice", () => {
+    // The API refuses with 409; a button that exists only to fail is one people press.
+    expect(code).toContain('if (status === "paid") return null;');
+  });
+
+  it("copies the link — it never auto-opens it", () => {
+    // This is a payment URL for a CLIENT. Opening it in the operator's browser is at
+    // best funnel noise and at worst a real payment attempt from the wrong person.
+    expect(code).toContain("navigator.clipboard.writeText");
+    expect(code).not.toContain("window.open");
+  });
+
+  it("reverts the copied state so it can report the NEXT press", () => {
+    expect(code).toContain("setIsCopied(false)");
+  });
+
+  it("is wired into the Finance invoice row", () => {
+    const finance = readCode(FINANCE);
+    expect(finance).toContain("<InvoicePaymentLink");
+    expect(finance).toContain("invoiceId={inv.invoice_id}");
+  });
+
+  it("closes the second README claim from the same commit", () => {
+    // README said Finance carried payment links. It did not, until this.
+    expect(readSource(README)).toContain("**payment links**");
+    expect(source.length).toBeGreaterThan(0);
+  });
+});

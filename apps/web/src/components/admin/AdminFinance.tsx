@@ -24,6 +24,7 @@ import { useInvoices, type Invoice, type InvoiceStatus } from "@/hooks/useInvoic
 import { useRecurringFee, type RecurringFee } from "@/hooks/useRecurringFee";
 import { useExpense, type ExpenseInput } from "@/hooks/useExpense";
 import { PageHeader, StatStrip, Stat, Empty, Dot } from "@/components/admin/_ui";
+import InvoicePaymentLink from "@/components/admin/InvoicePaymentLink";
 import AdminCommission from "@/components/admin/AdminCommission";
 
 const EXPENSE_CATEGORIES = [
@@ -692,6 +693,17 @@ const AdminFinance = ({ projects }: AdminFinanceProps) => {
                                   <SelectItem value="overdue">Overdue</SelectItem>
                                 </SelectContent>
                               </Select>
+
+                              {/* Migration 022's entire user-facing surface. With the
+                                  default manual rail this records the collectable and
+                                  returns NO url — which is a success, not a failure,
+                                  and is reported as one. Absent on a paid invoice: the
+                                  API refuses with 409, and a button that exists only to
+                                  fail is a button people press. */}
+                              <InvoicePaymentLink
+                                invoiceId={inv.invoice_id}
+                                status={inv.status}
+                              />
 
                               <Button
                                 variant="ghost"
