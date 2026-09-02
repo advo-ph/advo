@@ -57,7 +57,11 @@ Measured by `npm run bench:paymongo` (**5/7** — `legal-identity-filled` and `l
 - **Social** — Social media post management
 - **Content Studio** — CMS with monochrome visibility toggles (public / hub)
 - **Portfolio** — Public portfolio with case studies
-- **Finance** — Invoice CRUD with status toggles
+- **Finance** — Invoice CRUD with status toggles, **payment links** (PayMongo / Xendit / manual), and a four-sheet **bookkeeping CSV export**
+- **Needs paper / Gone quiet** — Dashboard panels for projects in progress with no signed contract, uninvoiced value or overdue money, and clients with active work who have gone silent. Both render **nothing** when there is nothing to report
+- **Messages** — Inbound SMS / Viber / Messenger with a triage queue, and outbound behind a **consent gate** (RA 10173): an address with no recorded consent is refused before any provider is reached
+- **Time** — Minutes per project per person per day, and a capacity read. Effort only: no rate, no cost, no billable flag
+- **⌘K** — Command palette over every admin section plus the books export
 - **Notifications** — Send to individual clients or broadcast to all
 - **Leads** — Inquiry pipeline with lead-to-client conversion
 - **Brand Scraper** — Full-spectrum site analysis (screenshots, colors, SEO, a11y, perf, animations)
@@ -260,14 +264,40 @@ Shared cache means the projects list shows up cached when navigating between adm
 
 ## Tests
 
-68 integration tests across two files (`src/test/api-wiring.test.ts` + `src/test/e2e-flow.test.ts`) hit the live API. Two ways to run:
+`npm test` runs **589 tests across 33 files** in about 45 seconds, with no database, no
+API and no network. Almost all of it drives pure exports directly — billing calendars,
+signature verification, consent verdicts, CSV escaping, the money conversions — with an
+injected clock, so the suite is stable on any machine in any timezone.
 
 ```bash
-npm run test:local      # auto-boots advo-api on :6407, runs full suite, cleans up — 68/68
-npm run test            # runs vitest against whatever VITE_API_URL points at
+npm test                # the whole suite
+npm run test:local      # auto-boots advo-api on :6407 first, so the live suites run too
 ```
 
-The local script (`scripts/test-local.sh`) reuses an existing API on `:6407` if you already have one running.
+**Two of the files need a live API** (`api-wiring.test.ts`, `e2e-flow.test.ts` — 117
+tests). They **probe `/api/health` once before anything runs** and report SKIPPED when
+nothing answers, rather than failing the whole file with `ECONNREFUSED`. That matters
+because a red suite meaning "you forgot to start the API" is indistinguishable from one
+meaning "something broke", and people learn to ignore both.
+
+```bash
+VITE_REQUIRE_LIVE_API=1 npm test    # unreachable API FAILS instead of skipping — for a deploy gate
+```
+
+### Benchmarks
+
+Quarantined from `npm test` — they assert deploy-shaped properties the unit tests
+structurally cannot see, mostly the env-drift class that took prod down twice on
+2026-08-29.
+
+| Command | Asserts |
+|---|---|
+| `npm run bench:payment` | The payment rail is wired: migration present + self-registered, route mounted, webhook above the auth middleware, raw body read, every env key declared **and** in `.env.example`, consent-free properties like "unverified never settles" |
+| `npm run bench:message` | The same for message channels, plus the consent gate's position relative to the provider call — checked structurally, because bypassing it is a legal exposure rather than a broken assertion |
+| `npm run bench:drawer` | Mobile drawer a11y in a real browser (needs `npm run dev:web`) |
+| `npm run bench:paymongo` | The four PayMongo disclosure pages and the merchant identity file |
+| `npm run bench:offer` `bench:visual` `bench:landing` | Landing offer truth, design-token discipline, viewport overflow |
+| `npm run bench:preview` `bench:deploy` `bench:drift` `bench:bounce` `bench:legal` `bench:outreach` `bench:ship` | Preview hosting, deploy safety, schema drift, soft-bounce escalation, the legal packet, outreach DNS preflight, prod ship |
 
 ## CI
 
