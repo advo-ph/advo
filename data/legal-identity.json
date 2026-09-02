@@ -1,9 +1,9 @@
 {
-  "_note": "Merchant identity for the PayMongo review surfaces. The registration and address fields come from ADVO's DTI/SEC paperwork and are NOT invented here — they stay the literal string \"TBD\" until Prince supplies them, which keeps bench:paymongo honestly red rather than falsely green.",
+  "_note": "Merchant identity for the PayMongo review surfaces. legal_name and registration_body are quoted from the signed Internal Commission and Operations Agreement (Drive, 2026-07-31), which names 'ADVO Web Development Services, the official legal entity registered with the Department of Trade and Industry (DTI)', owner Prince Alpherson A. Wagan. The registration number, business address and support phone are NOT in any document on file and stay the literal string \"TBD\" until Prince supplies them, which keeps bench:paymongo honestly red.",
   "trade_name": "ADVO",
-  "legal_name": "TBD",
+  "legal_name": "ADVO Web Development Services",
   "registration_number": "TBD",
-  "registration_body": "TBD",
+  "registration_body": "Department of Trade and Industry (DTI)",
   "business_address": "TBD",
   "support_email": "contact@advo.ph",
   "support_phone": "TBD",

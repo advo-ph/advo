@@ -1,10 +1,16 @@
 /**
  * Commission split — how ADVO pays itself.
  *
- * Prince, 2026-06-19: 60% developer / 25% staff / 15% company. The staff quarter
- * sub-splits 28% referral / 24% marketing / 24% accounting / 24% management. Inside a
- * role held by several people the split is by contribution, "mutually agreed on by the
- * devs upon project completion". Per project: 1 main developer, 1 assistant developer.
+ * THE OFFICIAL ADVO INTERNAL COMMISSION AND OPERATIONS AGREEMENT (Drive, last
+ * modified 2026-07-31): 55% developer pool / 35% staff pool / 10% company reserve. The
+ * staff pool sub-splits 20% lead partnerships (the `referral` role here) / 50% management
+ * / 20% marketing / 10% accounting. Inside a role held by several people the split is by
+ * contribution, mutually agreed on project completion. Per project: one or more senior
+ * (main) developers, one or more junior/creatives (assistant) developers. A 5% EWT comes
+ * off every gross allocation before payout — that is bookkeeping's job, not this file's.
+ *
+ * Prince's earlier 2026-06-19 message said 60/25/15 with a 28/24/24/24 staff split; the
+ * signed agreement replaced it, and these defaults follow the agreement.
  *
  * Seven invariants this file exists to hold. Each is asserted by
  * apps/web/src/test/commission.test.ts, so weakening any of them turns it red:
@@ -77,13 +83,13 @@ export type CommissionStatus = (typeof COMMISSION_STATUS)[number];
  * the allocation path may read these constants; that is the whole point of storing them.
  */
 export const DEFAULT_BPS = {
-  developer: 6000,
-  staff: 2500,
-  company: 1500,
-  referral: 2800,
-  marketing: 2400,
-  accounting: 2400,
-  management: 2400,
+  developer: 5500,
+  staff: 3500,
+  company: 1000,
+  referral: 2000,
+  marketing: 2000,
+  accounting: 1000,
+  management: 5000,
 } as const;
 
 // ─── THE ALLOCATOR ───────────────────────────────────

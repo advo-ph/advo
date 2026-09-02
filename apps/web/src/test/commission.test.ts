@@ -1,5 +1,6 @@
 /**
- * Commission split — 60% developer / 25% staff / 15% company (Prince, 2026-06-19).
+ * Commission split — 55% developer / 35% staff / 10% company (the signed Internal
+ * Commission and Operations Agreement, 2026-07-31; supersedes the 60/25/15 message).
  *
  * No live API call, no database. Every behavioural test drives the PURE exports of
  * commission.service.ts — the allocator, the recursive split, the finalize gate — so the
@@ -99,8 +100,8 @@ const fullLedger = () => [
 describe("Commission — largest-remainder allocation is exact to the centavo", () => {
   it("never loses or invents a centavo, across a wide sweep of awkward numbers", () => {
     const weightCase = [
-      [6000, 2500, 1500],
-      [2800, 2400, 2400, 2400],
+      [5500, 3500, 1000],
+      [2000, 2000, 1000, 5000],
       [1, 1, 1],
       [7, 11, 13, 17],
       [1, 0, 0],
@@ -148,21 +149,21 @@ describe("Commission — largest-remainder allocation is exact to the centavo", 
 
 /* ─── 2. The recursive split matches Prince's structure ───── */
 
-describe("Commission — the 60/25/15 structure", () => {
-  it("splits the basis 60% developer / 25% staff / 15% company", () => {
+describe("Commission — the 55/35/10 structure", () => {
+  it("splits the basis 55% developer / 35% staff / 10% company", () => {
     const { derived } = computeSplit(makePlan(), fullLedger());
-    expect(derived.developerPoolCents).toBe(6_000_000);
-    expect(derived.staffPoolCents).toBe(2_500_000);
-    expect(derived.companyCents).toBe(1_500_000);
+    expect(derived.developerPoolCents).toBe(5_500_000);
+    expect(derived.staffPoolCents).toBe(3_500_000);
+    expect(derived.companyCents).toBe(1_000_000);
   });
 
-  it("sub-splits the staff quarter 28/24/24/24 OF THE STAFF POOL, not of the basis", () => {
+  it("sub-splits the staff pool 20/20/10/50 OF THE STAFF POOL, not of the basis", () => {
     const { derived } = computeSplit(makePlan(), fullLedger());
-    // 28% of ₱25,000 = ₱7,000 — which is 7% of the project, not 28% of it.
+    // 50% of ₱35,000 = ₱17,500 — which is 17.5% of the project, not 50% of it.
     expect(derived.staffRolePoolCents.referral).toBe(700_000);
-    expect(derived.staffRolePoolCents.marketing).toBe(600_000);
-    expect(derived.staffRolePoolCents.accounting).toBe(600_000);
-    expect(derived.staffRolePoolCents.management).toBe(600_000);
+    expect(derived.staffRolePoolCents.marketing).toBe(700_000);
+    expect(derived.staffRolePoolCents.accounting).toBe(350_000);
+    expect(derived.staffRolePoolCents.management).toBe(1_750_000);
 
     const staffSum = Object.values(derived.staffRolePoolCents).reduce((a, b) => a + b, 0);
     expect(staffSum).toBe(derived.staffPoolCents);
@@ -171,9 +172,9 @@ describe("Commission — the 60/25/15 structure", () => {
   it("shares the ONE developer pool between main and assistant by contribution", () => {
     const share = fullLedger();
     const { amountByShareId } = computeSplit(makePlan(), share);
-    // 60/40 of the ₱60,000 developer pool.
-    expect(amountByShareId.get(share[0].commissionShareId)).toBe(3_600_000);
-    expect(amountByShareId.get(share[1].commissionShareId)).toBe(2_400_000);
+    // 60/40 of the ₱55,000 developer pool.
+    expect(amountByShareId.get(share[0].commissionShareId)).toBe(3_300_000);
+    expect(amountByShareId.get(share[1].commissionShareId)).toBe(2_200_000);
   });
 
   it("sums the whole ledger to the basis EXACTLY, on ugly amounts too", () => {
@@ -185,15 +186,15 @@ describe("Commission — the 60/25/15 structure", () => {
   });
 
   it("reports cents belonging to an empty role as UNALLOCATED, never absorbing them", () => {
-    // Nobody in marketing. That ₱6,000 must not quietly land in the company reserve.
+    // Nobody in marketing. That ₱7,000 must not quietly land in the company reserve.
     const share = fullLedger().filter((s) => s.role !== "marketing");
     const { derived, amountByShareId } = computeSplit(makePlan(), share);
 
-    expect(derived.unallocatedCents).toBe(600_000);
-    expect(derived.allocatedCents).toBe(10_000_000 - 600_000);
-    // The company reserve is still exactly 15% — it did not swell.
+    expect(derived.unallocatedCents).toBe(700_000);
+    expect(derived.allocatedCents).toBe(10_000_000 - 700_000);
+    // The company reserve is still exactly 10% — it did not swell.
     const company = share.find((s) => s.role === "company")!;
-    expect(amountByShareId.get(company.commissionShareId)).toBe(1_500_000);
+    expect(amountByShareId.get(company.commissionShareId)).toBe(1_000_000);
   });
 
   it("reads the percentages off the PLAN ROW, so a renegotiation cannot rewrite history", () => {
@@ -203,7 +204,7 @@ describe("Commission — the 60/25/15 structure", () => {
     expect(derived.developerPoolCents).toBe(7_000_000);
     expect(derived.companyCents).toBe(1_000_000);
     // ...while the defaults are untouched.
-    expect(DEFAULT_BPS.developer).toBe(6000);
+    expect(DEFAULT_BPS.developer).toBe(5500);
   });
 
   it("keeps the company reserve as a real share row, not a leftover", () => {
