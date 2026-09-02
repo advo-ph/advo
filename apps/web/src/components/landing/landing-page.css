@@ -560,6 +560,8 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-page .landing-faq-answer p { max-width: 60ch; padding: 0 40px 20px 0; color: var(--landing-ink-soft); line-height: 1.55; }
 
 /* ---------------------------------------------------------------- Case study */
+/* No bottom padding on purpose: the closing CTA is a pull tab that rises out
+ * of the footer, so the page ends on the tab, not on white space above it. */
 .landing-case { padding-block: 24px 0; }
 .landing-case-back { display: inline-flex; align-items: center; gap: 6px; color: var(--landing-ink-soft); font-size: var(--landing-text-body); }
 .landing-case-back:hover { color: var(--landing-ink); }
@@ -602,9 +604,11 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   justify-content: space-between;
   gap: 20px;
   margin-block: 64px 0;
-  padding: 32px;
+  padding: 32px 32px 36px;
   border: 1px solid var(--landing-line);
-  border-radius: 16px;
+  border-bottom: 0;
+  border-radius: 16px 16px 0 0;
+  background: var(--landing-ground);
 }
 .landing-case-cta h2 { font-size: var(--landing-text-title); letter-spacing: -0.015em; }
 
