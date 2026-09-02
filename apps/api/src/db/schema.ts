@@ -279,6 +279,16 @@ export const invoice = pgTable(
     }),
     /** The billing period this row settles. Null for one-shot invoices. */
     periodStartOn: date("period_start_on"),
+    /**
+     * Migration 022. WHICH collection attempt settled this invoice. Null means paid
+     * out-of-band (or not paid) — both stay valid, because `status` remains the single
+     * source of truth and this column only records HOW.
+     *
+     * Declared without a drizzle `.references()` on purpose: invoice ⇄ payment_intent is
+     * a reference cycle, and drizzle cannot order the two table literals to express it.
+     * The real FK (ON DELETE SET NULL) is in 022_payment.sql, where it belongs.
+     */
+    settledPaymentIntentId: integer("settled_payment_intent_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -1053,4 +1063,90 @@ export const schemaMigration = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("idx_schema_migration_filename").on(t.filename)],
+);
+
+// ─── Payment rail (migration 022) ────────────────────────────
+//
+// The first way money can actually ARRIVE. Everything above models money that is OWED —
+// invoice says how much, recurringFee how often, commissionPlan how it splits once it
+// lands — and until 022 nothing said how it LANDS.
+//
+// Three things to hold onto when reading this block:
+//
+//   * `invoice` REMAINS the single source of truth for "is this paid". A paymentIntent
+//     is an ATTEMPT to collect; settling it writes invoice.paidAt. Two tables that both
+//     claim to know whether a client paid will disagree in production, about real money.
+//   * `amountCents` on the intent is a SNAPSHOT, not a read-through. An admin editing
+//     the invoice after a link is issued must not turn a ₱12,000 link into a ₱60,000
+//     settlement.
+//   * `paymentEvent` is APPEND-ONLY and records callbacks that FAILED verification too.
+//     An unsigned callback is evidence of an attack; a table that drops it hides one.
+
+export const paymentIntentStatusEnum = pgEnum("payment_intent_status", [
+  "pending",
+  "paid",
+  "failed",
+  "expired",
+  "cancelled",
+]);
+
+export const paymentIntent = pgTable(
+  "payment_intent",
+  {
+    paymentIntentId: bigserial("payment_intent_id", { mode: "number" }).primaryKey(),
+    invoiceId: integer("invoice_id")
+      .notNull()
+      .references(() => invoice.invoiceId, { onDelete: "cascade" }),
+    /** App-validated growable set: manual | paymongo | xendit. See PAYMENT_PROVIDER. */
+    provider: varchar("provider", { length: 30 }).notNull(),
+    /** The provider's own id (PayMongo link id, Xendit invoice id). Null for manual. */
+    providerReference: varchar("provider_reference", { length: 255 }),
+    /** Where the client actually pays. Null for manual — never a fabricated link. */
+    checkoutUrl: text("checkout_url"),
+    /** Integer CENTS, snapshotted at creation. ₱3,000.00 = 300000. Never a float. */
+    amountCents: integer("amount_cents").notNull(),
+    currency: varchar("currency", { length: 3 }).notNull().default("PHP"),
+    status: paymentIntentStatusEnum("status").notNull().default("pending"),
+    /** As REPORTED by the provider: gcash | maya | card | grab_pay | bank_transfer | … */
+    method: varchar("method", { length: 30 }),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    failureReason: text("failure_reason"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_payment_intent_invoice").on(t.invoiceId),
+    // The partial unique index on (provider, provider_reference) and the pending-only
+    // index live in 022_payment.sql — drizzle cannot express the WHERE predicate here.
+  ],
+);
+
+export const paymentEvent = pgTable(
+  "payment_event",
+  {
+    paymentEventId: bigserial("payment_event_id", { mode: "number" }).primaryKey(),
+    provider: varchar("provider", { length: 30 }).notNull(),
+    /** The provider's own event id. Half of the replay guard — see the unique index. */
+    providerEventId: varchar("provider_event_id", { length: 255 }).notNull(),
+    paymentIntentId: integer("payment_intent_id").references(
+      () => paymentIntent.paymentIntentId,
+      { onDelete: "set null" },
+    ),
+    eventType: varchar("event_type", { length: 100 }).notNull(),
+    /** False rows are RECORDED and REFUSED. Never settled. */
+    signatureVerified: boolean("signature_verified").notNull(),
+    /** True only when this event actually moved an invoice to paid. */
+    isSettled: boolean("is_settled").notNull().default(false),
+    /** bad_signature | unknown_reference | amount_mismatch | already_paid | unhandled_type */
+    refusalReason: text("refusal_reason"),
+    /** The raw provider body, verbatim. This is what a chargeback is argued from. */
+    payload: jsonb("payload").notNull(),
+    receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
+    processedAt: timestamp("processed_at", { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex("idx_payment_event_provider_event").on(t.provider, t.providerEventId),
+    index("idx_payment_event_intent").on(t.paymentIntentId),
+  ],
 );

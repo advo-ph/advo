@@ -31,6 +31,21 @@ const envSchema = z.object({
   HERENOW_API_KEY: z.string().optional(),
   HERENOW_API_URL: z.string().optional(),
 
+  /**
+   * Which rail turns an invoice into something a client can pay (migration 022).
+   * Defaults to `manual` — the honest description of what the business does today:
+   * record the collectable, collect over GCash or bank transfer, settle by hand.
+   * A provider NAMED here without its credential falls back to manual and logs it,
+   * so a missing key degrades rather than breaking collection outright.
+   */
+  PAYMENT_PROVIDER: z.enum(["manual", "paymongo", "xendit"]).default("manual"),
+  PAYMONGO_SECRET_KEY: z.string().optional(),
+  /** Signs the `Paymongo-Signature` header. Without it EVERY callback is refused. */
+  PAYMONGO_WEBHOOK_SECRET: z.string().optional(),
+  XENDIT_SECRET_KEY: z.string().optional(),
+  /** Echoed in `x-callback-token`. Without it every Xendit callback is refused. */
+  XENDIT_CALLBACK_TOKEN: z.string().optional(),
+
   PORT: z.coerce.number().default(6407),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   UPLOAD_DIR: z.string().default("./uploads"),

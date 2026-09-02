@@ -233,12 +233,64 @@ which is question 2 in [ASK-IDENTITY.md](ASK-IDENTITY.md)):
 
 **Verify (before submitting):** `npm run bench:paymongo` must print **7/7**. It is 5/7 today.
 
-**Know this before spending effort here:** approval lets ADVO *accept* card and e-wallet payments,
-but **there is no payment integration in this codebase.** No PayMongo, Stripe or Xendit SDK, no
-checkout route, no payment or invoice table. Finance tracks recurring fees and commission splits as
-records; nothing collects money. Approval is necessary and not sufficient — the checkout build is a
-separate, unstarted project. Worth saying plainly so the merchant account is not mistaken for a
-payments feature.
+**Status changed 2026-09-02.** This section used to end by saying there was no payment integration
+in the codebase and the checkout build was "a separate, unstarted project". That is no longer true.
+Migration `022_payment.sql` landed the payment rail: `payment_intent` + `payment_event`, a provider
+seam with **manual / paymongo / xendit** adapters, a signature-verified webhook at
+`POST /api/payment/webhook/:provider`, and settlement that writes `invoice.paid_at`.
+
+What that changes about this section: **merchant approval is now the only thing standing between
+ADVO and collecting money**, rather than the first of two large unstarted efforts. The code is
+written and tested; it has never been run against a live PayMongo account, because no key exists.
+
+### 6a. `PAYMONGO_SECRET_KEY` + `PAYMONGO_WEBHOOK_SECRET`
+
+**Who can get it: whoever holds the PayMongo dashboard, after approval above.**
+
+1. **Secret key** — dashboard → **Developers → API keys**. Copy the **secret** key (`sk_live_…`,
+   or `sk_test_…` to exercise the rail before approval completes). The public key is not used here.
+2. **Webhook secret** — dashboard → **Developers → Webhooks** → create an endpoint pointed at
+   `https://api.advo.ph/api/payment/webhook/paymongo`, subscribed to `link.payment.paid` and
+   `payment.failed`. PayMongo shows the signing secret (`whsk_…`) once, at creation.
+3. Put both on the box with the shared procedure at the top of this file, then set
+   `PAYMENT_PROVIDER=paymongo`.
+
+**The failure this key prevents is silent.** Without `PAYMONGO_WEBHOOK_SECRET`, every callback is
+recorded and then **refused** — invoices simply never settle, which on a dashboard is
+indistinguishable from clients who have not paid yet. Check
+`GET /api/payment/event/unverified` after the first real payment: it should be empty. A row there
+means the secret on the box does not match the one PayMongo is signing with.
+
+**Verify:** `npm run bench:payment` must print **18/18**, and a test-mode payment must flip its
+invoice to `paid` with a matching `payment_event` row carrying `signature_verified = true`.
+
+---
+
+## 6b. Xendit — the second rail
+
+**Who can get it: Prince. Optional, and the point is that it is optional.**
+
+PayMongo merchant review takes up to 14 business days and can come back with follow-ups. Wiring
+collection to a single provider means that review delay holds the entire revenue tier hostage — so
+the seam takes two adapters and Xendit is the other one. Same tables, same webhook path, one env
+var apart.
+
+1. Sign up at `dashboard.xendit.co` and complete PH business activation (similar document set to
+   PayMongo: DTI/SEC, BIR 2303, owner ID).
+2. **Secret key** — **Settings → API keys** → generate one with **Money-in: write**.
+3. **Callback token** — **Settings → Webhooks** → copy the verification token, and point the
+   *Invoices paid* callback at `https://api.advo.ph/api/payment/webhook/xendit`.
+4. Set `XENDIT_SECRET_KEY`, `XENDIT_CALLBACK_TOKEN`, and `PAYMENT_PROVIDER=xendit`.
+
+**One sharp edge, already handled in code but worth knowing:** Xendit bills PHP in **whole pesos**,
+while this repo stores **centavos** everywhere. ₱3,000.00 is `300000` to us and `3000` to Xendit.
+`centsToMajorUnit()` does the conversion and **throws rather than rounds** on a fractional peso — so
+an invoice ending in centavos will refuse to go out on the Xendit rail instead of silently
+overcharging or undercharging. Use PayMongo for those, or round the invoice deliberately.
+
+Xendit's callback token is weaker than PayMongo's HMAC — it is a static shared secret with no body
+binding and no replay window. The event ledger and the amount check carry more of the weight on
+this rail, which is a reason to prefer PayMongo as primary once it is approved.
 
 > PayMongo restructured its developer docs in 2026 and several onboarding URLs now 404 or redirect.
 > Treat the document list above as the shape to prepare, and confirm it against the live activation

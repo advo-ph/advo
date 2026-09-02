@@ -42,6 +42,7 @@ import recurringFeeRoutes from "./routes/recurring-fee.routes.js";
 import proposalRoutes from "./routes/proposal.routes.js";
 import campaignRoutes from "./routes/campaign.routes.js";
 import libraryRoutes from "./routes/library.routes.js";
+import paymentRoutes from "./routes/payment.routes.js";
 
 import type { Variables } from "./types/context.js";
 
@@ -156,6 +157,12 @@ app.route("/api/expense", expenseRoutes);
 // Recurring infrastructure fee (Admin Finance). Generation is an ENDPOINT, not a cron:
 // POST /api/recurring-fee/run. Nothing here starts a timer or auto-suspends hosting.
 app.route("/api/recurring-fee", recurringFeeRoutes);
+
+// Payment rail (migration 022) — the first way money can ARRIVE. The provider webhook
+// under /api/payment/webhook/:provider is DELIBERATELY public: PayMongo and Xendit call
+// it with no ADVO credential, so its authentication is the request SIGNATURE, verified
+// before anything is judged. Everything else on this router requires a session.
+app.route("/api/payment", paymentRoutes);
 
 // Commission split — the 60/25/15 payout model (migration 018). TEAM-ONLY: no /hub path
 // reaches this router. Finalizing is an explicit admin POST, never automatic.
