@@ -71,6 +71,19 @@ const envSchema = z.object({
   /** Echoed back during Facebook's one-time subscription handshake. */
   MESSENGER_VERIFY_TOKEN: z.string().optional(),
 
+  /**
+   * External read-through connectors (Figma / Drive / Calendar).
+   *
+   * SERVER-SIDE ONLY. None of these is prefixed VITE_, and that is load-bearing: audit
+   * item S4 was exactly this bug, where VITE_GITHUB_TOKEN and VITE_CLOUDFLARE_TOKEN were
+   * compiled into the browser bundle and readable by anyone who opened devtools. It
+   * shipped to production. Unset -> the connector reports "not configured" and fetches
+   * nothing; it never throws and never fabricates sample data.
+   */
+  FIGMA_TOKEN: z.string().optional(),
+  /** A full service-account JSON key, as one string. Not OAuth -- see connector.service.ts. */
+  GOOGLE_SERVICE_ACCOUNT_JSON: z.string().optional(),
+
   PORT: z.coerce.number().default(6407),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   UPLOAD_DIR: z.string().default("./uploads"),

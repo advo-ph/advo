@@ -11,9 +11,7 @@
  * dashboard number is worse than no dashboard, because people make decisions on it.
  */
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { readCode, readSource } from "./read-source.js";
 
 import {
   MAX_MINUTE_PER_ENTRY,
@@ -34,23 +32,6 @@ import {
   type ProjectRiskInput,
 } from "../../../api/src/services/ops-insight.service.js";
 
-const monorepoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
-const readSource = (path: string) => readFileSync(join(monorepoRoot, path), "utf-8");
-
-/**
- * The same file with its comments removed.
- *
- * Several assertions below are of the form "this concept appears NOWHERE" — no rate
- * column, no surveillance flag, no composite score. Run against the raw file they fail
- * on the prose that EXPLAINS the absence, which would push the codebase toward
- * documenting its decisions less. Stripping comments first means the assertion tests
- * what actually executes, and the file stays free to say why.
- */
-const readCode = (path: string) =>
-  readSource(path)
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/^\s*\/\/.*$/gm, "")
-    .replace(/^\s*--.*$/gm, "");
 
 const entry = (over: Partial<TimeEntryLike> = {}): TimeEntryLike => ({
   projectId: 1,

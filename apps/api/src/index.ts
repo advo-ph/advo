@@ -45,6 +45,7 @@ import libraryRoutes from "./routes/library.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import messageRoutes from "./routes/message.routes.js";
 import insightRoutes from "./routes/insight.routes.js";
+import connectorRoutes from "./routes/connector.routes.js";
 
 import type { Variables } from "./types/context.js";
 
@@ -176,6 +177,12 @@ app.route("/api/message", messageRoutes);
 // deliberately effort, not cost: no rate column, no billable flag, nothing that turns a
 // record of work into a judgement about a person.
 app.route("/api/insight", insightRoutes);
+
+// External read-through connectors (Figma / Drive / Calendar). No migration behind these:
+// nothing is mirrored into a local table, because a mirror needs a sync schedule, a
+// conflict policy and a deletion policy, and a stale one shows a client a design that was
+// deleted last week with no error anywhere to explain it.
+app.route("/api/connector", connectorRoutes);
 
 // Commission split — the 60/25/15 payout model (migration 018). TEAM-ONLY: no /hub path
 // reaches this router. Finalizing is an explicit admin POST, never automatic.
