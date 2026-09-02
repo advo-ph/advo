@@ -1312,3 +1312,53 @@ export const timeEntry = pgTable(
     index("idx_time_entry_worked_on").on(t.workedOn),
   ],
 );
+
+// ─── Client thread (migration 026) ───────────────────────────
+//
+// The conversation that lives ON the project rather than in Messenger. Append-only apart
+// from the two read flags — one per side, because the team's unread count and the
+// client's unread count are different questions and a single flag would have to pick.
+// author_role is snapshotted from the session, never the body: a row that says "team"
+// was written by a team session.
+
+export const projectMessage = pgTable(
+  "project_message",
+  {
+    projectMessageId: bigserial("project_message_id", { mode: "number" }).primaryKey(),
+    projectId: integer("project_id")
+      .notNull()
+      .references(() => project.projectId, { onDelete: "cascade" }),
+    /** SET NULL: deleting an account must not erase what it wrote on a client's project. */
+    authorUserId: integer("author_user_id").references(() => user.userId, { onDelete: "set null" }),
+    /** client | team | admin. CHECKed in 026. */
+    authorRole: varchar("author_role", { length: 20 }).notNull(),
+    /** 1..4000 chars, CHECKed in 026 — the DB refuses what the composer refuses. */
+    body: text("body").notNull(),
+    isReadByTeam: boolean("is_read_by_team").notNull().default(false),
+    isReadByClient: boolean("is_read_by_client").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("idx_project_message_project").on(t.projectId, t.createdAt)],
+);
+
+// Every signed "Show Client Now" link ever minted. Append-only history: an expired row is
+// still the record that a preview was shown on that date.
+export const previewLink = pgTable(
+  "preview_link",
+  {
+    previewLinkId: bigserial("preview_link_id", { mode: "number" }).primaryKey(),
+    projectId: integer("project_id")
+      .notNull()
+      .references(() => project.projectId, { onDelete: "cascade" }),
+    /** The exact URL handed to the client, token included. */
+    url: varchar("url", { length: 1000 }).notNull(),
+    issuedByUserId: integer("issued_by_user_id").references(() => user.userId, {
+      onDelete: "set null",
+    }),
+    issuedAt: timestamp("issued_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Copied from the signed token so history can answer "was it live" without a JWT. */
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    note: varchar("note", { length: 500 }),
+  },
+  (t) => [index("idx_preview_link_project").on(t.projectId, t.issuedAt)],
+);

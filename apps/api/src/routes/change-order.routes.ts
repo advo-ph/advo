@@ -7,6 +7,7 @@ import { db } from "../db/connection.js";
 import { changeOrder, project, client, activityLog } from "../db/schema.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireTeam } from "../middleware/rbac.js";
+import { notifyProjectClient } from "../services/notify.service.js";
 import type { Variables } from "../types/context.js";
 
 const changeOrderRoutes = new Hono<{ Variables: Variables }>();
@@ -20,7 +21,19 @@ const createSchema = z.object({
   projectId: z.number().int(),
   scope: z.string().min(1).max(5000),
   reason: z.string().min(1).max(5000),
+  // Team may quote at filing time; the client-side form never sends it.
+  priceCents: z.number().int().min(0).nullable().optional(),
 });
+
+/** The first line of the scope, short enough for a notification title. */
+function changeOrderTitle(scope: string) {
+  const firstLine = scope.split(/\r?\n/, 1)[0].trim();
+  return firstLine.length > 80 ? `${firstLine.slice(0, 77)}...` : firstLine;
+}
+
+function formatPeso(cents: number) {
+  return `PHP ${(cents / 100).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`;
+}
 
 const updateSchema = z.object({
   status: z.enum(CHANGE_ORDER_STATUS).optional(),
@@ -96,7 +109,7 @@ changeOrderRoutes.post("/", zValidator("json", createSchema), async (c) => {
   const user = c.get("user");
 
   const [proj] = await db()
-    .select({ projectId: project.projectId })
+    .select({ projectId: project.projectId, title: project.title })
     .from(project)
     .where(eq(project.projectId, data.projectId))
     .limit(1);
@@ -113,6 +126,7 @@ changeOrderRoutes.post("/", zValidator("json", createSchema), async (c) => {
       scope: data.scope,
       reason: data.reason,
       status: "filed",
+      priceCents: user.role === "client" ? null : (data.priceCents ?? null),
       createdBy: user.userId,
     })
     .returning();
@@ -124,6 +138,18 @@ changeOrderRoutes.post("/", zValidator("json", createSchema), async (c) => {
     entityId: created.changeOrderId,
     metadata: { projectId: data.projectId },
   });
+
+  // A client filing their own change order already knows about it; only a team-raised
+  // one is news to them.
+  if (user.role !== "client") {
+    const amount =
+      created.priceCents != null ? ` Quoted at ${formatPeso(created.priceCents)}.` : "";
+    await notifyProjectClient(data.projectId, {
+      type: "custom",
+      title: `A change order needs your review: ${changeOrderTitle(data.scope)}`,
+      body: `The team filed a change order on ${proj.title}.${amount} Reason: ${data.reason}`,
+    });
+  }
 
   return c.json({ data: created, error: null }, 201);
 });

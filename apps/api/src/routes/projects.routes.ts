@@ -15,7 +15,9 @@ import {
   notification,
   activityLog,
   deliverable,
+  previewLink,
 } from "../db/schema.js";
+import { notifyProjectClient } from "../services/notify.service.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin, requireTeam } from "../middleware/rbac.js";
 import { sendNotificationEmail } from "../services/email.service.js";
@@ -581,8 +583,9 @@ projects.delete("/:id/assets/:assetId", requireTeam, async (c) => {
 // Team mints a short-lived link to the project's stored preview_url.
 projects.post("/:id/preview-link", requireTeam, async (c) => {
   const id = Number(c.req.param("id"));
+  const user = c.get("user");
   const [row] = await db()
-    .select({ previewUrl: project.previewUrl })
+    .select({ previewUrl: project.previewUrl, title: project.title })
     .from(project)
     .where(eq(project.projectId, id))
     .limit(1);
@@ -614,9 +617,26 @@ projects.post("/:id/preview-link", requireTeam, async (c) => {
 
   const { token, expiresAt } = await signPreviewToken(id);
   const origin = new URL(c.req.url).origin;
+  const url = `${origin}/api/preview/${token}`;
+
+  // The link is history the moment it exists (migration 026): who showed what, when,
+  // and until when. The token expires; the row does not.
+  await db().insert(previewLink).values({
+    projectId: id,
+    url,
+    issuedByUserId: user.userId,
+    expiresAt: new Date(expiresAt),
+  });
+
+  await notifyProjectClient(id, {
+    type: "progress_update",
+    title: `A new preview is ready for ${row.title}`,
+    body: `Open it here (valid for ${PREVIEW_TTL_MINUTES} minutes): ${url}`,
+  });
+
   return c.json({
     data: {
-      url: `${origin}/api/preview/${token}`,
+      url,
       expiresAt,
       ttlMinutes: PREVIEW_TTL_MINUTES,
       provider: hosted.provider,
@@ -625,6 +645,34 @@ projects.post("/:id/preview-link", requireTeam, async (c) => {
     },
     error: null,
   });
+});
+
+// Preview history, newest first. Client: own project only (403, not 404 — the Hub
+// renders "not yours" and "gone" differently). Team/admin: any project.
+projects.get("/:id/preview-link", async (c) => {
+  const id = Number(c.req.param("id"));
+  if (Number.isNaN(id)) throw new HTTPException(400, { message: "Invalid project id" });
+  const user = c.get("user");
+  const d = db();
+
+  const [row] = await d
+    .select({ projectId: project.projectId, clientUserId: client.userId })
+    .from(project)
+    .leftJoin(client, eq(project.clientId, client.clientId))
+    .where(eq(project.projectId, id))
+    .limit(1);
+  if (!row) throw new HTTPException(404, { message: "Project not found" });
+  if (user.role === "client" && row.clientUserId !== user.userId) {
+    throw new HTTPException(403, { message: "Not your project" });
+  }
+
+  const link = await d
+    .select()
+    .from(previewLink)
+    .where(eq(previewLink.projectId, id))
+    .orderBy(desc(previewLink.issuedAt), desc(previewLink.previewLinkId));
+
+  return c.json({ data: link, error: null });
 });
 
 // Client (or team) requests a fresh preview from their Hub — logged for the team.

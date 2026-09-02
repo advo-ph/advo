@@ -46,6 +46,7 @@ import paymentRoutes from "./routes/payment.routes.js";
 import messageRoutes from "./routes/message.routes.js";
 import insightRoutes from "./routes/insight.routes.js";
 import connectorRoutes from "./routes/connector.routes.js";
+import projectMessageRoutes from "./routes/project-message.routes.js";
 
 import type { Variables } from "./types/context.js";
 
@@ -193,6 +194,10 @@ app.route("/api/meeting", meetingRoutes);
 
 // Change orders (Hub file + team list; CONTRACTS.md policy 3)
 app.route("/api/change-order", changeOrderRoutes);
+
+// Client thread (migration 026) — the per-project conversation, both sides. The author
+// role on every row is the JWT role, never the body. A team post notifies the client.
+app.route("/api/project-message", projectMessageRoutes);
 
 // Project sign-off (client-facing final delivery; NOT deliverable.verified_at)
 app.route("/api/project-signoff", projectSignoffRoutes);

@@ -7,6 +7,7 @@ import { db } from "../db/connection.js";
 import { deliverable, project, teamMember, client, projectAccess } from "../db/schema.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireTeam } from "../middleware/rbac.js";
+import { notifyProjectClient } from "../services/notify.service.js";
 import type { Variables } from "../types/context.js";
 import { flexibleDateTime } from "../utils/validators.js";
 
@@ -150,6 +151,13 @@ deliverables.patch("/:id", requireTeam, zValidator("json", updateSchema), async 
     values.verifiedAt = data.verifiedAt ? new Date(data.verifiedAt) : null;
   }
 
+  // The before-state, so a re-save of an already-completed row does not notify twice.
+  const [old] = await db()
+    .select({ status: deliverable.status, verifiedAt: deliverable.verifiedAt })
+    .from(deliverable)
+    .where(eq(deliverable.deliverableId, id))
+    .limit(1);
+
   const [updated] = await db()
     .update(deliverable)
     .set(values)
@@ -157,6 +165,19 @@ deliverables.patch("/:id", requireTeam, zValidator("json", updateSchema), async 
     .returning();
 
   if (!updated) throw new HTTPException(404, { message: "Deliverable not found" });
+
+  const isNewlyCompleted = updated.status === "completed" && old?.status !== "completed";
+  const isNewlyVerified = updated.verifiedAt != null && old?.verifiedAt == null;
+  if (isNewlyCompleted || isNewlyVerified) {
+    await notifyProjectClient(updated.projectId, {
+      type: "deliverable_completed",
+      title: `${updated.title} is done`,
+      body: isNewlyVerified
+        ? `${updated.title} has been completed and verified by the team.`
+        : `${updated.title} has been marked completed.`,
+    });
+  }
+
   return c.json({ data: updated, error: null });
 });
 
