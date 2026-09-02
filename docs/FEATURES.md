@@ -54,6 +54,22 @@ Added because the old Footer was hitting the admin-only `/api/settings` and 401-
 
 ## Client Portal (`/hub`)
 
+### Messages (project thread)
+
+`ProjectThread` (`components/hub/ProjectThread.tsx`) is one component mounted on both sides: the client's hub and the admin command center's Overview tab read the same `/api/project-message` endpoint (migration 026, `project_message`). A client can only read and post on their own projects; the author role comes from the JWT, never the body. A team or admin post writes a client notification and sends the email through `notify.service.ts`. Polls every 20s; opening the thread marks the caller's side read; `GET /unread` feeds badges. Covered by `client-thread.test.ts` (18 live tests).
+
+### Preview history
+
+`POST /api/projects/:id/preview-link` now records every mint in `preview_link` and notifies the client with the URL; `GET /api/projects/:id/preview-link` lists them newest first (client: own project only). The hub shows the list with Open or Expired per row.
+
+### Notifications that fire on events
+
+`notify.service.ts` is the single writer of client notifications. Deliverable completion, change-order creation by the team, preview mints and thread replies all go through it; the admin `POST /api/notifications` does too. Email failure is logged, never thrown.
+
+### Pay now
+
+The invoice row shows a Pay now button only when a pending `payment_intent` carries a checkout URL that has not expired (`usePaymentIntent.ts`, one read per open invoice — a client may only read intents for a named invoice). The manual rail has no URL and shows nothing rather than a dead button.
+
 ### Engineering Feed
 
 Live GitHub commits merged with admin-posted progress updates. Supports branch switching.
@@ -85,6 +101,10 @@ Client files a **change order** (scope + reason) from the selected project on `/
 **Signed contracts list** (CP1): hub also loads `GET /api/contracts/mine` — client-scoped first-class `contract` rows (title, type, status, signed_at, document_url; no notes/value). Team/admin get the same public field set for all contracts. Rendered on Hub alongside the project list.
 
 **Files**: `ProjectDashboard.tsx` → `project.contract_url`; `Hub.tsx` + `useMyContracts` → `/api/contracts/mine`
+
+### Live preview
+
+Framed only for hosts we deploy previews to (`pages.dev`, `advo.ph`, `vercel.app`, `netlify.app`, `localhost`). A client's production domain almost always sends `X-Frame-Options` and rendered as a blank white box, so anything else gets a link card that opens in a new tab.
 
 ### Live preview iframe
 

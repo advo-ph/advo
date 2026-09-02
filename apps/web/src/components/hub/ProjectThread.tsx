@@ -7,6 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { useProjectThread } from "@/hooks/useProjectThread";
 
+/**
+ * A team login without a team-member row falls back to its email on the API
+ * side. A client should read "ADVO Team" there, not somebody's address.
+ */
+const displayName = (role: string, name: string) =>
+  role !== "client" && name.includes("@") ? "ADVO Team" : name;
+
 interface ProjectThreadProps {
   projectId: number;
   /** Panel heading; the client reads "Messages", the team reads "Client thread". */
@@ -76,7 +83,7 @@ const ProjectThread = ({ projectId, title = "Messages" }: ProjectThreadProps) =>
                 >
                   <p className="whitespace-pre-wrap break-words">{row.body}</p>
                   <p className="mt-1 text-[10px] text-muted-foreground">
-                    {isMine ? "You" : row.authorName}
+                    {isMine ? "You" : displayName(row.authorRole, row.authorName)}
                     {" · "}
                     {formatDistanceToNow(new Date(row.createdAt), { addSuffix: true })}
                   </p>

@@ -189,6 +189,23 @@ Each of these was considered and declined, so nobody re-opens them as oversights
 | An SMS sender name registered with Semaphore | Prince | Outbound SMS on the sign-off deadline clock |
 | Consent basis + retention policy for the scraped clinic list | Legal counsel (see P0) | Any outbound to those numbers. The gate refuses them today, by design, and setting a key does **not** bypass it |
 
+## Client hub + dev tooling — shipped 2026-09-02 (migration 026)
+
+| Item | What shipped | Proof |
+|---|---|---|
+| **Project thread** | `project_message` + `/api/project-message`; one `ProjectThread` component on the hub and in the admin command center; team replies notify the client by row and email. | `client-thread.test.ts` 18/18 live; driven in the browser as client and admin. |
+| **Preview history** | `preview_link` recorded on every mint, listed on the hub, client notified with the link. | same suite; hub screenshot. |
+| **Event notifications** | `notify.service.ts` is the one writer; deliverable completion, change orders, preview mints, thread replies. | same suite. |
+| **Pay now on the hub** | Button only when a pending intent has a live checkout URL. | probed with a fixture intent; manual rail shows nothing. |
+| **Hub on phones** | Project list scrolls sideways, contracts fold, live-preview link card for hosts that refuse framing. | 390px screenshots. |
+| **ESP bounce webhook** | `POST /api/campaign/esp-webhook`, Svix-verified, above team auth; 503 without `RESEND_WEBHOOK_SECRET`. | `esp-webhook.test.ts` 10/10. |
+| **Env-drift gate** | `scripts/env-drift.mjs` + `bench:env` + CI step; ten documented-but-undeclared keys fixed. | `bench:env` 4/4. |
+| **Design-brief bench** | `bench:visual` asserts no glass, no shadow, stroke-1 icons, one gradient. | 12/12. |
+| **Local database** | `npm run db:local` creates, pushes, migrates, checks drift. Windows Postgres path in SETUP.md. | tested on a throwaway DB. |
+| **Integration suites run** | `live-api.ts` targets 127.0.0.1 and the suites run in the node environment; 118 tests that used to skip now run. | `vitest run` 770/770, 0 skipped. |
+
+Still human-blocked, unchanged: PayMongo identity facts (`bench:paymongo` 5/7), lawyer engagement, FourlinQ tier, `ANTHROPIC_API_KEY` and `RESEND_WEBHOOK_SECRET` on prod, outreach DNS.
+
 ## Infra & Ops
 
 Operational items running live prod — none of this is tracked elsewhere despite advo.ph + api.advo.ph + Postgres all being live.
