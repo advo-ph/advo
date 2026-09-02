@@ -24,7 +24,7 @@ Shipped [`LandingPage`](apps/web/src/components/landing/LandingPage.tsx) + [`lan
 - **FAQ** — website-vs-system, client hub, admin console, self-hosted VPS stack, hardware, after-launch
 - **Footer** — off-black; system-continuity lede + "Start the system" CTA, four system columns, oversized wordmark, social from `GET /api/settings/public`
 
-Proof on `/` is the portfolio database — real shipped sites only, no testimonials. Title/OG match the hero ("ADVO. We digitalize it for you."). The footer is one shared component (`landing/landing-footer.tsx`) mounted by both `LandingPage` and `landing-shell`, so the two can't drift; social icons use `GET /api/settings/public` plus real defaults. `/start`, `/login`, `/team`, `/project/:slug`, and `/404` share `landing-shell`. `/hub` stays on the June Linear language (`FloatingNav`).
+Proof on `/` is the portfolio database — real shipped sites only, no testimonials. Title/OG match the hero ("ADVO. We digitalize it for you."). The footer is one shared component (`landing/landing-footer.tsx`) mounted by both `LandingPage` and `landing-shell`, so the two can't drift; social icons use `GET /api/settings/public` plus real defaults. `/start`, `/login`, `/team`, `/project/:slug`, `/work/:slug` (case study, `data/case-study.ts`), and `/404` share `landing-shell`, and both the shell and `/` mount the one `components/LandingNav.tsx`. `/hub` stays on the June Linear language (`FloatingNav`).
 
 ### Legal disclosures (`/terms`, `/privacy`, `/refund`, `/dispute`)
 
@@ -83,19 +83,21 @@ Every colour and every font-size in `landing-page.css` derives from the `:root` 
 | Token | Value | Use |
 |-------|-------|-----|
 | `--landing-ground` | `#ffffff` | The one ground |
-| `--landing-ground-soft` | `#fafafa` | Raised panels, hero button |
-| `--landing-ground-tint` | `#f2f2f4` | Quiet fills |
-| `--landing-ink` | `#0c0c0c` | Body text, off-black footer |
-| `--landing-ink-soft` | `#5f6673` | Secondary copy (`--landing-muted`) |
+| `--landing-ground-soft` | `#f7f7f7` | Media wells, hero button |
+| `--landing-ink` | `#0c0c0c` | Body text, off-black footer, dark band |
+| `--landing-ink-soft` | `#6b7280` | Secondary copy (`--landing-muted`) |
 | `--landing-ink-mute` | `#9a9aa0` | Tertiary labels |
-| `--landing-line` | `#e4e5e6` | Hairline |
+| `--landing-line` | `#e5e7eb` | Hairline |
 | `--landing-line-soft` | `#eef1f5` | Ghost buttons (`--landing-ghost`) |
-| `--landing-dark` | `#1a1a1a` | Primary CTA |
-| `--landing-deep` | `#000000` | Media wells |
+| `--landing-line-hover` | `#e7eaf0` | Ghost button hover |
+| `--landing-dark` | `#262626` | Primary CTA |
+| `--landing-deep` | `#000000` | Primary CTA hover |
 
-**Type**: Inter on `.landing-page`. Eight steps and no one-off sizes — `--landing-text-micro` `-small` `-body` `-lead` `-title` `-heading` `-display` `-wordmark`. The hero's phone step is a `--landing-text-display` override inside the 680px query, not a ninth size. Tight display tracking, weight 400 on headlines, no mono numerals.
+**Type**: Instrument Sans on `.landing-page`. Eight steps and no one-off sizes — `--landing-text-micro` `-small` `-body` `-lead` `-title` `-heading` `-display` `-wordmark`. The hero's phone step is a `--landing-text-display` override inside the 680px query, not a ninth size. Tight display tracking, weight 400 on headlines, no mono numerals.
 
-**Rhythm**: every section pads on `--landing-section-rhythm` (`clamp(64px, 7vw, 112px)`). No per-section magic numbers.
+**Motion**: framer-motion only where it reads as product, guarded by `useReducedMotion` and a `prefers-reduced-motion` block. Hero copy staggers in on load and the still drifts on scroll; sections fade up 16px once via `motion/Reveal`; the process panel cross-fades; the FAQ animates height; buttons darken on hover and press to 96%; the nav goes from transparent-over-hero (phones) to a blurred white bar on the first scroll.
+
+**Rhythm**: every section pads on `--landing-section-rhythm` (`clamp(72px, 8vw, 120px)`). No per-section magic numbers.
 
 **Motion**: name marquee + work-card hover, both under the `prefers-reduced-motion` path. No 3D scene, no blob CTA, no decorative gradient.
 

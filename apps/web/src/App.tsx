@@ -12,6 +12,7 @@ import Admin from "./pages/Admin";
 import Start from "./pages/Start";
 import Team from "./pages/Team";
 import ProjectDetail from "./pages/ProjectDetail";
+import CaseStudy from "./pages/CaseStudy";
 import PreviewLink from "./pages/PreviewLink";
 import NotFound from "./pages/NotFound";
 import Terms from "./pages/legal/Terms";
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/start" element={<Start />} />
           <Route path="/team" element={<Team />} />
           <Route path="/project/:slug" element={<ProjectDetail />} />
+          <Route path="/work/:slug" element={<CaseStudy />} />
           <Route path="/p/:token" element={<PreviewLink />} />
 
           {/* PayMongo merchant-review disclosures. Public on purpose — a

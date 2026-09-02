@@ -83,15 +83,15 @@ const footerCol: { title: string; link: FooterLink[] }[] = [
     title: "How it ships",
     link: [
       { label: "Discovery", href: "#process" },
-      { label: "Build room", href: "#showcase" },
-      { label: "Approvals", href: "#showcase" },
+      { label: "The build", href: "#process" },
+      { label: "Review and sign-off", href: "#process" },
       { label: "VPS handoff", href: "#workflow" },
     ],
   },
   {
     title: "Keep it running",
     link: [
-      { label: "Care plan", href: "#engagement" },
+      { label: "Retainer", href: "#engagement" },
       { label: "Hourly support", href: "#engagement" },
       { label: "Quotation", href: "#engagement" },
       { label: "FAQs", href: "#faq" },

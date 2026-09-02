@@ -2,13 +2,13 @@
 
 ## Public Landing (`/`)
 
-`/` is the shipped `LandingPage` (`apps/web/src/components/landing/LandingPage.tsx` + `landing-page.css`). Runway-language marketing page — fixed blur nav, cinematic hero ("Build together. Ship with clarity."), workspace showcase, snap-scroll tool cards, process tabs with before/after, integration marquee, Fourlinq story, engagement options, FAQ, off-black footer. Routed from `pages/Index.tsx`. Section list lives in [README.md](../README.md).
+`/` is the shipped `LandingPage` (`apps/web/src/components/landing/LandingPage.tsx` + `landing-page.css`). White-canvas marketing page in the runway.com grammar: fixed blur nav (transparent over the full-bleed hero on phones), cinematic hero ("We digitalize it for you.") with staggered copy and a scroll drift, a client-logo strip driven by the portfolio table, the three product surfaces on real stills, an Inquiry-to-Launch stepper over a tabbed process panel, a dark mission band carrying the four engagement shapes, the shipped-sites grid (each card opens `/work/:slug` when a case study exists), FAQ, off-black footer. No illustrations or generated icons. Routed from `pages/Index.tsx`. Section list lives in [README.md](../README.md).
 
 The previous dark landing (TechTicker, R3F infrastructure, orange-blob CTA, WhyDigital, ServiceTiers, ProcessSteps, the old Hero/FAQ/Footer) was **never** rendered by `/` and has been deleted (`landing/` now holds only what a live route mounts). Satellite public routes (`/start`, `/login`, `/team`, `/project/:slug`, `/404`) use `landing-shell` with the same white tokens; interiors no longer paint the dark Linear grid. `/hub` still uses `FloatingNav`.
 
 Post-login destination is `destinationFor(role, explicitRedirect)` in `lib/destination.ts` (admin → `/admin`, else `/hub`; `?redirectTo=` wins).
 
-Proof on `/` is Fourlinq only. Title/meta match the hero. Footer social icons read `GET /api/settings/public`.
+Proof on `/` is the portfolio table plus the case studies in `data/case-study.ts`, each claim citing a file in the client repo. Title/meta match the hero. Footer social icons read `GET /api/settings/public`.
 
 ### Shared footer
 

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { ArrowUpRight, ChevronDown, ChevronRight } from "lucide-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
+import { getCaseStudy } from "@/data/case-study";
 import LandingNav from "@/components/LandingNav";
 import { Reveal, RevealGroup } from "@/components/motion/Reveal";
 import { EASE } from "@/lib/motion";
@@ -17,7 +18,7 @@ const surface = [
   {
     title: "Public site",
     heading: "The front door your customers land on.",
-    copy: "On your domain, fast on a phone, and wired to the system behind it. Fourlinq is live at fourlinq.ph.",
+    desc: "On your domain, fast on a phone, and wired to the system behind it. Fourlinq is live at fourlinq.ph.",
     still: "/landing/rw/story.jpg",
     primary: { label: "Start a project", href: "/start" },
     secondary: { label: "See Fourlinq", href: "https://fourlinq.ph" },
@@ -25,7 +26,7 @@ const surface = [
   {
     title: "Client Hub",
     heading: "Scope, files, approvals, and invoices in one place.",
-    copy: "Your team and ours see the same status. Sign-off happens on the work itself, not in a chat thread.",
+    desc: "Your team and ours see the same status. Sign-off happens on the work itself, not in a chat thread.",
     still: "/landing/rw/hero.jpg",
     primary: { label: "Log in", href: "/login" },
     secondary: { label: "How it ships", href: "#process" },
@@ -33,7 +34,7 @@ const surface = [
   {
     title: "Admin console",
     heading: "The back office your staff opens every morning.",
-    copy: "Projects, leads, capacity, and finance. The hardware floor is part of the install: tablet, printer, TV.",
+    desc: "Projects, leads, capacity, and finance. The hardware floor is part of the install: tablet, printer, TV.",
     still: "/landing/rw/deliver.jpg",
     primary: { label: "Log in", href: "/login" },
     secondary: { label: "Request a quotation", href: "#engagement" },
@@ -121,7 +122,22 @@ const faq = [
   },
 ];
 
-const partner = [
+/**
+ * Real client marks, lifted from each client's own repository. Keyed by the
+ * portfolio slug so the strip stays driven by the live portfolio table: a
+ * client with no entry here shows its name as text, and removing a client
+ * from the CMS removes it here too.
+ */
+const clientLogo: Record<string, { src: string; filter?: string; wide?: boolean }> = {
+  fourlinq: { src: "/landing/logo/fourlinq.png" },
+  "felici-artisan-gelato": { src: "/landing/logo/felici.png", wide: true },
+  "tmc-registry": { src: "/landing/logo/tmc-registry.png", wide: true },
+  "camps-ph": { src: "/landing/logo/camps-ph.png" },
+  // Coffee Rush ships a white-on-transparent badge for their own dark site.
+  "coffee-rush-eastridge": { src: "/landing/logo/coffee-rush.png", filter: "invert(1)" },
+};
+
+const tool = [
   { name: "Gmail", asset: "/landing/integration/gmail.svg" },
   { name: "Calendar", asset: "/landing/integration/google-calendar.svg" },
   { name: "Notion", asset: "/landing/integration/notion.svg" },
@@ -199,7 +215,7 @@ const LandingPage = () => {
             animate={{ scale: 1 }}
             transition={{ duration: 1.8, ease: EASE }}
           >
-            <img src="/landing/rw/hero.jpg" alt="" fetchPriority="high" />
+            <img src="/landing/rw/hero.jpg" alt="" />
           </motion.div>
           <div className="landing-hero-shade" />
           <motion.div
@@ -225,19 +241,30 @@ const LandingPage = () => {
         </div>
       </section>
 
-      <section className="landing-marquee" aria-label="Tools the floor already runs on">
-        <p>Works alongside the tools your floor already runs on</p>
-        <div className="landing-marquee-mask">
-          <div className={reduceMotion ? "landing-marquee-track is-static" : "landing-marquee-track"}>
-            {[...partner, ...partner].map((item, index) => (
-              <span className="landing-marquee-item" key={`${item.name}-${index}`}>
-                <img src={item.asset} alt="" />
-                {item.name}
-              </span>
-            ))}
+      {shippedProject.length > 0 ? (
+        <section className="landing-marquee" aria-label="Businesses running on ADVO">
+          <p>Businesses already running on ADVO</p>
+          <div className="landing-marquee-mask">
+            <div className={reduceMotion ? "landing-marquee-track is-static" : "landing-marquee-track"}>
+              {[...shippedProject, ...shippedProject].map((item, index) => {
+                const logo = item.slug ? clientLogo[item.slug] : undefined;
+                return (
+                  <span
+                    className={logo?.wide ? "landing-marquee-item is-wide" : "landing-marquee-item"}
+                    key={`${item.portfolio_project_id}-${index}`}
+                    aria-hidden={index >= shippedProject.length}
+                  >
+                    {logo ? (
+                      <img src={logo.src} alt={item.title} style={logo.filter ? { filter: logo.filter } : undefined} />
+                    ) : null}
+                    {!logo || !logo.wide ? <span>{item.title}</span> : null}
+                  </span>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ) : null}
 
       <section className="landing-piece" id="showcase">
         <Reveal as="h2" className="landing-display">
@@ -258,7 +285,7 @@ const LandingPage = () => {
                 <img src={item.still} alt="" loading="lazy" />
               </div>
               <h4>{item.heading}</h4>
-              <p>{item.copy}</p>
+              <p>{item.desc}</p>
               <div className="landing-surface-action">
                 <Action className="landing-button landing-button-primary landing-button-small" href={item.primary.href}>
                   {item.primary.label}
@@ -271,6 +298,18 @@ const LandingPage = () => {
             </Reveal>
           ))}
         </RevealGroup>
+
+        <Reveal className="landing-tool-row" delay={0.05}>
+          <p>Fits the tools your floor already runs on</p>
+          <div>
+            {tool.map((item) => (
+              <span key={item.name}>
+                <img src={item.asset} alt="" loading="lazy" />
+                {item.name}
+              </span>
+            ))}
+          </div>
+        </Reveal>
       </section>
 
       <section className="landing-process" id="process">
@@ -371,6 +410,14 @@ const LandingPage = () => {
           </Reveal>
           <RevealGroup className="landing-work-grid" stagger={0.1}>
             {shippedProject.map((item) => {
+              // A case study read out of the client's own source beats bouncing
+              // the visitor straight off-site. The live URL is one click away
+              // inside it.
+              const study = getCaseStudy(item.slug);
+              const href = study
+                ? `/work/${item.slug}`
+                : item.live_url ?? (item.slug ? `/project/${item.slug}` : null);
+              const isExternal = !study && Boolean(item.live_url);
               const body = (
                 <>
                   <div className="landing-still landing-work-shot">
@@ -378,26 +425,22 @@ const LandingPage = () => {
                   </div>
                   <h3>{item.title}</h3>
                   <p>{item.blurb}</p>
+                  {href ? (
+                    <span className="landing-text-link">
+                      {study ? "Read the case study" : isExternal ? "Visit the site" : "See the project"}
+                      {isExternal ? <ArrowUpRight size={14} /> : <ChevronRight size={14} />}
+                    </span>
+                  ) : null}
                 </>
               );
               return (
                 <Reveal as="article" className="landing-work-card" key={item.portfolio_project_id}>
-                  {item.live_url ? (
-                    <a href={item.live_url} target="_blank" rel="noopener noreferrer">
+                  {href && isExternal ? (
+                    <a href={href} target="_blank" rel="noopener noreferrer">
                       {body}
-                      <span className="landing-text-link">
-                        Visit the site
-                        <ArrowUpRight size={14} />
-                      </span>
                     </a>
-                  ) : item.slug ? (
-                    <Link to={`/project/${item.slug}`}>
-                      {body}
-                      <span className="landing-text-link">
-                        Read the case study
-                        <ChevronRight size={14} />
-                      </span>
-                    </Link>
+                  ) : href ? (
+                    <Link to={href}>{body}</Link>
                   ) : (
                     <div>{body}</div>
                   )}
