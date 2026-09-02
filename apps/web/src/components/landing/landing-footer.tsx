@@ -10,8 +10,16 @@ import {
   IconMail,
   IconWorld,
 } from "@tabler/icons-react";
-import { ChevronRight } from "lucide-react";
 import { get } from "@/lib/api";
+import AdvoDotField from "./AdvoDotField";
+
+/**
+ * Prince, 09-02: the dot field on top, one bar underneath.
+ *
+ * The four link columns this replaced pointed at sections that no longer
+ * exist (#process, #engagement, #faq), and the marketing lede above them was
+ * the paragraph nobody scrolls a footer to read.
+ */
 
 interface SocialLink {
   icon: string;
@@ -20,9 +28,9 @@ interface SocialLink {
 }
 
 /**
- * The four PayMongo merchant-review disclosures. They sit on their own row
- * rather than inside `footerCol`, whose grid is fixed at four columns — and a
- * reviewer needs them from every page, not buried in a service menu.
+ * The four PayMongo merchant-review disclosures. Full names on purpose — a
+ * reviewer looks for the policy by title, and has to find all four from any
+ * page. This row is compliance, not navigation, so it sits on its own line.
  */
 const legalLink: { label: string; href: string }[] = [
   { label: "Terms and Conditions", href: "/terms" },
@@ -34,8 +42,15 @@ const legalLink: { label: string; href: string }[] = [
 interface FooterLink {
   label: string;
   href: string;
-  ext?: boolean;
 }
+
+const footerLink: FooterLink[] = [
+  { label: "Work", href: "#work" },
+  { label: "What we do", href: "#services" },
+  { label: "Team", href: "/team" },
+  { label: "Log in", href: "/login" },
+  { label: "Start a project", href: "/start" },
+];
 
 interface LandingFooterProps {
   /**
@@ -65,49 +80,6 @@ const socialIcon: Record<string, typeof IconMail> = {
   Globe: IconWorld,
 };
 
-/**
- * Columns follow the system, not a service menu: the four surfaces we ship,
- * what keeps them running, and who stands behind them.
- */
-const footerCol: { title: string; link: FooterLink[] }[] = [
-  {
-    title: "The system",
-    link: [
-      { label: "Public site", href: "#showcase" },
-      { label: "Client Hub", href: "/login" },
-      { label: "Admin Console", href: "/login" },
-      { label: "Hardware floor", href: "/start" },
-    ],
-  },
-  {
-    title: "How it ships",
-    link: [
-      { label: "Discovery", href: "#process" },
-      { label: "Build room", href: "#showcase" },
-      { label: "Approvals", href: "#showcase" },
-      { label: "VPS handoff", href: "#workflow" },
-    ],
-  },
-  {
-    title: "Keep it running",
-    link: [
-      { label: "Care plan", href: "#engagement" },
-      { label: "Hourly support", href: "#engagement" },
-      { label: "Quotation", href: "#engagement" },
-      { label: "FAQs", href: "#faq" },
-    ],
-  },
-  {
-    title: "Studio",
-    link: [
-      { label: "Team", href: "/team" },
-      { label: "Work", href: "#work" },
-      { label: "Fourlinq", href: "https://fourlinq.ph", ext: true },
-      { label: "Start a project", href: "/start" },
-    ],
-  },
-];
-
 const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
   const [socialLink, setSocialLink] = useState<SocialLink[]>(socialDefault);
   const isSamePage = anchorPrefix === "";
@@ -124,14 +96,6 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
   }, []);
 
   const renderLink = (item: FooterLink) => {
-    if (item.href.startsWith("http")) {
-      return (
-        <a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer">
-          {item.label}
-          {item.ext ? <span> ↗</span> : null}
-        </a>
-      );
-    }
     if (item.href.startsWith("#")) {
       // On the landing itself a bare hash keeps the browser's in-page scroll.
       return isSamePage ? (
@@ -153,52 +117,20 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
 
   return (
     <footer className="landing-footer" id="footer">
-      <div className="landing-footer-lede">
-        <div>
-          <p className="landing-kicker">The whole system</p>
-          <h3>Websites with client systems behind them.</h3>
-        </div>
-        <div>
-          <p>
-            The public site your customers land on, the Client Hub they sign into, the Admin
-            Console your studio runs on, and the hardware on the floor — built as one system, not
-            four vendors. When it is done, the VPS handoff leaves the whole stack in your name.
-          </p>
-          <Link className="landing-footer-cta" to="/start">
-            Start the system
-            <ChevronRight size={14} />
-          </Link>
-        </div>
+      <div className="landing-footer-field">
+        <AdvoDotField />
       </div>
-
-      <div className="landing-footer-grid">
-        {footerCol.map((col) => (
-          <div key={col.title}>
-            <h3>{col.title}</h3>
-            {col.link.map(renderLink)}
-          </div>
-        ))}
-      </div>
-
-      <div className="landing-footer-wordmark" data-viewport-check="footer-wordmark" aria-hidden="true">
-        ADVO
-      </div>
-
-      <nav className="landing-footer-legal" aria-label="Legal">
-        {legalLink.map((link) => (
-          <Link key={link.href} to={link.href}>
-            {link.label}
-          </Link>
-        ))}
-      </nav>
 
       <div className="landing-footer-bar">
-        <div>
+        <div className="landing-footer-id">
           <img src="/advo-logo-black.png" alt="ADVO" />
-          <p>
-            © 2026 ADVO / <Link to="/start">Contact</Link> / Built with care in the Philippines.
-          </p>
+          <p>© 2026 ADVO. All rights reserved.</p>
         </div>
+
+        <nav className="landing-footer-link" aria-label="Footer">
+          {footerLink.map(renderLink)}
+        </nav>
+
         <div className="landing-social">
           {socialLink.map((link) => {
             const Icon = socialIcon[link.icon] ?? IconWorld;
@@ -211,12 +143,20 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
                 target={isMail ? undefined : "_blank"}
                 rel={isMail ? undefined : "noopener noreferrer"}
               >
-                <Icon size={16} stroke={1.4} />
+                <Icon size={17} stroke={1.4} />
               </a>
             );
           })}
         </div>
       </div>
+
+      <nav className="landing-footer-legal" aria-label="Legal">
+        {legalLink.map((link) => (
+          <Link key={link.href} to={link.href}>
+            {link.label}
+          </Link>
+        ))}
+      </nav>
     </footer>
   );
 };
