@@ -1265,3 +1265,50 @@ export const outboundMessage = pgTable(
   },
   (t) => [index("idx_outbound_message_entity").on(t.relatedEntityType, t.relatedEntityId)],
 );
+
+// ─── Time entry (migration 024) ──────────────────────────────
+//
+// The first ACTUALS in this repo. availabilityBlock holds PLANNED time and deliverable
+// holds done/not-done; nothing recorded how long anything took, which is why "the 12k
+// isnt enough as a downpayment" could never be answered with a number.
+//
+//   * MINUTES, INTEGER. Never hours-as-float — this feeds a pricing argument, and a float
+//     summed across a year does not equal the same number twice.
+//   * A DATE, not a start/stop range. Deliberately not a stopwatch: a timer people fill
+//     in retroactively lies with extra steps.
+//   * NOT BILLING. No rate, no cost, no invoice link — ADVO bills fixed-price, and a rate
+//     column would invent a billing model nobody agreed to.
+//   * NOT SURVEILLANCE. No idle detection, no is_billable — that column turns a record of
+//     effort into a judgement about a person.
+
+export const timeEntry = pgTable(
+  "time_entry",
+  {
+    timeEntryId: bigserial("time_entry_id", { mode: "number" }).primaryKey(),
+    projectId: integer("project_id")
+      .notNull()
+      .references(() => project.projectId, { onDelete: "cascade" }),
+    /** Nullable: real work often belongs to a project and to no deliverable. */
+    deliverableId: integer("deliverable_id").references(() => deliverable.deliverableId, {
+      onDelete: "set null",
+    }),
+    teamMemberId: integer("team_member_id")
+      .notNull()
+      .references(() => teamMember.teamMemberId, { onDelete: "cascade" }),
+    /** The working day in Asia/Manila. */
+    workedOn: date("worked_on").notNull(),
+    /** Integer MINUTES. CHECKed to 1..960 in 024 — see the migration for why 960. */
+    minuteCount: integer("minute_count").notNull(),
+    note: text("note"),
+    /** Who typed it in — not always who did the work. */
+    createdBy: integer("created_by").references(() => user.userId, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_time_entry_project").on(t.projectId),
+    index("idx_time_entry_member").on(t.teamMemberId, t.workedOn),
+    index("idx_time_entry_deliverable").on(t.deliverableId),
+    index("idx_time_entry_worked_on").on(t.workedOn),
+  ],
+);

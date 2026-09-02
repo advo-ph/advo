@@ -44,6 +44,7 @@ import campaignRoutes from "./routes/campaign.routes.js";
 import libraryRoutes from "./routes/library.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
 import messageRoutes from "./routes/message.routes.js";
+import insightRoutes from "./routes/insight.routes.js";
 
 import type { Variables } from "./types/context.js";
 
@@ -170,6 +171,11 @@ app.route("/api/payment", paymentRoutes);
 // one is: the providers call with no ADVO credential, so authentication is the signature.
 // Nothing here auto-replies; a message actuates nothing.
 app.route("/api/message", messageRoutes);
+
+// Time entry (migration 024) + the three derived ops reads. TEAM-ONLY. The time model is
+// deliberately effort, not cost: no rate column, no billable flag, nothing that turns a
+// record of work into a judgement about a person.
+app.route("/api/insight", insightRoutes);
 
 // Commission split — the 60/25/15 payout model (migration 018). TEAM-ONLY: no /hub path
 // reaches this router. Finalizing is an explicit admin POST, never automatic.
