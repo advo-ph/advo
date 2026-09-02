@@ -346,7 +346,8 @@ describe("persistence invariants, read from the source", () => {
 
   it("declares its credentials unverified rather than implying they were tested", () => {
     expect(channel).toContain("Credential status");
-    expect(channel).toContain("has NOT been exercised against a\n * live account");
+    // The sentence, not its line ending: a CRLF checkout on Windows must not fail it.
+    expect(channel).toMatch(/has NOT been exercised against a\r?\n \* live account/);
   });
 
   it("Messenger only ever replies inside the platform's allowed window", () => {
