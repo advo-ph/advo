@@ -227,9 +227,6 @@ const LandingPage = () => {
             animate="show"
             transition={{ staggerChildren: 0.1, delayChildren: 0.25 }}
           >
-            <motion.p className="landing-hero-label" variants={heroCopy} transition={{ duration: 0.7, ease: EASE }}>
-              Software + hardware · Philippines
-            </motion.p>
             <motion.h1 variants={heroCopy} transition={{ duration: 0.7, ease: EASE }}>
               We digitalize it for you.
             </motion.h1>

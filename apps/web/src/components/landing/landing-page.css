@@ -418,13 +418,6 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   align-items: flex-start;
   gap: 16px;
 }
-.landing-page .landing-hero-label {
-  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  font-size: var(--landing-text-micro);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.78);
-}
 .landing-hero h1 {
   max-width: 14ch;
   font-size: var(--landing-text-display);
@@ -464,11 +457,13 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-marquee-item { display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; }
 .landing-marquee-item img { height: 26px; width: auto; max-width: 140px; object-fit: contain; filter: grayscale(1); }
 .landing-marquee-item.is-wide img { height: 30px; }
-/* Reduced motion: no scroll, so no clipped edges either — the row wraps and
- * centres, and the duplicate copy that makes the loop seamless is dropped. */
-.landing-marquee-track.is-static { animation: none; width: 100%; flex-wrap: wrap; justify-content: center; gap: 12px 32px; padding-inline: 16px; }
+/* Reduced motion: the same single row, still a marquee to look at, just not
+ * moving on its own. The duplicate loop copy is dropped and the row can be
+ * dragged or scrolled by hand instead. */
+.landing-marquee-track.is-static { animation: none; width: 100%; justify-content: center; }
 .landing-marquee-track.is-static [aria-hidden="true"] { display: none; }
-.landing-marquee-mask:has(.is-static) { -webkit-mask-image: none; mask-image: none; }
+.landing-marquee-mask:has(.is-static) { overflow-x: auto; scrollbar-width: none; }
+.landing-marquee-mask:has(.is-static)::-webkit-scrollbar { display: none; }
 @keyframes landing-marquee {
   from { transform: translate3d(0, 0, 0); }
   to { transform: translate3d(-50%, 0, 0); }
