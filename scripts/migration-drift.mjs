@@ -64,9 +64,25 @@ const fileOnDisk = existsSync(migrationDir)
 
 if (fileOnDisk.length === 0) fail(`no migrations found in ${migrationDir}`);
 
+/**
+ * Every CHECK constraint the migration tree names. Matches both the in-table form
+ * (`CONSTRAINT chk_x CHECK (...)`) and the ALTER form (`ADD CONSTRAINT chk_x`), so a
+ * constraint counts as declared however it is written.
+ */
+function declaredConstraint() {
+  const name = new Set();
+  for (const file of fileOnDisk) {
+    const body = readFileSync(join(migrationDir, file), "utf8");
+    for (const match of body.matchAll(/CONSTRAINT\s+(chk_[a-z0-9_]+)/gi)) name.add(match[1]);
+  }
+  return [...name].sort();
+}
+
 const sql = postgres(databaseUrl, { max: 1, connect_timeout: 10, prepare: false, onnotice: () => {} });
 
 let appliedRow = [];
+/** Every chk_* CHECK constraint the target actually has. Half of the shape-drift check. */
+let constraintRow = [];
 let hasLedger = false;
 try {
   const ledgerPresent = await sql`SELECT to_regclass('public.schema_migration') AS relation`;
@@ -78,6 +94,17 @@ try {
       ORDER BY filename
     `;
   }
+  // Queried regardless of the ledger: a database with no ledger still has a shape, and
+  // the two failures are independent.
+  // `chk%`, not `chk\_%`. The escaped-underscore form needs a backslash that survives
+  // both the JS string and the SQL parser, and getting that wrong makes the pattern
+  // match NOTHING while still returning cleanly — which is how this check silently
+  // reported "clean" the first time it was written. The prefix alone is specific
+  // enough: every constraint this repo declares is named chk_<table>_<rule>.
+  constraintRow = await sql`
+    SELECT conname FROM pg_constraint
+    WHERE contype = 'c' AND conname LIKE 'chk%'
+  `;
 } catch (error) {
   await sql.end({ timeout: 5 }).catch(() => {});
   fail(`could not query the target database — ${error.message}`);
@@ -104,9 +131,23 @@ const orphan = appliedRow
   .filter((row) => !fileOnDisk.includes(row.filename))
   .map((row) => row.filename);
 
+/**
+ * SHAPE DRIFT: declared in the tree, absent from the database.
+ *
+ * Only meaningful once every migration is applied — a constraint from an UNAPPLIED
+ * migration is legitimately missing, and reporting it would make an ordinary
+ * not-yet-deployed migration look like corruption.
+ */
+const presentConstraint = new Set(constraintRow.map((row) => row.conname));
+const missingConstraint =
+  unapplied.length === 0
+    ? declaredConstraint().filter((name) => !presentConstraint.has(name))
+    : [];
+
 const gap = unapplied.filter((entry) => entry.kind === "gap");
 const tail = unapplied.filter((entry) => entry.kind === "tail");
-const isDrifted = !hasLedger || unapplied.length > 0 || orphan.length > 0;
+const isDrifted =
+  !hasLedger || unapplied.length > 0 || orphan.length > 0 || missingConstraint.length > 0;
 
 if (isJson) {
   console.log(
@@ -121,10 +162,12 @@ if (isJson) {
           gap: gap.length,
           tail: tail.length,
           orphan: orphan.length,
+          missingConstraint: missingConstraint.length,
         },
         gap: gap.map((entry) => entry.filename),
         tail: tail.map((entry) => entry.filename),
         orphan,
+        missingConstraint,
       },
       null,
       2,
@@ -150,7 +193,20 @@ if (isJson) {
     console.error(`\nORPHAN — recorded applied but missing from the tree:`);
     for (const name of orphan) console.error(`  ${name}`);
   }
-  if (!isDrifted) console.log("\nclean — the target has seen every migration in the tree.");
+  if (missingConstraint.length > 0) {
+    console.error("\nSHAPE DRIFT — declared in the tree, ABSENT from the database:");
+    for (const name of missingConstraint) console.error(`  ${name}`);
+    console.error("\n  The ledger is clean and the schema is still wrong. This is what happens");
+    console.error("  when db:push creates a table from schema.ts (which cannot express a CHECK)");
+    console.error("  and the migration's CREATE TABLE IF NOT EXISTS then becomes a no-op —");
+    console.error("  silently skipping every constraint it declared.");
+    console.error("\n  Apply apps/api/migrations/025_enforce_check_constraint.sql, which adds");
+    console.error("  them idempotently. If it FAILS, that is the point: real rows are sitting");
+    console.error("  outside a rule the code believed was enforced.");
+  }
+  if (!isDrifted) {
+    console.log("\nclean — every migration applied, and every declared CHECK is present.");
+  }
 }
 
 if (isDrifted) process.exit(1);

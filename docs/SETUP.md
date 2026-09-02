@@ -123,6 +123,30 @@ is how prod ended up serving `/api/expense` against a table that was never creat
 that predates the ledger needs `019_schema_ledger.sql` applied first; its backfill is guarded
 per-migration, so it is safe on an existing box. See [SCHEMA.md](SCHEMA.md#migration-log).
 
+> ### `db:push` runs FIRST, and that has a consequence worth understanding
+>
+> Found 2026-09-02 by applying every migration to a throwaway database and asking Postgres
+> what it actually had: **30 of the 34 CHECK constraints the migrations declare did not
+> exist**, on every database bootstrapped this way — and the drift ledger was clean the
+> whole time.
+>
+> The mechanism: `db:push` creates every table from `schema.ts`, and Drizzle cannot express
+> a CHECK constraint. The migrations then run `CREATE TABLE IF NOT EXISTS <same table>`,
+> which is a **no-op** — silently skipping every constraint declared inside it. Nothing
+> errored; the ledger recorded each migration as applied, correctly, because it *was*.
+>
+> `025_enforce_check_constraint.sql` adds all of them idempotently via guarded
+> `ALTER TABLE`, which works whether the table came from push or from a migration. **Apply
+> it on any existing database**, including prod.
+>
+> `migration:drift` now checks this too — it compares the constraints the tree *declares*
+> against the ones the database *has*, and reports `SHAPE DRIFT` when they disagree.
+> Comparing filenames could never see this, because every filename was already right.
+>
+> **If `025` fails, that is the point.** Adding a CHECK to a table holding rows that
+> violate it aborts the transaction, which means real data has been sitting outside a rule
+> the code believed was enforced. Fix the rows; do not reach for `NOT VALID`.
+
 ### Tables
 
 | Table | Purpose |

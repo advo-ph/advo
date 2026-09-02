@@ -27,11 +27,15 @@
 
 BEGIN;
 
-CREATE TYPE recurring_fee_status AS ENUM (
-  'active',
-  'paused',
-  'cancelled'
-);
+DO $$ BEGIN
+  CREATE TYPE recurring_fee_status AS ENUM (
+    'active',
+    'paused',
+    'cancelled'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS recurring_fee (
   recurring_fee_id       bigserial PRIMARY KEY,

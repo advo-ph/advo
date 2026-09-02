@@ -16,31 +16,43 @@
 
 BEGIN;
 
-CREATE TYPE campaign_status AS ENUM (
-  'draft',
-  'sending',
-  'paused',
-  'sent',
-  'failed'
-);
+DO $$ BEGIN
+  CREATE TYPE campaign_status AS ENUM (
+    'draft',
+    'sending',
+    'paused',
+    'sent',
+    'failed'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TYPE campaign_recipient_status AS ENUM (
-  'queued',
-  'sent',
-  'failed',
-  'bounced',
-  'unsubscribed',
-  'complained',
-  'suppressed'
-);
+DO $$ BEGIN
+  CREATE TYPE campaign_recipient_status AS ENUM (
+    'queued',
+    'sent',
+    'failed',
+    'bounced',
+    'unsubscribed',
+    'complained',
+    'suppressed'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TYPE suppression_reason AS ENUM (
-  'unsubscribe',
-  'hard_bounce',
-  'complaint',
-  'soft_bounce_limit',
-  'manual'
-);
+DO $$ BEGIN
+  CREATE TYPE suppression_reason AS ENUM (
+    'unsubscribe',
+    'hard_bounce',
+    'complaint',
+    'soft_bounce_limit',
+    'manual'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS campaign (
   campaign_id      bigserial PRIMARY KEY,

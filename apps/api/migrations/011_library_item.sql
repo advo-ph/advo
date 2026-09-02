@@ -6,13 +6,17 @@
 
 BEGIN;
 
-CREATE TYPE library_item_type AS ENUM (
-  'website',
-  'prompt',
-  'module',
-  'asset',
-  'doc'
-);
+DO $$ BEGIN
+  CREATE TYPE library_item_type AS ENUM (
+    'website',
+    'prompt',
+    'module',
+    'asset',
+    'doc'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS library_item (
   library_item_id  bigserial PRIMARY KEY,

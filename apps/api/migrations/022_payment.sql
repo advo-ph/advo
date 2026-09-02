@@ -84,13 +84,17 @@
 
 BEGIN;
 
-CREATE TYPE payment_intent_status AS ENUM (
-  'pending',
-  'paid',
-  'failed',
-  'expired',
-  'cancelled'
-);
+DO $$ BEGIN
+  CREATE TYPE payment_intent_status AS ENUM (
+    'pending',
+    'paid',
+    'failed',
+    'expired',
+    'cancelled'
+  );
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ─── payment_intent ───────────────────────────────────────────────────────────
 
