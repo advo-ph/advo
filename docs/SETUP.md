@@ -22,13 +22,14 @@ All three tiers run on the same Contabo VPS in Singapore — host `advo` (`62.14
 
 ## Local Development
 
-The repo is an npm-workspaces monorepo (`apps/web` + `apps/api`). One install, one dev command.
+The repo is an npm-workspaces monorepo (`apps/web` + `apps/api`). One install, one database
+command, one dev command.
 
 ```bash
-cd /path/to/Antigravity/advo
-cp apps/api/.env.example apps/api/.env   # Edit with your local DB credentials
+cd /path/to/advo
+cp apps/api/.env.example apps/api/.env   # Set DATABASE_URL to the database db:local creates (below)
 npm install                              # Installs both workspaces
-npm --workspace apps/api run db:push     # Create tables in PostgreSQL
+npm run db:local                         # Creates `advo`, db:push, applies every migration, prints the drift verdict
 npm --workspace apps/api run db:seed     # Seed default data
 npm run dev                              # npx concurrently: web :6447 + api :6407
 ```
@@ -36,6 +37,37 @@ npm run dev                              # npx concurrently: web :6447 + api :64
 Open http://localhost:6447
 
 Default admin login: `admin@advo.ph` / `changeme`
+
+### `npm run db:local` — what it does and why it exists
+
+`scripts/db-local.mjs` replaces the old "run `db:push`, then apply the migrations by hand"
+instruction, which is the sequence that produced migration 025's defect: `db:push` creates every
+table WITHOUT its CHECK constraints, the migrations' `CREATE TABLE IF NOT EXISTS` then no-op, and
+nothing says so. The script does the whole sequence in the order that ends clean, then runs
+`scripts/migration-drift.mjs` against the result and prints its verdict — so the last line is a
+fact, not a hope:
+
+1. creates the database if it does not exist (default `advo`, `--name <db>` for another)
+2. runs `db:push` — only on a database that has never been migrated; once the ledger has rows the
+   schema moves by migration only
+3. applies every `apps/api/migrations/*.sql` not yet in the `schema_migration` ledger, in filename
+   order, and records each
+4. adds any CHECK constraint a migration declared inside a `CREATE TABLE IF NOT EXISTS` body that
+   `db:push` pre-empted, naming the migration that needs rewriting in 025's `ALTER TABLE` form
+5. runs `migration:drift` and exits with its verdict (`0` clean, `1` drift, `2` could not run)
+
+It connects as a Postgres superuser at `postgresql://postgres@127.0.0.1:5432` by default;
+override with `--base postgresql://user:pass@host:port`. Re-running it is safe — it applies only
+what is missing and touches no other database.
+
+**Windows.** The installer does not put `psql` on PATH. The script looks on PATH first, then at
+`C:\Program Files\PostgreSQL\<major>\bin\psql.exe` (newest major first), so nothing needs to be
+added to PATH. To call psql yourself: `"C:\Program Files\PostgreSQL\18\bin\psql" postgresql://postgres@127.0.0.1:5432/advo`.
+A default Windows install uses trust auth for local connections, so no password is needed. On
+macOS the equivalent superuser is usually your own login user (`--base postgresql://$USER@127.0.0.1:5432`).
+
+**Throwaway databases.** `npm run db:local -- --name advo_scratch` bootstraps a second database
+without touching `advo`; drop it afterwards with `psql -c 'DROP DATABASE advo_scratch' postgresql://postgres@127.0.0.1:5432/postgres`.
 
 ### 3. Run the test suite
 
@@ -109,7 +141,8 @@ FRONTEND_URL=http://localhost:6447        # Vite dev (proxies /api → :6407)
 Schema is defined in `apps/api/src/db/schema.ts` using Drizzle ORM.
 
 ```bash
-npm run db:push               # Push schema to database
+npm run db:local              # Create + push + migrate + drift verdict, in one command (see Local Development)
+npm run db:push               # Push schema to database — a fresh database only; db:local does this for you
 npm run db:seed               # Seed defaults (admin user, site content, config)
 npm run db:studio             # Open Drizzle Studio (DB browser)
 npm run db:generate           # Generate migration files
@@ -321,6 +354,10 @@ psql -U advo -d advo -c "SELECT 1;"
 ### Database reset (dev only)
 
 ```bash
-dropdb advo && createdb advo
-npm --workspace apps/api run db:push && npm --workspace apps/api run db:seed
+dropdb advo
+npm run db:local && npm --workspace apps/api run db:seed
 ```
+
+`db:local` recreates the database, pushes, applies every migration and prints the drift
+verdict. On Windows, where `dropdb` is not on PATH:
+`"C:\Program Files\PostgreSQL\18\bin\psql" -c "DROP DATABASE advo" postgresql://postgres@127.0.0.1:5432/postgres`.

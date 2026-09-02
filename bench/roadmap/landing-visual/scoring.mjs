@@ -46,6 +46,34 @@ const hexColour = new Set(
 const keyframeCount = (css.match(/@keyframes/g) ?? []).length;
 const reducedMotionCount = (css.match(/prefers-reduced-motion/g) ?? []).length;
 
+// ─── Design brief (added 2026-09-02) ───────────────────
+//
+// The brief that followed the visual pass: no glass, no drop shadow, one-weight line
+// icons, at most one gradient. Each is a property the current code already has; the
+// checks exist so the next pass cannot quietly bring frosted panels and 1.5px icons back.
+
+/** Every box-shadow value. `none` REMOVES a shadow (the mobile nav reset) and is not one. */
+const boxShadowValue = [...css.matchAll(/box-shadow:\s*([^;]+);/g)].map((m) => m[1].trim());
+const nonInsetShadow = boxShadowValue.filter((value) => value !== "none" && !value.startsWith("inset"));
+
+const backdropFilterCount = (css.match(/backdrop-filter/g) ?? []).length;
+const linearGradientCount = (css.match(/linear-gradient\(/g) ?? []).length;
+
+/**
+ * Every icon element carrying a `size=` prop across the landing surface. Lucide takes
+ * `strokeWidth={1}`; the Tabler brand marks in the footer take `stroke={1}` (their name
+ * for the same prop). Either is the one-weight line the brief asks for.
+ */
+const iconSurface = [
+  page,
+  footer,
+  read("apps/web/src/components/landing/landing-shell.tsx"),
+  read("apps/web/src/components/LandingNav.tsx"),
+  read("apps/web/src/pages/CaseStudy.tsx"),
+];
+const iconElement = iconSurface.flatMap((source) => [...source.matchAll(/<[A-Z][A-Za-z]*\b[^>]*\bsize=[^>]*\/?>/g)].map((m) => m[0]));
+const offWeightIcon = iconElement.filter((element) => !/\b(strokeWidth|stroke)=\{1\}/.test(element));
+
 const checks = [
   {
     id: "type-scale-bounded",
@@ -102,6 +130,30 @@ const checks = [
     passed: css.length > 0 && !/runway/i.test(css) && !/runway/i.test(page),
     expected:
       "Take the properties, not the CSS. A copied stylesheet or asset from a named company is a legal and taste problem, and it is not what was asked for.",
+  },
+  {
+    id: "no-glass",
+    title: "No frosted-glass surface",
+    passed: css.length > 0 && backdropFilterCount === 0,
+    expected: `backdrop-filter appears ${backdropFilterCount} time(s) in landing-page.css. The brief is one flat ground; a blurred panel is chrome pretending to be depth.`,
+  },
+  {
+    id: "no-shadow",
+    title: "Every box-shadow is an inset hairline",
+    passed: css.length > 0 && nonInsetShadow.length === 0,
+    expected: `Found ${nonInsetShadow.length} non-inset box-shadow value(s): ${nonInsetShadow.join(" | ") || "none"}. Hairlines draw an edge; a drop shadow fakes elevation the page does not have.`,
+  },
+  {
+    id: "icons-stroke-one",
+    title: "Every sized icon is drawn at one-unit stroke",
+    passed: iconElement.length > 0 && offWeightIcon.length === 0,
+    expected: `${iconElement.length} icon element(s) with size=; ${offWeightIcon.length} without strokeWidth={1} / stroke={1}: ${offWeightIcon.join(" | ") || "none"}. One line weight across the whole surface is what makes the icon set read as a set.`,
+  },
+  {
+    id: "one-gradient",
+    title: "At most one linear-gradient literal",
+    passed: linearGradientCount <= 1,
+    expected: `Found ${linearGradientCount} linear-gradient literal(s) in landing-page.css; the ceiling is 1 (the edge-fade mask on the logo strip).`,
   },
 ];
 

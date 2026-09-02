@@ -20,6 +20,8 @@ import {
   suppressionSet,
   unsubscribeByToken,
 } from "../services/campaign.service.js";
+import { translateResendEvent, verifySvixSignature } from "../services/esp-webhook.service.js";
+import { env } from "../utils/env.js";
 
 const campaignRoutes = new Hono<{ Variables: Variables }>();
 
@@ -63,6 +65,65 @@ campaignRoutes.get("/unsubscribe/:token", async (c) => {
        <p style="color:#555;line-height:1.6;">${message}</p>
      </body></html>`,
   );
+});
+
+/**
+ * ESP → suppression adapter. Also mounted BEFORE the auth middleware: Resend has no
+ * session, so `/delivery-failure` below 401s on every real event and the suppression
+ * list stays deaf. The Svix signature is what proves the caller is real here. Without a
+ * configured secret the route refuses with 503 rather than accepting unverified events —
+ * an open, unverified suppression endpoint would let anyone suppress any address.
+ *
+ * Unmapped events (delivered, opened, …) get 200 so the ESP stops retrying them.
+ */
+campaignRoutes.post("/esp-webhook", async (c) => {
+  const secret = env().RESEND_WEBHOOK_SECRET;
+  if (!secret) {
+    return c.json(
+      { data: null, error: "RESEND_WEBHOOK_SECRET is not set; the ESP webhook is refused until it is." },
+      503,
+    );
+  }
+
+  const rawBody = await c.req.text();
+  const verdict = verifySvixSignature(
+    {
+      id: c.req.header("svix-id"),
+      timestamp: c.req.header("svix-timestamp"),
+      signature: c.req.header("svix-signature"),
+    },
+    rawBody,
+    secret,
+  );
+  if (!verdict.isValid) {
+    return c.json({ data: null, error: `Invalid webhook signature (${verdict.reason})` }, 401);
+  }
+
+  let payload: unknown;
+  try {
+    payload = JSON.parse(rawBody);
+  } catch {
+    return c.json({ data: null, error: "Body is not JSON" }, 400);
+  }
+
+  const event = translateResendEvent(payload);
+  if (!event) return c.json({ data: { isIgnored: true }, error: null });
+
+  if (event.kind === "soft_bounce") {
+    const result = await recordSoftBounce(event.email);
+    return c.json({
+      data: {
+        ...event,
+        isSuppressed: result.isSuppressed,
+        softBounceCount: result.softBounceCount,
+        softBounceLimit: SOFT_BOUNCE_LIMIT,
+      },
+      error: null,
+    });
+  }
+
+  await recordDeliveryFailure(event.email, event.kind);
+  return c.json({ data: { ...event, isSuppressed: true }, error: null });
 });
 
 // ─── Team-only ───────────────────────────────────────

@@ -145,13 +145,16 @@ Every colour and every font-size in `landing-page.css` derives from the `:root` 
 
 ```bash
 cd advo
-cp apps/api/.env.example apps/api/.env   # Edit with your DB credentials
+cp apps/api/.env.example apps/api/.env   # Point DATABASE_URL at the database db:local creates
 npm install                              # Installs both workspaces
-npm --workspace apps/api run db:push     # Create tables
+npm run db:local                         # Create `advo`, push, apply every migration, print the drift verdict
 npm --workspace apps/api run db:seed     # Seed defaults
 npm --workspace apps/api run dev         # API :6407
 npm --workspace apps/web run dev         # Vite :6447, proxies /api → :6407
 ```
+
+`db:local` finds `psql` on PATH or at the Windows installer path; full notes in
+[docs/SETUP.md](docs/SETUP.md#local-development).
 
 Default login: `admin@advo.ph` / `changeme`
 

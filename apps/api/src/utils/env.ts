@@ -6,6 +6,11 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(32),
 
   RESEND_API_KEY: z.string().optional(),
+  /**
+   * Signs Resend's bounce/complaint webhook (Svix `whsec_…`). Unset → POST
+   * /api/campaign/esp-webhook answers 503 and suppression never hears from the ESP.
+   */
+  RESEND_WEBHOOK_SECRET: z.string().optional(),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().optional(),
   SMTP_USER: z.string().optional(),
@@ -83,6 +88,24 @@ const envSchema = z.object({
   FIGMA_TOKEN: z.string().optional(),
   /** A full service-account JSON key, as one string. Not OAuth -- see connector.service.ts. */
   GOOGLE_SERVICE_ACCOUNT_JSON: z.string().optional(),
+
+  /**
+   * Declared here so scripts/env-drift.mjs can hold env.ts and .env.example to the same
+   * key set. Each is still read off process.env at its call site (the Claude paths,
+   * outreach transport, Plaud auth), so declaring them changes nothing at runtime — but
+   * an undeclared key is exactly the kind that gets dropped from a fresh box's .env.
+   */
+  ANTHROPIC_API_KEY: z.string().optional(),
+  OUTREACH_SMTP_HOST: z.string().optional(),
+  OUTREACH_SMTP_PORT: z.coerce.number().optional(),
+  OUTREACH_SMTP_USER: z.string().optional(),
+  OUTREACH_SMTP_PASS: z.string().optional(),
+  OUTREACH_FROM: z.string().optional(),
+  /** Read by scripts/outreach-preflight.mjs, not the API — declared for the same reason. */
+  OUTREACH_DKIM_SELECTOR: z.string().optional(),
+  PLAUD_TOKEN: z.string().optional(),
+  PLAUD_AUTH_FILE: z.string().optional(),
+  PLAUD_API_HOST: z.string().optional(),
 
   PORT: z.coerce.number().default(6407),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),

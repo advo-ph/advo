@@ -213,7 +213,7 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
                 target={isMail ? undefined : "_blank"}
                 rel={isMail ? undefined : "noopener noreferrer"}
               >
-                <Icon size={16} stroke={1.5} />
+                <Icon size={16} stroke={1} />
               </a>
             );
           })}

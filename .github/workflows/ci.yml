@@ -34,6 +34,11 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # env.ts and .env.example must name the same keys. A key in one and not the
+      # other is how a freshly bootstrapped box ends up silently unconfigured.
+      - name: Env drift
+        run: node scripts/env-drift.mjs
+
       - name: Build
         run: npm run build
         env:

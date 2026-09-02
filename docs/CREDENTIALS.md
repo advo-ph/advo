@@ -175,33 +175,46 @@ Technical clearance to send is not legal clearance to send.
 
 ---
 
-## 5. The ESP bounce webhook — **needs code first**
+## 5. The ESP bounce webhook — `RESEND_WEBHOOK_SECRET`
 
-**Who can get it: nobody yet. This is not a dashboard task, and the roadmap is misleading about
-it.**
+**Who can get it: whoever owns the Resend account. The code now exists (2026-09-02); this is a
+dashboard task again.**
 
-The roadmap says migration `020`'s endpoint "is ready, but no ESP webhook calls it yet," which
-reads as *go configure a webhook*. You cannot. Two things block it:
+`POST /api/campaign/esp-webhook` is mounted **above** the team-auth line in
+`apps/api/src/routes/campaign.routes.ts`. It verifies the Svix signature Resend puts on every
+delivery (`svix-id`, `svix-timestamp`, `svix-signature`; HMAC-SHA256 over `id.timestamp.body`,
+timestamps older than five minutes refused, constant-time compare, rotation-safe multi-signature
+headers) and translates the event into the internal shape the existing `/delivery-failure` handler
+uses, then calls the same `recordSoftBounce` / `recordDeliveryFailure`:
 
-1. **The endpoint is behind team auth.** `campaign.routes.ts:70` applies
-   `campaignRoutes.use("*", requireAuth, requireTeam)` to every route below it, and
-   `POST /api/campaign/delivery-failure` is below it. An ESP has no session and no JWT, so a
-   correctly configured Resend webhook would get a `401` on every event.
-2. **It expects ADVO's own payload, not an ESP's.** The handler validates
-   `{ email, kind: hard_bounce | soft_bounce | complaint, campaignId? }`. Resend posts its own event
-   shape (`type: "email.bounced"`, address nested under `data`), signed with a Svix signature
-   header.
+| Resend event | `bounce.type` | Internal kind |
+|---|---|---|
+| `email.bounced` | `hard` / `permanent` | `hard_bounce` — suppressed on first report |
+| `email.bounced` | `soft` / `transient` / `undetermined` | `soft_bounce` — counter, suppresses at `SOFT_BOUNCE_LIMIT` |
+| `email.complained` | — | `complaint` — suppressed on first report |
+| anything else | — | ignored, `200` so Resend stops retrying |
 
-So the work is a small adapter route, not a dashboard setting: an unauthenticated
-`POST /api/campaign/esp-webhook` mounted **above** the auth line, verifying the Svix signature with
-a `RESEND_WEBHOOK_SECRET`, translating the ESP event into the existing internal shape, and calling
-the same suppression functions. Signature verification replaces the auth middleware as the thing
-that proves the caller is real — an unauthenticated, unverified suppression endpoint would let
-anyone on the internet suppress any address.
+The verifier and the translation live in `apps/api/src/services/esp-webhook.service.ts` and are
+covered by `apps/web/src/test/esp-webhook.test.ts`, which computes a real signature.
 
-Until that exists, hard bounces and complaints never reach the suppression list: the code is live
-and deaf. **Do not start a campaign send before this is closed.** Sending without bounce processing
-is how a fresh sending domain gets burned in a single pass.
+**What to do in Resend:**
+
+1. Dashboard → **Webhooks** → **Add webhook**.
+2. Endpoint URL: `https://api.advo.ph/api/campaign/esp-webhook`.
+3. Events: tick **`email.bounced`** and **`email.complained`**. Nothing else is needed — every
+   other event is answered `200` and dropped.
+4. Save, open the webhook, and copy its **Signing secret** (`whsec_…`).
+5. Put it on the box as `RESEND_WEBHOOK_SECRET=whsec_…` using the shared procedure at the top of
+   this file, then restart the API.
+6. Send a test event from the webhook's page in Resend. `200` with `isSuppressed` in the body
+   means it landed; `401` means the secret on the box does not match; `503` means the box has no
+   secret at all.
+
+**Until step 5 is done the route answers `503`** and never touches suppression — deliberately.
+An unverified suppression endpoint would let anyone on the internet suppress any address, and a
+silently-accepting one would hide a misconfigured secret behind green dashboards. Still: **do not
+start a campaign send before this returns `200` on a test event.** Sending without bounce
+processing is how a fresh sending domain gets burned in a single pass.
 
 ---
 
