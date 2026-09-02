@@ -15,6 +15,29 @@ Cross-links:
 
 ---
 
+## 2026-09-03 — the corpus: every fact with the line it rests on, and the first ingestion pass
+
+> Migration 027. Five tables, three ingestion paths, a fact-check endpoint, an accountability ledger, ten templates, and an admin screen. Two agents on Opus read 17 Plaud recordings and 11 Drive documents end to end and wrote curated bundles under `data/corpus/`: 767 facts, 151 typed terms, 160 open actions, 30 sources, mapped to prod projects and leads. Loaded locally and to prod by `npm run corpus:load`.
+
+**Why it exists.** The morning's Drive check found the repo quoting three numbers the signed documents had replaced. Nothing stored a claim next to its source, so nothing could say where a number came from or that it had changed. Now a fact is a sentence, a verbatim quote, an `m:ss` or a heading, and a `basis` that is honest about whether it is a transcript line, a document, an AI summary, or a regex guess.
+
+**What the pass found.** The four "Power Mac Center" spotlights of 08-11 are FourlinQ sessions: the client names her companies, shows the fourlinq site, and the module set is the six-system contract line for line. Fun Ride PH / MyriadSports has five recordings and no project row. The 07-10 FourlinQ meeting records that the owner already had a friend build a sales CRM. The two FourlinQ website sign-offs disagree on what was paid (₱27,000 vs ₱12,000), the Felici downpayment is ₱9,600 in July's document and ₱20,000 in August's for the same date, deemed-approval windows differ across three contracts (15+15, 10+3, 7+3), and every signature block in every Drive copy is blank. All of it is in `data/corpus/*/INDEX.md` with timestamps.
+
+**Fact-check, honestly.** `POST /api/corpus/check` searches by words, not numbers, then compares the numbers. "FourlinQ pays ₱3,000 a month for hosting" → supported, 08-11 transcript at 39:20. "The commission split is 60 percent developer" → conflicting, the signed agreement says 55. "Felici pays ₱3,000 a month" → supported by July's contract and flagged contested, because August's says ₱4,000. The verdict shows its work; it does not decide truth.
+
+**The cheaper second pass.** The first pass was Opus by hand. The steady state is `POST /api/corpus/ingest/plaud` per link with `CORPUS_EXTRACT_MODEL` pointed at a cheaper model; with no key the heuristic runs and marks every guess as one.
+
+**Honest open-items**
+
+- **No facts are verified by a person.** 767 rows, 0 with `is_verified`. The corpus is as good as the transcripts and the agents; a human pass over pricing and contract terms is the next real step.
+- **Supersession is manual.** July's Felici contract and August's both sit in the corpus as live facts; `superseded_by_fact_id` exists but nothing sets it. Fact-check flags the contest; it does not pick the newer document.
+- **Meetings under Inbox.** Recordings with no project row (Fun Ride, the 07-30 and 08-16 memos) sit under the Inbox project on the Meetings screen.
+- **The prod admin password is still the seed default.** The loader used it to reach prod. Rotate it.
+- **Template rendering is fill-in-the-blanks.** No document generation to PDF; the rendered markdown is copied out.
+- **No embeddings.** Postgres full-text is enough for a few thousand claims; revisit at tens of thousands.
+
+---
+
 ## 2026-09-02 — the runway landing, the client hub tier, and the tooling that gates them
 
 > Thirty commits across two sessions on one day. Public `/` rebuilt in the runway grammar with real proof and no generated art; the client hub gained the thread, preview history, event notifications and Pay now; the API gained the ESP bounce webhook; the dev loop gained a one-command local database, an env-drift gate and a design-brief bench. `vitest` 770/770 with the 118 integration tests that used to skip now running. Deployed to prod at the end of the day.

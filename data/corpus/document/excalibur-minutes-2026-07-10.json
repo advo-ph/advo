@@ -1,0 +1,216 @@
+{
+  "source": {
+    "kind": "drive_doc",
+    "externalId": "12XeMRiGueUS6wEg989dyNEJiwTjDJCLg8q0RCAKb3gA",
+    "url": "https://docs.google.com/document/d/12XeMRiGueUS6wEg989dyNEJiwTjDJCLg8q0RCAKb3gA/edit",
+    "title": "Minutes of the Meeting (July 10, 2026)",
+    "documentDate": "2026-07-10",
+    "owner": "agramos0765@gmail.com",
+    "documentKind": "minutes"
+  },
+  "link": {
+    "projectId": null,
+    "leadName": "Excalibur Builders",
+    "clientName": null
+  },
+  "summary": "Minutes of a 10 July 2026, 5:06 PM consultation in Naic, Calabarzon with Excalibur Builders, a window, door and glass specialist with over 20 years in business and operations in Cebu and Davao, whose founder has 15+ years in corporate banking. The company prices well below competitors (who charge 2–3x) but its digital image is outdated, its product hierarchy is chaotic, it lacks project photos, runs operations on Excel 2003 and Google Sheets, and has been burned by a failed rapid AI project and a roughly €10,000 CRM subscription. The agreed direction is a Pella-inspired interactive website with a product customizer and AI assistant, a unified CRM/PM/fabrication/inventory/attendance/payroll system, Moodle-based training, a 12-month faceless social media retainer with a dual-channel YouTube strategy, and two side projects (a life-coaching marketplace MVP and Japan real estate sourcing). Ten action items follow, one dated 17 July 2026. Excalibur Builders has no lead or meeting row in the system.",
+  "fact": [
+    {
+      "claim": "The meeting with Excalibur Builders took place on July 10, 2026 at 5:06 PM in Naic, Calabarzon, Philippines.",
+      "category": "timeline",
+      "quote": "**Date:** July 10, 2026 \n\n**Time:** 5:06 PM\n\n**Location:** Naic, Calabarzon, Philippines",
+      "sectionHeading": "MINUTES OF THE MEETING",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-10",
+      "projectId": null
+    },
+    {
+      "claim": "Excalibur Builders is a window, door and glass specialist with over 20 years of experience and active operations in Cebu and Davao.",
+      "category": "identity",
+      "quote": "Over 20 years in the windows and doors industry, with active operations in Cebu and Davao.",
+      "sectionHeading": "2. Background & Context",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-07-10",
+      "projectId": null
+    },
+    {
+      "claim": "The founder has 15+ years of corporate banking experience at Citibank, HSBC and Standard Chartered.",
+      "category": "contact",
+      "quote": "The founder brings 15+ years of corporate banking experience (Citibank, HSBC, Standard Chartered).",
+      "sectionHeading": "2. Background & Context",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-07-10",
+      "projectId": null
+    },
+    {
+      "claim": "Excalibur's pricing is highly competitive, with competitors charging 2 to 3 times more, but its digital image is severely outdated.",
+      "category": "client_need",
+      "quote": "Highly competitive pricing (competitors charge 2x–3x more), but digital image is severely outdated.",
+      "sectionHeading": "2. Background & Context",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-07-10",
+      "projectId": null
+    },
+    {
+      "claim": "The client previously had a rapid AI project fail after reaching 30% in 2 days and invested about €10,000 in a subscription CRM that failed to automate cutting lists.",
+      "category": "risk",
+      "quote": "Experienced a failed rapid AI project (30% progress in 2 days) and previously invested \\~€10,000 in a subscription CRM that failed to automate cutting lists.",
+      "sectionHeading": "2. Background & Context",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-07-10",
+      "projectId": null
+    },
+    {
+      "claim": "Current assets are weak: promotional videos contain Chinese characters, material catalogs are scattered in group chats, and the website and app layout confuses users.",
+      "category": "client_need",
+      "quote": "Promotional videos contain Chinese characters; material catalogs are disorganized within group chats; website/app layout is confusing to users.",
+      "sectionHeading": "2. Background & Context",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-07-10",
+      "projectId": null
+    },
+    {
+      "claim": "The client also has interests in Japan real estate (Osaka/Wakayama) and influencer collaborations such as DJ Kara, cited as having 4M followers.",
+      "category": "client_need",
+      "quote": "Real estate investments in Japan (Osaka/Wakayama) and potential influencer collaborations (e.g., DJ Kara, 4M followers).",
+      "sectionHeading": "2. Background & Context",
+      "basis": "document",
+      "confidence": 0.95,
+      "occurredAt": "2026-07-10",
+      "projectId": null
+    },
+    {
+      "claim": "Operations run manually on Excel 2003 and Google Sheets with no central tracking of fabrication stages (framing, honing, net, assembly) or installation completeness.",
+      "category": "client_need",
+      "quote": "Reliance on Excel 2003 and Google Sheets. No centralized tracking for fabrication (framing, honing, net, assembly) or installation completeness.",
+      "sectionHeading": "3. Pain Points Addressed",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-07-10",
+      "projectId": null
+    },
+    {
+      "claim": "Logistics and HR pain points are inventory risk needing strict 100-in/100-out tracking, easily manipulated Biometrics-plus-Telegram attendance, and payroll compliance with changing Philippine law.",
+      "category": "client_need",
+      "quote": "Inventory risks (need strict 100-in/100-out tracking); easily manipulated attendance tracking (Biometrics + Telegram); complex payroll compliance due to changing Philippine laws.",
+      "sectionHeading": "3. Pain Points Addressed",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-07-10",
+      "projectId": null
+    },
+    {
+      "claim": "The website is to adopt a Pella-style structure (Products by Material, by Type, Collections, Solutions, Inspiration) with an interactive product customizer and an AI assistant for unbiased recommendations.",
+      "category": "scope",
+      "quote": "Adapt a Pella-style layout (Products by Material, Products by Type, Collections, Solutions, Inspiration).",
+      "sectionHeading": "4. Primary Objectives — Website & Digital Modernization",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-07-10",
+      "projectId": null
+    },
+    {
+      "claim": "Phase 1 of the website will use high-quality 3D renders while real photos are collected for Phase 2.",
+      "category": "decision",
+      "quote": "utilize high-quality 3D renders for Phase 1 while collecting actual photos for Phase 2.",
+      "sectionHeading": "4. Primary Objectives — Website & Digital Modernization",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-07-10",
+      "projectId": null
+    },
+    {
+      "claim": "The internal operations system is a unified app covering CRM, project management, fabrication-to-installation tracking, inventory, attendance and payroll, with geo-fenced NFC/QR attendance, digital client sign-offs, PH-compliant payroll and Moodle-based role training.",
+      "category": "scope",
+      "quote": "A unified app ecosystem handling CRM, project management, fabrication-to-installation tracking, inventory, attendance, and payroll.",
+      "sectionHeading": "4. Primary Objectives — Internal Operations System",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-07-10",
+      "projectId": null
+    },
+    {
+      "claim": "Marketing is a 12-month retainer with a faceless strategy (voiceovers, Apple-style catalogs, testimonials) because the owner will not appear on camera, plus a dual-channel monetized YouTube strategy.",
+      "category": "scope",
+      "quote": "A 12-month retainer focusing on a \"faceless\" strategy (owner does not want to appear on camera).",
+      "sectionHeading": "4. Primary Objectives — Marketing & Social Media",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-07-10",
+      "projectId": null
+    },
+    {
+      "claim": "Two alternative projects were discussed: a life-coaching marketplace MVP for Filipino youth, and sourcing a Japan real estate agent for properties in Osaka/Wakayama with a budget of at most 2M about 40 minutes from the center.",
+      "category": "scope",
+      "quote": "Sourcing a legitimate agent for properties in Osaka/Wakayama (Budget: ≤2M, \\~40 mins from center).",
+      "sectionHeading": "4. Primary Objectives — Alternative Projects",
+      "basis": "document",
+      "confidence": 0.95,
+      "occurredAt": "2026-07-10",
+      "projectId": null
+    },
+    {
+      "claim": "The consultant recommended immediate interactive wireframes (Figma/Adobe XD), a senior developer strike team, a modular ERP or custom web app with QR status updates, and a white-label platform for the coaching MVP.",
+      "category": "decision",
+      "quote": "Immediately create interactive wireframes (Figma/Adobe XD) for the navigation and customizer to secure sign-off.",
+      "sectionHeading": "5. Consultant / AI Recommendations",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-07-10",
+      "projectId": null
+    },
+    {
+      "claim": "The app layout is to be reorganized (categories on top, benefits at the bottom) and new products added by July 17, 2026.",
+      "category": "commitment",
+      "quote": "**App Layout Update:** Reorganize categories (top) and benefits (bottom) and add new products by **July 17, 2026**.",
+      "sectionHeading": "6. Action Items & Next Steps",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-07-10",
+      "projectId": null
+    },
+    {
+      "claim": "A progress update is to be sent within the week and a next meeting scheduled for proposal review and scoping.",
+      "category": "commitment",
+      "quote": "**Client Communication:** Send a progress update within the week and schedule the next meeting for proposal review and scoping.",
+      "sectionHeading": "6. Action Items & Next Steps",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-07-10",
+      "projectId": null
+    }
+  ],
+  "term": [
+    { "name": "meeting_at", "value": "2026-07-10T17:06", "unit": null, "quote": "**Date:** July 10, 2026 \n\n**Time:** 5:06 PM" },
+    { "name": "client_year_in_business_count", "value": "20+", "unit": null, "quote": "Over 20 years in the windows and doors industry" },
+    { "name": "founder_banking_year_count", "value": "15+", "unit": null, "quote": "The founder brings 15+ years of corporate banking experience" },
+    { "name": "competitor_price_multiple", "value": "2-3", "unit": null, "quote": "competitors charge 2x–3x more" },
+    { "name": "prior_crm_spend_eur_cents", "value": 1000000, "unit": "cents", "quote": "previously invested \\~€10,000 in a subscription CRM" },
+    { "name": "marketing_retainer_month_count", "value": 12, "unit": "month", "quote": "A 12-month retainer focusing on a \"faceless\" strategy" },
+    { "name": "japan_property_budget_max", "value": "2M", "unit": null, "quote": "Budget: ≤2M, \\~40 mins from center" },
+    { "name": "app_layout_due_at", "value": "2026-07-17", "unit": null, "quote": "add new products by **July 17, 2026**" }
+  ],
+  "action": [
+    { "description": "Restructure the website information architecture, update terminology, and remove Chinese characters from video assets.", "ownerName": "ADVO", "dueAt": null, "basis": "document", "status": "open" },
+    { "description": "Prepare and present an interactive product customizer wireframe prototype (Figma/Adobe XD).", "ownerName": "ADVO", "dueAt": null, "basis": "document", "status": "open" },
+    { "description": "Obtain Telegram/Viber access for existing photos and finalize the Phase 1 3D render strategy.", "ownerName": "ADVO", "dueAt": null, "basis": "document", "status": "open" },
+    { "description": "Reorganize the app layout (categories top, benefits bottom) and add new products.", "ownerName": "ADVO", "dueAt": "2026-07-17", "basis": "document", "status": "open" },
+    { "description": "Draft a 12-month faceless social media retainer proposal including potential influencer collaborations.", "ownerName": "ADVO", "dueAt": null, "basis": "document", "status": "open" },
+    { "description": "Draft a high-level architecture for the integrated CRM/PM/HR app and evaluate PH-compliant payroll systems.", "ownerName": "ADVO", "dueAt": null, "basis": "document", "status": "open" },
+    { "description": "Draft a Moodle-based training structure and competence exams.", "ownerName": "ADVO", "dueAt": null, "basis": "document", "status": "open" },
+    { "description": "Prepare a proposal with features, tech stack and costs for the life-coaching marketplace MVP.", "ownerName": "ADVO", "dueAt": null, "basis": "document", "status": "open" },
+    { "description": "Research and connect the client with a verified Japan real estate agent for Osaka/Wakayama.", "ownerName": "ADVO", "dueAt": null, "basis": "document", "status": "open" },
+    { "description": "Send a progress update within the week and schedule the next meeting for proposal review and scoping.", "ownerName": "ADVO", "dueAt": "2026-07-17", "basis": "document", "status": "open" },
+    { "description": "Create a lead and meeting record for Excalibur Builders, which the system currently lacks.", "ownerName": "ADVO", "dueAt": null, "basis": "document", "status": "open" }
+  ],
+  "person": [
+    { "name": "Excalibur Builders founder", "role": "representative", "affiliation": "other" },
+    { "name": "DJ Kara", "role": "mentioned", "affiliation": "other" }
+  ]
+}

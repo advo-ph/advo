@@ -1,0 +1,265 @@
+{
+  "source": {
+    "kind": "drive_doc",
+    "externalId": "1CCjVzjNb26gNUReBxtY_J1Y4TRvMUsPAMe7OXJ3UVsM",
+    "url": "https://docs.google.com/document/d/1CCjVzjNb26gNUReBxtY_J1Y4TRvMUsPAMe7OXJ3UVsM/edit",
+    "title": "ADVO PROPOSAL - FELICI GELATO",
+    "documentDate": "2026-07-02",
+    "owner": "agramos0765@gmail.com",
+    "documentKind": "proposal"
+  },
+  "link": {
+    "projectId": 6,
+    "leadName": null,
+    "clientName": "Felici Artisan Gelato"
+  },
+  "summary": "The 2 July 2026 single-site proposal-contract between Felici Artisan Gelato and ADVO Web Development Services for a five-page brand website (Home, Menu/Products, About, Locations, Contact) with a minimal artisan aesthetic, mobile responsiveness, brand-asset integration, basic content management and animations. E-commerce, sister-brand sites (Coffee Rush, Nokohi, Flowers and Chocolates) and social media management are explicitly out of scope; a POS connection and inventory tracker is offered as a ₱10,000 add-on. The fee is ₱48,000 (₱9,600 downpayment, ₱38,400 on sign-off) with a ₱3,000 monthly infrastructure fee after launch, 5-business-day invoices, a 2% per month late penalty, 3 revision rounds and a 7-plus-3 day deemed-approval mechanism. It cites a final delivery date of June 12, 2026, which precedes the document date. It was superseded on 22 August 2026 by the four-site ₱200,000 contract.",
+  "fact": [
+    {
+      "claim": "The contract is between Felici Artisan Gelato and ADVO Web Development Services and is dated July 2, 2026.",
+      "category": "identity",
+      "quote": "This contract is between Felici Artisan Gelato and ADVO Web Development Services",
+      "sectionHeading": "Summary",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-02",
+      "projectId": 6
+    },
+    {
+      "claim": "The deliverable is a multi-page website of at most 5 pages: Home, Menu/Products, About, Locations and Contact.",
+      "category": "scope",
+      "quote": "Multi-page website (Maximum of 5 pages: Home, Menu/Products, About, Locations, Contact)",
+      "sectionHeading": "Scope of Work",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-02",
+      "projectId": 6
+    },
+    {
+      "claim": "The site is to have a minimal, modern, artisan brand-consistent design, be mobile responsive, integrate existing photography and social media content, offer basic content management, smooth animations and allocation of third-party API tokens.",
+      "category": "scope",
+      "quote": "Brand-consistent UI/UX design reflecting a minimal, modern, and artisan aesthetic",
+      "sectionHeading": "Scope of Work",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-07-02",
+      "projectId": 6
+    },
+    {
+      "claim": "A POS System Connection and Inventory Tracker is offered as a separate add-on for ₱10,000.00.",
+      "category": "pricing",
+      "quote": "| POS System Connection and Inventory Tracker | ₱10,000.00 |",
+      "sectionHeading": "Optional Add-Ons (Separate Engagement)",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-02",
+      "projectId": 6
+    },
+    {
+      "claim": "E-commerce or online ordering, websites for Coffee Rush, Nokohi and Flowers and Chocolates, and social media management are excluded unless added via addendum.",
+      "category": "scope",
+      "quote": "Websites for other brands (Coffee Rush, Nokohi, Flowers and Chocolates)",
+      "sectionHeading": "Out of Scope",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-02",
+      "projectId": 6
+    },
+    {
+      "claim": "The contract states a final delivery date of June 12, 2026, which is earlier than the document's own date of July 2, 2026.",
+      "category": "timeline",
+      "quote": "from the date of signing until final delivery (June 12, 2026)  and client sign-off.",
+      "sectionHeading": "Contract Length",
+      "basis": "document",
+      "confidence": 0.95,
+      "occurredAt": "2026-07-02",
+      "projectId": 6
+    },
+    {
+      "claim": "ADVO provides 14 days of complimentary bug fixing after final delivery.",
+      "category": "contract_term",
+      "quote": "ADVO will provide 14 days of complimentary bug fixing for the approved scope of work following final delivery.",
+      "sectionHeading": "Contract Length",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-02",
+      "projectId": 6
+    },
+    {
+      "claim": "Client-caused delays, including no response within 7 calendar days, extend the timeline by the same number of days.",
+      "category": "contract_term",
+      "quote": "Delays caused by the client (late assets, delayed feedback, or no response within 7 calendar days) automatically extend the timeline by the equivalent number of days without penalty to ADVO.",
+      "sectionHeading": "Contract Length",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-07-02",
+      "projectId": 6
+    },
+    {
+      "claim": "The downpayment is ₱9,600.00 on signing with a witness present.",
+      "category": "pricing",
+      "quote": "| Downpayment | Upon contract signing, with a witness present. | ₱9,600.00 |",
+      "sectionHeading": "Payment",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-02",
+      "projectId": 6
+    },
+    {
+      "claim": "The final payment is ₱38,400.00 on final delivery and sign-off or deemed approval via 7-day non-response.",
+      "category": "pricing",
+      "quote": "| Final Payment | Final delivery and formal client sign-off (or deemed approval via 7-day non-response as outlined in Revisions & Scope Management)  | ₱38,400.00 |",
+      "sectionHeading": "Payment",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-02",
+      "projectId": 6
+    },
+    {
+      "claim": "The total fee is ₱48,000.00.",
+      "category": "pricing",
+      "quote": "| TOTAL FEE |   | ₱48,000.00 |",
+      "sectionHeading": "Payment",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-02",
+      "projectId": 6
+    },
+    {
+      "claim": "Payments are non-refundable once the milestone is approved and signed off.",
+      "category": "contract_term",
+      "quote": "Payments are non-refundable once the corresponding milestone is approved and signed off.",
+      "sectionHeading": "Payment",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-02",
+      "projectId": 6
+    },
+    {
+      "claim": "Invoices are payable within 5 business days of issuance.",
+      "category": "contract_term",
+      "quote": "Invoices are payable within 5 business days of issuance.",
+      "sectionHeading": "Payment",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-02",
+      "projectId": 6
+    },
+    {
+      "claim": "Balances unpaid after 15 business days from the due date incur a 2% per month penalty calculated daily.",
+      "category": "contract_term",
+      "quote": "Unpaid balances remaining after fifteen (15) business days from the due date shall incur a penalty fee of 2% per month, calculated daily until fully settled.",
+      "sectionHeading": "Payment",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-02",
+      "projectId": 6
+    },
+    {
+      "claim": "A recurring ₱3,000.00 monthly infrastructure fee, billed on the 1st of every month, starts on final delivery and deployment and covers development updates, hosting, database and domain.",
+      "category": "pricing",
+      "quote": "Upon final delivery and deployment, the Client agrees to a recurring monthly infrastructure fee of ₱3,000.00. This fee is billed on the 1st of every month.",
+      "sectionHeading": "Ongoing Hosting and Infrastructure",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-02",
+      "projectId": 6
+    },
+    {
+      "claim": "If the infrastructure fee is unpaid 15 days after its due date ADVO may suspend hosting and API access, taking the site offline.",
+      "category": "risk",
+      "quote": "If the monthly infrastructure fee is not paid within 15 days of the due date, ADVO reserves the right to suspend server hosting and API access until the balance is cleared, resulting in the website going offline.",
+      "sectionHeading": "Ongoing Hosting and Infrastructure",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-07-02",
+      "projectId": 6
+    },
+    {
+      "claim": "Deliverables remain ADVO's property until full payment, then full ownership including source files transfers to the client; ADVO retains portfolio rights unless told otherwise in writing before final delivery.",
+      "category": "contract_term",
+      "quote": "All design files, source code, and deliverables remain the exclusive property of ADVO until full payment is received.",
+      "sectionHeading": "Intellectual Property & Ownership",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-02",
+      "projectId": 6
+    },
+    {
+      "claim": "Termination with cause requires written notice and a 14-day cure period; cancellation for convenience by the client is paid at the percentage of completion plus non-refundable third-party costs.",
+      "category": "contract_term",
+      "quote": "by issuing a written notice and allowing a 14-day cure period to resolve the issue.",
+      "sectionHeading": "Non-Abandonment & Project Continuity",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-07-02",
+      "projectId": 6
+    },
+    {
+      "claim": "Each deliverable permits up to 3 rounds of revisions at no additional cost.",
+      "category": "contract_term",
+      "quote": "Each deliverable permits up to 3 rounds of revisions at no additional cost.",
+      "sectionHeading": "Revisions & Scope Management",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-02",
+      "projectId": 6
+    },
+    {
+      "claim": "If the client gives no feedback within 7 calendar days of a review delivery a Notice of Pending Deemed Approval is issued, and after 3 further calendar days the revision is deemed approved.",
+      "category": "contract_term",
+      "quote": "If the Client fails to provide feedback within seven (7) calendar days of a review delivery, the developer will issue a formal Notice of Pending Deemed Approval. If no response is received within three (3) subsequent calendar days, the revision is legally deemed approved and finalized.",
+      "sectionHeading": "Revisions & Scope Management",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-02",
+      "projectId": 6
+    },
+    {
+      "claim": "New pages, redesigns or feature additions require a written addendum before work begins.",
+      "category": "process",
+      "quote": "New pages, redesigns, or feature additions are change requests and require a written addendum before work begins.",
+      "sectionHeading": "Revisions & Scope Management",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-07-02",
+      "projectId": 6
+    },
+    {
+      "claim": "This proposal was superseded by the 22 August 2026 four-site contract, which records the ₱20,000 downpayment as paid on July 2, 2026 rather than this document's ₱9,600.",
+      "category": "decision",
+      "quote": "| Downpayment | Upon contract signing, with a witness present. | ₱9,600.00 |",
+      "sectionHeading": "Payment",
+      "basis": "document",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    }
+  ],
+  "term": [
+    { "name": "page_count_max", "value": 5, "unit": null, "quote": "Multi-page website (Maximum of 5 pages: Home, Menu/Products, About, Locations, Contact)" },
+    { "name": "addon_pos_inventory_cents", "value": 1000000, "unit": "cents", "quote": "| POS System Connection and Inventory Tracker | ₱10,000.00 |" },
+    { "name": "final_delivery_at", "value": "2026-06-12", "unit": null, "quote": "until final delivery (June 12, 2026)  and client sign-off." },
+    { "name": "bug_fix_window_day_count", "value": 14, "unit": "day", "quote": "ADVO will provide 14 days of complimentary bug fixing" },
+    { "name": "client_no_response_day_count", "value": 7, "unit": "day", "quote": "or no response within 7 calendar days" },
+    { "name": "downpayment_cents", "value": 960000, "unit": "cents", "quote": "| Downpayment | Upon contract signing, with a witness present. | ₱9,600.00 |" },
+    { "name": "downpayment_pct", "value": 20, "unit": "pct", "quote": "| Downpayment | Upon contract signing, with a witness present. | ₱9,600.00 |" },
+    { "name": "final_payment_cents", "value": 3840000, "unit": "cents", "quote": "| Final Payment | ... | ₱38,400.00 |" },
+    { "name": "total_fee_cents", "value": 4800000, "unit": "cents", "quote": "| TOTAL FEE |   | ₱48,000.00 |" },
+    { "name": "invoice_due_business_day_count", "value": 5, "unit": "business_day", "quote": "Invoices are payable within 5 business days of issuance." },
+    { "name": "late_penalty_grace_business_day_count", "value": 15, "unit": "business_day", "quote": "Unpaid balances remaining after fifteen (15) business days from the due date" },
+    { "name": "late_penalty_pct_per_month", "value": 2, "unit": "pct", "quote": "shall incur a penalty fee of 2% per month, calculated daily until fully settled." },
+    { "name": "infra_fee_cents_per_month", "value": 300000, "unit": "cents", "quote": "a recurring monthly infrastructure fee of ₱3,000.00." },
+    { "name": "infra_fee_billing_day_of_month", "value": 1, "unit": "day", "quote": "This fee is billed on the 1st of every month." },
+    { "name": "infra_fee_suspension_day_count", "value": 15, "unit": "day", "quote": "If the monthly infrastructure fee is not paid within 15 days of the due date" },
+    { "name": "termination_cure_day_count", "value": 14, "unit": "day", "quote": "allowing a 14-day cure period to resolve the issue" },
+    { "name": "revision_round_count", "value": 3, "unit": "round", "quote": "Each deliverable permits up to 3 rounds of revisions at no additional cost." },
+    { "name": "deemed_approval_notice_day_count", "value": 7, "unit": "day", "quote": "If the Client fails to provide feedback within seven (7) calendar days of a review delivery" },
+    { "name": "deemed_approval_day_count", "value": 3, "unit": "day", "quote": "If no response is received within three (3) subsequent calendar days, the revision is legally deemed approved and finalized." }
+  ],
+  "action": [],
+  "person": [
+    { "name": "ADVO Web Development Services", "role": "signatory", "affiliation": "ADVO" },
+    { "name": "Felici Artisan Gelato", "role": "signatory", "affiliation": "client" }
+  ]
+}

@@ -1,0 +1,412 @@
+{
+  "source": {
+    "kind": "plaud",
+    "externalId": "pub_895813fd-68dc-40a5-bf72-358b5c8c78df",
+    "url": "https://web.plaud.ai/s/pub_895813fd-68dc-40a5-bf72-358b5c8c78df::-oN_4kZFoDqJAeVTcVbxEtwzYBFu8hT6mOUf6BVL4gYqxtZYIi_9LMuIkrXHLUC4OAJO6d3E7IOfHh-Dmy3Q_gI",
+    "title": "07-17 Meeting: Fun Ride PH pickup and payments",
+    "recordedAt": "2026-07-17T12:00:00+08:00",
+    "durationSecond": 799,
+    "speaker": ["Speaker 1", "Speaker 2", "Speaker 3", "Speaker 4"],
+    "isDiarizationSuspect": true,
+    "language": "mixed"
+  },
+  "link": {
+    "projectId": null,
+    "leadName": "Fun Ride PH / MyriadSports",
+    "clientName": null
+  },
+  "summary": "A short follow-on segment of the Fun Ride PH meeting covering running-kit pickup logistics and payment fees. The client (Speaker 2) wants registration to capture where each runner collects their kit, at the venue or at partner stores such as Decathlon, with a per-location tally, which ADVO said needs a proper database. Payment fees were discussed as layered: a website convenience fee, then Maya/GCash/card gateway fees, with the client quoting a 40-60 service charge range and ADVO noting mobile-wallet rates are flat while card rates stay high. The client will send the NDA tonight and poster files later, wants merch sold through the same registration data, and asked for an options-based proposal (templated vs a different approach) plus a redesign to show by Sunday. The client recounted bad experience with Ticket2Me downtime and wants anti-scalper controls, with QR tickets and double check-in mentioned as the answer.",
+  "fact": [
+    {
+      "claim": "The client wants the back-end to record, at registration, whether a runner picks up their kit at the venue or at a partner.",
+      "category": "client_need",
+      "quote": "Lahat ng nag-register, parang susunod sila. Saan nila pick-up eh? Pick-up ba sa venue? Pick-up sa partner?",
+      "timestamp": "0:10",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Decathlon is an example partner pickup point, expected to handle roughly 15-20 kits, requiring a per-location tally.",
+      "category": "scope",
+      "quote": "O, sa Decathlon, may kukuha doon 15, 20, Or less. Pa-tally ka nang Saan.",
+      "timestamp": "0:41",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "ADVO said the pickup tally requires a properly structured database of registrants.",
+      "category": "scope",
+      "quote": "So, kailangan nyo lang ng maayos na database para po makuha lahat yun. May kita rin ang maayos na database sa user.",
+      "timestamp": "0:51",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The client will send the NDA tonight.",
+      "category": "contract_term",
+      "quote": "So, pag-uusapan na lang natin how to move forward. Yeah. Padala ko ng NDA tonight.",
+      "timestamp": "1:31",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The client will send poster files later today so ADVO can work them into something by Sunday.",
+      "category": "commitment",
+      "quote": "Kailan mo ba? Mamaya na din.",
+      "timestamp": "1:47",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "ADVO targets Sunday for the first output built from the client's files.",
+      "category": "timeline",
+      "quote": "Para magagawa namin ng, ano baka, by Sunday.",
+      "timestamp": "1:56",
+      "speaker": "Speaker 4",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The client invited ADVO to present additional possibilities beyond the registration page at the Sunday showcase.",
+      "category": "client_need",
+      "quote": "Siguro, ano, you can present ano yung mga possible pa. Baka meron kayo something pa dyan na gusto nyo kasi showcase on Sunday.",
+      "timestamp": "2:35",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The service charge on the current runtime platform ranges 40 to 60 and varies.",
+      "category": "pricing",
+      "quote": "Nagre-range siya. Ng 40 to 60?",
+      "timestamp": "3:58",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.65,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Fees are separated: a website convenience fee, then Maya's own separate fee on top.",
+      "category": "pricing",
+      "quote": "Naka-separate, oo. Yes. For website fee, yun ata yung time natin. Parang, kumbaga, convenience fee siya. Convenience. Tapos, on top of masama pa sa... Kumbaga, kay Maya may separate pa sila. Yes.",
+      "timestamp": "4:13",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Fees vary with the website hosting where funds are pulled out (a 200,000 figure mentioned), and GCash and other gateways each add their own service fee.",
+      "category": "pricing",
+      "quote": "most likely, mag-vary yun, depende sa website hosting, kasi doon tayo madalas mag-pull out ng mga funds, parang ng 200,000. Then, yung sa separate naman, sa payment, may sarili nila, may sarili na siyang service fee, Gcash, lahat.",
+      "timestamp": "4:29",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.65,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Mobile wallet rates are roughly flat while credit card rates do not come down.",
+      "category": "pricing",
+      "quote": "Madalas, yung anong nagbabago lang is pag mobile wallet, alam ko medyo flat na ang rate na to. Yung sa credit card, di na nila siyang baba.",
+      "timestamp": "4:58",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The client will send ADVO the Maya fee details.",
+      "category": "commitment",
+      "quote": "Eh tingnan. After ano, padala ko kayo ng mga ano neto. In Maya, meron sila to eh.",
+      "timestamp": "5:09",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The client wants to sell merch through the platform / mobile app as well.",
+      "category": "client_need",
+      "quote": "Kasi sana pati merch, we can also sell on that.",
+      "timestamp": "6:00",
+      "speaker": "Speaker 4",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "ADVO said merch sales can be integrated with registration since the same user details are collected.",
+      "category": "scope",
+      "quote": "Similar model na din naman po yung, since may registration na din naman tayo, it could be integrated na natin na. Meron, oo. Kasi we're getting the same information and details din naman.",
+      "timestamp": "6:16",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The existing design is only initial/potential and has to be redesigned.",
+      "category": "decision",
+      "quote": "We have to redesign it then. Iska pa lang 'to? Oo. Ano? May initial? Potential.",
+      "timestamp": "7:46",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Pricing distinction raised: posting/submission (as convenience stores do) has no monthly, whereas development would be charged monthly.",
+      "category": "pricing",
+      "quote": "Yung difference is yung, yung monthly, wala. Kasi sa convenience store, yun yung nagsu-submit sa posting. Iba naman yung development. Gagawa ka ng monthly.",
+      "timestamp": "7:53",
+      "speaker": "Speaker 4",
+      "basis": "transcript",
+      "confidence": 0.55,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The client asked ADVO to give options in the proposal: a templated one and one with a different approach.",
+      "category": "client_need",
+      "quote": "Or gawa kayo ng options. You can give options ng Proposal.",
+      "timestamp": "8:10",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The client previously used a platform for a concert as well as runs and will send videos of the run-time platform in use.",
+      "category": "process",
+      "quote": "Meron kami isa, iba naman ginamit din namin for concert. So ang dami kong pinatrabaho.",
+      "timestamp": "10:18",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.65,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The client used Ticket2Me and found its back-end poor.",
+      "category": "product",
+      "quote": "Maganda rin yung ticket. Ticket to Me. Ang pangit ng back-end nila.",
+      "timestamp": "10:45",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Ticket2Me had days with zero payments due to system downtime, which the client counts as lost opportunity; uptime is a priority.",
+      "category": "risk",
+      "quote": "Kasi ako nag-monitor ako. May araw na walang payment. Ibig sabihin daw, down-down yung system nila. Sabi ko, ay hindi ko siya matatanggap. Down system nyo? E paano yun? Loss of opportunity ko na yun.",
+      "timestamp": "10:52",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "An anti-scalper system with non-transferable tickets was proposed, following what other concerts do.",
+      "category": "scope",
+      "quote": "Pwede rin tayong gumawa ng system para maiwasan yung scalpers. Yeah. Palaging na obvious na scalper yung mga payments. Yes. Kasi sa ibang concerts, di ba, meron silang non-transferable yun.",
+      "timestamp": "11:13",
+      "speaker": "Speaker 4",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Scalpers walk buyers in under their own name and re-exit for the next batch, so name-bound entry alone is not enough.",
+      "category": "risk",
+      "quote": "Kunyari ako ang nakabili dahil scalper ako, Ipapasok ko kayo. Again. So nagkakaroon din sila ng device eh, o lalabas lang siya ulit para sa next batch na binentahan niya. Yun naman, kasi under name.",
+      "timestamp": "11:27",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "QR-based tickets with double check-in were offered as the check-in answer.",
+      "category": "scope",
+      "quote": "We have QR po. QR na lang po. Ma-serve naman po lahat, may double check-in.",
+      "timestamp": "12:02",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.6,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "A 10% discount for 1,000 pesos was mentioned, context unclear (possibly the restaurant, not the platform).",
+      "category": "pricing",
+      "quote": "Ah, okay. Baka pumipila pa kayo. We have a 10% discount for 1,000 pesos.",
+      "timestamp": "12:35",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.3,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    }
+  ],
+  "decision": [
+    {
+      "text": "Registration data model must carry pickup location (venue vs partner store) with per-location tallies.",
+      "timestamp": "0:10",
+      "basis": "transcript"
+    },
+    {
+      "text": "Merch sales will be integrated on top of registration data rather than built separately.",
+      "timestamp": "6:16",
+      "basis": "transcript"
+    },
+    {
+      "text": "The current design gets redesigned; ADVO to bring an options-based proposal (templated vs different approach).",
+      "timestamp": "8:10",
+      "basis": "transcript"
+    },
+    {
+      "text": "Check-in is QR-based with double check-in to counter scalping.",
+      "timestamp": "12:02",
+      "basis": "transcript"
+    }
+  ],
+  "action": [
+    {
+      "description": "Send the NDA tonight",
+      "ownerName": "client",
+      "dueAt": "2026-07-17T23:59:00+08:00",
+      "timestamp": "1:31",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Send poster files to ADVO later today",
+      "ownerName": "client",
+      "dueAt": "2026-07-17T23:59:00+08:00",
+      "timestamp": "1:47",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Send ADVO the Maya fee details and platform videos",
+      "ownerName": "client",
+      "dueAt": null,
+      "timestamp": "5:09",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Prepare the redesign and any extra showcase items for Sunday",
+      "ownerName": "ADVO",
+      "dueAt": "2026-07-19T12:00:00+08:00",
+      "timestamp": "2:35",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Prepare an options-based proposal (templated option and an alternative approach)",
+      "ownerName": "ADVO",
+      "dueAt": "2026-07-19T12:00:00+08:00",
+      "timestamp": "8:10",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Design the registration database with pickup-location capture and per-location tally, with merch integration",
+      "ownerName": "ADVO",
+      "dueAt": null,
+      "timestamp": "0:51",
+      "basis": "transcript",
+      "status": "open"
+    }
+  ],
+  "openQuestion": [
+    {
+      "text": "What exactly is the 40-60 service charge (pesos per registration? percent?) and how does ADVO's convenience fee compare?",
+      "timestamp": "3:58"
+    },
+    {
+      "text": "Which partner branches (e.g. Decathlon locations) serve as pickup points and with what allocations?",
+      "timestamp": "0:41"
+    },
+    {
+      "text": "Is the pricing model monthly development vs per-posting, and which goes into the proposal options?",
+      "timestamp": "7:53"
+    }
+  ],
+  "person": [
+    {
+      "name": "Speaker 2",
+      "role": "speaker",
+      "affiliation": "client",
+      "note": "Myriad / Fun Ride PH principal; sends NDA and files, recounts Ticket2Me experience. Label also carries lines that sound like ADVO (12:02 'We have QR po')."
+    },
+    {
+      "name": "Speaker 1",
+      "role": "speaker",
+      "affiliation": "ADVO",
+      "note": "Tech side; explains fee layering and merch-registration integration."
+    },
+    {
+      "name": "Speaker 3",
+      "role": "speaker",
+      "affiliation": "ADVO",
+      "note": "Says a proper database is needed; explains hosting-dependent fees."
+    },
+    {
+      "name": "Speaker 4",
+      "role": "speaker",
+      "affiliation": "unknown",
+      "note": "Mixed: asks for the client's files by Sunday (ADVO-like) but also asks for merch on the app (client-like)."
+    },
+    {
+      "name": "Alden Richards",
+      "role": "mentioned",
+      "affiliation": "client",
+      "note": "Referred to as Alden at 2:00."
+    }
+  ],
+  "namedThing": [
+    "Fun Ride PH",
+    "Decathlon",
+    "Maya",
+    "GCash",
+    "Ticket2Me",
+    "NDA",
+    "QR check-in"
+  ]
+}

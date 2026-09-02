@@ -1,0 +1,189 @@
+{
+  "source": {
+    "kind": "drive_doc",
+    "externalId": "1r_sZMRbYGNlLUb1iM20FXwOkAFV-CGT85S-N3K4YN1s",
+    "url": "https://docs.google.com/document/d/1r_sZMRbYGNlLUb1iM20FXwOkAFV-CGT85S-N3K4YN1s/edit",
+    "title": "ADVO PROJECT SIGN-OFF DOCUMENT",
+    "documentDate": null,
+    "owner": "agramos0765@gmail.com",
+    "documentKind": "signoff"
+  },
+  "link": {
+    "projectId": 3,
+    "leadName": null,
+    "clientName": "FourlinQ Windows and Doors"
+  },
+  "summary": "The undated (Drive-modified 8 August 2026) project sign-off and completion certificate for the FourlinQ Windows and Doors website, referencing the proposal dated 27 February 2026. It certifies delivery of the custom UI, local SEO structure, Smart Quote lead management and AI chatbot, and states the account as ₱75,000 total (₱60,000 website + ₱15,000 chatbot), ₱12,000 received as down payment, and ₱63,000 due. Payment is due on signing with 7 business days to comply and a 2% per month penalty from the 16th business day. Ownership transfers on payment, maintenance is free for one year and renews at ₱5,000 per year, and the client accepts the deliverables as-is. Both signature blocks are blank in the Drive copy.",
+  "fact": [
+    {
+      "claim": "The document is the formal sign-off and completion certificate for the FourlinQ Windows and Doors website development project.",
+      "category": "identity",
+      "quote": "This document serves as the formal project sign-off and completion certificate for the FourlinQ Windows and Doors website development project.",
+      "sectionHeading": "PROJECT SIGN-OFF DOCUMENT",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": 3
+    },
+    {
+      "claim": "The deliverables certified as complete follow the proposal dated February 27, 2026 and include the custom UI, local SEO structure, Smart Quote lead management system and full AI chatbot integration.",
+      "category": "scope",
+      "quote": "all specified deliverables in accordance with the proposal dated February 27, 2026, have been fully developed, tested, and successfully deployed. This includes the optimized custom UI, local SEO structure, Smart Quote lead management system, and the complete AI chatbot integration.",
+      "sectionHeading": "Project Completion & Delivery",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-02-27",
+      "projectId": 3
+    },
+    {
+      "claim": "The total project investment is ₱75,000.00, made of ₱60,000.00 for the website and ₱15,000.00 for the AI chatbot.",
+      "category": "pricing",
+      "quote": "| **Total Project Investment** | ₱75,000.00 (₱60,000.00 + ₱15,000.00 AI Chatbot) |",
+      "sectionHeading": "Account Summary",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": 3
+    },
+    {
+      "claim": "Payments received total ₱12,000.00, the down payment.",
+      "category": "pricing",
+      "quote": "| **Payments Received** | ₱12,000.00 (down payment received) |",
+      "sectionHeading": "Account Summary",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": 3
+    },
+    {
+      "claim": "The final balance due is ₱63,000.00.",
+      "category": "pricing",
+      "quote": "| **Final Balance Due** | ₱63,000.00 |",
+      "sectionHeading": "Account Summary",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": 3
+    },
+    {
+      "claim": "Payment is due on signing the sign-off and the client has at most 7 business days from signing to pay in full.",
+      "category": "contract_term",
+      "quote": "The Client is given a maximum of seven (7) business days from the date of signing to fully comply with payment dues.",
+      "sectionHeading": "Payment Terms & Penalties",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": 3
+    },
+    {
+      "claim": "All payments are non-refundable once the milestone is approved and signed off.",
+      "category": "contract_term",
+      "quote": "All payments are strictly non-refundable once this corresponding milestone is approved and signed off.",
+      "sectionHeading": "Payment Terms & Penalties",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": 3
+    },
+    {
+      "claim": "Balances unpaid after 15 business days from signing incur a 2% per month penalty, calculated daily from the 16th business day.",
+      "category": "contract_term",
+      "quote": "Unpaid balances remaining after fifteen (15) business days from the date of signing shall incur a penalty fee of 2% per month. This penalty commences strictly on the 16th business day and will be calculated daily until the balance is fully settled.",
+      "sectionHeading": "Payment Terms & Penalties",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": 3
+    },
+    {
+      "claim": "Full ownership including source files and codebases transfers to FourlinQ Windows and Doors on execution of the sign-off and receipt of the final balance.",
+      "category": "contract_term",
+      "quote": "Upon the execution of this sign-off and receipt of the final balance, full ownership of the project, including all source files and codebases, is officially transferred to FourlinQ Windows and Doors.",
+      "sectionHeading": "Ownership Transfer",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": 3
+    },
+    {
+      "claim": "Maintenance and support (fixes, minor new features, server hosting, domain renewal) is free for one year from the sign-off date.",
+      "category": "commitment",
+      "quote": "Maintenance and support services are provided free of charge for a period of one (1) year commencing from the date of this sign-off.",
+      "sectionHeading": "Maintenance and Support",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": 3
+    },
+    {
+      "claim": "After the first year the maintenance package renews at ₱5,000.00 per year.",
+      "category": "pricing",
+      "quote": "Following this initial one-year period, this complete maintenance package will be available for renewal at a rate of ₱5,000.00 per year.",
+      "sectionHeading": "Maintenance and Support",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": 3
+    },
+    {
+      "claim": "By signing, the client accepts the deliverables as-is, and any major structural, design or feature overhaul outside standard maintenance needs a new Scope of Work and separate billing.",
+      "category": "contract_term",
+      "quote": "Any major structural, design, or feature overhauls requested outside the scope of standard maintenance will require a new Scope of Work and separate billing.",
+      "sectionHeading": "Sign-off and Acceptance",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": null,
+      "projectId": 3
+    },
+    {
+      "claim": "The signature and date lines for ADVO Web Development Services and FourlinQ Windows and Doors are blank in the Drive copy.",
+      "category": "risk",
+      "quote": "**Service Provider:**ADVO Web Development Services",
+      "sectionHeading": "Sign-off and Acceptance",
+      "basis": "document",
+      "confidence": 0.85,
+      "occurredAt": null,
+      "projectId": 3
+    }
+  ],
+  "term": [
+    { "name": "proposal_date", "value": "2026-02-27", "unit": null, "quote": "in accordance with the proposal dated February 27, 2026" },
+    { "name": "total_fee_cents", "value": 7500000, "unit": "cents", "quote": "| **Total Project Investment** | ₱75,000.00 (₱60,000.00 + ₱15,000.00 AI Chatbot) |" },
+    { "name": "website_fee_cents", "value": 6000000, "unit": "cents", "quote": "₱75,000.00 (₱60,000.00 + ₱15,000.00 AI Chatbot)" },
+    { "name": "chatbot_fee_cents", "value": 1500000, "unit": "cents", "quote": "₱75,000.00 (₱60,000.00 + ₱15,000.00 AI Chatbot)" },
+    { "name": "paid_cents", "value": 1200000, "unit": "cents", "quote": "| **Payments Received** | ₱12,000.00 (down payment received) |" },
+    { "name": "balance_due_cents", "value": 6300000, "unit": "cents", "quote": "| **Final Balance Due** | ₱63,000.00 |" },
+    { "name": "signoff_payment_business_day_count", "value": 7, "unit": "business_day", "quote": "The Client is given a maximum of seven (7) business days from the date of signing to fully comply with payment dues." },
+    { "name": "late_penalty_grace_business_day_count", "value": 15, "unit": "business_day", "quote": "Unpaid balances remaining after fifteen (15) business days from the date of signing" },
+    { "name": "late_penalty_pct_per_month", "value": 2, "unit": "pct", "quote": "shall incur a penalty fee of 2% per month." },
+    { "name": "free_maintenance_year_count", "value": 1, "unit": null, "quote": "provided free of charge for a period of one (1) year commencing from the date of this sign-off" },
+    { "name": "maintenance_fee_cents_per_year", "value": 500000, "unit": "cents", "quote": "available for renewal at a rate of ₱5,000.00 per year." }
+  ],
+  "action": [
+    {
+      "description": "Both parties sign and date the sign-off; the ₱63,000 balance then becomes due within 7 business days.",
+      "ownerName": "FourlinQ Windows and Doors",
+      "dueAt": null,
+      "basis": "document",
+      "status": "open"
+    },
+    {
+      "description": "Transfer source files and codebases to FourlinQ once the ₱63,000 balance is received.",
+      "ownerName": "ADVO Web Development Services",
+      "dueAt": null,
+      "basis": "document",
+      "status": "open"
+    },
+    {
+      "description": "Schedule the ₱5,000 per year maintenance renewal for one year after the sign-off date.",
+      "ownerName": "ADVO Web Development Services",
+      "dueAt": null,
+      "basis": "document",
+      "status": "open"
+    }
+  ],
+  "person": [
+    { "name": "ADVO Web Development Services", "role": "signatory", "affiliation": "ADVO" },
+    { "name": "FourlinQ Windows and Doors", "role": "signatory", "affiliation": "client" }
+  ]
+}

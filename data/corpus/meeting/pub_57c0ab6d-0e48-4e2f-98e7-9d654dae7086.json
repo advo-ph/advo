@@ -1,0 +1,236 @@
+{
+  "source": {
+    "kind": "plaud",
+    "externalId": "pub_57c0ab6d-0e48-4e2f-98e7-9d654dae7086",
+    "url": "https://web.plaud.ai/s/pub_57c0ab6d-0e48-4e2f-98e7-9d654dae7086::euqX96TsxcQVACRw4BL69gK9LutW13Hooqxj5LvcfafwlCmMwtGp2yFyt27tfCXx2OorFwydb_IROhDOd7uc5gI",
+    "title": "07-17 Meeting: Fun Ride PH (Virra Mall fragment)",
+    "recordedAt": "2026-07-17T12:00:00+08:00",
+    "durationSecond": 461,
+    "speaker": ["Speaker 1", "Speaker 2", "Speaker 3", "Speaker 4", "Speaker 5"],
+    "isDiarizationSuspect": true,
+    "language": "mixed"
+  },
+  "link": {
+    "projectId": null,
+    "leadName": "Fun Ride PH / MyriadSports",
+    "clientName": null
+  },
+  "summary": "A fragmentary, mostly garbled 7-minute recording that opens with a remark that the earlier conversation was not recorded. The business content is thin: someone flags that shared material must be blurred or deleted for data privacy and that they are waiting for approval; a suggestion to use the client's original earlier event as a reference example; a question whether the payment rail is Stripe; and a muddled pricing discussion touching monthly vs backup service options, a WAPI option that does not exist as a service, CRM, and figures of Php 70,000, 50,000, and 40,000. The second half is students' small talk about term breaks, NSTP (CWTS/LTS/ROTC) and SketchUp subscriptions. The link to Fun Ride PH rests on the title, the same-day recording, and a mention of Alden; the transcript itself never names Fun Ride PH or Myriad.",
+  "fact": [
+    {
+      "claim": "The main conversation preceding this clip was not recorded.",
+      "category": "process",
+      "quote": "Nga, hindi na-record.",
+      "timestamp": "0:14",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Shared material must be blurred for data privacy / confidentiality, and may need to be deleted.",
+      "category": "process",
+      "quote": "Data privacy. Hindi, kailangan naka-blur. It goes against, ano, kasi confidentiality. To delete ko na nga yan.",
+      "timestamp": "0:33",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Speaker 3 is waiting on an approval before proceeding.",
+      "category": "process",
+      "quote": "I'm waiting for approval. Kung hindi tayo approval.",
+      "timestamp": "1:03",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.6,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The client's original, earlier event is to be used as an example / reference.",
+      "category": "scope",
+      "quote": "Use the original, yung nauna nilang event. Para example lang.",
+      "timestamp": "1:34",
+      "speaker": "Speaker 4",
+      "basis": "transcript",
+      "confidence": 0.65,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Whether the payment rail is Stripe was raised as an open question.",
+      "category": "product",
+      "quote": "Stripe ba?",
+      "timestamp": "2:22",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.55,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Proposal options were framed around whether there is a monthly fee versus a backup arrangement.",
+      "category": "pricing",
+      "quote": "Diba options na? Kung walang monthly, mas backup yun. Kung may monthly. Pero diba may backup yun?",
+      "timestamp": "2:36",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.5,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "There is no WAPI service to offer as an option.",
+      "category": "scope",
+      "quote": "Walang WAPI service tayo na mas na labas.",
+      "timestamp": "3:36",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.5,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "A Php 70,000 figure was repeated as a price point.",
+      "category": "pricing",
+      "quote": "Php 70,000? Php 70,000? Php 70,000? Php 70,000? Php 70,000? Php 70,000? Ph.",
+      "timestamp": "3:44",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.45,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Online meetings are preferred over in-person for the upcoming discussions.",
+      "category": "process",
+      "quote": "Yung sa meetings nandiyan, Whether online or online, I think mas maganda sa online.",
+      "timestamp": "4:15",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.5,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Alternative price points of 70k and 50k were weighed against each other.",
+      "category": "pricing",
+      "quote": "I don't know if it's like, your other option was 70k, with... Saka-saka siya. Para maganap tayo. Okay, paano yung 50k lang?",
+      "timestamp": "4:54",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.5,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "A CRM was mentioned as already released / out.",
+      "category": "product",
+      "quote": "CRM. Sige naman. Nakalabas. Nakalabas daw.",
+      "timestamp": "5:06",
+      "speaker": "Speaker 5",
+      "basis": "transcript",
+      "confidence": 0.4,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "A 40k tier was contrasted as having a different benefit from the higher tiers.",
+      "category": "pricing",
+      "quote": "I think it'll be more, maganda yung benefit. Iba kasi sa 40k.",
+      "timestamp": "5:15",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.45,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Team members are students with a one-week term break and five class days a week, limiting availability.",
+      "category": "risk",
+      "quote": "Term break namin, 1 week lang. Dito break sa calls. Bakit? Kasi dito pa. Pasok. 5 days.",
+      "timestamp": "6:01",
+      "speaker": "Speaker 5",
+      "basis": "transcript",
+      "confidence": 0.6,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    }
+  ],
+  "decision": [],
+  "action": [
+    {
+      "description": "Blur or remove confidential material before it is used or shared",
+      "ownerName": null,
+      "dueAt": null,
+      "timestamp": "0:33",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Use the client's original earlier event as the reference example",
+      "ownerName": null,
+      "dueAt": null,
+      "timestamp": "1:34",
+      "basis": "transcript",
+      "status": "open"
+    }
+  ],
+  "openQuestion": [
+    {
+      "text": "Is Stripe the payment processor?",
+      "timestamp": "2:22"
+    },
+    {
+      "text": "What do the 70k / 50k / 40k figures correspond to, and is there a monthly component?",
+      "timestamp": "4:54"
+    },
+    {
+      "text": "What approval is Speaker 3 waiting for, and from whom?",
+      "timestamp": "1:03"
+    }
+  ],
+  "person": [
+    {
+      "name": "Speaker 1",
+      "role": "speaker",
+      "affiliation": "unknown",
+      "note": "Drives the pricing and Stripe questions; label appears to merge several voices."
+    },
+    {
+      "name": "Speaker 3",
+      "role": "speaker",
+      "affiliation": "unknown",
+      "note": "Raises data privacy / blurring and pending approval; also a student (LTS for NSTP)."
+    },
+    {
+      "name": "Speaker 4",
+      "role": "speaker",
+      "affiliation": "unknown",
+      "note": "Suggests using the original event as reference; student whose SketchUp subscription is class-time only."
+    },
+    {
+      "name": "Speaker 5",
+      "role": "speaker",
+      "affiliation": "unknown",
+      "note": "Mentions CRM; student with one-week term break, NSTP undecided."
+    },
+    {
+      "name": "Alden Richards",
+      "role": "mentioned",
+      "affiliation": "client",
+      "note": "Referred to as Alden at 0:03."
+    }
+  ],
+  "namedThing": [
+    "Stripe",
+    "CRM",
+    "WAPI",
+    "SketchUp",
+    "NSTP"
+  ]
+}

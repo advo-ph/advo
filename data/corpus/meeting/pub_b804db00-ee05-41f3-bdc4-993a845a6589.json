@@ -1,0 +1,658 @@
+{
+  "source": {
+    "kind": "plaud",
+    "externalId": "pub_b804db00-ee05-41f3-bdc4-993a845a6589",
+    "url": "https://web.plaud.ai/s/pub_b804db00-ee05-41f3-bdc4-993a845a6589::ebOQQP8cgYOQ8lqKVZlIsopB5l1KTAtKBAohg0Xwif4UtdD1mEJbMXG59SDaWuRhiknitvhXd5QDJ_C1Q80rSgI",
+    "title": "07-10 Meeting: Fourlinq digital modernization",
+    "recordedAt": "2026-07-10T17:06:47+08:00",
+    "durationSecond": 6860,
+    "speaker": ["Speaker 1", "Speaker 2", "Speaker 3"],
+    "isDiarizationSuspect": true,
+    "language": "mixed"
+  },
+  "link": {
+    "projectId": 3,
+    "leadName": null,
+    "clientName": "FourlinQ Windows and Doors"
+  },
+  "summary": "A long lunch meeting between the FourlinQ owner (addressed as 'tita') and the ADVO team (David/Dave and others), recorded under one diarization label for almost the whole session. The owner walks through a reference window-company website (Pella-style: products by material, by type, collections, solutions, inspiration) and dictates how the FourlinQ site should be reorganised: UPVC first, then aluminum (regular, thermal break, slim), a glass category, an interactive customiser, an unbiased AI assistant, Google Earth screenshots for missing project photos, and removal of Chinese characters from videos. She is critical of ADVO's speed and quality, mentions a rival who built a sample in two days and quoted P200,000 for two companies, and says ADVO prices at industry average while its output is below that expertise. In the second half she lays out operational systems she wants: a sales CRM (a friend already built a sales-only intake/pipeline that she has 'awarded'), a fabrication-to-installation pipeline with delivery tracking, QR/geo-locked attendance, payroll, a digital HR intake for 100+ employees, and Moodle-based role training; she previously paid almost 10,000 Euro for a CRM that could not produce a cutting list. She also asks David for a 12-month social-media retainer proposal (non-face content, possible influencer tie-in with DJ Kara), describes her other business lines (popcorn kitchen, realty, trading), and pitches a life-coaching marketplace website with scheduling, payment and a booking convenience fee.",
+  "fact": [
+    {
+      "claim": "A third party offered to build websites for two of the owner's companies for P200,000 total, which she uses as a price benchmark against ADVO.",
+      "category": "pricing",
+      "quote": "Your amount is not Cheap ha? I asked, Somebody, he can give me 200,000 For two companies. Lahat, Sobrang magaling na yung buwan niya. Two companies yun.",
+      "timestamp": "2:59",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Another person produced an AI-built sample site for the owner in two days, which she showed to ADVO as a benchmark.",
+      "category": "risk",
+      "quote": "Sabi niya 30% pa. Ito mo ah, somebody did this in 2 days lang para you have an idea.",
+      "timestamp": "0:45",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The owner says ADVO delivered a still-photo site instead of a moving page, and ADVO admitted the project had been handed to 'Jello' who is not yet skilled.",
+      "category": "risk",
+      "quote": "Actually po, dito, yung naging issue po kasi namin was We handed that project to Jello po. Pero he's more on tech. So he's not skilled yet in tech. But you're representing as one company, so that's an internal issue that I don't need to know.",
+      "timestamp": "3:29",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "FourlinQ's main product line is UPVC, not aluminum; aluminum is offered as regular/non-thermal, thermal break, and slim.",
+      "category": "product",
+      "quote": "'Kasi ang main naman namin, UPVC, not aluminum, okay? So, from UPVC, aluminum, down to aluminum, regular, thermal, and sleeve.",
+      "timestamp": "8:26",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Glass is sold on its own and the site needs a glass category covering frameless door, fixed panel, balcony railing, double glazed, vacuum glass, switchable (smart) glass, and Venetian blind sandwiched in glass.",
+      "category": "scope",
+      "quote": "Double glazed, gusto kasi nila ang double panel, double glazed, and we also have vacuum glass.",
+      "timestamp": "10:28",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The owner wants an interactive customiser where the visitor picks the window type, glass and glass colour and sees how it looks.",
+      "category": "client_need",
+      "quote": "Pwede mo i-ano yung what kind of window you're gonna put and what kind of glass you're gonna put. 'Di ba? You're asking them to design. When you click it, you want to choose the glass. If your glass is blue, you want to show the client how does it appear, how does it look.",
+      "timestamp": "11:28",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The website should copy the reference site's applicable structure as closely as possible; the layout may differ but each click must land on organised content.",
+      "category": "decision",
+      "quote": "Copy it as close as possible. Yung applicable lang. Pero yung layout nyo can be different. But then when I click, It's organized.",
+      "timestamp": "19:29",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The owner told ADVO not to move fast; output quality is the priority.",
+      "category": "process",
+      "quote": "So I suggest, huwag kayo mag-move so fast. Ang importante, quality yung output.",
+      "timestamp": "21:03",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "For projects without photos, ADVO proposed taking Google Earth screenshots from the project address and enhancing them; the owner agreed.",
+      "category": "process",
+      "quote": "Ang isip ko nga, tita, alam niyo yung Google Earth? Kapag binigay niya lang po yung address ng isang project niyo, Titingnan lang namin dito. And then, picture. Wow, I can give you a lot. Kahit address lang po.",
+      "timestamp": "23:26",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The site must include an AI assistant, and the owner wants to test it for bias when asked questions like 'what is the best UPVC'.",
+      "category": "client_need",
+      "quote": "Tapos wala pang AI. I want to see pa anong bias ba yung AI natin when they ask.",
+      "timestamp": "27:51",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The owner committed to send more photos within the week, and to add ADVO to the company's Telegram/Viber photo group.",
+      "category": "commitment",
+      "quote": "So, within the week, Ikaya ko, I'll send you more food. Pero kailangan i-enhance yun na lang. Diba?",
+      "timestamp": "28:46",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "FourlinQ has operated for 20 years and has many hospital and church projects that could be used for the gallery.",
+      "category": "brand",
+      "quote": "Maraming pwede i-enhance from the photo kasi 20 years na kami. So, matagal na namin. So, syempre, makaluma na yung houses. Maraming dami namin hospital, churches, hindi kami nagsisimba.",
+      "timestamp": "30:20",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Excalibur Builders is a long-standing FourlinQ client whose Instagram shows FourlinQ projects; a competitor sells windows at two to three times FourlinQ's price.",
+      "category": "contact",
+      "quote": "Ito client ko na sobrang tagal na, type mo Excalibur sa Instagram.",
+      "timestamp": "31:39",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "ADVO was asked to remove the Chinese characters from the slim-aluminum product video.",
+      "category": "scope",
+      "quote": "Kaya niyo bang tanggalin yung video, yung Chinese, na character? Ayan o. Yan ang uso ngayon. For interior Products lang. So, ang tawag dyan, Slim aluminum.",
+      "timestamp": "37:00",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Gazebos must be added as a product, and the pocket-door style product is to be branded with FourlinQ's own exclusive term ('sliding piece').",
+      "category": "scope",
+      "quote": "Meron din kami gazebos. Idadagdag nyo rin as a product yun.",
+      "timestamp": "38:35",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "FourlinQ has no full catalog, only flyers, which is a constraint on populating the site.",
+      "category": "risk",
+      "quote": "I'll show you the list next time. First time lang. Full catalog. Wala kami catalog. I only have a line of flyers. Pero sinend ko na sa'yo, diba?",
+      "timestamp": "39:04",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The owner asked for a 12-month social-media retainer (retention, like a lawyer on monthly pay) with weekly or monthly site vlogs, and David was asked to draft the proposal, kept inexpensive.",
+      "category": "commitment",
+      "quote": "So, we're talking about 12 months. We retain na lang kita. Retention. Parang lawyer. Yung na-F yun, we pay the lawyer every month.",
+      "timestamp": "39:41",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "An ADVO team member's mother, DJ Kara, has about 4 million social-media followers and was floated as a possible influencer/ex-deal partner for FourlinQ content.",
+      "category": "contact",
+      "quote": "She has 4 million followers sa social media niya. Galing naman yun? Kaya gusto ko, ayoko ako yun. Forget me. Gusto ko rin magkaroon ng followers yung office namin.",
+      "timestamp": "40:15",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The owner wants two YouTube channels: a personal travel-tips channel and a corporate one, both monetised.",
+      "category": "client_need",
+      "quote": "YouTube kita meron. Kaya alam mo, mag-upload kayo dun. Mag-monetize kayo dun. Gusto ko, isang personal, isang corporate. Personal for you po.",
+      "timestamp": "1:01:57",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "FourlinQ's current CRM is outdated, the vendor company no longer exists, yet FourlinQ still pays a subscription; the owner wants a CRM/project-management app where sales, sales coordinator and installer log all activities.",
+      "category": "client_need",
+      "quote": "May CRM ako. May CRM ko, sobrang outdated na. Wala na yung company, but they allow us to do it. Where I'll pay subscription. Ngayon, hindi na stand alone. The sales, the sales coordinator, installer, they can... To log all the activities.",
+      "timestamp": "1:06:14",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Attendance is currently biometric plus Telegram in/out messages across Manila, Cebu and Davao, and the owner cannot verify staff actually stay in the office or make real client visits.",
+      "category": "client_need",
+      "quote": "Log in, log out. Saan nakakita log in, log out? Ginagamit telegram. At attendance. Although may biometric kami, Meron pa kami telegram na in and out.",
+      "timestamp": "1:06:43",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The owner needs a fabrication-to-installation app for the project manager, plus a payroll system, because payroll law keeps changing.",
+      "category": "scope",
+      "quote": "So, I still need an app for fabrication to installation. Yung acting, anong assembly, para sa project manager, o na dito na siya.",
+      "timestamp": "1:07:34",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The owner wants a Moodle-style digital training manual with competence exams gated per stage, with a common onboarding path and role-specific tracks for sales, purchaser and installer.",
+      "category": "scope",
+      "quote": "Training manual, pero digital. Pero hindi ka teacher e. Moodle? Using Moodle. Parang after you need something or want something, There's a competence exam. And then before you can go to the next thing.",
+      "timestamp": "1:09:07",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "ADVO said it has a proposal ready; the owner told them to fix the current site layout first and warned that ADVO prices at industry average while its output is below that level of expertise.",
+      "category": "pricing",
+      "quote": "You're pricing yourself in the industry average, pero your output is way out of that expertise. Wala kayo sa lane ng expertise.",
+      "timestamp": "1:10:55",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "FourlinQ still runs quotations on Excel 2003 with copy-paste computation, and showroom walk-in intake is typed into Google Sheets and reported manually.",
+      "category": "client_need",
+      "quote": "Yung Excel ko, 2003 pa hanggang ngayon. Nakina-copy, paste, copy, computation.",
+      "timestamp": "1:16:57",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "A friend of the owner built, in two days, a customer-intake and sales pipeline (quotations sent, won, payment received) with a mini project manager and document trail; the owner has already awarded that sales-only internal system to him.",
+      "category": "decision",
+      "quote": "Marami akong pwede i-automate. Bilisan nyo kasi. Parang punta tayo sa next part natin. Pero ito, na-award ko na. Sabi ko sa'yo eh. O, yan o.",
+      "timestamp": "1:26:38",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The owner previously paid almost 10,000 Euro for a CRM-to-finished-product system that could not produce the cutting list or measurement simulation.",
+      "category": "pricing",
+      "quote": "Almost 10,000 Euro. I paid somebody from CRM until finished product. Pero hindi nila magawa yung cutting list naman ito. Hindi nila magawa yung measurement. Simulation.",
+      "timestamp": "1:23:14",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The fabrication pipeline must show per-unit stage (framing, honing, net, assembly) and installation completeness (missing handle, hinge, sash, broken glass, return date).",
+      "category": "scope",
+      "quote": "Nasaan ka na? Framing ka na ba? Nasa honing ka na ba? Nasa net ka na ba? Nasa assembly ka na ba? Most of the time, Dyan ang traffic. Ganon din sa installation. Ilan na na-install mo? Buo na ba? May kulang pa bang handle? May kulang ka ba bang hinge?",
+      "timestamp": "1:21:13",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Delivery must be part of the pipeline so that 100 units dispatched means 100 arrive, guarding against drivers selling units to junk shops.",
+      "category": "scope",
+      "quote": "Gusto natin, Pag nag-deliver din yung tao namin, Pag sinabing 100, Sa 100 talaga makarating doon. Walang nawawala. Kasama din sa pipeline ang delivery.",
+      "timestamp": "1:26:00",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "A single FourlinQ project can be 45 units, each with a sash and frame, which is the scale the pipeline must count.",
+      "category": "scope",
+      "quote": "So, you're talking about one project, 45. Isa pa lang yun, ha? 45 units. Pero how many sash?",
+      "timestamp": "1:25:27",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The owner wants QR-based attendance that tracks office entry, exit and time away; ADVO described a geo-locked attendance app it already has.",
+      "category": "client_need",
+      "quote": "In and out lang yan. Ang gusto ko ko, attendance. Iba, QR. Pagpasok ka. Pag lumalabas ka sa office, gano'ng katagal?",
+      "timestamp": "1:28:09",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The owner wants an internal HR system with digital application forms, on-screen signatures, headcount visibility and daily 'what did you do today' performance logs for her 100-plus employees.",
+      "category": "client_need",
+      "quote": "Performance, logout. You narrate, what did you do today? yung metrics. metrics niya, what did you do today? Bago sila mag-loglogout, what did you do today?",
+      "timestamp": "1:32:50",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Besides windows, the owner runs a popcorn kitchen (clients include Rockwell, Shangri-La, Taters), a realty business selling houses, a technology/ID line and trading.",
+      "category": "scope",
+      "quote": "Mayroon pa ako realty for. Yung mga bahay na binibenta. Tapos yung technology. Yung ID mo.",
+      "timestamp": "1:05:38",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The owner wants a life-coaching marketplace website that she owns, where accredited coaches (not doctors) schedule paid sessions with young clients and the site earns a booking convenience fee, Airbnb-style.",
+      "category": "client_need",
+      "quote": "I want to own the website. But I want to invite many life coaches to use my website.",
+      "timestamp": "1:39:08",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The owner is a Christian life coach with about 2,000 participants a year for five years, on an 18-week online programme costing P500.",
+      "category": "contact",
+      "quote": "I'm currently a life coach for one of the churches. One of the? Churches. It's a Christian life coach. So each year, meron sila mga 2,000 participants. Every year ah. It's already my fifth year.",
+      "timestamp": "1:35:18",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "ADVO pitched its clinic work (Medical City pituitary registry, an eye clinic doing PhilHealth cataract surgery) and geo-locked attendance app as proof of capability; the owner asked how cloud data costs scale.",
+      "category": "product",
+      "quote": "Meron din kami project for Medical City po. It doesn't mean the website, this one is for pituitary registry.",
+      "timestamp": "1:13:02",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The owner wants to buy a house in Japan (Osaka or Wakayama area) with a budget under 2 million, and ADVO offered to connect her to an agent contact.",
+      "category": "commitment",
+      "quote": "Less than 2M, ganun.",
+      "timestamp": "47:59",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.6,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The app layout (categories on top, benefits below) is to be updated before 2026-07-17.",
+      "category": "timeline",
+      "quote": "I-update ang app layout (categories on top, benefits below) bago 2026-07-17; ilagay bagong produkto sa catalog (sliding pieces, thermal break aluminum, gazebos).",
+      "timestamp": "",
+      "speaker": "",
+      "basis": "ai_note",
+      "confidence": 0.4,
+      "occurredAt": "2026-07-10T17:06:47+08:00",
+      "projectId": 3
+    }
+  ],
+  "decision": [
+    {
+      "text": "Website information architecture follows the Pella-style reference: products by material (UPVC first, then aluminum regular/thermal/slim, plus glass), products by type (windows, doors), collections, solutions, inspiration (vlog, gallery, new arrivals); copy only what applies, layout may differ.",
+      "timestamp": "19:29",
+      "basis": "transcript"
+    },
+    {
+      "text": "Prioritise output quality over delivery speed on the website work.",
+      "timestamp": "21:03",
+      "basis": "transcript"
+    },
+    {
+      "text": "Interim gallery strategy: categorise by area or residential/commercial, use Google Earth screenshots plus enhancement for old projects, real photos later.",
+      "timestamp": "23:14",
+      "basis": "transcript"
+    },
+    {
+      "text": "The sales-only intake/pipeline CRM is already awarded to the owner's friend; ADVO's system opportunity is fabrication, installation, delivery, attendance, HR, payroll and training.",
+      "timestamp": "1:26:38",
+      "basis": "transcript"
+    },
+    {
+      "text": "Two YouTube channels (personal travel tips, corporate product education), monetised; the owner will not appear on camera.",
+      "timestamp": "1:01:57",
+      "basis": "transcript"
+    },
+    {
+      "text": "Life-coaching platform: owner owns the site, coaches must be accredited, no doctors, low pricing, revenue via booking convenience fee.",
+      "timestamp": "1:40:35",
+      "basis": "transcript"
+    }
+  ],
+  "action": [
+    {
+      "description": "Reorganise the FourlinQ site categories by material (UPVC, aluminum regular/thermal/slim, glass) and type, matching the reference structure",
+      "ownerName": "ADVO",
+      "dueAt": null,
+      "timestamp": "57:17",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Remove the Chinese characters from the slim-aluminum product video",
+      "ownerName": "ADVO",
+      "dueAt": null,
+      "timestamp": "37:00",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Add gazebos, sliding piece and thermal-break aluminum as products in the catalog",
+      "ownerName": "ADVO",
+      "dueAt": null,
+      "timestamp": "38:35",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Research vacuum glass, thermal frames, EPDM, E-spacer and E-coated so the performance content is accurate",
+      "ownerName": "ADVO",
+      "dueAt": null,
+      "timestamp": "57:38",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Test the site AI assistant for bias on questions like 'what is the best UPVC'",
+      "ownerName": "ADVO",
+      "dueAt": null,
+      "timestamp": "27:51",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Send ADVO more project photos within the week and add them to the Telegram/Viber photo group",
+      "ownerName": "client",
+      "dueAt": "2026-07-17T12:00:00+08:00",
+      "timestamp": "28:46",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Share the full product list/catalog materials with ADVO at the next meeting",
+      "ownerName": "client",
+      "dueAt": null,
+      "timestamp": "39:04",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Draft a 12-month social-media retainer proposal (weekly or monthly site vlogs, non-face content), priced low",
+      "ownerName": "David Remo",
+      "dueAt": null,
+      "timestamp": "40:15",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Fix the current app layout (categories on top, benefits below) before presenting the proposal",
+      "ownerName": "ADVO",
+      "dueAt": null,
+      "timestamp": "1:10:42",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Connect the owner with the Japan real-estate agent contact for a house under 2M near Osaka",
+      "ownerName": "ADVO",
+      "dueAt": null,
+      "timestamp": "46:29",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Prepare a high-level design for the integrated systems (CRM/PM, fabrication-to-installation pipeline with delivery, QR/geo attendance, HR intake, payroll, Moodle training)",
+      "ownerName": "ADVO",
+      "dueAt": null,
+      "timestamp": "",
+      "basis": "ai_note",
+      "status": "open"
+    }
+  ],
+  "openQuestion": [
+    {
+      "text": "Where does glass sit in the site IA: under materials, or as its own top-level category?",
+      "timestamp": "9:05"
+    },
+    {
+      "text": "Can fabrication and installation be added to the friend's sales-only pipeline without making it too heavy, or does it need a separate end-to-end system?",
+      "timestamp": "1:26:59"
+    },
+    {
+      "text": "Are photocopies or on-screen signatures legally sufficient for HR documents, or is a physical signature still required (lawyer to be consulted)?",
+      "timestamp": "1:33:59"
+    },
+    {
+      "text": "What is the budget for the social-media retainer and the systems work, given the owner's repeated 'huwag mahal'?",
+      "timestamp": "44:12"
+    }
+  ],
+  "person": [
+    {
+      "name": "FourlinQ owner (addressed as 'tita')",
+      "role": "speaker",
+      "affiliation": "client",
+      "note": "Ex-Citibank/HSBC/Standard Chartered, built the 20-year window company from scratch, offices in Cebu and Davao, also a Christian life coach; speaks as most of 'Speaker 1'. Not named in the transcript; the spec's contact Ms. Imie is not mentioned."
+    },
+    {
+      "name": "David Remo",
+      "role": "speaker",
+      "affiliation": "ADVO",
+      "note": "Addressed as 'David'/'Dave' (31:14, 39:30, 1:25:27); asked to make the social-media retainer proposal; described as good at reels and an architecture student. Merged into 'Speaker 1' by diarization."
+    },
+    {
+      "name": "Gelo / Angelo Revelo",
+      "role": "mentioned",
+      "affiliation": "ADVO",
+      "note": "Referred to as 'Jello' at 3:29 as the person the website was handed to and 'not skilled yet'."
+    },
+    {
+      "name": "Robin",
+      "role": "mentioned",
+      "affiliation": "other",
+      "note": "His parents own the eye clinic ADVO cited (PhilHealth cataract surgery), 1:15:41."
+    },
+    {
+      "name": "Keith",
+      "role": "mentioned",
+      "affiliation": "unknown",
+      "note": "Previously found a mental-health site the owner referenced, 1:45:34."
+    },
+    {
+      "name": "DJ Kara",
+      "role": "mentioned",
+      "affiliation": "other",
+      "note": "Mother of an ADVO attendee; radio DJ with about 4M followers, recently bought an akiya house in Japan; floated as influencer partner."
+    },
+    {
+      "name": "Boom Labrusca",
+      "role": "mentioned",
+      "affiliation": "other",
+      "note": "Named as the father of an ADVO attendee who acts in the film 'War on Drugs' (1:48:46)."
+    },
+    {
+      "name": "Excalibur Builders",
+      "role": "mentioned",
+      "affiliation": "other",
+      "note": "Long-time FourlinQ client; its Instagram shows FourlinQ projects (31:39)."
+    }
+  ],
+  "namedThing": [
+    "Pella (reference website)",
+    "UPVC",
+    "thermal break aluminum",
+    "slim aluminum",
+    "vacuum glass",
+    "switchable glass",
+    "Google Earth",
+    "Telegram",
+    "Viber",
+    "Instagram",
+    "YouTube",
+    "Excalibur Builders",
+    "Moodle",
+    "Excel 2003",
+    "Google Sheets",
+    "ZKTeco biometrics",
+    "Medical City pituitary registry",
+    "PhilHealth",
+    "CAMP (government project)",
+    "Airbnb",
+    "foodpanda",
+    "Peanut Media Gallery",
+    "Rockwell",
+    "Shangri-La",
+    "Taters",
+    "War on Drugs (MMFF film)",
+    "DJ Kara"
+  ]
+}

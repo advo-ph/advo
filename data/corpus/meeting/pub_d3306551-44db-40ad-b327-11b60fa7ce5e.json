@@ -1,0 +1,242 @@
+{
+  "source": {
+    "kind": "plaud",
+    "externalId": "pub_d3306551-44db-40ad-b327-11b60fa7ce5e",
+    "url": "https://web.plaud.ai/s/pub_d3306551-44db-40ad-b327-11b60fa7ce5e::Puj-v8D_wBtICZvsnX1f31-BJBQ80ZH0LQ7gm1UYnZODt7AZYbCoBsJUceYOuIiBOCPWWBwrU6bxCOjXE0z1cAI",
+    "title": "08-11 Meeting: ADVO — Power Mac Center Spotlight — Attendance App: Agency vs In-house Filtering, Disclaimers, Geolocation Check-in/out",
+    "recordedAt": "2026-08-11T12:00:00+08:00",
+    "durationSecond": 483,
+    "speaker": ["Speaker 1", "Speaker 2"],
+    "isDiarizationSuspect": true,
+    "language": "mixed"
+  },
+  "link": {
+    "projectId": 3,
+    "leadName": null,
+    "clientName": "FourlinQ Windows and Doors"
+  },
+  "summary": "ADVO (Speaker 1) walks the client owner (Speaker 2, addressed as tita) through the employee list and check-in screens of the attendance app. The client raises that she has both agency hires and in-house staff across several companies (for link, home connection, realty port, Blue Pop, House Connection) and needs the app to make clear that agency hires are not direct hires; ADVO agrees to add a scrollable disclaimer or terms and conditions on login plus a per-company logo or checkbox at check-in. They discuss anti-fraud check-out rules: no instant check-out (a 10-minute floor was floated but the client worries it creates paid overtime), flagging any check-out made away from the office (about 200 m off-site) for manual approval, and allowing HR to manually edit a forgotten check-out time. The client asks for a Life360-style GPS window showing where the employee was in the 20 minutes before check-out, and ADVO shows the map view. The client also wants drivers and field staff to receive daily tasks that count as field assignments. Note: despite the title, the transcript names FourLinq-group companies and window fabrication, so this is linked to project 3.",
+  "fact": [
+    {
+      "claim": "ADVO agreed to add a disclaimer and a signing step to the attendance app.",
+      "category": "commitment",
+      "quote": "Hindi naman siya required. Pero, we'll add like a disclaimer.",
+      "timestamp": "0:00",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client has two agency hires plus in-house employees and needs the app to distinguish them because agency staff are employed by the agency, not by her company.",
+      "category": "client_need",
+      "quote": "May agency hire ako, may in-house ako. Agency ko mga dalawa, tapos may in-house ako. So, paano yun? Ang agency, technically, they are assigned to us, but employer nila yung agency.",
+      "timestamp": "0:25",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client operates several companies including for link, home connection, realty port, Blue Pop and House Connection, and staff may need to pick which one at check-in.",
+      "category": "brand",
+      "quote": "Pero marami kami companies eh. May for link, may home connection, may realty port, may Blue Pop, may House Connection.",
+      "timestamp": "1:30",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "ADVO proposed showing a company logo or a checkbox at check-in, or assigning the company automatically based on the user's role.",
+      "category": "scope",
+      "quote": "I-give ko sya yung logo. Kahit checkbox na lang yun, para mas easy. Kahit automatic na, based on your role sa logging.",
+      "timestamp": "1:46",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client requires a disclaimer at every login stating the app is used for attendance and does not make the user a direct hire.",
+      "category": "client_need",
+      "quote": "So, every time log in, may disclaimer dapat tayo. This is used for attendance.",
+      "timestamp": "2:04",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The disclaimer can be implemented as scrollable terms and conditions.",
+      "category": "decision",
+      "quote": "Kahit terms and conditions na lang, isa-scroll up.",
+      "timestamp": "2:12",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "ADVO proposed blocking or flagging check-outs made immediately after check-in, floating a 10-minute minimum stay.",
+      "category": "scope",
+      "quote": "Kung mag-checkout ka, hindi ka pwede yung agad-agad nag-checkout. Bakit? kunwari yung pumasok sila, tapos alis naman din agad. Siyempre, hindi puwede. So parang may 10 minutes ka.",
+      "timestamp": "2:26",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client objects that a forced 10-minute wait before check-out would make her pay overtime.",
+      "category": "risk",
+      "quote": "lugi kasi ako eh, Pag 10 minutes, Kailangan ko payaran yung overtime. Anong pwede gawin?",
+      "timestamp": "3:19",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "A check-out made from home should be flagged so the employee is excluded from payroll for that time.",
+      "category": "client_need",
+      "quote": "Or nag-check-out siya, nasa bahay na siya. Will it flag na wala na siya sa business? So hindi ko siya babayaran.",
+      "timestamp": "3:48",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "All check-outs made outside the office are to be treated as questionable and reviewed manually.",
+      "category": "decision",
+      "quote": "Or lahat ng check-out na wala sa office. May questionable. Pwede namin i-question yun. E manually. Sige.",
+      "timestamp": "4:04",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The app already shows when a user checks in far from the office, e.g. about 200 meters away, as off-site.",
+      "category": "product",
+      "quote": "Off-site ka. So, parang 200 meters away ka from parang, hindi ka nag-check-in sa location.",
+      "timestamp": "4:47",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client wants off-site check-outs to require approval and wants to manually set a check-out time (e.g. 5:00) when someone forgot to check out at the office.",
+      "category": "client_need",
+      "quote": "So, meron dapat approval, no? Kung i-accept mo yung time, or Manually, ireset mo. Kung yun, icheck-out niya 520. Pero nakalimutan lang niya mag-check-out sa office, Umuwi na kasi siya. So, pwede ko siya, I-manual, intervention. lagyan ko 5 o'clock.",
+      "timestamp": "4:54",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Check-out times are editable in the app.",
+      "category": "product",
+      "quote": "Ah, po. Ah. Na-edit naman po yan.",
+      "timestamp": "5:09",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client wants a Life360-style GPS window showing where the employee was during the 20 minutes before check-out.",
+      "category": "client_need",
+      "quote": "20 minutes before, kailangan nakikita natin Kung saan siya nagagala. Parang siyang live 360.",
+      "timestamp": "5:25",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "ADVO proposed a 'didn't stay at the place' flag as a lighter alternative to live tracking.",
+      "category": "scope",
+      "quote": "Lagyan natin ng didn't stay at the place.",
+      "timestamp": "5:41",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "ADVO said it has another client for whom it built a Strava-like game app that is not yet live.",
+      "category": "product",
+      "quote": "Nakagawa na po siya ng parang Strava na game. gumawa siya ng app lang. Parang may client kami. Strava? Parang Strava na ano. Pero game siya.",
+      "timestamp": "5:54",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The app has a map view where each person's check-in location can be seen.",
+      "category": "product",
+      "quote": "So dito makita nga yung map na. Diyan mo lang naman makita yung location.",
+      "timestamp": "7:28",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client wants to assign drivers and field staff a task for the day so that visiting the location counts as a field assignment.",
+      "category": "client_need",
+      "quote": "Per person, ang driver Pwede namin lagyan ng task for the day Punta ka dito May account din sila, Pag pumunta ka lang na yan yung task Nalagyan siya dun sa task na yun parang naka field assignment na lang.",
+      "timestamp": "7:40",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    }
+  ],
+  "decision": [
+    { "text": "Add a scrollable disclaimer / terms and conditions on login stating the app is for attendance only and does not make an agency hire a direct hire.", "timestamp": "2:12", "basis": "transcript" },
+    { "text": "Distinguish agency vs in-house staff and company via a logo/checkbox at check-in or automatically by role.", "timestamp": "1:46", "basis": "transcript" },
+    { "text": "Off-site check-outs are flagged as questionable and reviewed manually rather than blocked; HR can manually edit the check-out time.", "timestamp": "4:04", "basis": "transcript" }
+  ],
+  "action": [
+    { "description": "Add disclaimer and terms-and-conditions acceptance to the attendance app login", "ownerName": "ADVO", "dueAt": null, "timestamp": "0:08", "basis": "transcript", "status": "open" },
+    { "description": "Implement per-company logo/checkbox or role-based company assignment at check-in", "ownerName": "ADVO", "dueAt": null, "timestamp": "1:46", "basis": "transcript", "status": "open" },
+    { "description": "Flag off-site check-outs for manual approval and allow manual check-out time edits", "ownerName": "ADVO", "dueAt": null, "timestamp": "4:54", "basis": "transcript", "status": "open" },
+    { "description": "Evaluate a 20-minute pre-check-out GPS history view (Life360-style) or a 'didn't stay at the place' flag", "ownerName": "ADVO", "dueAt": null, "timestamp": "5:25", "basis": "transcript", "status": "open" },
+    { "description": "Add daily task assignment for drivers/field staff that records a field assignment", "ownerName": "ADVO", "dueAt": null, "timestamp": "7:40", "basis": "transcript", "status": "open" }
+  ],
+  "openQuestion": [
+    { "text": "Does a minimum-stay rule before check-out (e.g. 10 minutes) create payable overtime, and what rule replaces it?", "timestamp": "3:19" },
+    { "text": "Will live/periodic GPS tracking in the 20 minutes before check-out be built, and with what privacy controls?", "timestamp": "5:25" },
+    { "text": "Is off-site check-out approval automatic or manual?", "timestamp": "4:54" }
+  ],
+  "person": [
+    { "name": "Speaker 1", "role": "speaker", "affiliation": "ADVO", "note": "Presents the attendance app; addresses the client as tita. Likely Prince Wagan (identified as Prince in the companion note pub_5989e12d)." },
+    { "name": "Speaker 2", "role": "speaker", "affiliation": "client", "note": "Business owner running several companies (for link, home connection, realty port, Blue Pop, House Connection); likely Ms. Imie of FourLinq." },
+    { "name": "Dave", "role": "mentioned", "affiliation": "unknown", "note": "Mentioned in a hypothetical ('bahay ni Dave')." }
+  ],
+  "namedThing": ["FourLinq", "Home Connection", "Realty Port", "Blue Pop", "House Connection", "Life360", "Strava"]
+}

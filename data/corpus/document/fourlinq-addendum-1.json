@@ -1,0 +1,142 @@
+{
+  "source": {
+    "kind": "drive_doc",
+    "externalId": "1pDxC-nMd4wbMvZa7EVj3iJpipAhmkgqkO9440zSHRIg",
+    "url": "https://docs.google.com/document/d/1pDxC-nMd4wbMvZa7EVj3iJpipAhmkgqkO9440zSHRIg/edit",
+    "title": "ADVO Addendum",
+    "documentDate": "2026-07-10",
+    "owner": "agramos0765@gmail.com",
+    "documentKind": "addendum"
+  },
+  "link": {
+    "projectId": 3,
+    "leadName": null,
+    "clientName": "FourlinQ Windows and Doors"
+  },
+  "summary": "Contract Addendum No. 1, dated 10 July 2026, between Prince Alpherson A. Wagan doing business as ADVO Web Development Services and FourlinQ Windows and Doors represented by Ms. Imie. It modifies the original 27 February 2026 website agreement, restating the ₱75,000 total investment (including ₱15,000 for the AI chatbot) against which ₱12,000 was paid on 27 February 2026, and fixes the ₱63,000 balance as payable before ownership and source transfer. It adds a separate AI chatbot maintenance fee of ₱3,000 per month beginning one year after the transfer of ownership, and restates that general website maintenance is free for the first 12 months and ₱5,000 per year thereafter. The addendum prevails over the original where they conflict; signature blocks are blank.",
+  "fact": [
+    {
+      "claim": "Contract Addendum No. 1 was entered into on July 10, 2026 between Prince Alpherson A. Wagan doing business as ADVO Web Development Services and FourlinQ Windows and Doors represented by Ms. Imie.",
+      "category": "identity",
+      "quote": "**FourlinQ Windows and Doors**, represented by **Ms. Imie** (hereinafter referred to as the \"Client\").",
+      "sectionHeading": "CONTRACT ADDENDUM NO. 1",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-10",
+      "projectId": 3
+    },
+    {
+      "claim": "The original website agreement is dated February 27, 2026 with a ₱75,000.00 total investment, against which a ₱12,000.00 down payment was paid on February 27, 2026.",
+      "category": "pricing",
+      "quote": "concerning the total project investment of ₱75,000.00, against which a ₱12,000.00  down payment was paid on February 27, 2026.",
+      "sectionHeading": "1. REFERENCE TO ORIGINAL AGREEMENT",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-02-27",
+      "projectId": 3
+    },
+    {
+      "claim": "The ₱75,000 total includes a ₱15,000.00 fee for developing and integrating the AI chatbot.",
+      "category": "pricing",
+      "quote": "the ₱75,000.00  total project investment includes a ₱15,000.00  fee specifically allocated for the development and integration of the AI Chatbot;",
+      "sectionHeading": "2. RECITALS",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-10",
+      "projectId": 3
+    },
+    {
+      "claim": "The original agreement set a ₱5,000.00 general annual maintenance fee after the first year but did not define the chatbot's ongoing costs, which this addendum clarifies.",
+      "category": "decision",
+      "quote": "the Original Agreement stipulates a general annual maintenance fee of ₱5,000.00 commencing after the first year, but does not explicitly define the ongoing maintenance and operational costs specifically required for the AI Chatbot;",
+      "sectionHeading": "2. RECITALS",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-07-10",
+      "projectId": 3
+    },
+    {
+      "claim": "The client must pay the ₱63,000.00 remaining balance before ownership, source files and codebases are transferred.",
+      "category": "contract_term",
+      "quote": "The client shall remit the remaining balance of ₱63,000.00 prior to the complete transfer of ownership, source files, and codebases, completing the ₱75,000.00 total project investment.",
+      "sectionHeading": "3. CLARIFICATION OF PAYMENT TERMS",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-10",
+      "projectId": 3
+    },
+    {
+      "claim": "A separate AI chatbot maintenance fee of ₱3,000.00 per month applies, starting one year after the complete transfer of ownership.",
+      "category": "pricing",
+      "quote": "a separate maintenance fee of ₱3,000.00 per month will apply. This fee shall commence one year after the complete transfer of ownership, source files, and codebases.",
+      "sectionHeading": "3. CLARIFICATION OF PAYMENT TERMS",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-10",
+      "projectId": 3
+    },
+    {
+      "claim": "General website maintenance is free for the first 12 months and then costs the standard ₱5,000 per year.",
+      "category": "pricing",
+      "quote": "Upon the conclusion of the first year (12 months), the Client shall be subject to the standard annual maintenance fee of **5,000 PHP**.",
+      "sectionHeading": "3. CLARIFICATION OF PAYMENT TERMS",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-10",
+      "projectId": 3
+    },
+    {
+      "claim": "All other terms of the original agreement remain in force, and the addendum prevails in any conflict.",
+      "category": "contract_term",
+      "quote": "In the event of any conflict between the terms of the Original Agreement and this Addendum, the terms of this Addendum shall prevail.",
+      "sectionHeading": "4. CONTINUITY OF ORIGINAL AGREEMENT",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-10",
+      "projectId": 3
+    },
+    {
+      "claim": "The signature blocks for ADVO Web Development Services and FourlinQ Windows and Doors are blank in the Drive copy.",
+      "category": "risk",
+      "quote": "FourlinQ Windows and Doors                          Signature/Date",
+      "sectionHeading": "Signatures",
+      "basis": "document",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-10",
+      "projectId": 3
+    }
+  ],
+  "term": [
+    { "name": "addendum_number", "value": 1, "unit": null, "quote": "**CONTRACT ADDENDUM NO. 1**" },
+    { "name": "original_agreement_date", "value": "2026-02-27", "unit": null, "quote": "(\"Original Agreement\") dated **February 27, 2026**" },
+    { "name": "total_fee_cents", "value": 7500000, "unit": "cents", "quote": "concerning the total project investment of ₱75,000.00" },
+    { "name": "downpayment_cents", "value": 1200000, "unit": "cents", "quote": "against which a ₱12,000.00  down payment was paid on February 27, 2026." },
+    { "name": "downpayment_paid_at", "value": "2026-02-27", "unit": null, "quote": "a ₱12,000.00  down payment was paid on February 27, 2026." },
+    { "name": "chatbot_fee_cents", "value": 1500000, "unit": "cents", "quote": "includes a ₱15,000.00  fee specifically allocated for the development and integration of the AI Chatbot" },
+    { "name": "balance_due_cents", "value": 6300000, "unit": "cents", "quote": "The client shall remit the remaining balance of ₱63,000.00" },
+    { "name": "chatbot_maintenance_fee_cents_per_month", "value": 300000, "unit": "cents", "quote": "a separate maintenance fee of ₱3,000.00 per month will apply." },
+    { "name": "chatbot_maintenance_start_offset_month_count", "value": 12, "unit": "month", "quote": "This fee shall commence one year after the complete transfer of ownership, source files, and codebases." },
+    { "name": "free_maintenance_month_count", "value": 12, "unit": "month", "quote": "Upon the conclusion of the first year (12 months)" },
+    { "name": "maintenance_fee_cents_per_year", "value": 500000, "unit": "cents", "quote": "the standard annual maintenance fee of **5,000 PHP**" }
+  ],
+  "action": [
+    {
+      "description": "Collect the ₱63,000 remaining balance from FourlinQ before transferring ownership, source files and codebases.",
+      "ownerName": "ADVO Web Development Services",
+      "dueAt": null,
+      "basis": "document",
+      "status": "open"
+    },
+    {
+      "description": "Configure the ₱3,000 per month AI chatbot maintenance fee to start one year after ownership transfer, and the ₱5,000 per year website maintenance fee after the first 12 months.",
+      "ownerName": "ADVO Web Development Services",
+      "dueAt": null,
+      "basis": "document",
+      "status": "open"
+    }
+  ],
+  "person": [
+    { "name": "Prince Alpherson A. Wagan", "role": "signatory", "affiliation": "ADVO" },
+    { "name": "Ms. Imie", "role": "representative", "affiliation": "client" }
+  ]
+}

@@ -189,6 +189,21 @@ Each of these was considered and declined, so nobody re-opens them as oversights
 | An SMS sender name registered with Semaphore | Prince | Outbound SMS on the sign-off deadline clock |
 | Consent basis + retention policy for the scraped clinic list | Legal counsel (see P0) | Any outbound to those numbers. The gate refuses them today, by design, and setting a key does **not** bypass it |
 
+## The corpus — shipped 2026-09-03 (migration 027)
+
+| Item | What shipped | Proof |
+|---|---|---|
+| **Fact corpus** | `corpus_source / fact / term / action / template`; facts carry a verbatim quote, a locator and an honest `basis`; supersede, never delete. | `corpus.test.ts` 11/11; drift clean. |
+| **Ingestion** | Curated JSON bundles, a Plaud share (also lands in Meetings), or pasted text. Claude via `CORPUS_EXTRACT_MODEL`, heuristic fallback marked as a guess. | live test: idempotent ingest, conflicting vs supported. |
+| **Fact-check** | `POST /api/corpus/check`: word search, number comparison, matches with quotes and timestamps. | "FourlinQ pays ₱3,000 a month for hosting" → supported, 08-11 transcript 39:20. |
+| **Accountability** | Open / done / dropped actions per recording with owner and due date; overdue count on the screen. | 130 actions from the first pass. |
+| **Templates** | Contract, proposal, sign-off, addendum, pitch deck, campaign, brand brief, minutes, with placeholders and render. | `data/corpus/template`, `data/corpus/document/TEMPLATE.json`. |
+| **First ingestion pass** | 17 recordings (466 facts, 130 actions, 74 decisions) and 11 documents mapped to prod projects and leads by two agents on Opus. `npm run corpus:load`. | `data/corpus/*/INDEX.md`. |
+
+What the pass found that nobody had written down: the four "Power Mac Center" spotlights of 08-11 are FourlinQ sessions (the client names her companies and shows the fourlinq site; the module set matches the six-system contract); the Fun Ride PH / MyriadSports engagement has five recordings and no project row; the 07-10 FourlinQ meeting records the owner already had a friend build a CRM.
+
+Cheaper second pass: set `CORPUS_EXTRACT_MODEL=claude-haiku-4-5-20251001` and `POST /api/corpus/ingest/plaud` per link; the curated files stay the source of truth for what Opus produced.
+
 ## Client hub + dev tooling — shipped 2026-09-02 (migration 026)
 
 | Item | What shipped | Proof |

@@ -1,0 +1,678 @@
+{
+  "source": {
+    "kind": "plaud",
+    "externalId": "pub_399580dc-df5c-46f9-be99-2da86c10c76c",
+    "url": "https://web.plaud.ai/s/pub_399580dc-df5c-46f9-be99-2da86c10c76c::j-bqVS6VosIO4mFmwJlnW6IQ3fW5mWVH5c7IvmSb2M8Ge0aXmd_LKNOW5tjCG0tBW96i93QRPgTw3edNfOwdpgI",
+    "title": "07-17 Meeting: Fun Ride PH registration platform",
+    "recordedAt": "2026-07-17T12:00:00+08:00",
+    "durationSecond": 2932,
+    "speaker": ["Speaker 1", "Speaker 2"],
+    "isDiarizationSuspect": true,
+    "language": "mixed"
+  },
+  "link": {
+    "projectId": null,
+    "leadName": "Fun Ride PH / MyriadSports",
+    "clientName": null
+  },
+  "summary": "A dinner-table discovery meeting between ADVO (Speaker 1, who mentions Prince, Kenny and the Four Links client) and a Myriad principal (Speaker 2, a production company that manages Alden Richards' events) about replacing their MyRuntime-hosted run registration page with ADVO's own event registration website. The client wants a modular admin panel where they swap assets per event, a less generic layout than RunRio/MyRuntime templates, 3D-style assets (rotating shirt, animated logo), and a service fee lower than MyRuntime's. The hard constraint is opening registration by the first week of August for the first Fun Ride PH event in Manila (Intramuros, Roxas Boulevard), which the transcript dates as both November 2 and November 7; a February follow-up event and quarterly/yearly series are planned. ADVO committed to a one-week initial prototype with about two weeks of pilot feedback, a Zoom meeting with Alden this weekend (Saturday 9pm or Sunday night), and an NDA. Longer-term items were a Strava-like route tracker, a Unity-based app, international expansion, and a new domain because Myriad cannot retrieve its current one. Roughly the last ten minutes are personal and gaming banter with no business content.",
+  "fact": [
+    {
+      "claim": "The client wants Strava-like route tracking for participants, discussed as a longer-term idea rather than the first deliverable.",
+      "category": "client_need",
+      "quote": "Tapos, you also want to be able to track yung route nila, similar to Strava.",
+      "timestamp": "0:00",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The client's child already built a prototype but it would take too long, so they want ADVO's larger infrastructure to integrate with.",
+      "category": "scope",
+      "quote": "Siyempre, nakagawa na siya ng prototype. Oo. Pero sinasabi niya, mami, kasi matagal pa yan. So, it takes some time. So, kabilisan natin. Kasi kailangan lang ng, diba, ng... Mas malaking infrastructure, baka you have that na in place so we can integrate along though.",
+      "timestamp": "0:15",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The client cites weekly run registrations in the range of 2,000 to 3,000 participants as the scale reference.",
+      "category": "client_need",
+      "quote": "Katulad ko yan, mga kaladkarin na rin, na every week ah, 2,000, 3,000.",
+      "timestamp": "0:47",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.6,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "RunRio is the incumbent competitor: run registration plus their own app already captures the market.",
+      "category": "product",
+      "quote": "Kasi si RunRio, sa kanya, Run lang eh. Registration, Parang may RunIt. We're using this.",
+      "timestamp": "1:28",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The client currently uses MyRuntime, which gives Myriad only a branded heading and dashboard on MyRuntime's site; they now want their own site.",
+      "category": "product",
+      "quote": "May run time. So ngayon, kunyari ako, Myriad, lalagyan niya lang ako ng heading na Myriad My RunTime. Gagawan niya ako ng sarili kong dashboard na.",
+      "timestamp": "2:49",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The platform is to be branded under Myriad as an events / event-organizer property.",
+      "category": "brand",
+      "quote": "Myriad events and...",
+      "timestamp": "3:42",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.6,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The client plans the event for November 2 and must open registration by the first week of August.",
+      "category": "timeline",
+      "quote": "Kasi we plan to have our event this coming November 2nd. And we have to open the registry by first week of July. Ay, by August.",
+      "timestamp": "4:30",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The client intends this as a long-term platform with events every quarter, year after year.",
+      "category": "client_need",
+      "quote": "Every quarter, every... So yun yung long term. Para continuous na. Diba? Nandito na yung infrastructure.",
+      "timestamp": "5:21",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Payment options discussed are PayMongo or Stripe, the current setup being limited to Mastercard/Visa, and the frontend is to be React.",
+      "category": "product",
+      "quote": "PayMongo. PayMongo Stripe. Ano bang ginagamit yung language? React. Pero pwede rin nito. Okay din yan. Okay din yung React siguro.",
+      "timestamp": "6:30",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Payment is collected on the website at registration, not in an app.",
+      "category": "scope",
+      "quote": "Para saan yung payment? Sa website or sa app? Registration. Registration. So every time mag-register sila, ito na namin gagawin.",
+      "timestamp": "6:48",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The event to showcase is on November 7, and another event follows in February next year.",
+      "category": "timeline",
+      "quote": "Ang November 7, ang event ay nila. So, we will showcase. That event, isama nila kayo. The next year, February, Meron ulit.",
+      "timestamp": "7:41",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The site is to be modular: the client as admin can swap assets such as pictures per event.",
+      "category": "scope",
+      "quote": "So parang modular po siya na You being an admin po, sabihin po natin, In the website. Kaya nyo pong ibahin yung mga assets, Na sabihin natin yung mga pictures.",
+      "timestamp": "7:56",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "ADVO floated a self-serve model where other organizers could list their own events on the site.",
+      "category": "scope",
+      "quote": "Parang may sarili na tayong ganitong website na ayun, may register, tapos kapag gusto nila maglagay ng event, pwede rin sila maglagay. Yun yung sinasabi ko kanina.",
+      "timestamp": "8:16",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "ADVO said the first week of August is achievable, proposing a one-week initial build then pilot testing off the mock-up.",
+      "category": "commitment",
+      "quote": "Kaya naman po. What? One week kaya? Attitude? We can do pilot. Pilot testing na tayo. We have the mock-up and then base natin doon.",
+      "timestamp": "11:11",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The client says such events need 3 to 4 months of registration, so missing August means delay; MyRuntime is on standby as the fallback.",
+      "category": "risk",
+      "quote": "Kasi dapat sa mga ganitong event, you have 3 months, 4 months. Kasi registration, you will get more participants. Kung hindi na natin kasi siya ma-up by August, we're delayed. Kasi ina-standby ko lang yung MyRuntime ko.",
+      "timestamp": "11:44",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The client will introduce ADVO to RJ and Allen.",
+      "category": "contact",
+      "quote": "Kasi ipapakilala ko kayo kay RJ. Iharap ko kayo kay Allen.",
+      "timestamp": "12:15",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "ADVO settled on two weeks for the pilot with meaningful initial deliverables in one week.",
+      "category": "timeline",
+      "quote": "No, like, meaningful, one week, initial deliverables, kasi makikipag-usap tayo.",
+      "timestamp": "12:48",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "A Zoom meeting with Alden is planned this weekend where ADVO shows a prototype to contrast visually with the current provider.",
+      "category": "commitment",
+      "quote": "Kasi, initial, kunyari, meeting tayo kay Alden this weekend, zoom lang, tanong lang, ito yung pwede namin ma-offer. As an alternative, kayo, diba, gawa lang kayo. If you have a prototype or... Diba? Prototype lang para makikita lang niya ano yung kaibahan.",
+      "timestamp": "12:53",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The registration flow must be few-click and usable by non-tech-savvy older fans of Alden.",
+      "category": "client_need",
+      "quote": "Mga matatanda, siyempre makapanood na na-Aldem, as in Lolo't Lola, mga ganun na yun, nanay, so they are not tech-savvy.",
+      "timestamp": "13:59",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "MyRuntime charges a commission per registration that varies by payment method; the client asks whether ADVO can offer a lower service fee.",
+      "category": "pricing",
+      "quote": "So, si MyRuntime, Nagbabago kasi siya Depende sa payment method. Kasi sa terminal fee. Yes. Kaya doon siya Nagbabago. So, I don't know kung makakapagbigay Kayo a lower amount Compared to MyRuntime.",
+      "timestamp": "14:49",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The Saturday option is a 9pm call while Alden drives home from a show; the alternative is Sunday.",
+      "category": "timeline",
+      "quote": "Kung on Saturday, free kayo around 9 o'clock. Bukas ba? Bukas. Sa party na ngayon eh. Oo. Kasi siya, manggagaling pa siya ng show. Pag uwi niya ng 9 o'clock, on his way home, ganun ka ano siya, then mag-me-meeting sa kotse.",
+      "timestamp": "15:22",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Speaker 1 is ADVO: he names Prince and Kenny as teammates and himself as handling Four Links.",
+      "category": "contact",
+      "quote": "Si Prince, Kenny, dito ang handle niya. Ako na dito, sa Four Links, hello. Anong maraos, Sunday?",
+      "timestamp": "15:59",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The meeting leaned to Sunday night because Alden has a shoot.",
+      "category": "timeline",
+      "quote": "Ah, Sunday na lang. Pwede rin, Sunday. Sunday ng gabi. Kasi may shoot siya eh. Ah, Sunday ng gabi? Sunday din ng gabi, oo.",
+      "timestamp": "16:07",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The client finds RunRio/MyRuntime event pages templated and identical across organizers and wants a distinct look.",
+      "category": "client_need",
+      "quote": "Same, same. Same pa rin yung layout po nila. Same. Oo. Nagkakamit-kamit din ng ano, Di ba, creativity at buy time. Oo, wala naman yung creativity. Isa lang layout nila lang. Same. Oo, not good.",
+      "timestamp": "19:08",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "ADVO prefers to manually design each event page from client-provided assets rather than a uniform template.",
+      "category": "decision",
+      "quote": "Feeling ko mas maganda pag manually dina-design namin yung mga events which cut from their assets. Kasi iba-iba yung tala.",
+      "timestamp": "20:03",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Incumbent providers ask two weeks to put up a registration page; ADVO said it can do it in about two days.",
+      "category": "commitment",
+      "quote": "At 2 weeks sila, ang hinihingi nila 2 weeks to up the registration. Ah, okay. Kaya sila yun ah. Okay. O kayo ate, two days.",
+      "timestamp": "20:29",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The client has already given ADVO the NDA.",
+      "category": "contract_term",
+      "quote": "Alam mo naman yung NDA? Ha? Yung NDA nila? Hindi, bigay ko na yung NDA. For?",
+      "timestamp": "22:02",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.6,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "ADVO proposed 3D-style interactive assets (jersey, rotating t-shirt) and showed a Windows client site as a reference.",
+      "category": "scope",
+      "quote": "Pero per asset diba? Similar to them. Let's say yung t-shirt mo. So umiikot din 'to. Pangit-amo. Parang... Ito po yung isang client namin. Windows. Mayron din. It's very expensive.",
+      "timestamp": "24:31",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The client will send the initial logo and wants ADVO to animate it.",
+      "category": "commitment",
+      "quote": "Mag-send ako nung initial namin na gusto niyang logo. Baka po pwede niyo na siyang ipagalaw.",
+      "timestamp": "24:58",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Scope was narrowed to the November 7 event page first, with additions after it succeeds.",
+      "category": "decision",
+      "quote": "Yung November 7 lang muna. Parang din muna, Tapos saka na natin i-add sa successful.",
+      "timestamp": "26:27",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Content posting starts in August and registrations should already be coming in by August.",
+      "category": "timeline",
+      "quote": "Mag-post na kasi ng August. Kasi, di ba, as well, go na. But by August na, may mag-register na. So, yun yung hinahabol.",
+      "timestamp": "26:50",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The client will provide briefs with the event name, places, and all information.",
+      "category": "commitment",
+      "quote": "Meron pa kayo yung name ng event tsaka mga place? Yes, yes. I can give. Wala pa ata. Pag-pindot ni kay Kuya Alvin, mukhang totoong ano talaga. Basta lahat ng information. I can give you the briefs of everything.",
+      "timestamp": "27:18",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The first event features Manila's scenic areas, Intramuros and Roxas Boulevard, on the event page.",
+      "category": "scope",
+      "quote": "So, most likely, For this event, We will feature Manila. So, yung mga scenic area, Yun yung... Kasi doon sa page, pwede na nating simulan yun, di ba, na ano-ano yung makikita sa Manila. Intramuros, the Roxas Boulevard",
+      "timestamp": "28:44",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The event positions cycling as a sustainability / low-carbon advocacy, launching in different cities, with Alden as advocate.",
+      "category": "brand",
+      "quote": "So, parang per city o how? Kasi parang, diba, dahil advocate din si Alden ng sustainability, diba? Dahil, diba, nung pandemic, nakita natin, wala lahat. So, baka high time din to have, ayan, yung bicycle. Cycling to be an alternative.",
+      "timestamp": "29:31",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Fun Ride PH is the event title, intended to become a community and long-term startup.",
+      "category": "brand",
+      "quote": "So, Fun Ride PH is the event title. So, kasi eventually, we want this to be a community. That's where yung parang startup comes in. Long term na.",
+      "timestamp": "31:55",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.95,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The website is to be integrated with an app once finished; the client also sees international expansion and a participant database as long-term goals.",
+      "category": "scope",
+      "quote": "And ang long term, this thing can happen international as well. Sa'yo mo pa talaga, kung sa Tokyo muna kami tatakbo right now. Saka maganda rin kung makuha rin tayo ng database, nakakapag-provide na rin tayo with our clients eventually.",
+      "timestamp": "32:57",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Myriad is a production company that manages events and concerts; it has no website yet and its BIR registration was only recently sorted.",
+      "category": "contact",
+      "quote": "So yung Myriad kasi, it's the production company of, so kami yung nagma-manage.",
+      "timestamp": "33:47",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Myriad cannot retrieve its existing domain from its current service, so a new domain is needed; Hostinger was named.",
+      "category": "risk",
+      "quote": "Hindi kasi namin ma-retrieve yung nandoon sa domain. Yung ginagamit namin service na. Hindi namin makuha yung domain. So, if ever na lang. The transition of time. Ano? Kailangan? Oo, bagong domain.",
+      "timestamp": "35:38",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "ADVO recommends its front-end hosting tool (transcribed as Versailles, most likely Vercel) as the best front-end platform it uses.",
+      "category": "product",
+      "quote": "Try niyo yung Versailles. Yan. Ito yung ginagamit namin. Ito yung pinakamagandang pang-front-end talaga.",
+      "timestamp": "36:30",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.55,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The future app would most likely be built in Unity, in a Pokemon Go style.",
+      "category": "product",
+      "quote": "Tara. Unity yung most likely yung mga gagamit. Kasi yun yung ginagamit ko yung capstone naman natin at yung bachelor graduate.",
+      "timestamp": "45:18",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-07-17T12:00:00+08:00",
+      "projectId": null
+    }
+  ],
+  "decision": [
+    {
+      "text": "Build Myriad its own registration website (React, admin panel with per-event swappable assets) instead of continuing on MyRuntime's hosted page.",
+      "timestamp": "3:33",
+      "basis": "transcript"
+    },
+    {
+      "text": "Registration must be live by the first week of August; MyRuntime stays on standby as fallback if ADVO slips.",
+      "timestamp": "11:44",
+      "basis": "transcript"
+    },
+    {
+      "text": "One week to meaningful initial deliverables, roughly two weeks of pilot/feedback on the mock-up.",
+      "timestamp": "12:48",
+      "basis": "transcript"
+    },
+    {
+      "text": "Focus only on the November 7 event page first; add features after it succeeds. Strava-like tracking and the app are long-term, not in scope now.",
+      "timestamp": "26:27",
+      "basis": "transcript"
+    },
+    {
+      "text": "Event pages are manually designed by ADVO from client-provided assets rather than a single repeated template.",
+      "timestamp": "20:03",
+      "basis": "transcript"
+    },
+    {
+      "text": "Next touchpoint is a Zoom (not in-person) meeting with Alden this weekend, leaning Sunday night.",
+      "timestamp": "21:32",
+      "basis": "transcript"
+    }
+  ],
+  "action": [
+    {
+      "description": "Produce the initial prototype / mock-up (event page, registration flow) within one week for the Alden presentation",
+      "ownerName": "ADVO",
+      "dueAt": "2026-07-24T12:00:00+08:00",
+      "timestamp": "12:48",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Hold a Zoom meeting with Alden this weekend (Saturday 9pm or Sunday night)",
+      "ownerName": "client",
+      "dueAt": "2026-07-19T21:00:00+08:00",
+      "timestamp": "15:22",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Introduce ADVO to RJ and Allen",
+      "ownerName": "client",
+      "dueAt": null,
+      "timestamp": "12:15",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Send ADVO the initial Fun Ride PH logo so it can be animated",
+      "ownerName": "client",
+      "dueAt": null,
+      "timestamp": "24:58",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Send ADVO the event briefs: event name, places, and all event information",
+      "ownerName": "client",
+      "dueAt": null,
+      "timestamp": "27:18",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Feature Manila scenic areas (Intramuros, Roxas Boulevard) on the November event page",
+      "ownerName": "ADVO",
+      "dueAt": null,
+      "timestamp": "28:44",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Work out a service fee structure lower than MyRuntime's payment-method-dependent commission",
+      "ownerName": "ADVO",
+      "dueAt": null,
+      "timestamp": "14:49",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Research hosting and secure a new domain for Myriad since the current one cannot be retrieved",
+      "ownerName": "ADVO",
+      "dueAt": null,
+      "timestamp": "35:38",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Open registration for the November Fun Ride PH event",
+      "ownerName": "ADVO",
+      "dueAt": "2026-08-07T12:00:00+08:00",
+      "timestamp": "4:30",
+      "basis": "transcript",
+      "status": "open"
+    }
+  ],
+  "openQuestion": [
+    {
+      "text": "Is the first event November 2 or November 7? Both dates are stated in the transcript.",
+      "timestamp": "7:41"
+    },
+    {
+      "text": "Should the platform let outside users host their own (paid) events, or stay limited to Myriad events?",
+      "timestamp": "1:53"
+    },
+    {
+      "text": "Which payment processor (PayMongo vs Stripe) and what service fee versus MyRuntime?",
+      "timestamp": "14:49"
+    },
+    {
+      "text": "Which weekend slot for the Alden Zoom: Saturday 9pm in the car or Sunday night?",
+      "timestamp": "16:07"
+    },
+    {
+      "text": "Can the old Myriad domain be recovered, or must a new one be bought, and on which host?",
+      "timestamp": "35:38"
+    }
+  ],
+  "person": [
+    {
+      "name": "Speaker 1",
+      "role": "speaker",
+      "affiliation": "ADVO",
+      "note": "ADVO side; mentions Prince and Kenny as teammates and handling Four Links (FourLinq). Label clearly merges more than one ADVO voice (e.g. the one-week haggling at 11:11)."
+    },
+    {
+      "name": "Speaker 2",
+      "role": "speaker",
+      "affiliation": "client",
+      "note": "Myriad principal; refers to 'yung anak ko' who built the prototype and talks about Alden's schedule and fans, so likely Alden's mother or manager. Offers to be ADVO's business consultant."
+    },
+    {
+      "name": "Alden Richards",
+      "role": "mentioned",
+      "affiliation": "client",
+      "note": "Celebrity face of Fun Ride PH; sustainability advocate; the weekend Zoom is with him."
+    },
+    {
+      "name": "RJ",
+      "role": "mentioned",
+      "affiliation": "client",
+      "note": "Client will introduce ADVO to RJ."
+    },
+    {
+      "name": "Allen",
+      "role": "mentioned",
+      "affiliation": "client",
+      "note": "Client will introduce ADVO to Allen."
+    },
+    {
+      "name": "Prince Wagan",
+      "role": "mentioned",
+      "affiliation": "ADVO",
+      "note": "Named as 'Prince' at 15:59."
+    },
+    {
+      "name": "Kenneth",
+      "role": "mentioned",
+      "affiliation": "ADVO",
+      "note": "Named as 'Kenny' at 15:59."
+    },
+    {
+      "name": "Justin",
+      "role": "mentioned",
+      "affiliation": "unknown",
+      "note": "Addressed at the table at 19:08."
+    },
+    {
+      "name": "Jay",
+      "role": "mentioned",
+      "affiliation": "unknown",
+      "note": "Had the wifi at 24:31."
+    },
+    {
+      "name": "Kuya Alvin",
+      "role": "mentioned",
+      "affiliation": "client",
+      "note": "Mentioned around event naming at 27:18."
+    },
+    {
+      "name": "David",
+      "role": "mentioned",
+      "affiliation": "other",
+      "note": "Four-year-old in Speaker 2's family, off-topic banter."
+    }
+  ],
+  "namedThing": [
+    "Fun Ride PH",
+    "Myriad",
+    "MyRuntime",
+    "RunRio",
+    "Strava",
+    "PayMongo",
+    "Stripe",
+    "React",
+    "Vercel",
+    "Hostinger",
+    "GoDaddy",
+    "Unity",
+    "Pokemon Go",
+    "Four Links",
+    "Zoom",
+    "Intramuros",
+    "Roxas Boulevard",
+    "DOTr",
+    "BIR"
+  ]
+}

@@ -1,0 +1,142 @@
+{
+  "source": {
+    "kind": "plaud",
+    "externalId": "pub_ff799149-aeef-401e-bd35-b5e7ae72c5fa",
+    "url": "https://web.plaud.ai/s/pub_ff799149-aeef-401e-bd35-b5e7ae72c5fa::rBr88dgkre2kCoBtV4UmyWFDTg6WoslpqeOeGY2ANOiEyV1p-kGreUO7O8wLHldCLtpUBNIK1qBgdCQIHRCcZAI",
+    "title": "08-16 Weekly Meeting: Advo Website Restructuring, Front-End/Back-End Implementation, and Business Development with Fourlink & Cirrus",
+    "recordedAt": "2026-08-16T12:00:00+08:00",
+    "durationSecond": 113,
+    "speaker": ["Speaker 1"],
+    "isDiarizationSuspect": false,
+    "language": "en"
+  },
+  "link": { "projectId": 10, "leadName": null, "clientName": null },
+  "summary": "A two-minute solo test recording by one ADVO speaker (likely Gelo) dictating the week's ADVO website assignments. The speaker first says they will do the front end and Prince the back end, then reverses it a minute later, saying they will finish the back end and Prince the front end. Schiffer is to handle the BIR forms and Anthony is to finish the API, where the financial sheets are not rendering properly. The client has asked for a reordering and a restructuring meeting to revisit the website's purpose and goals. Separately, David will talk to Sir Chris, head of FourLinq, about future plans and meetings with Cirrus, which has connections to potential new clients. The recording opens and closes with 'This is a test.'",
+  "fact": [
+    {
+      "claim": "The speaker initially assigned themselves the ADVO website front end and Prince the back end.",
+      "category": "commitment",
+      "quote": "Basically, I will do the front end, and then Prince will do the back end, and then Schiffer has to do the BIR forms, and then Anthony has to finish up the API.",
+      "timestamp": "0:00",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-08-16T12:00:00+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "The speaker later reversed the split, taking the back end themselves and giving Prince the front end.",
+      "category": "commitment",
+      "quote": "I will finish up the back end. Make sure everything is connected and that we plug importer rigs to the Advo website. Prince, I said we'll do the front end.",
+      "timestamp": "0:56",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-08-16T12:00:00+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "Schiffer is responsible for the BIR forms.",
+      "category": "commitment",
+      "quote": "and then Schiffer has to do the BIR forms",
+      "timestamp": "0:00",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-08-16T12:00:00+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "Anthony is to finish the ADVO API, which has bugs including financial sheets not rendering properly.",
+      "category": "commitment",
+      "quote": "and then Anthony has to finish up the API. There are some bugs there, like the financial sheets are not rendering properly",
+      "timestamp": "0:00",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-08-16T12:00:00+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "The client asked the team to do a reordering and hold a restructuring meeting to revisit the website's purpose and goal.",
+      "category": "client_need",
+      "quote": "the client wanted the team to do a reordering, like a meeting where we should think about our actions and restructuring. Actually, restructuring the website and see the purpose and the goal of it.",
+      "timestamp": "0:00",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-16T12:00:00+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "Back-end work includes making sure everything is connected and plugging 'importer rigs' into the ADVO website.",
+      "category": "scope",
+      "quote": "I will finish up the back end. Make sure everything is connected and that we plug importer rigs to the Advo website.",
+      "timestamp": "0:56",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-08-16T12:00:00+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "David will talk to Sir Chris, described as the head of FourLinq, about future plans and meetings with Cirrus.",
+      "category": "commitment",
+      "quote": "David will talk to Sir Chris. He is the Fourlink boss. He is the head of Fourlink, and he will discuss future plans and meetings with Cirrus.",
+      "timestamp": "0:56",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-16T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Cirrus is seen as a source of potential new clients through its connections.",
+      "category": "client_need",
+      "quote": "Potentially new clients, and then Cirrus has connections to other clients.",
+      "timestamp": "0:56",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-16T12:00:00+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The recording is a test.",
+      "category": "process",
+      "quote": "This is a test. So this is for Advo.",
+      "timestamp": "0:00",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-08-16T12:00:00+08:00",
+      "projectId": 10
+    }
+  ],
+  "decision": [
+    { "text": "Anthony finishes the API and its rendering bugs; Schiffer handles the BIR forms; the speaker and Prince split front end and back end (the split itself was stated both ways).", "timestamp": "0:00", "basis": "transcript" }
+  ],
+  "action": [
+    { "description": "Finish the ADVO back end, connect all services, and plug importer rigs into the ADVO website.", "ownerName": "Speaker 1", "dueAt": null, "timestamp": "0:56", "basis": "transcript", "status": "open" },
+    { "description": "Do the ADVO website front end (per the later statement; earlier statement gave Prince the back end).", "ownerName": "Prince", "dueAt": null, "timestamp": "0:56", "basis": "transcript", "status": "open" },
+    { "description": "Prepare the BIR forms.", "ownerName": "Schiffer", "dueAt": null, "timestamp": "0:00", "basis": "transcript", "status": "open" },
+    { "description": "Finish the ADVO API and fix the financial-sheet rendering bugs.", "ownerName": "Anthony", "dueAt": null, "timestamp": "0:00", "basis": "transcript", "status": "open" },
+    { "description": "Hold a team meeting on reordering and restructuring the ADVO website's purpose and goals, as the client requested.", "ownerName": "ADVO", "dueAt": null, "timestamp": "0:00", "basis": "transcript", "status": "open" },
+    { "description": "Talk to Sir Chris (FourLinq head) about future plans and meetings with Cirrus for potential new clients.", "ownerName": "David", "dueAt": null, "timestamp": "0:56", "basis": "transcript", "status": "open" }
+  ],
+  "openQuestion": [
+    { "text": "Who owns the front end and who owns the back end: the speaker states it both ways within a minute.", "timestamp": "0:56" },
+    { "text": "Which client asked for the ADVO website reordering/restructuring, and what exactly should be reordered?", "timestamp": "0:00" },
+    { "text": "What is Cirrus and what is its relationship to FourLinq?", "timestamp": "0:56" },
+    { "text": "What are 'importer rigs'?", "timestamp": "0:56" }
+  ],
+  "person": [
+    { "name": "Speaker 1", "role": "speaker", "affiliation": "ADVO", "note": "Sole speaker; assigns tasks and takes back-end/front-end work, likely Gelo (Angelo Revelo)" },
+    { "name": "Prince Wagan", "role": "mentioned", "affiliation": "ADVO", "note": "Assigned back end at 0:00, then front end at 0:56" },
+    { "name": "Schiffier Silang", "role": "mentioned", "affiliation": "ADVO", "note": "Called 'Schiffer'; to do the BIR forms" },
+    { "name": "Anthony Ramos", "role": "mentioned", "affiliation": "ADVO", "note": "To finish the API and fix financial-sheet rendering bugs" },
+    { "name": "David Remo", "role": "mentioned", "affiliation": "ADVO", "note": "To talk to Sir Chris about Cirrus and new clients" },
+    { "name": "Sir Chris", "role": "mentioned", "affiliation": "client", "note": "Described as the boss / head of FourLinq (Fourlink)" }
+  ],
+  "namedThing": ["Advo website", "BIR forms", "Advo API", "financial sheets", "importer rigs", "FourLinq", "Cirrus"]
+}

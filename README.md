@@ -177,6 +177,7 @@ Default login: `admin@advo.ph` / `changeme`
 | `NODE_ENV` | No | `development` (default), `production`, or `test`. |
 | `UPLOAD_DIR` | No | Where uploads are written (default `./uploads`; prod uses `/var/www/advo/uploads`). |
 | `RESEND_API_KEY` | No | Resend API key for email |
+| `CORPUS_EXTRACT_MODEL` | No | Claude model for corpus extraction (default `claude-opus-5`). Point it at a cheaper model for steady-state ingestion. No `ANTHROPIC_API_KEY` → heuristic extractor. |
 | `RESEND_WEBHOOK_SECRET` | No | Svix secret from the Resend webhook page. `POST /api/campaign/esp-webhook` refuses with 503 until it is set. |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | No | SMTP alternative to Resend for **transactional** mail (magic-links, invites, lead notifications). Not the outreach transport — see `OUTREACH_*` below. |
 | `GITHUB_TOKEN` | No | GitHub PAT (server-side) |

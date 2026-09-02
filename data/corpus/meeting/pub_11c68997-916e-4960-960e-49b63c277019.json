@@ -1,0 +1,353 @@
+{
+  "source": {
+    "kind": "plaud",
+    "externalId": "pub_11c68997-916e-4960-960e-49b63c277019",
+    "url": "https://web.plaud.ai/s/pub_11c68997-916e-4960-960e-49b63c277019::suhWAHZUzEhRAye_rZNftfY6CKBQRtvNR4wWyfy6GPK2wHGfl4aBXrcTXkrJu20bJl199yQE4vTc0j60WCXMvAI",
+    "title": "07-30 Meeting: Advo Website Development, Vercel Integration, and AI Task Management",
+    "recordedAt": "2026-07-30T17:09:57+08:00",
+    "durationSecond": 810,
+    "speaker": [
+      "Gelo"
+    ],
+    "isDiarizationSuspect": false,
+    "language": "en"
+  },
+  "link": {
+    "projectId": 10,
+    "leadName": null,
+    "clientName": null
+  },
+  "summary": "A solo voice memo by Gelo laying out a development roadmap for the ADVO website, which is currently a client/admin/landing-page app. He wants the scheduling and task-management system and the contracts/paperwork/permits area refined and made accessible to admins and, on request, clients. He asks for an ADVO Vercel account that deploys every push to main and surfaces the live site in an iframe on the client dashboard, alongside signed contracts, a version history, and client uploads of business materials. Recorded meetings processed through Plaud should be listed under project materials, and an 'Advo AI' should read transcripts and contracts to create and intelligently assign tasks, build a realistic timeline, and apply penalty points for missed deadlines with a possible grace period. He closes with a financial-transparency requirement: every expense including AI, media-generation, and subscription charges must be logged with purpose, authorizer, amount, location, and receipt, with no reimbursement without a receipt.",
+  "fact": [
+    {
+      "claim": "The ADVO website is currently a client/admin/landing-page site and the roadmap is to refine the scheduling and task-management system plus the contracts area.",
+      "category": "scope",
+      "quote": "It is currently a client slash admin slash landing page website with a lot of functionalities, but I am still yet to implement more features or refine more features that are currently in the admin and client dashboard. What I want is basically to refine the scheduling task management system",
+      "timestamp": "0:00",
+      "speaker": "Gelo",
+      "basis": "transcript",
+      "confidence": 0.95,
+      "occurredAt": "2026-07-30T17:09:57+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "ADVO paperwork and permits should be accessible on the website by admins and, on request, by clients.",
+      "category": "scope",
+      "quote": "Slash paperwork slash permits that Advo uses, I want all of these to be easily accessible on the website. By the admins of course, and if ever, by the clients if they want to request for it.",
+      "timestamp": "0:56",
+      "speaker": "Gelo",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-07-30T17:09:57+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "Gelo wants an ADVO Vercel account that deploys on every push to main, with the deployment shown in an iframe on the ADVO website.",
+      "category": "product",
+      "quote": "I want a future wherein while we're building, there is a Advo Vercel account, Vercel, that will deploy every time we push a change to main. And this change will reflect on an iframe on the website on the Advo website.",
+      "timestamp": "0:56",
+      "speaker": "Gelo",
+      "basis": "transcript",
+      "confidence": 0.95,
+      "occurredAt": "2026-07-30T17:09:57+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "Clients currently see changes via the GitHub API; the goal is for them to also see the live site on the client dashboard.",
+      "category": "product",
+      "quote": "Not only is the client seeing the changes via GitHub API, but rather they are also. Seeing the website live on the client dashboard.",
+      "timestamp": "1:56",
+      "speaker": "Gelo",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-30T17:09:57+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "The client dashboard should show signed contracts (uploaded copies) and a version history of the website preserving older versions.",
+      "category": "scope",
+      "quote": "The client can also check contracts they have signed, maybe photocopied and uploaded on the website for ease and convenience. They can see the changes happening. Maybe even a version history of the website, preserving older versions for reference.",
+      "timestamp": "1:56",
+      "speaker": "Gelo",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-07-30T17:09:57+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "Whether to display changes as iframes or per commit is undecided because many commits to main would create a versioning burden; contributing docs may be needed so only finalized work is pushed to the client.",
+      "category": "risk",
+      "quote": "I don't know if I should make it iframes or per commit history in main. But if there are a lot of commits to main, then it might be a problem since there is a lot of versioning that will be needed. We might need to make contributing docs.",
+      "timestamp": "1:56",
+      "speaker": "Gelo",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-07-30T17:09:57+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "Clients should be able to upload their own business materials such as pictures, media, mission/vision, permits, testimonials, and reviews.",
+      "category": "scope",
+      "quote": "If the client wants to upload any pictures, media, mission visions, DRPs, or I forgot what they call it, EDRs product something PRD I for I forgot. But if they want to upload any material relating to their business, that's on them.",
+      "timestamp": "2:54",
+      "speaker": "Gelo",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-07-30T17:09:57+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "Recorded meetings and their minutes should be listed under project materials on both the admin and client pages, with recording and transcript accessible.",
+      "category": "scope",
+      "quote": "They are listed on the project materials, and they can easily run through the recording and see a transcript since these are all processed through Plaud.",
+      "timestamp": "4:24",
+      "speaker": "Gelo",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-07-30T17:09:57+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "Meetings are recorded with a Plaud note, kept in one Plaud folder, and Plaud now exposes an API/MCP that can be used for integration.",
+      "category": "process",
+      "quote": "I have a Plaud note that I use to record these meetings, and when they run through Plaud, they will basically sort of have an API now or an MCP, so it's much easier since I've put all the meetings in one folder.",
+      "timestamp": "4:24",
+      "speaker": "Gelo",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-07-30T17:09:57+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "An AI should read transcripts or MoMs and create tasks in the task-management system, assigning them to the developers and project managers on the project.",
+      "category": "product",
+      "quote": "Of the AI will read the transcripts or the MoMs and sort of make a task connected to the task management system and whoever developers and project managers and junior developers are assigned to what task. The AI will assign tasks.",
+      "timestamp": "5:19",
+      "speaker": "Gelo",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-07-30T17:09:57+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "Task assignment should be workload- and skill-aware (front end, back end, API, media) and each task gets a deadline derived from the agreement and transcript.",
+      "category": "product",
+      "quote": "Sort of smartly or intelligently, not overburdening or checking which developer aligns to what or what the developer has made, whether it's front end, back end API, media etcetera. Each developer will have a deadline, a task depending on what's been agreed upon, and what's on the transcript.",
+      "timestamp": "6:17",
+      "speaker": "Gelo",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-07-30T17:09:57+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "Project managers should have super-admin-like access to assign which people are involved per project and per client.",
+      "category": "product",
+      "quote": "So the project managers have this super admin-ish access to each developer like they can assign who who are the people involved per project and per client.",
+      "timestamp": "7:09",
+      "speaker": "Gelo",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-30T17:09:57+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "The AI should generate a reasonable, web-coder-friendly timeline from members, transcripts, and contracts, tuned via the system prompt for a team that primarily vibe-codes.",
+      "category": "product",
+      "quote": "The AI will look through the members and the transcripts and the contracts to make a timeline, a proper, web coder friendly time timeline. It doesn't have to be too long since the team is primarily vibe coding.",
+      "timestamp": "8:08",
+      "speaker": "Gelo",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-30T17:09:57+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "Missed deadlines should incur penalty points on the developer's account, with verification either by the developer or a project manager and a possible grace period or early-submission window.",
+      "category": "process",
+      "quote": "Should it be just marked by the developer or verified by the project manager, maybe something like that. If it hasn't been done yet and not yet verified, then it will be marked wrong or marked unfinished, and penalty points will incur. There might be a sort of grace period",
+      "timestamp": "9:04",
+      "speaker": "Gelo",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-30T17:09:57+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "On project completion the developer must produce a final presentation (slideshow or script), which an AI output agent could generate.",
+      "category": "process",
+      "quote": "And then obviously the final presentation. Here, the developer has to make a slideshow or a script. I believe the AI can do that. Either way, there has to be a sort of presentation or output agent or tool when the final task has been accomplished.",
+      "timestamp": "10:00",
+      "speaker": "Gelo",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-30T17:09:57+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "ADVO has rules limiting how many revisions a client can request, and the AI must adhere to them when re-planning tasks.",
+      "category": "process",
+      "quote": "Obviously, our Advo has a lot of rules in terms of how many revisions the client can do, and with that, the AI will also adhere to those revisions and change up the tasks.",
+      "timestamp": "10:00",
+      "speaker": "Gelo",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-30T17:09:57+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "All AI usage charges, media/video-generation costs, and subscription charges must be documented with receipts.",
+      "category": "process",
+      "quote": "I want everything, including the AI charges, the AI use, the media generated if that ever costs money. The video generation tokens. Subscription charges. All of these has to be documented via receipt.",
+      "timestamp": "10:58",
+      "speaker": "Gelo",
+      "basis": "transcript",
+      "confidence": 0.95,
+      "occurredAt": "2026-07-30T17:09:57+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "All outside payments, whether to developers or from clients, must be recorded for accounting and to track whether income exceeds spend.",
+      "category": "process",
+      "quote": "Outside payments, whether it's developer or client, we have to take note of just for accounting purposes and overall better transparency within our company, within the client and within Advo. You want to make sure we're not burning through a lot at a fast rate",
+      "timestamp": "11:28",
+      "speaker": "Gelo",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-07-30T17:09:57+08:00",
+      "projectId": 10
+    },
+    {
+      "claim": "An expense is reimbursed only if it is logged with a receipt, plus purpose, who authorized it, amount, and location.",
+      "category": "decision",
+      "quote": "If there was an expense, then you have to log it in here plus the receipt. If not, then no reimbursement. So there must be a purpose who authorized the. Who authorized the purchase? How much was it? Where was it? And the receipt itself.",
+      "timestamp": "12:26",
+      "speaker": "Gelo",
+      "basis": "transcript",
+      "confidence": 0.95,
+      "occurredAt": "2026-07-30T17:09:57+08:00",
+      "projectId": 10
+    }
+  ],
+  "decision": [
+    {
+      "text": "No reimbursement for any expense that is not logged with a receipt; each log entry needs purpose, authorizer, amount, and location.",
+      "timestamp": "12:26",
+      "basis": "transcript"
+    },
+    {
+      "text": "The financial-logging feature does not need AI; it is a plain expense log with receipts.",
+      "timestamp": "12:26",
+      "basis": "transcript"
+    },
+    {
+      "text": "Meeting recordings and transcripts will be surfaced via Plaud (API/MCP) rather than re-transcribed elsewhere.",
+      "timestamp": "4:24",
+      "basis": "transcript"
+    }
+  ],
+  "action": [
+    {
+      "description": "Refine the scheduling/task-management system and the contracts, paperwork, and permits area of the ADVO website.",
+      "ownerName": "Gelo",
+      "dueAt": null,
+      "timestamp": "0:00",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Create an ADVO Vercel account that auto-deploys every push to main and embed the deployment as an iframe on the client dashboard.",
+      "ownerName": "ADVO",
+      "dueAt": null,
+      "timestamp": "0:56",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Add signed-contract viewing, website version history, and client material uploads to the client dashboard.",
+      "ownerName": "ADVO",
+      "dueAt": null,
+      "timestamp": "1:56",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "List Plaud-recorded meetings and MoMs under project materials on the admin and client pages, using the Plaud API/MCP.",
+      "ownerName": "ADVO",
+      "dueAt": null,
+      "timestamp": "4:24",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Build the Advo AI that reads transcripts and contracts to generate, assign, and deadline tasks per developer.",
+      "ownerName": "ADVO",
+      "dueAt": null,
+      "timestamp": "5:19",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Give project managers admin access to assign people per project and per client.",
+      "ownerName": "ADVO",
+      "dueAt": null,
+      "timestamp": "7:09",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Implement AI-generated timelines with penalty points, verification flow, and grace period.",
+      "ownerName": "ADVO",
+      "dueAt": null,
+      "timestamp": "8:08",
+      "basis": "transcript",
+      "status": "open"
+    },
+    {
+      "description": "Add a financial log for all expenses and payments (AI, media, subscriptions, developer and client payments) requiring receipts.",
+      "ownerName": "ADVO",
+      "dueAt": null,
+      "timestamp": "10:58",
+      "basis": "transcript",
+      "status": "open"
+    }
+  ],
+  "openQuestion": [
+    {
+      "text": "Should live changes be shown as iframes of the Vercel deploy or as per-commit history of main?",
+      "timestamp": "1:56"
+    },
+    {
+      "text": "Who marks a task complete: the developer self-marking or the project manager verifying?",
+      "timestamp": "9:04"
+    },
+    {
+      "text": "What are the penalty point values and the grace period / early-submission rule?",
+      "timestamp": "9:04"
+    },
+    {
+      "text": "Do developers self-assign tasks or do project managers assign them?",
+      "timestamp": "7:09"
+    }
+  ],
+  "person": [
+    {
+      "name": "Gelo",
+      "role": "speaker",
+      "affiliation": "ADVO",
+      "note": "Sole speaker; Angelo Revelo, lead developer, dictating the ADVO website roadmap"
+    }
+  ],
+  "namedThing": [
+    "Advo website",
+    "Vercel",
+    "GitHub API",
+    "Plaud",
+    "Plaud MCP",
+    "Advo AI",
+    "task management system",
+    "content management system",
+    "client dashboard",
+    "admin dashboard"
+  ]
+}

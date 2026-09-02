@@ -1,0 +1,484 @@
+{
+  "source": {
+    "kind": "drive_doc",
+    "externalId": "1gosFxLDPT4l1NHq18S1GSUBZY171rB4PqW-BfXVleFk",
+    "url": "https://docs.google.com/document/d/1gosFxLDPT4l1NHq18S1GSUBZY171rB4PqW-BfXVleFk/edit",
+    "title": "ADVO Contract  - APP DEVELOPMENT FOR FOURLINQ",
+    "documentDate": "2026-08-20",
+    "owner": "agramos0765@gmail.com",
+    "documentKind": "contract"
+  },
+  "link": {
+    "projectId": 3,
+    "leadName": null,
+    "clientName": "FourlinQ Windows and Doors"
+  },
+  "summary": "The 20 August 2026 contract between FourlinQ Windows and Doors and ADVO Web Development Services for the FourlinQ Business Management Application, a single mobile-plus-web application made of six independently commissioned business systems (PEOPLE, SALES, REALTY, CARS, PHONES & eSIM, FABRICATION). Each system is priced on its own: PEOPLE, SALES and the REALTY/CARS/PHONES bundle at ₱25,000 each, FABRICATION at ₱50,000, or ₱125,000 for all six, with rates fixed for 12 months and a 50/50 downpayment-to-sign-off payment split per system. A ₱3,000 monthly infrastructure fee starts once the PEOPLE system is delivered and covers maintenance, hosting, database and domain. Standing terms cover 7-business-day invoices, a 2% per month late penalty after 15 business days, five revision rounds, a 15-plus-15-day deemed-approval mechanism, IP retention until full payment, and a 14-day cure period for termination with cause. The signature blocks are blank in the Drive copy; no system is initialled as commissioned.",
+  "fact": [
+    {
+      "claim": "The contract is between FourlinQ Windows and Doors and ADVO Web Development Services for the FourlinQ Business Management Application, a single application composed of six independent business systems.",
+      "category": "identity",
+      "quote": "This contract is between **FourlinQ Windows and Doors** and **ADVO Web Development Services** regarding the development, delivery, and hosting of the FourlinQ Business Management Application a single application composed of six independent business systems.",
+      "sectionHeading": "Summary",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "The contract is dated 08/20/2026.",
+      "category": "timeline",
+      "quote": "**Date:** 08/20/2026",
+      "sectionHeading": "Header",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "The client chooses which systems to commission, each is priced, built, tested and delivered separately, and the remaining systems can be commissioned later at the contract's fixed rates.",
+      "category": "contract_term",
+      "quote": "The Client selects which systems to commission. Each system is priced, built, tested, and delivered on its own. The Client may commission the remaining systems at any later date at the rates fixed in this contract.",
+      "sectionHeading": "Summary",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "The PEOPLE system is an HR and attendance system with face-recognition clock-in with liveness detection, GPS geofencing per branch, offline punch queueing, leave management with Philippine statutory leave types, and daily accomplishment reports by text, photo or voice.",
+      "category": "scope",
+      "quote": "**Biometric Attendance:** Face-recognition clock-in and clock-out with liveness detection, on individual phones or a shared front-desk device.",
+      "sectionHeading": "Scope of Work",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "The SALES system covers showroom walk-in capture, sales pipeline, quotations and warranty records.",
+      "category": "scope",
+      "quote": "Showroom Walk-In Capture, Sales Pipeline, Quotations, and Warranty records.",
+      "sectionHeading": "Scope of Work",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "The REALTY, CARS and PHONES & eSIM systems cover property registry with rent tracking and title checklists, car leasing/renewal/service history, and phone and eSIM asset tracking respectively.",
+      "category": "scope",
+      "quote": "Property registry, Rent Tracking, and Title/Document checklists.",
+      "sectionHeading": "Scope of Work",
+      "basis": "document",
+      "confidence": 0.95,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "The FABRICATION system is a production and installation system with a job board, cutting lists and installation site checklists.",
+      "category": "scope",
+      "quote": "Job board, cutting lists, and installation site checklists.",
+      "sectionHeading": "Scope of Work",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "Every system includes an Android/iOS mobile application, roles and permissions, notifications, an audit trail and multi-company support.",
+      "category": "scope",
+      "quote": "Mobile Application (Android/iOS), Roles & Permissions, Notifications, Audit Trail, and Multi-Company Support.",
+      "sectionHeading": "Included With Every System",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "The PEOPLE - HR & Attendance System is priced at ₱25,000.00.",
+      "category": "pricing",
+      "quote": "| PEOPLE - HR & Attendance System | ₱25,000.00 |",
+      "sectionHeading": "Investment Packages",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "The SALES - CRM & After-Sales System is priced at ₱25,000.00.",
+      "category": "pricing",
+      "quote": "| SALES - CRM & After-Sales System | ₱25,000.00 |",
+      "sectionHeading": "Investment Packages",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "The REALTY, CARS and PHONES management systems are sold as one bundle priced at ₱25,000.00.",
+      "category": "pricing",
+      "quote": "| REALTY, CARS & PHONES - Management Systems Bundle | ₱25,000.00 |",
+      "sectionHeading": "Investment Packages",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "The FABRICATION - Production & Installation System is priced at ₱50,000.00.",
+      "category": "pricing",
+      "quote": "| FABRICATION - Production & Installation System | ₱50,000.00 |",
+      "sectionHeading": "Investment Packages",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "All six systems together are priced at ₱125,000.00.",
+      "category": "pricing",
+      "quote": "| **ALL SIX SYSTEMS** | **₱125,000.00** |",
+      "sectionHeading": "Investment Packages",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "The system rates are fixed for 12 months.",
+      "category": "contract_term",
+      "quote": "Rates are fixed for 12 months",
+      "sectionHeading": "Investment Packages",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "Only the systems initialled in the package table are commissioned and billed, and future systems are billed at the pre-agreed module prices upon written activation.",
+      "category": "contract_term",
+      "quote": "Only the systems initialled above are commissioned and billed. The Client may commission the remaining systems in any order, at any time.",
+      "sectionHeading": "Investment Packages",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "No system is initialled as commissioned in the Drive copy of the contract; every SELECT box is empty.",
+      "category": "decision",
+      "quote": "| PEOPLE - HR & Attendance System | ₱25,000.00 | [ ] |",
+      "sectionHeading": "Investment Packages",
+      "basis": "document",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "The estimated development timeline is 2 to 3 weeks per system and 3 to 4 weeks for Fabrication, counted from receipt of the down payment.",
+      "category": "timeline",
+      "quote": "The estimated development timeline is 2–3 weeks per system, and 3–4 weeks for Fabrication, counted from receipt of down payment.",
+      "sectionHeading": "Contract Length",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "Client-caused delays, including no response within 10 calendar days, extend the timeline by the same number of days without penalty to ADVO.",
+      "category": "contract_term",
+      "quote": "Delays caused by the client (late assets, delayed feedback, or no response within 10 calendar days) automatically extend the timeline by the equivalent number of days without penalty to ADVO.",
+      "sectionHeading": "Contract Length",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "Unused complimentary revisions may still be invoked up to 6 months after the Project Sign-off document is signed.",
+      "category": "contract_term",
+      "quote": "FourlinQ Windows and Doors may still invoke these revisions as needed to the scope aforementioned, only up until 6 months after signing the “Project Sign-off” document.",
+      "sectionHeading": "Contract Length",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "The pricing structure and fees are stated to be open to negotiation between the parties.",
+      "category": "contract_term",
+      "quote": "The pricing structure and fees are open to negotiation upon further discussion between both parties.",
+      "sectionHeading": "Contract Length",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "Each system is paid 50% as a downpayment upon commissioning and 50% upon final delivery and sign-off.",
+      "category": "contract_term",
+      "quote": "| DOWNPAYMENT (50%) | Upon commissioning of that system. | 50% of fee |",
+      "sectionHeading": "Payment",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "Invoices are payable within 7 business days of issuance.",
+      "category": "contract_term",
+      "quote": "Invoices are payable within 7 business days of issuance.",
+      "sectionHeading": "Payment",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "Balances unpaid after 15 business days from issuance incur a 2% per month penalty, calculated daily from the 16th business day until settled.",
+      "category": "contract_term",
+      "quote": "Unpaid balances remaining after fifteen (15) business days from the date of issuance (commencing strictly on the 16th business day) shall incur a penalty fee of 2% per month, calculated daily until fully settled.",
+      "sectionHeading": "Payment",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "Payment is due on signing the Project Sign-off document and the client has seven days from signing to pay.",
+      "category": "contract_term",
+      "quote": "Payment is due and payable upon signing of the “Project Sign-off” document. Clients are given seven (7) days from signing to comply with payment dues.",
+      "sectionHeading": "Payment",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "The client earns a 20% discount for referring a meeting about an automated parking system, or a 50% discount if the referred operator signs an automated parking system contract.",
+      "category": "pricing",
+      "quote": "The Client may earn a 20% discount for a meeting referral or a 50% discount if the referred operator signs a contract for an automated parking system.",
+      "sectionHeading": "Payment — Referral Incentive",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "A recurring monthly infrastructure fee of ₱3,000.00, billed on the 1st of every month, starts upon final delivery and deployment of the PEOPLE system.",
+      "category": "pricing",
+      "quote": "Upon final delivery and deployment of the PEOPLE - HR & Attendance System, the Client agrees to a recurring monthly infrastructure fee of **₱3,000.00**. This fee is billed on the 1st of every month.",
+      "sectionHeading": "Ongoing Hosting, Infrastructure & Data Retention",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "The infrastructure fee includes maintenance (new features, development updates, bug fixes), web hosting, database and domain renewals.",
+      "category": "scope",
+      "quote": "**Infrastructure Inclusions:** Maintenance (New features, development updates, bug fixes), web hosting, database, and domain renewals.",
+      "sectionHeading": "Ongoing Hosting, Infrastructure & Data Retention",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "The system supports a 10-year data retention policy, after which data is subject to automated backup and archival or deletion.",
+      "category": "contract_term",
+      "quote": "The system architecture supports a 10-year data retention policy. Data exceeding 10 years of age will be subject to automated backup and archival/deletion workflows to maintain system performance.",
+      "sectionHeading": "Ongoing Hosting, Infrastructure & Data Retention",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "If the monthly infrastructure fee is unpaid 15 days after its due date, ADVO may suspend hosting and API access, taking the application offline, without liability for data loss.",
+      "category": "risk",
+      "quote": "If the monthly infrastructure fee is not paid within 15 days of the due date, ADVO reserves the right to suspend server hosting and API access until the balance is cleared, resulting in the application going offline.",
+      "sectionHeading": "Ongoing Hosting, Infrastructure & Data Retention",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "After full payment the client may stay on ADVO-managed hosting or request a transfer to their own hosting provider.",
+      "category": "contract_term",
+      "quote": "The client may continue with ADVO-managed hosting and maintenance, or request a system transfer to their own hosting provider after full payment.",
+      "sectionHeading": "Ongoing Hosting, Infrastructure & Data Retention",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "All design files, source code and deliverables remain ADVO's property until full payment, and full ownership including source files transfers to the client on receipt of final payment.",
+      "category": "contract_term",
+      "quote": "All design files, source code, and deliverables remain the exclusive property of ADVO until full payment is received.",
+      "sectionHeading": "Intellectual Property & Ownership",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "ADVO retains portfolio rights to display the completed work unless the client objects in writing before final delivery.",
+      "category": "contract_term",
+      "quote": "ADVO retains the right to display completed work in its portfolio and marketing materials unless the Client requests otherwise in writing before final delivery.",
+      "sectionHeading": "Intellectual Property & Ownership",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "Either party may terminate with cause by written notice and a 14-day cure period, and the client stays liable for the value of work completed to that date.",
+      "category": "contract_term",
+      "quote": "Either party may rescind this contract with legitimate cause by issuing a written notice and allowing a 14-day cure period to resolve the issue. The Client remains liable for the financial value of all work completed up to the date of termination.",
+      "sectionHeading": "Non-Abandonment & Project Continuity",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "If the client cancels for convenience it pays the exact percentage of completion achieved plus any non-refundable third-party integrations; if ADVO cancels it refunds un-started milestones and hands over paid-for code as-is.",
+      "category": "contract_term",
+      "quote": "the client must compensate the developer for the exact percentage of project completion achieved up to the cancellation date, alongside fully reimbursing any non-refundable third-party integrations purchased for the project.",
+      "sectionHeading": "Non-Abandonment & Project Continuity",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "The client may not cease communication, withhold payment or hire a third party to replicate ADVO's work while the project is active and payment is outstanding; doing so is a material breach.",
+      "category": "commitment",
+      "quote": "The Client may not cease communication, withhold payment, or engage a third party to replicate or replace ADVO's work while the project is active and any payment is outstanding. Doing so constitutes a material breach of this contract.",
+      "sectionHeading": "Non-Abandonment & Project Continuity",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "Each deliverable permits up to 5 rounds of revisions at no additional cost.",
+      "category": "contract_term",
+      "quote": "Each deliverable permits up to 5 ROUNDS OF REVISIONS at no additional cost.",
+      "sectionHeading": "Revisions & Scope Management",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "New modules, redesigns or feature additions are change requests that require a written addendum before work starts.",
+      "category": "process",
+      "quote": "New modules, redesigns, or feature additions are change requests and require a written addendum before work begins.",
+      "sectionHeading": "Revisions & Scope Management",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "If the client gives no feedback for 15 business days a Notice of Pending Deemed Approval is issued, and revisions are deemed approved after 15 further days of silence.",
+      "category": "contract_term",
+      "quote": "If the Client fails to provide feedback within 15 business days, a Notice of Pending Deemed Approval is issued. Revisions are deemed approved after 15 subsequent days of non-response.",
+      "sectionHeading": "Revisions & Scope Management",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "ADVO is not liable for the uptime of third-party platforms such as Supabase, hosting providers and biometric APIs.",
+      "category": "risk",
+      "quote": "The developer is not responsible for the performance, uptime, or service availability of third-party platforms (e.g., Supabase, hosting providers, biometric APIs).",
+      "sectionHeading": "Exemptions from liability",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "Performance timelines pause for the duration of fortuitous events such as acts of God, national connectivity outages, regulatory changes and prolonged server outages.",
+      "category": "contract_term",
+      "quote": "In such circumstances, performance timelines are paused for the duration of the event.",
+      "sectionHeading": "Exemptions from liability",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    },
+    {
+      "claim": "The signature blocks for ADVO Web Development Services and FourlinQ Windows and Doors are blank in the Drive copy; the contract is not shown as signed.",
+      "category": "risk",
+      "quote": "ADVO Web Development Services                                Signature/Date",
+      "sectionHeading": "Signatures",
+      "basis": "document",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-20",
+      "projectId": 3
+    }
+  ],
+  "term": [
+    { "name": "system_fee_people_cents", "value": 2500000, "unit": "cents", "quote": "| PEOPLE - HR & Attendance System | ₱25,000.00 |" },
+    { "name": "system_fee_sales_cents", "value": 2500000, "unit": "cents", "quote": "| SALES - CRM & After-Sales System | ₱25,000.00 |" },
+    { "name": "system_fee_realty_cars_phones_bundle_cents", "value": 2500000, "unit": "cents", "quote": "| REALTY, CARS & PHONES - Management Systems Bundle | ₱25,000.00 |" },
+    { "name": "system_fee_fabrication_cents", "value": 5000000, "unit": "cents", "quote": "| FABRICATION - Production & Installation System | ₱50,000.00 |" },
+    { "name": "total_fee_all_system_cents", "value": 12500000, "unit": "cents", "quote": "| **ALL SIX SYSTEMS** | **₱125,000.00** |" },
+    { "name": "rate_lock_month_count", "value": 12, "unit": "month", "quote": "Rates are fixed for 12 months" },
+    { "name": "timeline_week_count_per_system", "value": "2-3", "unit": null, "quote": "The estimated development timeline is 2–3 weeks per system" },
+    { "name": "timeline_week_count_fabrication", "value": "3-4", "unit": null, "quote": "and 3–4 weeks for Fabrication, counted from receipt of down payment." },
+    { "name": "client_no_response_day_count", "value": 10, "unit": "day", "quote": "or no response within 10 calendar days" },
+    { "name": "post_signoff_revision_window_month_count", "value": 6, "unit": "month", "quote": "only up until 6 months after signing the “Project Sign-off” document." },
+    { "name": "downpayment_pct", "value": 50, "unit": "pct", "quote": "| DOWNPAYMENT (50%) | Upon commissioning of that system. | 50% of fee |" },
+    { "name": "final_payment_pct", "value": 50, "unit": "pct", "quote": "| FINAL PAYMENT (50%) | Final delivery and sign-off. | 50% of fee |" },
+    { "name": "invoice_due_business_day_count", "value": 7, "unit": "business_day", "quote": "Invoices are payable within 7 business days of issuance." },
+    { "name": "late_penalty_grace_business_day_count", "value": 15, "unit": "business_day", "quote": "Unpaid balances remaining after fifteen (15) business days from the date of issuance (commencing strictly on the 16th business day)" },
+    { "name": "late_penalty_pct_per_month", "value": 2, "unit": "pct", "quote": "shall incur a penalty fee of 2% per month, calculated daily until fully settled." },
+    { "name": "signoff_payment_day_count", "value": 7, "unit": "day", "quote": "Clients are given seven (7) days from signing to comply with payment dues." },
+    { "name": "referral_meeting_discount_pct", "value": 20, "unit": "pct", "quote": "The Client may earn a 20% discount for a meeting referral" },
+    { "name": "referral_signed_contract_discount_pct", "value": 50, "unit": "pct", "quote": "or a 50% discount if the referred operator signs a contract for an automated parking system." },
+    { "name": "infra_fee_cents_per_month", "value": 300000, "unit": "cents", "quote": "the Client agrees to a recurring monthly infrastructure fee of **₱3,000.00**." },
+    { "name": "infra_fee_billing_day_of_month", "value": 1, "unit": "day", "quote": "This fee is billed on the 1st of every month." },
+    { "name": "data_retention_year_count", "value": 10, "unit": null, "quote": "The system architecture supports a 10-year data retention policy." },
+    { "name": "infra_fee_suspension_day_count", "value": 15, "unit": "day", "quote": "If the monthly infrastructure fee is not paid within 15 days of the due date, ADVO reserves the right to suspend server hosting and API access" },
+    { "name": "termination_cure_day_count", "value": 14, "unit": "day", "quote": "by issuing a written notice and allowing a 14-day cure period to resolve the issue." },
+    { "name": "revision_round_count", "value": 5, "unit": "round", "quote": "Each deliverable permits up to 5 ROUNDS OF REVISIONS at no additional cost." },
+    { "name": "deemed_approval_notice_business_day_count", "value": 15, "unit": "business_day", "quote": "If the Client fails to provide feedback within 15 business days, a Notice of Pending Deemed Approval is issued." },
+    { "name": "deemed_approval_day_count", "value": 15, "unit": "day", "quote": "Revisions are deemed approved after 15 subsequent days of non-response." }
+  ],
+  "action": [
+    {
+      "description": "FourlinQ initials the systems it wants commissioned in the Investment Packages table and both parties sign the contract.",
+      "ownerName": "FourlinQ Windows and Doors",
+      "dueAt": null,
+      "basis": "document",
+      "status": "open"
+    },
+    {
+      "description": "Invoice the 50% downpayment for each commissioned system, which starts that system's 2–3 week (3–4 for Fabrication) timeline.",
+      "ownerName": "ADVO Web Development Services",
+      "dueAt": null,
+      "basis": "document",
+      "status": "open"
+    },
+    {
+      "description": "Configure the ₱3,000 monthly infrastructure fee, billed on the 1st, to begin once the PEOPLE system is delivered and deployed.",
+      "ownerName": "ADVO Web Development Services",
+      "dueAt": null,
+      "basis": "document",
+      "status": "open"
+    }
+  ],
+  "person": [
+    { "name": "ADVO Web Development Services", "role": "signatory", "affiliation": "ADVO" },
+    { "name": "FourlinQ Windows and Doors", "role": "signatory", "affiliation": "client" }
+  ]
+}

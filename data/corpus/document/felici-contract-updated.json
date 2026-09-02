@@ -1,0 +1,422 @@
+{
+  "source": {
+    "kind": "drive_doc",
+    "externalId": "1LMRlk8wR4zcOMSpbc47q1wRoNYwY4cHRJBcve-2F3uw",
+    "url": "https://docs.google.com/document/d/1LMRlk8wR4zcOMSpbc47q1wRoNYwY4cHRJBcve-2F3uw/edit",
+    "title": "[UPDATED] ADVO Contract with FELICI ARTISAN / PINOY ARTISAN CORPORATION",
+    "documentDate": "2026-08-22",
+    "owner": "agramos0765@gmail.com",
+    "documentKind": "contract"
+  },
+  "link": {
+    "projectId": 6,
+    "leadName": null,
+    "clientName": "Pinoy Artisan Corporation / Felici Artisan"
+  },
+  "summary": "The 22 August 2026 contract between Pinoy Artisan Corporation / Felici Artisan and ADVO Web Development Services for four websites: Felici Artisan Gelato, Nokohi, Flowers and Chocolates, and Felici Cafe. Each site is a distinct product (gelato menu and time-slot ordering; a matcha-and-doughnut ordering app with PayMongo, loyalty card, staff console and owner wallet; a flower-and-chocolate e-commerce store with barcode inventory; an Italian cafe catalog) sharing interlinked navigation, demo sign-up, promotions, news, testimonials and a data privacy policy. The total fee is ₱200,000, made of a ₱20,000 downpayment already paid on 2 July 2026 and ₱45,000 per site on each site's sign-off, leaving ₱180,000. A ₱4,000 monthly infrastructure fee for all four sites starts on delivery. Delivery is estimated at 2–4 months with 14 days of free bug fixing, 3 revision rounds, a 10-plus-3 calendar-day deemed approval, 7-business-day invoices and a 2% per month late penalty. This contract supersedes the 2 July 2026 single-site proposal.",
+  "fact": [
+    {
+      "claim": "The contract is between Pinoy Artisan Corporation / Felici Artisan and ADVO Web Development Services for website development for Felici Artisan Gelato, Nokohi, Flowers and Chocolates, and Felici Cafe.",
+      "category": "identity",
+      "quote": "This contract is between the Pinoy Artisan Corporation / Felici Artisan and ADVO Web Development Services regarding a proposal for website development for the following: Felici Artisan Gelato, Nokohi, Flowers and Chocolates, and Felici Cafe.",
+      "sectionHeading": "Summary",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "The contract is dated August 22, 2026.",
+      "category": "timeline",
+      "quote": "**Date:** August 22, 2026",
+      "sectionHeading": "Header",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "The Felici Artisan Gelato site includes a bi-weekly flavor-rotation menu system, four flavor categories (Klasik at Tayo, Filipino Artisan, Signature, Sorbet), ingredient sourcing details, an events section for the pop-up gelato cart, and time-slot ordering with one-day advance notice and online payment only.",
+      "category": "scope",
+      "quote": "**Ordering System:** Order with time slots for fulfillment (e.g., 1 PM, 2 PM), with a one-day advance notice requirement, and exclusively online payments (Cash on Delivery is not supported).",
+      "sectionHeading": "Scope of Work — Felici Artisan Gelato",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "The Flowers and Chocolates site is a Grab-comparable e-commerce store with GCash, QR and card payment, customer-booked pickup or delivery scheduling, internal order/stock/revenue management, a flower-store aesthetic, and a two-way barcode inventory that decrements on purchase.",
+      "category": "scope",
+      "quote": "**Inventory Management:** A 2-way barcode inventory system where stock automatically decrements upon purchase.",
+      "sectionHeading": "Scope of Work — Flowers and Chocolates",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "The Nokohi site is a matcha-and-doughnut ordering app with a custom doughnut builder, PayMongo checkout for GCash, card and QR Ph with server-side total recomputation, a ten-sticker loyalty card, promotions, a staff console with POS and kitchen board, an owner wallet with separate passcode, a mobile customer app and a web staff console.",
+      "category": "scope",
+      "quote": "**Online Payments:** PayMongo checkout for GCash, card, and QR Ph. Order totals are recomputed on the server before charging.",
+      "sectionHeading": "Scope of Work — Nokohi",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "The Nokohi loyalty card holds ten stickers, one per paid order, and a full card is redeemed for a free doughnut or drink.",
+      "category": "product",
+      "quote": "**Loyalty Card:** Ten-sticker card. One sticker per paid order. A full card is redeemed for a free doughnut or drink.",
+      "sectionHeading": "Scope of Work — Nokohi",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "The Felici Cafe site is a product catalog for foods, drinks and other products with an Italian cafe aesthetic.",
+      "category": "scope",
+      "quote": "**Product Catalog:** A catalog for foods, drinks, and other products",
+      "sectionHeading": "Scope of Work — Felici Cafe",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "All four sites share interlinked dropdown navigation between the sister brands, desktop landscape and mobile layouts, a primary Sign Up for a Demo button, homepage promo codes, a news system, customer testimonials and a data privacy policy.",
+      "category": "scope",
+      "quote": "**Interlinked Navigation:** A dropdown menu framework to redirect users seamlessly between the four sister brands.",
+      "sectionHeading": "Scope of Work — Shared Features",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "The client is solely responsible for designating an internal Data Privacy Officer for customer-data compliance.",
+      "category": "commitment",
+      "quote": "The client is solely responsible for designating an internal Data Privacy Officer (DPO) to maintain legal compliance regarding customer data.",
+      "sectionHeading": "Scope of Work — Compliance",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "Delivery of the four websites is estimated at 2 to 4 months from signing, with 14 days of complimentary bug fixing after final delivery.",
+      "category": "timeline",
+      "quote": "estimated to be in 2-4 months, and client sign-off along with full payment.",
+      "sectionHeading": "Contract Length",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "Client-caused delays, including no response within 7 calendar days, extend the timeline by the same number of days without penalty to ADVO.",
+      "category": "contract_term",
+      "quote": "Delays caused by the client (late assets, delayed feedback, or no response within 7 calendar days) automatically extend the timeline by the equivalent number of days without penalty to ADVO.",
+      "sectionHeading": "Contract Length",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "Unused complimentary revisions may be invoked up to 6 months after the Project Sign-off document is signed.",
+      "category": "contract_term",
+      "quote": "the Felici Artisan company may still invoke these revisions as needed to the scope aforementioned, only up until 6 months after signing the “Project Sign-off” document.",
+      "sectionHeading": "Contract Length",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "The 10% downpayment of ₱20,000.00, due on signing with a witness present, is marked PAID.",
+      "category": "pricing",
+      "quote": "| Downpayment (10%) | Upon contract signing, with a witness present. | ₱20,000.00 **[PAID]** |",
+      "sectionHeading": "Payment",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "Each of the four websites (Felici Artisan Gelato, Flowers and Chocolates, Felici Cafe, Nokohi) is billed ₱45,000.00 on its final delivery and sign-off, or on deemed approval.",
+      "category": "pricing",
+      "quote": "| Felici Artisan Gelato | Final delivery of this website and formal client sign-off (or deemed approval via 7-day non-response as outlined in Revisions & Scope Management)  | ₱45,000.00 |",
+      "sectionHeading": "Payment",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "The total fee is ₱200,000.00 and the total remaining fee is ₱180,000.00.",
+      "category": "pricing",
+      "quote": "| **TOTAL FEE** |   | ₱200,000.00 |\n| **TOTAL REMAINING FEE** |   | ₱180,000.00 |",
+      "sectionHeading": "Payment",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "A down payment of ₱20,000.00 was paid on July 2, 2026 and is included in the total fee.",
+      "category": "pricing",
+      "quote": "As of July 2, 2026, a down payment of ₱20,000.00 was paid for the development services, which is included in the total fee.",
+      "sectionHeading": "Payment",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-07-02",
+      "projectId": 6
+    },
+    {
+      "claim": "The payment table describes deemed approval as a 7-day non-response, while the Revisions section defines it as 10 calendar days plus 3; the document is internally inconsistent on this point.",
+      "category": "risk",
+      "quote": "(or deemed approval via 7-day non-response as outlined in Revisions & Scope Management)",
+      "sectionHeading": "Payment",
+      "basis": "document",
+      "confidence": 0.9,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "Payments are non-refundable once the corresponding milestone is approved and signed off.",
+      "category": "contract_term",
+      "quote": "Payments are non-refundable once the corresponding milestone is approved and signed off.",
+      "sectionHeading": "Payment",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "Invoices are payable within 7 business days of issuance.",
+      "category": "contract_term",
+      "quote": "Invoices are payable within 7 business days of issuance.",
+      "sectionHeading": "Payment",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "Balances unpaid after 15 business days from issuance incur a 2% per month penalty calculated daily from the 16th business day.",
+      "category": "contract_term",
+      "quote": "Unpaid balances remaining after fifteen (15) business days from the date of issuance (commencing strictly on the 16th business day) shall incur a penalty fee of 2% per month, calculated daily until fully settled.",
+      "sectionHeading": "Payment",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "Payment is due on signing the Project Sign-off document, with seven days to pay, and each website is paid for once it is completed.",
+      "category": "contract_term",
+      "quote": "Clients are given seven (7) days from signing the “Project Sign-off” to comply with payment dues.",
+      "sectionHeading": "Payment",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "The ₱200,000 total fee covers design and development only, not ongoing hosting costs.",
+      "category": "contract_term",
+      "quote": "The Total Fee of **₱ 200,000.00** covers the design and development of the website. It does not cover the ongoing costs required to keep the website live on the internet.",
+      "sectionHeading": "Ongoing Hosting and Infrastructure",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "A recurring monthly infrastructure fee of ₱4,000.00 for all four websites, billed on the 1st of every month, starts on final delivery and deployment.",
+      "category": "pricing",
+      "quote": "Upon final delivery and deployment, the Client agrees to a recurring monthly infrastructure fee of ₱ 4000.00 (Total for all 4 websites). This fee is billed on the 1st of every month.",
+      "sectionHeading": "Ongoing Hosting and Infrastructure",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "The infrastructure fee includes development updates (patching, uptime monitoring, backups, security oversight), web hosting, database and domain.",
+      "category": "scope",
+      "quote": "Development Updates (Software Patching, Uptime Monitoring, Automated Back-ups, Security Oversight)",
+      "sectionHeading": "Ongoing Hosting and Infrastructure",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "If the infrastructure fee is unpaid 15 days after its due date ADVO may suspend hosting and API access, taking the website offline, without liability for data loss.",
+      "category": "risk",
+      "quote": "If the monthly infrastructure fee is not paid within 15 days of the due date, ADVO reserves the right to suspend server hosting and API access until the balance is cleared, resulting in the website going offline.",
+      "sectionHeading": "Ongoing Hosting and Infrastructure",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "All deliverables remain ADVO's property until full payment, after which full ownership including source files and codebases transfers to the client; ADVO keeps portfolio rights unless told otherwise in writing before final delivery.",
+      "category": "contract_term",
+      "quote": "Full ownership of all deliverables transfers to the Client upon receipt of final payment, including source files and codebases.",
+      "sectionHeading": "Intellectual Property & Ownership",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "Termination with cause requires written notice and a 14-day cure period; the client stays liable for work completed to that date.",
+      "category": "contract_term",
+      "quote": "by issuing a written notice and allowing a 14-day cure period to resolve the issue. If the issue remains unresolved, the contract is dissolved.",
+      "sectionHeading": "Non-Abandonment & Project Continuity",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "If the client cancels for convenience it pays the exact percentage of completion plus non-refundable third-party integrations; if ADVO cancels it refunds un-started milestones and surrenders paid-for code as-is.",
+      "category": "contract_term",
+      "quote": "the client must compensate the developer for the exact percentage of project completion achieved up to the cancellation date, alongside fully reimbursing any non-refundable third-party integrations purchased for the project.",
+      "sectionHeading": "Non-Abandonment & Project Continuity",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "Each deliverable permits up to 3 rounds of revisions at no additional cost, and post-launch adjustments fall under the 14-day bug-fixing window or the monthly maintenance agreement.",
+      "category": "contract_term",
+      "quote": "Each deliverable permits up to 3 rounds of revisions at no additional cost.",
+      "sectionHeading": "Revisions & Scope Management",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "New pages, redesigns or feature additions are change requests requiring a written addendum before work begins.",
+      "category": "process",
+      "quote": "New pages, redesigns, or feature additions are change requests and require a written addendum before work begins.",
+      "sectionHeading": "Revisions & Scope Management",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "If the client gives no feedback within 10 calendar days of a review delivery, a Notice of Pending Deemed Approval is issued, and after 3 further calendar days of silence the revision is deemed approved.",
+      "category": "contract_term",
+      "quote": "If the Client fails to provide feedback within ten (10) calendar days of a review delivery, the developer will issue a formal Notice of Pending Deemed Approval. If no response is received within three (3) subsequent calendar days, the revision is legally deemed approved and finalized.",
+      "sectionHeading": "Revisions & Scope Management",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "The client owes ADVO a write-up for Felici Gelato, the Nokohi business plan file, and high-resolution logos, product and establishment photography and brand guidelines for all four sites.",
+      "category": "client_need",
+      "quote": "**Media Assets:** High-resolution brand logos, product photography, establishment photos, and any existing brand guidelines necessary for the design and development of all four websites.",
+      "sectionHeading": "Revisions & Scope Management — Project Receivables",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "Neither party is liable for delays caused by fortuitous events, during which performance timelines are paused.",
+      "category": "contract_term",
+      "quote": "In such circumstances, performance timelines are paused for the duration of the event.",
+      "sectionHeading": "Exemptions from liability",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    },
+    {
+      "claim": "The signature blocks for ADVO Web Development Services and Pinoy Artisan Corporation/Felici Artisan are blank in the Drive copy.",
+      "category": "risk",
+      "quote": "Pinoy Artisan Corporation/Felici Artisan                              Signature/Date",
+      "sectionHeading": "Signatures",
+      "basis": "document",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-22",
+      "projectId": 6
+    }
+  ],
+  "term": [
+    { "name": "site_count", "value": 4, "unit": null, "quote": "Felici Artisan Gelato, Nokohi, Flowers and Chocolates, and Felici Cafe." },
+    { "name": "timeline_month_count", "value": "2-4", "unit": "month", "quote": "estimated to be in 2-4 months" },
+    { "name": "bug_fix_window_day_count", "value": 14, "unit": "day", "quote": "ADVO will provide 14 days of complimentary bug fixing for the approved scope of work following final delivery." },
+    { "name": "client_no_response_day_count", "value": 7, "unit": "day", "quote": "or no response within 7 calendar days" },
+    { "name": "post_signoff_revision_window_month_count", "value": 6, "unit": "month", "quote": "only up until 6 months after signing the “Project Sign-off” document." },
+    { "name": "downpayment_pct", "value": 10, "unit": "pct", "quote": "| Downpayment (10%) | Upon contract signing, with a witness present. | ₱20,000.00 **[PAID]** |" },
+    { "name": "downpayment_cents", "value": 2000000, "unit": "cents", "quote": "| Downpayment (10%) | Upon contract signing, with a witness present. | ₱20,000.00 **[PAID]** |" },
+    { "name": "downpayment_paid_at", "value": "2026-07-02", "unit": null, "quote": "As of July 2, 2026, a down payment of ₱20,000.00 was paid for the development services" },
+    { "name": "site_fee_felici_artisan_gelato_cents", "value": 4500000, "unit": "cents", "quote": "| Felici Artisan Gelato | ... | ₱45,000.00 |" },
+    { "name": "site_fee_flowers_and_chocolates_cents", "value": 4500000, "unit": "cents", "quote": "| Flowers and Chocolates | ... | ₱45,000.00 |" },
+    { "name": "site_fee_felici_cafe_cents", "value": 4500000, "unit": "cents", "quote": "| Felici Cafe | ... | ₱45,000.00 |" },
+    { "name": "site_fee_nokohi_cents", "value": 4500000, "unit": "cents", "quote": "| Nokohi | ... | ₱45,000.00 |" },
+    { "name": "total_fee_cents", "value": 20000000, "unit": "cents", "quote": "| **TOTAL FEE** |   | ₱200,000.00 |" },
+    { "name": "remaining_fee_cents", "value": 18000000, "unit": "cents", "quote": "| **TOTAL REMAINING FEE** |   | ₱180,000.00 |" },
+    { "name": "invoice_due_business_day_count", "value": 7, "unit": "business_day", "quote": "Invoices are payable within 7 business days of issuance." },
+    { "name": "late_penalty_grace_business_day_count", "value": 15, "unit": "business_day", "quote": "Unpaid balances remaining after fifteen (15) business days from the date of issuance (commencing strictly on the 16th business day)" },
+    { "name": "late_penalty_pct_per_month", "value": 2, "unit": "pct", "quote": "shall incur a penalty fee of 2% per month, calculated daily until fully settled." },
+    { "name": "signoff_payment_day_count", "value": 7, "unit": "day", "quote": "Clients are given seven (7) days from signing the “Project Sign-off” to comply with payment dues." },
+    { "name": "infra_fee_cents_per_month", "value": 400000, "unit": "cents", "quote": "a recurring monthly infrastructure fee of ₱ 4000.00 (Total for all 4 websites)" },
+    { "name": "infra_fee_billing_day_of_month", "value": 1, "unit": "day", "quote": "This fee is billed on the 1st of every month." },
+    { "name": "infra_fee_suspension_day_count", "value": 15, "unit": "day", "quote": "If the monthly infrastructure fee is not paid within 15 days of the due date, ADVO reserves the right to suspend server hosting and API access" },
+    { "name": "termination_cure_day_count", "value": 14, "unit": "day", "quote": "allowing a 14-day cure period to resolve the issue" },
+    { "name": "revision_round_count", "value": 3, "unit": "round", "quote": "Each deliverable permits up to 3 rounds of revisions at no additional cost." },
+    { "name": "deemed_approval_notice_day_count", "value": 10, "unit": "day", "quote": "If the Client fails to provide feedback within ten (10) calendar days of a review delivery, the developer will issue a formal Notice of Pending Deemed Approval." },
+    { "name": "deemed_approval_day_count", "value": 3, "unit": "day", "quote": "If no response is received within three (3) subsequent calendar days, the revision is legally deemed approved and finalized." },
+    { "name": "loyalty_sticker_count", "value": 10, "unit": null, "quote": "**Loyalty Card:** Ten-sticker card. One sticker per paid order." },
+    { "name": "order_advance_notice_day_count", "value": 1, "unit": "day", "quote": "with a one-day advance notice requirement" }
+  ],
+  "action": [
+    {
+      "description": "Client delivers the Felici Gelato write-up, the Nokohi business plan file, and high-resolution logos, product and establishment photos and brand guidelines for all four sites.",
+      "ownerName": "Pinoy Artisan Corporation / Felici Artisan",
+      "dueAt": null,
+      "basis": "document",
+      "status": "open"
+    },
+    {
+      "description": "Client designates an internal Data Privacy Officer for the e-commerce and pick-up ordering sites.",
+      "ownerName": "Pinoy Artisan Corporation / Felici Artisan",
+      "dueAt": null,
+      "basis": "document",
+      "status": "open"
+    },
+    {
+      "description": "Invoice ₱45,000 on each site's sign-off (Felici Artisan Gelato, Flowers and Chocolates, Felici Cafe, Nokohi) until the ₱180,000 remaining fee is collected.",
+      "ownerName": "ADVO Web Development Services",
+      "dueAt": null,
+      "basis": "document",
+      "status": "open"
+    },
+    {
+      "description": "Configure the ₱4,000 monthly infrastructure fee for all four sites, billed on the 1st, to start on final delivery and deployment.",
+      "ownerName": "ADVO Web Development Services",
+      "dueAt": null,
+      "basis": "document",
+      "status": "open"
+    }
+  ],
+  "person": [
+    { "name": "ADVO Web Development Services", "role": "signatory", "affiliation": "ADVO" },
+    { "name": "Pinoy Artisan Corporation / Felici Artisan", "role": "signatory", "affiliation": "client" }
+  ]
+}

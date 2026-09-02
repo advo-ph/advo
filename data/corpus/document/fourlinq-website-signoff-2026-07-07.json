@@ -1,0 +1,172 @@
+{
+  "source": {
+    "kind": "drive_doc",
+    "externalId": "1zekHLteODo8PzmAxD9jg62Z99JExZXimKi4SeobNM1I",
+    "url": "https://docs.google.com/document/d/1zekHLteODo8PzmAxD9jg62Z99JExZXimKi4SeobNM1I/edit",
+    "title": "ADVO Project Sign-off - FOURLINQ DOORS AND WINDOWS",
+    "documentDate": "2026-07-07",
+    "owner": "agramos0765@gmail.com",
+    "documentKind": "signoff"
+  },
+  "link": {
+    "projectId": 3,
+    "leadName": null,
+    "clientName": "FourlinQ Windows and Doors"
+  },
+  "summary": "The 7 July 2026 version of the FourlinQ Windows and Doors website sign-off, referencing the proposal signed 27 February 2026. It lists the accepted deliverables (custom modern UI, local SEO for 'uPVC windows Philippines', Smart Quote form with sales-team email, a ₱15,000-value AI chatbot, security, quotation system and downloadable catalogue), gives one year of free maintenance then ₱5,000 per year, and notes chatbot API usage is separately billed. Its Financial Fulfillment section states a ₱60,000 total investment and says both the 20% down payment of ₱12,000 and the ₱15,000 chatbot payment were received before development, which conflicts with the later sign-off and the 10 July addendum (₱75,000 total, ₱12,000 received, ₱63,000 due). Signature blocks are blank.",
+  "fact": [
+    {
+      "claim": "The sign-off is dated July 7, 2026 and covers the website development in the original proposal signed on February 27, 2026.",
+      "category": "timeline",
+      "quote": "This document serves as a formal sign-off for the website development outlined in the original proposal signed on February 27, 2026.",
+      "sectionHeading": "Summary",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-07",
+      "projectId": 3
+    },
+    {
+      "claim": "The accepted deliverables include a custom modern UI, local SEO optimized for 'uPVC windows Philippines', a Smart Quote form with automated email to the sales team, enhanced security, bug-tested deployment, an order quotation system and a downloadable catalogue.",
+      "category": "scope",
+      "quote": "Implementation of local SEO, structured for Google search visibility, and optimized for \"uPVC windows Philippines.\"",
+      "sectionHeading": "Acknowledgement of Deliverables",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-07-07",
+      "projectId": 3
+    },
+    {
+      "claim": "An AI chatbot valued at ₱15,000 with FAQ response, automated inquiry handling, lead management and knowledge base retrieval was delivered as an additional feature.",
+      "category": "scope",
+      "quote": "Integration of an AI Chatbot (₱15,000 value) equipped with FAQ response, automated inquiry handling, lead management, and knowledge base retrieval.",
+      "sectionHeading": "Acknowledgement of Deliverables",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-07",
+      "projectId": 3
+    },
+    {
+      "claim": "The first year of maintenance is free and subsequent years cost ₱5,000 per year, covering development, bug fixes, feature updates, hosting and domain renewal.",
+      "category": "pricing",
+      "quote": "Subsequent maintenance will require a yearly fee of ₱5,000. This covers development, maintenance, bug fixes, new feature updates, server hosting, and website domain renewal.",
+      "sectionHeading": "Ongoing Maintenance and Support",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-07",
+      "projectId": 3
+    },
+    {
+      "claim": "AI chatbot API key usage is subject to separate terms and potential usage-based fees.",
+      "category": "pricing",
+      "quote": "Note: AI Chatbot API key usage is subject to separate terms and potential fees based on usage",
+      "sectionHeading": "Ongoing Maintenance and Support",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-07",
+      "projectId": 3
+    },
+    {
+      "claim": "This version states the total investment as ₱60,000.00.",
+      "category": "pricing",
+      "quote": "Total Investment: ₱ 60,000.00",
+      "sectionHeading": "Financial Fulfillment",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-07-07",
+      "projectId": 3
+    },
+    {
+      "claim": "This version states that the 20% down payment of ₱12,000.00 and the ₱15,000.00 AI chatbot payment were both received before development, with the remaining balance payable on signing.",
+      "category": "pricing",
+      "quote": "The initial 20% down payment of ₱12,000.00 along with the AI Chatbot payment of ₱15,000.00 was received prior to development. Once signed, the remaining balance will be paid off by the client, agreeing to the completion of the deliverables.",
+      "sectionHeading": "Financial Fulfillment",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-07-07",
+      "projectId": 3
+    },
+    {
+      "claim": "The ₱12,000 down payment is described as 20%, which matches a ₱60,000 website fee, not the ₱75,000 total stated in the later sign-off and addendum.",
+      "category": "risk",
+      "quote": "The initial 20% down payment of ₱12,000.00",
+      "sectionHeading": "Financial Fulfillment",
+      "basis": "document",
+      "confidence": 0.9,
+      "occurredAt": "2026-07-07",
+      "projectId": 3
+    },
+    {
+      "claim": "Ownership of all deliverables including source files transfers to the client on signing and receipt of final payment.",
+      "category": "contract_term",
+      "quote": "Upon the signing of this document and receipt of final payment, full ownership of all deliverables, including source files and codebases, transfers to the client.",
+      "sectionHeading": "Intellectual Property and Ownership",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-07",
+      "projectId": 3
+    },
+    {
+      "claim": "ADVO retains portfolio rights to display the work unless the client objects in writing before signing.",
+      "category": "contract_term",
+      "quote": "ADVO retains the right to display the completed work in its professional portfolio and marketing materials unless the client requests otherwise in writing before this signing.",
+      "sectionHeading": "Intellectual Property and Ownership",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-07-07",
+      "projectId": 3
+    },
+    {
+      "claim": "Work requested after acceptance that falls outside scope is a separate project that may incur additional fees.",
+      "category": "contract_term",
+      "quote": "Any work requested after project acceptance that falls outside the agreed scope shall be treated as a separate project and may incur additional fees.",
+      "sectionHeading": "Exemptions From Liability",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-07-07",
+      "projectId": 3
+    },
+    {
+      "claim": "Late payment of future collections, including the yearly maintenance fee and API usage charges, incurs late fee penalties.",
+      "category": "contract_term",
+      "quote": "delays in payment beyond the stipulated due date will result in late fee penalties.",
+      "sectionHeading": "Exemptions From Liability",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-07-07",
+      "projectId": 3
+    },
+    {
+      "claim": "The signature blocks for ADVO Web Development Services and FourlinQ Windows and Doors are blank in the Drive copy.",
+      "category": "risk",
+      "quote": "FourlinQ Windows and Doors                           Signature/Date",
+      "sectionHeading": "Signature",
+      "basis": "document",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-07",
+      "projectId": 3
+    }
+  ],
+  "term": [
+    { "name": "proposal_signed_at", "value": "2026-02-27", "unit": null, "quote": "the original proposal signed on February 27, 2026" },
+    { "name": "chatbot_fee_cents", "value": 1500000, "unit": "cents", "quote": "Integration of an AI Chatbot (₱15,000 value)" },
+    { "name": "maintenance_fee_cents_per_year", "value": 500000, "unit": "cents", "quote": "Subsequent maintenance will require a yearly fee of ₱5,000." },
+    { "name": "free_maintenance_year_count", "value": 1, "unit": null, "quote": "The client acknowledges that the first year of maintenance is provided free of charge." },
+    { "name": "total_fee_cents", "value": 6000000, "unit": "cents", "quote": "Total Investment: ₱ 60,000.00" },
+    { "name": "downpayment_pct", "value": 20, "unit": "pct", "quote": "The initial 20% down payment of ₱12,000.00" },
+    { "name": "downpayment_cents", "value": 1200000, "unit": "cents", "quote": "The initial 20% down payment of ₱12,000.00" },
+    { "name": "chatbot_paid_cents", "value": 1500000, "unit": "cents", "quote": "along with the AI Chatbot payment of ₱15,000.00 was received prior to development" }
+  ],
+  "action": [
+    {
+      "description": "Reconcile whether the ₱15,000 chatbot payment was actually received before development (this document) or is still outstanding (later sign-off and Addendum No. 1) before anyone signs a FourlinQ sign-off.",
+      "ownerName": "ADVO Web Development Services",
+      "dueAt": null,
+      "basis": "document",
+      "status": "open"
+    }
+  ],
+  "person": [
+    { "name": "ADVO Web Development Services", "role": "signatory", "affiliation": "ADVO" },
+    { "name": "FourlinQ Windows and Doors", "role": "signatory", "affiliation": "client" }
+  ]
+}

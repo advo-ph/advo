@@ -9,6 +9,7 @@ import {
   timestamp,
   date,
   jsonb,
+  numeric,
   uniqueIndex,
   index,
 } from "drizzle-orm/pg-core";
@@ -1361,4 +1362,136 @@ export const previewLink = pgTable(
     note: varchar("note", { length: 500 }),
   },
   (t) => [index("idx_preview_link_project").on(t.projectId, t.issuedAt)],
+);
+
+// ─── Corpus (migration 027) ───────────────────────────────────────────────────
+// Every claim ADVO has stated, with the document or recording it rests on. The
+// `search` tsvector on corpus_fact is added by the migration, not declared here:
+// drizzle push cannot express a STORED generated column (see 027).
+
+export const corpusSource = pgTable(
+  "corpus_source",
+  {
+    corpusSourceId: bigserial("corpus_source_id", { mode: "number" }).primaryKey(),
+    /** plaud | drive_doc | local_file | web | text — CHECKed in 027. */
+    kind: varchar("kind", { length: 30 }).notNull(),
+    externalId: varchar("external_id", { length: 255 }).notNull(),
+    url: varchar("url", { length: 1000 }),
+    title: varchar("title", { length: 500 }).notNull(),
+    documentKind: varchar("document_kind", { length: 30 }),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }),
+    durationSecond: integer("duration_second"),
+    language: varchar("language", { length: 10 }),
+    summary: text("summary"),
+    projectId: integer("project_id").references(() => project.projectId, { onDelete: "set null" }),
+    clientId: integer("client_id").references(() => client.clientId, { onDelete: "set null" }),
+    leadId: integer("lead_id").references(() => lead.leadId, { onDelete: "set null" }),
+    leadName: varchar("lead_name", { length: 255 }),
+    meta: jsonb("meta").notNull().default({}),
+    ingestedBy: integer("ingested_by").references(() => user.userId, { onDelete: "set null" }),
+    ingestedAt: timestamp("ingested_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("idx_corpus_source_external").on(t.kind, t.externalId),
+    index("idx_corpus_source_project").on(t.projectId),
+  ],
+);
+
+export const corpusFact = pgTable(
+  "corpus_fact",
+  {
+    corpusFactId: bigserial("corpus_fact_id", { mode: "number" }).primaryKey(),
+    corpusSourceId: integer("corpus_source_id")
+      .notNull()
+      .references(() => corpusSource.corpusSourceId, { onDelete: "cascade" }),
+    claim: text("claim").notNull(),
+    category: varchar("category", { length: 30 }).notNull(),
+    quote: text("quote"),
+    /** `m:ss` on a recording, a section heading on a document. */
+    locator: varchar("locator", { length: 120 }),
+    speaker: varchar("speaker", { length: 120 }),
+    /** transcript | document | ai_note | heuristic | human — what the claim rests on. */
+    basis: varchar("basis", { length: 20 }).notNull(),
+    confidence: numeric("confidence", { precision: 3, scale: 2 }).notNull().default("0.5"),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }),
+    projectId: integer("project_id").references(() => project.projectId, { onDelete: "set null" }),
+    isVerified: boolean("is_verified").notNull().default(false),
+    verifiedBy: integer("verified_by").references(() => user.userId, { onDelete: "set null" }),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }),
+    supersededByFactId: integer("superseded_by_fact_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_corpus_fact_source").on(t.corpusSourceId),
+    index("idx_corpus_fact_project").on(t.projectId),
+    index("idx_corpus_fact_category").on(t.category),
+  ],
+);
+
+export const corpusTerm = pgTable(
+  "corpus_term",
+  {
+    corpusTermId: bigserial("corpus_term_id", { mode: "number" }).primaryKey(),
+    corpusSourceId: integer("corpus_source_id")
+      .notNull()
+      .references(() => corpusSource.corpusSourceId, { onDelete: "cascade" }),
+    name: varchar("name", { length: 80 }).notNull(),
+    value: varchar("value", { length: 255 }).notNull(),
+    unit: varchar("unit", { length: 20 }),
+    quote: text("quote"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("idx_corpus_term_name").on(t.name), index("idx_corpus_term_source").on(t.corpusSourceId)],
+);
+
+export const corpusAction = pgTable(
+  "corpus_action",
+  {
+    corpusActionId: bigserial("corpus_action_id", { mode: "number" }).primaryKey(),
+    corpusSourceId: integer("corpus_source_id")
+      .notNull()
+      .references(() => corpusSource.corpusSourceId, { onDelete: "cascade" }),
+    corpusFactId: integer("corpus_fact_id").references(() => corpusFact.corpusFactId, { onDelete: "set null" }),
+    description: text("description").notNull(),
+    ownerName: varchar("owner_name", { length: 120 }),
+    ownerTeamMemberId: integer("owner_team_member_id").references(() => teamMember.teamMemberId, {
+      onDelete: "set null",
+    }),
+    projectId: integer("project_id").references(() => project.projectId, { onDelete: "set null" }),
+    dueAt: timestamp("due_at", { withTimezone: true }),
+    locator: varchar("locator", { length: 120 }),
+    basis: varchar("basis", { length: 20 }).notNull().default("transcript"),
+    /** open | done | dropped — CHECKed in 027; resolved_at must agree. */
+    status: varchar("status", { length: 20 }).notNull().default("open"),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    resolutionNote: text("resolution_note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_corpus_action_status").on(t.status, t.dueAt),
+    index("idx_corpus_action_project").on(t.projectId),
+    index("idx_corpus_action_source").on(t.corpusSourceId),
+  ],
+);
+
+export const corpusTemplate = pgTable(
+  "corpus_template",
+  {
+    corpusTemplateId: bigserial("corpus_template_id", { mode: "number" }).primaryKey(),
+    kind: varchar("kind", { length: 30 }).notNull(),
+    name: varchar("name", { length: 255 }).notNull(),
+    body: text("body").notNull(),
+    placeholder: jsonb("placeholder").notNull().default([]),
+    corpusSourceId: integer("corpus_source_id").references(() => corpusSource.corpusSourceId, {
+      onDelete: "set null",
+    }),
+    version: integer("version").notNull().default(1),
+    isActive: boolean("is_active").notNull().default(true),
+    createdBy: integer("created_by").references(() => user.userId, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("idx_corpus_template_kind_name_version").on(t.kind, t.name, t.version)],
 );

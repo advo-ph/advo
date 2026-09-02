@@ -107,6 +107,13 @@ const envSchema = z.object({
   PLAUD_AUTH_FILE: z.string().optional(),
   PLAUD_API_HOST: z.string().optional(),
 
+  /**
+   * Which Claude model extracts corpus facts from a transcript or document. The first
+   * massive ingestion pass ran on Opus by hand; the steady state can point this at a
+   * cheaper model without a code change. Unset → claude-opus-5. No key → heuristic.
+   */
+  CORPUS_EXTRACT_MODEL: z.string().optional(),
+
   PORT: z.coerce.number().default(6407),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   UPLOAD_DIR: z.string().default("./uploads"),

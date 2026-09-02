@@ -28,6 +28,7 @@ import {
   Sun,
   Moon,
   Send,
+  BookOpenCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -46,6 +47,7 @@ export type AdminSection =
   | "contracts"
   | "meetings"
   | "messages"
+  | "corpus"
   | "time"
   | "social"
   | "content"
@@ -93,6 +95,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { id: "contracts", label: "Contracts", icon: FileSignature },
       { id: "meetings", label: "Meetings", icon: Mic },
       { id: "messages", label: "Messages", icon: MessageSquare },
+      { id: "corpus", label: "Corpus", icon: BookOpenCheck },
       { id: "time", label: "Time", icon: Clock },
       { id: "finance", label: "Finance", icon: Banknote },
     ],

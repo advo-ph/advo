@@ -1,0 +1,370 @@
+{
+  "source": {
+    "kind": "plaud",
+    "externalId": "pub_5cfcb8a0-2af3-4d15-ab3e-482cd13c7962",
+    "url": "https://web.plaud.ai/s/pub_5cfcb8a0-2af3-4d15-ab3e-482cd13c7962::QoAoGw-h1eg85NubYhf7DIvevugYo3rXRkqtXZk-BxT0n671SH09i5LDSa8GloRfKtNWE5d8d9cLP6kmaWAL6wI",
+    "title": "07-02 Consultation: Angela - Digital Presence for Pinoy Artisan Corporation",
+    "recordedAt": "2026-07-02T17:52:08+08:00",
+    "durationSecond": 2370,
+    "speaker": ["Speaker 1", "Speaker 2", "Speaker 3"],
+    "isDiarizationSuspect": true,
+    "language": "mixed"
+  },
+  "link": {
+    "projectId": 6,
+    "leadName": null,
+    "clientName": "Pinoy Artisan Corporation"
+  },
+  "summary": "A follow-up sit-down with Angela (Reign Angela Capunfuerza, Speaker 3), owner of Felici Gelato under Pinoy Artisan Corporation, that opens with ADVO reading back the earlier meeting's notes (time slots, gelato/flowers/chocolates/matcha, local sourcing) to check accuracy. Angela explains the gelato menu changes every two weeks by harvest and has four flavor categories, that there is no online store yet, and that Grab delivery has a distance limit; ADVO suggests letting the family toggle available flavors. She shares the brand origin (a grade 12 entrepreneurship project, then a one-week gelato course in Bologna) and says a business plan with mission/vision and the brand story exists and will be sent. On structure she settles on separate websites per brand with separate ordering systems (flowers and chocolates share one), with Pinoy Artisan Corporation as the parent and a Josh Boutwood-style dropdown listing all brands, and asks for a single proposal covering everything. A new cafe (Nokohi/matcha/donuts, transcribed as 'no coffee') opens July 18 at SM Rizal. Payment is still pending on her father; she prefers Messenger for chat and will email payment details.",
+  "fact": [
+    {
+      "claim": "ADVO read back the prior meeting's requirements: time slots, gelato/flower shop/chocolates/matcha, high-quality local ingredients from farmers in Balabag, testimonials.",
+      "category": "scope",
+      "quote": "Time slots. Gelato, flower shop, chocolates and matcha. High quality local sourcing ingredients. Uber Eats or ingredients from the local farmers in Balabag.",
+      "timestamp": "4:03",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.6,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "The brand directory will be added in both the header and the footer of the site.",
+      "category": "decision",
+      "quote": "We'll add it in the footer. The directory. In the header. Both header and the footer.",
+      "timestamp": "6:33",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "Clicking the logo will show the brands, and clicking a brand goes to that brand's separate website; a 'Partners' or 'Others' button was the alternative.",
+      "category": "scope",
+      "quote": "So when they click the logo, it will show the brands. And then if you click the brand, it will go to another website. Or you want parang partners button. Partners or others.",
+      "timestamp": "7:30",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.65,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "The client still has to pay and is waiting on her father, who is tied up in another argument.",
+      "category": "risk",
+      "quote": "I still have to pay for this. I'm still waiting for my dad to come. Why are you waiting for your dad? Because they're still arguing with each other about something else.",
+      "timestamp": "10:03",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "Felici changes its full flavor set every two weeks depending on the seasonal harvest, with holiday specials (Valentine's, Christmas, New Year).",
+      "category": "brand",
+      "quote": "Depending sa season like kung may fruits like, summer melon naman yung fruits na available. So we have melon right now. And then Valentine's, San Fermin, Christmas, New Year's.",
+      "timestamp": "11:57",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "ADVO proposed letting the client and her parents toggle which released flavors are currently available on the site.",
+      "category": "scope",
+      "quote": "I think we can offer you and your parents the option to toggle any of the available flavors. So we can just get all the flavors that you guys have already released.",
+      "timestamp": "12:37",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "Felici also sells sorbet, which is water-based with no milk.",
+      "category": "product",
+      "quote": "But there, and also we have sorbet as well, so this doesn't have milk, it's water based.",
+      "timestamp": "12:54",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "Flavors fall into four categories: 'Klasik at Tayo', 'Filipino Artisan', 'Signature', and sorbets.",
+      "category": "brand",
+      "quote": "There are four categories of flavors, seven. There's \"Klasik at Tayo\", \"Filipino Artisan\", \"Signature\" and then the sorbets.",
+      "timestamp": "13:07",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "A business plan exists with the mission/vision statement and the brand story, which the client will send as a separate file.",
+      "category": "commitment",
+      "quote": "Mission. Why is this here? Mission. I'll send it to a different file for you. Thank you.",
+      "timestamp": "20:25",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "The 'oldest gelato master' reference on the site may be removed because there is now a younger one.",
+      "category": "scope",
+      "quote": "And then maybe the oldest gelato master will be removed because there's a younger one than him.",
+      "timestamp": "14:03",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.6,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "There is no online store or ordering system yet; ordering with time slots is planned for the future.",
+      "category": "scope",
+      "quote": "Online store, there's none yet. Like an ordering system. We also talked about it. [...] They're in the future. And then there's time slots.",
+      "timestamp": "14:37",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "Grab delivery has a distance drawback of roughly ten kilometers.",
+      "category": "risk",
+      "quote": "The downside about Grab. You're reading a smile. It's like ten kilometers not at that end.",
+      "timestamp": "15:34",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.5,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "Felici Gelato started as a grade 12 senior high school entrepreneurship project sold at a mall.",
+      "category": "brand",
+      "quote": "Entrepreneurship project from grade 12, Mabuhay School class.",
+      "timestamp": "17:16",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "The owner took a one-week gelato course in Bologna, Italy after school.",
+      "category": "brand",
+      "quote": "One month for the course. It's a one week course. Lang one week for the course. It's a fast course.",
+      "timestamp": "18:46",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "The client wants a single proposal covering all brands, discussed in one sitting.",
+      "category": "decision",
+      "quote": "I think one proposal is better, but parang isang discussion lang pag kakikita-kita ninyo.",
+      "timestamp": "21:57",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "The new proposal covers Felici Gelato, 'no coffee' (likely Nokohi), dark chocolate, and Felici Cafe Balat.",
+      "category": "scope",
+      "quote": "For the new proposal, bear with me for the three words: Felici Gelato, no coffee and dark chocolate.",
+      "timestamp": "22:53",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "Each brand gets a separate website with its own ordering system, except flowers and chocolates which share one site.",
+      "category": "decision",
+      "quote": "Separate website. Like different website. Like maybe your gelato and then your coffee one. And then your flowers and chocolates, different website. They have a separate ordering system. But in this one, they are the same, Finisher, flowers and chocolates by Finisher.",
+      "timestamp": "23:21",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "Felici Italian Coffee is a distinct brand with classic branding and different products, unlike the colorful gelato brand.",
+      "category": "brand",
+      "quote": "Kaya lang ibang brand ng Felici Italian Coffee yun eh. Tapos iba yung products niya. Ang nakakahighlight yung ano? Itong lang, parang colorful kasi to eh.",
+      "timestamp": "23:51",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "The client chose separate sites over a combined one because each brand already has its own branding and will have its own ordering system.",
+      "category": "decision",
+      "quote": "I think separate na lang.",
+      "timestamp": "24:40",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "Pinoy Artisan Corporation is the parent company that owns the brand trade names and is the hiring entity; brands should hang off it via a dropdown.",
+      "category": "brand",
+      "quote": "Brands pero ang owner niyan kapag kung magre-require na hire, kaming kapag maghihire kaming taong ng Pinoy Artisan Corporation. Parang si McDonald's yun ang ano tao doon sa company na McDonald's.",
+      "timestamp": "25:57",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "The client's design reference is Josh Boutwood's minimalist website with a dropdown listing his restaurants.",
+      "category": "client_need",
+      "quote": "But then I really like this one, kasi, under Josh Boutwood. If you look at his website, there's a little drop down and then you can see his different restaurants.",
+      "timestamp": "26:46",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "A new cafe serving Nokohi ('no coffee' in the transcript), matcha and donuts opens July 18, 2026.",
+      "category": "timeline",
+      "quote": "No coffee, matcha and donuts. I'll be opening this July 18.",
+      "timestamp": "29:33",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "The new cafe location is SM Rizal, described as the last SM with heavy foot traffic.",
+      "category": "contact",
+      "quote": "That's the last SM. So a lot of people go there in Rizal. There are many people. It's traffic jamming there. It's near to the coffee shop there.",
+      "timestamp": "30:23",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "The client prefers Messenger over Viber for communication; the channel for high-res files was discussed but not clearly settled.",
+      "category": "process",
+      "quote": "Or Viber. What about communication? I think I prefer Messenger. Because in Viber, you cannot see that. You can't see the messages at night. But for files, the high-res files, you cannot send it through email. Why?",
+      "timestamp": "31:17",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.6,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "The client's name is confirmed as Reign Angela Capunfuerza, addressed as Angela.",
+      "category": "contact",
+      "quote": "You don't mind about rain Angela. Capun friza? Rain Angela lah. Angela? Angela. Sorry. This one? Yes.",
+      "timestamp": "31:48",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "ADVO has added a team member helping with operations because operations are currently full.",
+      "category": "process",
+      "quote": "He's helping with our operations, so that's why he's here. He'll be back soon. Our operations are really full right now.",
+      "timestamp": "32:25",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.6,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "The client will send payment details by email.",
+      "category": "commitment",
+      "quote": "Payment. [...] I'll send you an email for that.",
+      "timestamp": "34:17",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.5,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "Angela has moved from the kitchen to front-of-house as a server.",
+      "category": "contact",
+      "quote": "So I was back on pause, I was in the kitchen. But then I transferred to front of house staff. So I'm a server.",
+      "timestamp": "37:46",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.6,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "Angela and her father are the decision-makers who must approve the proposal.",
+      "category": "contact",
+      "quote": "Angela and her father are the primary decision-makers.",
+      "timestamp": "",
+      "speaker": "",
+      "basis": "ai_note",
+      "confidence": 0.45,
+      "occurredAt": "2026-07-02T17:52:08+08:00",
+      "projectId": 6
+    }
+  ],
+  "decision": [
+    { "text": "Separate websites per brand, each with its own ordering system; flowers and chocolates share one site.", "timestamp": "23:21", "basis": "transcript" },
+    { "text": "One consolidated proposal for all brands, presented in a single discussion.", "timestamp": "21:57", "basis": "transcript" },
+    { "text": "Pinoy Artisan Corporation is presented as the parent, with a dropdown listing all brands (Josh Boutwood style).", "timestamp": "25:24", "basis": "transcript" },
+    { "text": "Brand directory goes in both header and footer.", "timestamp": "6:33", "basis": "transcript" },
+    { "text": "The site will let the family toggle which released flavors are currently available, instead of fixed flavor listings.", "timestamp": "12:37", "basis": "transcript" },
+    { "text": "Communication over Messenger rather than Viber.", "timestamp": "31:17", "basis": "transcript" }
+  ],
+  "action": [
+    { "description": "Send the business plan file (mission/vision, brand story) to ADVO", "ownerName": "client", "dueAt": null, "timestamp": "20:25", "basis": "transcript", "status": "open" },
+    { "description": "Provide the flavor categories and the list of released flavors for the toggle", "ownerName": "client", "dueAt": null, "timestamp": "13:07", "basis": "transcript", "status": "open" },
+    { "description": "Prepare one consolidated proposal covering Felici Gelato, Nokohi/coffee, flowers and chocolates, and Felici Cafe", "ownerName": "ADVO", "dueAt": null, "timestamp": "22:53", "basis": "transcript", "status": "open" },
+    { "description": "Email payment details", "ownerName": "client", "dueAt": null, "timestamp": "34:17", "basis": "transcript", "status": "open" },
+    { "description": "Finalize the proposal after the discussion", "ownerName": "ADVO", "dueAt": null, "timestamp": "35:45", "basis": "transcript", "status": "open" },
+    { "description": "Schedule a follow-up with Angela and her father to review the proposal", "ownerName": "ADVO", "dueAt": null, "timestamp": "", "basis": "ai_note", "status": "open" }
+  ],
+  "openQuestion": [
+    { "text": "Is 'no coffee' in the transcript the Nokohi brand, and is the Italian coffee site combined with gelato or separate?", "timestamp": "23:05" },
+    { "text": "How are high-resolution files exchanged, given email was described as not workable for them?", "timestamp": "31:17" },
+    { "text": "When will payment be made, given it is pending the father's involvement?", "timestamp": "10:03" },
+    { "text": "Will the parent site be a Pinoy Artisan Corporation portfolio page or just a dropdown on each brand site?", "timestamp": "25:24" }
+  ],
+  "person": [
+    { "name": "Reign Angela Capunfuerza", "role": "speaker", "affiliation": "client", "note": "Speaker 3; owner of Felici Gelato under Pinoy Artisan Corporation, addressed as Angela; name spelled out at 31:48. Waiting on her father for payment." },
+    { "name": "Speaker 1", "role": "speaker", "affiliation": "ADVO", "note": "Leads the consultation, reads back prior notes, proposes the flavor toggle, asks about proposal format. Label also captures some client lines (e.g., 11:39, 18:46)." },
+    { "name": "Speaker 2", "role": "speaker", "affiliation": "ADVO", "note": "Few lines; likely a second ADVO member." },
+    { "name": "Angela's father", "role": "mentioned", "affiliation": "client", "note": "Payment is waiting on him; co-decision-maker per AI note." },
+    { "name": "Josh Boutwood", "role": "mentioned", "affiliation": "other", "note": "Chef whose minimalist multi-restaurant site with a dropdown is the client's design reference." }
+  ],
+  "namedThing": ["Pinoy Artisan Corporation", "Felici Gelato", "Felici Italian Coffee", "Felici Cafe", "Nokohi", "Grab", "Josh Boutwood", "Test Kitchen", "SM Rizal", "Bologna", "Balabag", "Messenger", "Viber", "Klasik at Tayo", "Filipino Artisan", "Signature", "Golden Arches", "Jollibee"]
+}

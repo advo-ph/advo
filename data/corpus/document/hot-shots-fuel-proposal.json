@@ -1,0 +1,172 @@
+{
+  "source": {
+    "kind": "drive_doc",
+    "externalId": "1XeKPHOOslXatQZqw4-HL-Avd6m3Fg2EDsoLjhEWIIpU",
+    "url": "https://docs.google.com/document/d/1XeKPHOOslXatQZqw4-HL-Avd6m3Fg2EDsoLjhEWIIpU/edit",
+    "title": "ADVO Project Proposal: Hot Shots Fuel",
+    "documentDate": "2026-06-20",
+    "owner": "agramos0765@gmail.com",
+    "documentKind": "proposal"
+  },
+  "link": {
+    "projectId": null,
+    "leadName": "Hot Shots Fuel",
+    "clientName": null
+  },
+  "summary": "A 20 June 2026 proposal from ADVO Web Development Services to Hot Shots Fuel for a complete website rebuild to the client's own specification, with content migration, responsive design and technical SEO, plus post-launch content management (recipes, videos, media), promotional campaign administration and system maintenance. The estimated timeframe is 1–2 weeks excluding client revisions. The fee is ₱60,000 (AUD 1,407.93) split into an ₱18,000 (AUD 422.37) downpayment and ₱42,000 (AUD 985.56) final payment, with a monthly infrastructure fee of ₱2,959.82 (AUD 70). The proposal closes with previous works: advo.ph, fourlinq.ph and felicigelato.ph. Hot Shots Fuel has no lead or proposal row in the system.",
+  "fact": [
+    {
+      "claim": "The proposal is from ADVO Web Development Services to Hot Shots Fuel and is dated June 20, 2026.",
+      "category": "identity",
+      "quote": "This document offers a proposal of services from ADVO Web Development Services and Hot Shots Fuel.",
+      "sectionHeading": "Summary",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-06-20",
+      "projectId": null
+    },
+    {
+      "claim": "The scope is a complete website rebuild of Hot Shots Fuel to the client's specifications, with content migration, cross-device responsive design and technical SEO.",
+      "category": "scope",
+      "quote": "**Custom Development:** Complete structural rebuild, executing the precise requirements outlined in the specifications provided by Hot Shots Fuel.",
+      "sectionHeading": "Scope of Work",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-06-20",
+      "projectId": null
+    },
+    {
+      "claim": "Post-launch maintenance includes uploading and formatting new recipes, videos and media, setting up and managing competitions and promotions, and routine system maintenance.",
+      "category": "scope",
+      "quote": "**Content Management:** Systematic uploading and formatting of new recipes, videos, and general media.",
+      "sectionHeading": "Post-Launch Maintenance",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-06-20",
+      "projectId": null
+    },
+    {
+      "claim": "The total estimated project timeframe, excluding client revisions, is 1 to 2 weeks.",
+      "category": "timeline",
+      "quote": "| Total Estimated Project Timeframe (Excluding Client Revisions) | 1-2 weeks |",
+      "sectionHeading": "Estimated Project Timeframe",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-06-20",
+      "projectId": null
+    },
+    {
+      "claim": "The downpayment on contract signing is ₱18,000.00 (AUD 422.37).",
+      "category": "pricing",
+      "quote": "| Downpayment | Upon the official contract signing. | ₱18,000.00 (AUD $422.37) |",
+      "sectionHeading": "Financial Investment",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-06-20",
+      "projectId": null
+    },
+    {
+      "claim": "The final payment on delivery and sign-off is ₱42,000.00 (AUD 985.56).",
+      "category": "pricing",
+      "quote": "| Final Payment | Final delivery and formal client sign-off. | ₱42,000.00 (AUD $985.56) |",
+      "sectionHeading": "Financial Investment",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-06-20",
+      "projectId": null
+    },
+    {
+      "claim": "The total fee is ₱60,000.00 (AUD 1,407.93) and covers design and development of the website.",
+      "category": "pricing",
+      "quote": "| TOTAL FEE |   | ₱60,000.00 (AUD $1,407.93) |",
+      "sectionHeading": "Financial Investment",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-06-20",
+      "projectId": null
+    },
+    {
+      "claim": "A monthly infrastructure fee of ₱2,959.82 (AUD 70), billed on the 1st of each month, starts on final delivery and covers development updates, hosting, database and domain.",
+      "category": "pricing",
+      "quote": "Upon final delivery and deployment, the Client agrees to a recurring monthly infrastructure fee of ₱2959.82 (AUD $70). This fee is billed on the 1st of every month.",
+      "sectionHeading": "Financial Investment",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-06-20",
+      "projectId": null
+    },
+    {
+      "claim": "The AUD conversions are internally inconsistent: the fee lines imply about 42.62 PHP per AUD while the infrastructure fee implies about 42.28 PHP per AUD.",
+      "category": "risk",
+      "quote": "₱2959.82 (AUD $70)",
+      "sectionHeading": "Financial Investment",
+      "basis": "document",
+      "confidence": 0.85,
+      "occurredAt": "2026-06-20",
+      "projectId": null
+    },
+    {
+      "claim": "ADVO cites advo.ph, fourlinq.ph and felicigelato.ph as previous works.",
+      "category": "brand",
+      "quote": "[advo.ph](http://advo.ph)The official website for ADVO Web Development Services.",
+      "sectionHeading": "Previous Works",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-06-20",
+      "projectId": null
+    },
+    {
+      "claim": "fourlinq.ph is described as having a video landing page, scroll-based animations, consultation booking, an AI chatbot and a downloadable catalogue.",
+      "category": "product",
+      "quote": "A business focused on supply and installation of custom-made uPVC, aluminum windows and doors.",
+      "sectionHeading": "Previous Works",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-06-20",
+      "projectId": 3
+    },
+    {
+      "claim": "felicigelato.ph is described as a live brand-consistent, mobile-responsive gelato website built from the client's social media assets with basic content management.",
+      "category": "product",
+      "quote": "A gelato-focused food enterprise offering a wide variety of flavors and options. This website implements modern and artisan UI design from media directly taken from their social platform page",
+      "sectionHeading": "Previous Works",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": "2026-06-20",
+      "projectId": 6
+    },
+    {
+      "claim": "The proposal has no signature block, payment-term clauses, revision limits or penalty terms.",
+      "category": "risk",
+      "quote": "| TOTAL FEE |   | ₱60,000.00 (AUD $1,407.93) |",
+      "sectionHeading": "Financial Investment",
+      "basis": "document",
+      "confidence": 0.85,
+      "occurredAt": "2026-06-20",
+      "projectId": null
+    }
+  ],
+  "term": [
+    { "name": "timeline_week_count", "value": "1-2", "unit": null, "quote": "| Total Estimated Project Timeframe (Excluding Client Revisions) | 1-2 weeks |" },
+    { "name": "downpayment_cents", "value": 1800000, "unit": "cents", "quote": "| Downpayment | Upon the official contract signing. | ₱18,000.00 (AUD $422.37) |" },
+    { "name": "downpayment_aud_cents", "value": 42237, "unit": "cents", "quote": "₱18,000.00 (AUD $422.37)" },
+    { "name": "downpayment_pct", "value": 30, "unit": "pct", "quote": "₱18,000.00 (AUD $422.37)" },
+    { "name": "final_payment_cents", "value": 4200000, "unit": "cents", "quote": "| Final Payment | Final delivery and formal client sign-off. | ₱42,000.00 (AUD $985.56) |" },
+    { "name": "final_payment_aud_cents", "value": 98556, "unit": "cents", "quote": "₱42,000.00 (AUD $985.56)" },
+    { "name": "total_fee_cents", "value": 6000000, "unit": "cents", "quote": "| TOTAL FEE |   | ₱60,000.00 (AUD $1,407.93) |" },
+    { "name": "total_fee_aud_cents", "value": 140793, "unit": "cents", "quote": "₱60,000.00 (AUD $1,407.93)" },
+    { "name": "infra_fee_cents_per_month", "value": 295982, "unit": "cents", "quote": "a recurring monthly infrastructure fee of ₱2959.82 (AUD $70)" },
+    { "name": "infra_fee_aud_cents_per_month", "value": 7000, "unit": "cents", "quote": "₱2959.82 (AUD $70)" },
+    { "name": "infra_fee_billing_day_of_month", "value": 1, "unit": "day", "quote": "This fee is billed on the 1st of every month." }
+  ],
+  "action": [
+    {
+      "description": "Create a lead and proposal record for Hot Shots Fuel (₱60,000 rebuild, ₱2,959.82 per month infrastructure), which the system currently lacks.",
+      "ownerName": "ADVO Web Development Services",
+      "dueAt": null,
+      "basis": "document",
+      "status": "open"
+    }
+  ],
+  "person": []
+}

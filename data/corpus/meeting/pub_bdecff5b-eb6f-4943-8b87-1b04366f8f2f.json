@@ -1,0 +1,320 @@
+{
+  "source": {
+    "kind": "plaud",
+    "externalId": "pub_bdecff5b-eb6f-4943-8b87-1b04366f8f2f",
+    "url": "https://web.plaud.ai/s/pub_bdecff5b-eb6f-4943-8b87-1b04366f8f2f::EC88DPEj0SJ5YR_UsAOVrxYlS-UmxWRMFUwHSwo9nJmqqCfpqcFPpan78hmC11YPrscsfwkFflYBShiEmBcvdgI",
+    "title": "07-02 Meeting: Multi-Brand E-Commerce Website for Gelato, Flowers, Chocolates, and Matcha",
+    "recordedAt": "2026-07-02T12:00:00+08:00",
+    "durationSecond": 2350,
+    "speaker": ["Speaker 1", "Speaker 2", "Speaker 3", "Speaker 4", "Speaker 5", "Speaker 6", "Speaker 7"],
+    "isDiarizationSuspect": true,
+    "language": "mixed"
+  },
+  "link": {
+    "projectId": 6,
+    "leadName": null,
+    "clientName": "Pinoy Artisan Corporation"
+  },
+  "summary": "ADVO walks the Felici Artisan owner (Speaker 2, who refers to 'my dad' and describes the shop's ingredients and two branches) through a website mockup built off the shop's Instagram posts and discusses turning it into an ordering site for gelato, flowers and chocolates, and matcha. ADVO pitches inventory tracking by barcode with auto-decrement on orders, optional POS linkage, promo codes as a call-to-action, short customer testimonials, and explains the revision policy (mockup plus three revisions; seasonal flavor swaps not counted) and the data-privacy-officer requirement that kicks in past 1,000 orders. The client wants per-hour pickup/delivery slots, one-day advance ordering, and prefers customers to book their own delivery. The group settles on a separate website for flowers and chocolates, interlinked with the gelato site via a dropdown that redirects rather than a page. ADVO offers to write a proposal for the multi-site setup; the client will send the company story and ingredient details. The meeting ends for lunch.",
+  "fact": [
+    {
+      "claim": "The client wants the website to support ordering similar to Grab, including pickup.",
+      "category": "client_need",
+      "quote": "Oh yeah we cannot order these things. It must be similar to Grab.",
+      "timestamp": "6:33",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "The brands to cover are gelato, flowers and chocolates, and matcha.",
+      "category": "brand",
+      "quote": "Gelato and then the flowers and chocolates and then the matcha. Matcha. But then that's going to be in parang.",
+      "timestamp": "8:27",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "The client wants promo codes or discounts for website users to encourage ordering through the site.",
+      "category": "client_need",
+      "quote": "I mean for the users of the website. To encourage them to order through there, parang promos there like that?",
+      "timestamp": "8:52",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "Felici has a gelato cart used for events and pop-ups.",
+      "category": "product",
+      "quote": "We have a gelato cart. Cart, like for events. It's like a pop-up thing with ice cream on it.",
+      "timestamp": "10:08",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "ADVO proposed inventory management with a barcode per flavor and stock that automatically decrements when customers order.",
+      "category": "scope",
+      "quote": "But barcode for that certain flavor, so that you can keep track of how much stock you have. [...] And then we can also have it so that only the sell amount will be automatically reduced based on how much stock you have in inventory when people order.",
+      "timestamp": "13:56",
+      "speaker": "Speaker 5",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "ADVO offered to connect the ordering system to a POS to track purchases and statistics.",
+      "category": "scope",
+      "quote": "We can also connect it to the POS system if you want to track purchases or statistics.",
+      "timestamp": "14:26",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "Something for the pop-up was to be repriced to 48; the item and unit are not stated.",
+      "category": "pricing",
+      "quote": "Here, we'll reprice that to 48 for the pop-up.",
+      "timestamp": "15:06",
+      "speaker": "Speaker 6",
+      "basis": "transcript",
+      "confidence": 0.4,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "The engagement includes a mock-up plus a set number of three revisions; seasonal flavor swaps are not counted as revisions, while design and layout changes are.",
+      "category": "contract_term",
+      "quote": "As it is right now, this is like a mock-up, and then you have three revisions after. You have a set amount of revisions. Later down the line you want to redo, you change of flavors. That's part of that. That's not counted as a revision. Design changes, layout changes. When there are big changes.",
+      "timestamp": "16:28",
+      "speaker": "Speaker 5",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "ADVO showed an existing directory-of-contacts template (real data, Google Maps API script) that has no booking system, and it is undecided whether to keep it on the new site.",
+      "category": "product",
+      "quote": "There's an existing directory of contacts. But they don't have a booking system. [...] So I'm not sure if we're going to remove this one or not because we have to message all of the owners to add theirs here.",
+      "timestamp": "20:19",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.65,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "The client will send the company story to ADVO.",
+      "category": "commitment",
+      "quote": "And then the company. And then the story behind it. I'll send it to you in a while.",
+      "timestamp": "21:18",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "Customer testimonials on the site should be short, one to three sentences.",
+      "category": "scope",
+      "quote": "Like a proof of review. Short one. Short one, One to three sentences.",
+      "timestamp": "23:26",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "Felici sources chocolate from Davao, ingredients from local farmers in Palawan, and ube liqueur from Agimat.",
+      "category": "brand",
+      "quote": "But then we have the asintikul, like chocolate in Davao. We get it from the farmers in Palawan. Local farmers. And then ube. We use this ube liqueur from Agimat.",
+      "timestamp": "23:51",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "Felici has two locations, Eastridge and Buena Vista.",
+      "category": "brand",
+      "quote": "And then for the other upshots, we have two locations. The one in Eastridge and the one in Buena Vista.",
+      "timestamp": "24:56",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "An ordering system that collects names, addresses and emails requires a data privacy policy and a designated Data Privacy Officer from the client's company; the obligation is said to trigger past 1,000 orders.",
+      "category": "process",
+      "quote": "Would have to be designated to be a data privacy officer. [...] They said that's a requirement by the data privacy commission. [...] We can have it to follow since it only triggers it when we're past one thousand orders.",
+      "timestamp": "29:53",
+      "speaker": "Speaker 5",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "Under 1,000 orders the data privacy officer requirement does not yet have to be complied with; the officer takes a three-day course.",
+      "category": "process",
+      "quote": "If you're under 1000 orders, we don't have to comply with it yet. It will be part of it later on. [...] There's a three day course they have to take.",
+      "timestamp": "30:50",
+      "speaker": "Speaker 5",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "Products are delivered within Metro Manila.",
+      "category": "scope",
+      "quote": "We have products delivered to Metro Manila. The love, we want to brand it.",
+      "timestamp": "31:49",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.6,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "Payment is discussed as online only with Grab as the delivery provider; COD is raised but not clearly confirmed.",
+      "category": "decision",
+      "quote": "COD would be an option to you guys. Or delivery. Only online lang. Delivery provider? Grab.",
+      "timestamp": "33:21",
+      "speaker": "Speaker 5",
+      "basis": "transcript",
+      "confidence": 0.55,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "The preference is for customers to book the delivery themselves rather than the shop arranging it.",
+      "category": "decision",
+      "quote": "I think I prefer if the customer books it themselves. And then next time it's not mahirap because imagine hassle naman yung online order.",
+      "timestamp": "33:36",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "Pickup/delivery slots will be per hour (e.g., 1 PM, 2 PM, 3 PM) and the customer books within a slot and provides the order number.",
+      "category": "scope",
+      "quote": "Per hour, next one PM, two PM, three PM, and then you have to book it within that time slot and then provide the order number and all.",
+      "timestamp": "34:14",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "Online orders must be placed at least one day in advance.",
+      "category": "process",
+      "quote": "Only a day before. A day in advance, they want to order online.",
+      "timestamp": "34:53",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "Flowers and chocolates will get a separate website from the gelato site (domain referenced as Felici Gelato .ph), with a dropdown that redirects to the other site rather than a page.",
+      "category": "decision",
+      "quote": "It's like when the domain name is Felici Jalato dot ph. So if you want to pursue that, if they check the drop down, they'll be redirected to the website instead of a page.",
+      "timestamp": "36:36",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "The client agreed to the separate-but-interlinked website approach as long as customers can see all brands and reach each site easily.",
+      "category": "decision",
+      "quote": "As long as the customers are aware of the different brands and find it easy to access each website.",
+      "timestamp": "37:34",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "ADVO offered to prepare a proposal for the multi-website setup.",
+      "category": "commitment",
+      "quote": "So you'll push all your software, social media and that sort of stuff. Should we make a proposal for that?",
+      "timestamp": "37:57",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    },
+    {
+      "claim": "Cash on delivery will not be offered; payments are online only.",
+      "category": "decision",
+      "quote": "Cash on Delivery (COD) will not be available; payments will be online only.",
+      "timestamp": "",
+      "speaker": "",
+      "basis": "ai_note",
+      "confidence": 0.4,
+      "occurredAt": "2026-07-02T12:00:00+08:00",
+      "projectId": 6
+    }
+  ],
+  "decision": [
+    { "text": "Flowers and chocolates get their own website, separate from the gelato site but interlinked; the brand dropdown redirects to the other site rather than an in-site page.", "timestamp": "36:36", "basis": "transcript" },
+    { "text": "Pickup/delivery time slots are per hour (1 PM, 2 PM, 3 PM) and the customer supplies the order number when booking.", "timestamp": "34:14", "basis": "transcript" },
+    { "text": "Online orders require one day advance notice; no same-day online ordering.", "timestamp": "34:53", "basis": "transcript" },
+    { "text": "Customers book their own delivery rather than the shop arranging it.", "timestamp": "33:36", "basis": "transcript" },
+    { "text": "Customer testimonials go on the site as short one-to-three-sentence reviews.", "timestamp": "23:26", "basis": "transcript" },
+    { "text": "ADVO will write a proposal for the multi-site setup.", "timestamp": "37:57", "basis": "transcript" }
+  ],
+  "action": [
+    { "description": "Send the company story to ADVO", "ownerName": "client", "dueAt": null, "timestamp": "21:18", "basis": "transcript", "status": "open" },
+    { "description": "Send more detail on the local ingredients (Davao chocolate, Palawan farmers, Agimat ube liqueur)", "ownerName": "client", "dueAt": null, "timestamp": "23:51", "basis": "transcript", "status": "open" },
+    { "description": "Draft a proposal for the separate-but-interlinked multi-brand websites", "ownerName": "ADVO", "dueAt": null, "timestamp": "37:57", "basis": "transcript", "status": "open" },
+    { "description": "Decide whether to keep or remove the existing directory of contacts on the new site", "ownerName": "ADVO", "dueAt": null, "timestamp": "20:19", "basis": "transcript", "status": "open" },
+    { "description": "Decide on inventory implementation (barcode and/or POS integration) and who owns it", "ownerName": null, "dueAt": null, "timestamp": "", "basis": "ai_note", "status": "open" },
+    { "description": "Define how wholesale inquiries are handled on the site", "ownerName": null, "dueAt": null, "timestamp": "", "basis": "ai_note", "status": "open" }
+  ],
+  "openQuestion": [
+    { "text": "Will the existing directory of contacts stay on the new website, given it has no booking system and owners would need to be messaged to add their listings?", "timestamp": "20:19" },
+    { "text": "What item was repriced to 48 for the pop-up, and who has final say on pricing?", "timestamp": "15:06" },
+    { "text": "How should wholesale buyers (businesses buying for their own use) be handled on the site?", "timestamp": "35:04" },
+    { "text": "Is COD offered at all, or is payment online only?", "timestamp": "33:21" },
+    { "text": "The matcha brand has no information yet; when will its details be available?", "timestamp": "28:26" }
+  ],
+  "person": [
+    { "name": "Speaker 2", "role": "speaker", "affiliation": "client", "note": "Appears to be the Felici Artisan owner (mentions 'my dad', describes ingredients, the two branches, and the gelato cart); most likely Reign Angela Capunfuerza." },
+    { "name": "Speaker 1", "role": "speaker", "affiliation": "ADVO", "note": "Drives the mockup walkthrough, mentions the Google Maps API directory template, and offers to write the proposal. Label also absorbs some client lines (e.g., 23:26, 33:36)." },
+    { "name": "Speaker 5", "role": "speaker", "affiliation": "ADVO", "note": "Explains inventory/barcode, revision policy, data privacy officer requirement, and delivery slot options." },
+    { "name": "Speaker 4", "role": "speaker", "affiliation": "ADVO", "note": "Asks for blunt feedback and about testimonials and a blog." },
+    { "name": "Speaker 6", "role": "speaker", "affiliation": "ADVO", "note": "Summarizes wants (ordering functionality plus incentive) and mentions the reprice to 48." },
+    { "name": "Speaker 3", "role": "speaker", "affiliation": "unknown", "note": "Few, fragmentary lines." },
+    { "name": "Speaker 7", "role": "speaker", "affiliation": "unknown", "note": "Single 'Okay' at 25:24." },
+    { "name": "Reign Capunfuerza", "role": "mentioned", "affiliation": "client", "note": "Owner per project record; probably Speaker 2. Not named in this transcript." },
+    { "name": "Bapi", "role": "mentioned", "affiliation": "unknown", "note": "Said to decide on the price range (15:18)." }
+  ],
+  "namedThing": ["Instagram", "Grab", "Google Maps API", "Google Reviews", "Agimat", "Davao", "Palawan", "Eastridge", "Buena Vista", "POS", "felicigelato.ph", "Airbnb", "Deli Express", "Data Privacy Commission", "Felici Gelato"]
+}

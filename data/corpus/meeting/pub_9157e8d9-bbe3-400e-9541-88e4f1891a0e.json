@@ -1,0 +1,254 @@
+{
+  "source": {
+    "kind": "plaud",
+    "externalId": "pub_9157e8d9-bbe3-400e-9541-88e4f1891a0e",
+    "url": "https://web.plaud.ai/s/pub_9157e8d9-bbe3-400e-9541-88e4f1891a0e::wi-hgQytJGPMs9MxiaLqo_9gZzUju5SCCKBG9UBTs5DvX7GnsdF2QxWjcea4KHEp__eLHmMyvNCrIqfvaTkf4wI",
+    "title": "08-11 Meeting: ADVO — Power Mac Center Spotlight 2 — HR/Payroll Reports, Leave Requests, and CRM Module",
+    "recordedAt": "2026-08-11T12:00:00+08:00",
+    "durationSecond": 1074,
+    "speaker": ["Speaker 1", "Speaker 2", "Speaker 3", "Speaker 4"],
+    "isDiarizationSuspect": true,
+    "language": "mixed"
+  },
+  "link": {
+    "projectId": 3,
+    "leadName": null,
+    "clientName": "FourlinQ Windows and Doors"
+  },
+  "summary": "ADVO (Speaker 1) continues the HR app demo: payroll export to CSV/Excel, department setup, and a clock-out flow that shows late, undertime and break minutes and asks for an accomplishment report. The client (Speaker 2) says her workers are not writers and often have no phone, so she asks for photo submission and then voice submission with AI transcription instead of typed reports, and insists it stay as simple as possible; she also confirms she has a biometric device and that staff without biometric currently use Telegram, and that check-out should need approval. Leave requests are shown; the client wants a calendar view that flags overlapping leave in the same department (one at a time, or manual approval), notes maternity is her most common leave, asks whether the leave limits follow Philippine labor law, and sees that paid leave can require an attachment. A CRM section (customers, pipeline, history, visits, quotes, contacts) is shown inside the same app, which the client likes because a previous CRM she commissioned was split across two or three apps. Roughly 7:00 to 14:30 is off-topic (architecture profession, UAP, credit-card advice). Linked to project 3 because the wider session concerns FourLinq-group companies.",
+  "fact": [
+    {
+      "claim": "The payroll module supports CSV and Excel download.",
+      "category": "product",
+      "quote": "Tapos sa trend ay payroll, csv download, payroll, XL, X4, CLSP.",
+      "timestamp": "0:00",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client asked whether she needs to supply ADVO with her payroll format.",
+      "category": "process",
+      "quote": "So kailangan ko ibigay sa'yo yung format?",
+      "timestamp": "0:09",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client has a biometric device; employees not on the biometric currently log attendance through Telegram.",
+      "category": "process",
+      "quote": "Kaya yung mga wala sa biometric, sinilang. Yun yung mga nalagay na.",
+      "timestamp": "0:44",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client requires check-out to go through an approval.",
+      "category": "client_need",
+      "quote": "So, dapat may approval. Kuya, direct out. Dapat may approval. Out.",
+      "timestamp": "0:52",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Clock-out in the app asks the employee for an accomplishment report.",
+      "category": "product",
+      "quote": "Kung yung clock out na, may accomplishment report din. So, what did you do today?",
+      "timestamp": "0:59",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The attendance record shows late, undertime and break durations per employee.",
+      "category": "product",
+      "quote": "Late ka, under time ka, tapos may 2 minute break.",
+      "timestamp": "1:22",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client asked that workers be able to submit a picture instead of a written accomplishment report.",
+      "category": "client_need",
+      "quote": "Kung magsusulat pa sila, kahit hindi, baka magmura na kami. Ano ba? Pwede nila i-picture? Ah, sige, pwede na. Pwede nila i-picture?",
+      "timestamp": "1:29",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The accomplishment report should be required, with a photo as the minimum acceptable submission.",
+      "category": "client_need",
+      "quote": "Kaya dapat may required yan. No report. Picture na lang siguro.",
+      "timestamp": "2:08",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client's production workers may not have phones, so the process must be as simple as possible.",
+      "category": "client_need",
+      "quote": "As simple as possible. A problem, you have to understand, I have worker-led production sa Tamil. They don't even have phone.",
+      "timestamp": "2:58",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Voice submission with automatic transcription was proposed for workers who cannot type, and ADVO said it is possible.",
+      "category": "scope",
+      "quote": "Hindi sila marunong mag-type. Kaya nga sila worker eh. Di ba pwede voice mail? Paano yung voice nila? Ano yung ginawa mo dito, ginawa ko yung voice nila. Tapos i-audio translate ka lang yan. Pwede, pwede.",
+      "timestamp": "3:20",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The app has a leave request feature, demonstrated with a vacation leave request.",
+      "category": "product",
+      "quote": "So, kaniya rin, nag-request siya ng vacation leave.",
+      "timestamp": "5:24",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client wants leave requests on a calendar with a flag when a requested leave overlaps another, especially within the same department, where overlap is not allowed.",
+      "category": "client_need",
+      "quote": "Pero yung leave request niya, pwede naka-calendar na? Parang nakikita mo na kada isang buwan ka rin pa. Ah, sige. Pag nilagay yung pre-cursor doon, alam mo kung sino naka-calendar. Pwede ba yung leave? Parang naka-flag na. Kunyari, overlap. Bawal ang overlap na leave.",
+      "timestamp": "5:28",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Only one person per department may be on leave at a time, or the overlap is left to manual approval; maternity is the client's most common leave.",
+      "category": "decision",
+      "quote": "Or manual. Ah, ito po. Naka-manual approval. Maternity yung pinakamarami akong Ating maraming buntis.",
+      "timestamp": "6:03",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client asked whether the leave-type limits configured in the app are based on Philippine labor law.",
+      "category": "risk",
+      "quote": "Is it based on the Philippine labor? Sinabi mo?",
+      "timestamp": "6:29",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Paid leave can be configured to require an attachment upload.",
+      "category": "product",
+      "quote": "So, kung gusto mong Paid leave ito, Kung gusto mo siyang Kailangan ng attachment,",
+      "timestamp": "6:40",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "ADVO added a sales and production section that functions as a CRM with customers, pipeline, history, visits, quotes and contacts.",
+      "category": "product",
+      "quote": "Mayroon kaming in-add na iba. Kunyari sa sales and production. Ano meron?",
+      "timestamp": "14:35",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The CRM includes pipeline, history, visits, quotes and contact records.",
+      "category": "product",
+      "quote": "Pipeline, history. Ano yan? CRM o attendance pa yan? Iba pa? Ah, CRM din. Visits, quotes, contact.",
+      "timestamp": "15:00",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client previously commissioned a CRM that was split across two or three apps and is not satisfied with it; she prefers ADVO's single-app approach.",
+      "category": "client_need",
+      "quote": "May pinaggagawa ko eh. Pinaggawa ko na yan eh. Pero hindi pa ako ganun ka... Gusto ko yung silipin. Yung sa'yo kasi auntie, nakita ko na yun. Parang dalawang ano siya. Dalawang tatlo. Actually, ayoko na siyang medyo kausap. Kaya kasi nasa isang app na yun.",
+      "timestamp": "15:22",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "ADVO cited a clinic system built for a classmate's parents that is heavily used every day as a past project.",
+      "category": "product",
+      "quote": "Parang may clinic kasi yung kaklase namin. Yung parents nila. Nag-work ka ba rin? No, hindi. Ah, ba? Hindi nagda-down or something? Ah, hindi ba. Everyday siya, bangka. Heavily used to.",
+      "timestamp": "17:25",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.6,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    }
+  ],
+  "decision": [
+    { "text": "Accomplishment report at clock-out is required, but photo (and possibly voice-to-text) submissions are acceptable in place of typed text.", "timestamp": "2:08", "basis": "transcript" },
+    { "text": "Overlapping leave within the same department is either limited to one person or routed to manual approval; not finalized.", "timestamp": "6:03", "basis": "transcript" }
+  ],
+  "action": [
+    { "description": "Offer picture and voice-to-text options for the clock-out accomplishment report", "ownerName": "ADVO", "dueAt": null, "timestamp": "3:20", "basis": "transcript", "status": "open" },
+    { "description": "Add calendar view of leave requests with same-department overlap flagging", "ownerName": "ADVO", "dueAt": null, "timestamp": "5:28", "basis": "transcript", "status": "open" },
+    { "description": "Confirm leave-type limits against Philippine labor law", "ownerName": "ADVO", "dueAt": null, "timestamp": "6:29", "basis": "transcript", "status": "open" },
+    { "description": "Provide payroll export format to ADVO if a specific layout is required", "ownerName": "client", "dueAt": null, "timestamp": "0:09", "basis": "transcript", "status": "open" }
+  ],
+  "openQuestion": [
+    { "text": "Which accomplishment-report input (text, photo, voice) is final?", "timestamp": "3:20" },
+    { "text": "Is same-department leave overlap enforced automatically or by manual approval?", "timestamp": "6:03" },
+    { "text": "Are the leave entitlements in the app aligned with Philippine labor law?", "timestamp": "6:29" }
+  ],
+  "person": [
+    { "name": "Speaker 1", "role": "speaker", "affiliation": "ADVO", "note": "Demos payroll, leave and CRM screens; likely Prince Wagan." },
+    { "name": "Speaker 2", "role": "speaker", "affiliation": "client", "note": "Business owner addressed as tita/auntie; has a biometric device and Telegram-based attendance; likely Ms. Imie of FourLinq." },
+    { "name": "Speaker 3", "role": "speaker", "affiliation": "client", "note": "Architecture student related to the owner; interested in a LaSalle Barcelona exchange; asks about the site review." },
+    { "name": "Speaker 4", "role": "speaker", "affiliation": "unknown", "note": "Few lines; asks what ADVO built first." },
+    { "name": "David", "role": "mentioned", "affiliation": "ADVO", "note": "Mentioned as bringing clients ('ang dami ni David')." },
+    { "name": "Jerry", "role": "mentioned", "affiliation": "unknown", "note": "Chatted the client during the meeting." }
+  ],
+  "namedThing": ["Telegram", "CSV", "Excel", "UAP (United Architects of the Philippines)", "LaSalle Barcelona", "DDE"]
+}

@@ -1,0 +1,248 @@
+{
+  "source": {
+    "kind": "plaud",
+    "externalId": "pub_5ecccbef-27dc-4346-84b5-09248de5f227",
+    "url": "https://web.plaud.ai/s/pub_5ecccbef-27dc-4346-84b5-09248de5f227::z01PDmsATkhjoeRgY4B4PB3WQNy9Bpg7a3FOIV7o9kRBoHnop6rh9zwfmHt9XFmcIICzQbCiMSrPXtBAM_R2bwI",
+    "title": "08-09 Meeting: Myriad Fun Ride — QR Check-in Dry Run & Registration Bugs",
+    "recordedAt": "2026-08-09T23:24:31+08:00",
+    "durationSecond": 706,
+    "speaker": ["Speaker 1", "Speaker 2", "Speaker 3", "Speaker 4", "Speaker 5"],
+    "isDiarizationSuspect": false,
+    "language": "mixed"
+  },
+  "link": {
+    "projectId": null,
+    "leadName": "Fun Ride PH / MyriadSports",
+    "clientName": null
+  },
+  "summary": "Short online session in which Speaker 1 (ADVO) demos the event-day QR check-in flow for the Fun Ride site: paid attendees show a QR, organizers add volunteers to scan without logging in, check-ins can be exported to Google Sheets, and a manual ticket lookup is the fallback. Speaker 5 reports dry-run issues: some assets went missing, ticket details and inclusions should appear on the registration page so users need not go back to the homepage, the contact number field accepts letters, data privacy needs its own checkbox separate from the waiver, the layout breaks on iPad, and confirmation email does not arrive immediately. The organizer side (Speakers 2 and 3) asks ADVO to finalize DOT and other sponsor assets, proofread all copy including 'Fun Ride PH', and put the full registration page up with payment methods prioritized. Speaker 5 explains PayMongo works like a payment terminal with no commission on registration; any admin fee is set by the business owner. The organizers are pleased with the work and expect QR-only payment by Tuesday.",
+  "fact": [
+    {
+      "claim": "On event day, a paid participant shows the QR on their phone and it is scanned for entry.",
+      "category": "product",
+      "quote": "Once you're paid, you scan this on event day. Show your cellphone, man.",
+      "timestamp": "0:00",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The organizer can add volunteers to scan QR codes without needing to log in.",
+      "category": "product",
+      "quote": "They can also add volunteers to scan QR codes for people. It's easy to add volunteers. They don't need to log in. They just need to show the QR code.",
+      "timestamp": "0:30",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Check-in data can be integrated with Google Sheets and exported, and a manual ticket lookup is the fallback when the QR fails.",
+      "category": "product",
+      "quote": "You can integrate Google Sheets and export the file. ... And if, if for some reason the QR didn't work or wala silang QR mano, pati ticket ko nila",
+      "timestamp": "1:47",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The organizer view shows the waiver, registration and assignment for each registrant.",
+      "category": "product",
+      "quote": "Bagong ka mapasyet para yung organizer kasi yung titingin ng waiver ng registration ng assignment. Ano naman? That's all for the procedure for registration.",
+      "timestamp": "2:31",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.6,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "During the dry run some assets went missing from the site.",
+      "category": "risk",
+      "quote": "Any problem? For that, no. Is una is nawala lang po yung mga assets.",
+      "timestamp": "4:10",
+      "speaker": "Speaker 5",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The bracelet lining item had an image-optimization issue and has already been paid for by Speaker 1.",
+      "category": "risk",
+      "quote": "Yung issue don palang is dinami na bayaran yung Bracelet Lining. Nakak image optimization kasi. So binayaran ko na kanya na.",
+      "timestamp": "4:17",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.55,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Ticket details and inclusions should be shown on the registration page so users do not have to go back to the homepage to see them.",
+      "category": "client_need",
+      "quote": "siguro sa registration, lagay pa natin yung details ng tiket para hindi ma-silip guro, bumalik, back, magtay sa registration na step one something.",
+      "timestamp": "4:27",
+      "speaker": "Speaker 5",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The contact number field accepts letters and needs to be constrained to digits.",
+      "category": "risk",
+      "quote": "Then okay naman sigurong constraint ko sa contact number is na kalagay na letters. So try to clean that.",
+      "timestamp": "5:06",
+      "speaker": "Speaker 5",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Data privacy consent will be a separate checkbox from the waiver checkbox.",
+      "category": "decision",
+      "quote": "Nede, dalawang separate na check box then accepting tama ba makaiiba kasi makaiiba naman yung sa waiver then ... Data naman, data privacy",
+      "timestamp": "5:53",
+      "speaker": "Speaker 5",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The site renders incorrectly on iPad while mobile and PC are fine; Speaker 5 will send screenshots.",
+      "category": "risk",
+      "quote": "kasi sa iPad ko iba yung, I will send screenshots la, iba yung ano yah, hindi siya lumalabas na maiyos, para sa mobile PC is okay naman siya, siguro may visual baglong towards iPad",
+      "timestamp": "6:17",
+      "speaker": "Speaker 5",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Tablets are treated as PC in the layout, which is the suspected cause of the iPad bug.",
+      "category": "risk",
+      "quote": "iPad issues talaga na or sa mga tablet kasi yakino considered as PC kasi double check nishah.",
+      "timestamp": "6:38",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.6,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The confirmation email does not appear immediately, and the ticket design needs updating.",
+      "category": "risk",
+      "quote": "Siguro if fixed lang din yun sa email na siguro hindi lumabas agad. Then ayun nila. Tapos i update lang dyan yung design for the ticket",
+      "timestamp": "7:03",
+      "speaker": "Speaker 5",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The organizer needs to finalize DOT and other sponsor details and revise the inclusions before all assets can be finalized.",
+      "category": "client_need",
+      "quote": "we need to finalize lang, Yung tungkol dun sa DOT dogot, pinagtagal ko mo na yung other sponsors, um the inclusions lang pa, para revise it lang para ma finalize po yung all assets",
+      "timestamp": "7:40",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The organizer side is satisfied with the system and has a Google Form as backup.",
+      "category": "commitment",
+      "quote": "On our end, goods na kasi meron naman din Google form. People, good job, guys. I'm impressed.",
+      "timestamp": "8:03",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Payment will most likely be QR-only, expected by Tuesday.",
+      "category": "timeline",
+      "quote": "Q R lang daw. Most likely ayo umasa ni Justin. Q R lang daw talaga on Tuesday.",
+      "timestamp": "8:50",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.65,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The organizer wants the registration page put up with all elements, especially the payment method, as the top priority.",
+      "category": "client_need",
+      "quote": "I suggest we put up the registration and alatag na lahat ng elements, especially the payment method. That's very important, very crucial.",
+      "timestamp": "9:02",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "PayMongo takes no commission on registrations; it acts like a payment terminal, and any admin fee is set by the business owner.",
+      "category": "pricing",
+      "quote": "Wala, walang siyang any ano. Ano lang siya parang payment terminal lang siya pa. ... Ang bayad isalang ko is custom by the trader or the business owner. Parang siya ang nagayos toh na admin fee and such po.",
+      "timestamp": "9:52",
+      "speaker": "Speaker 5",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "All site copy must be proofread, and the brand name is 'Fun Ride PH', not 'Fundrite man'.",
+      "category": "brand",
+      "quote": "we need to kindly revisit all information nandon kasi pa paproofread lang ... Saka Fundrite pH po hindi Fundrite man.",
+      "timestamp": "10:35",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    }
+  ],
+  "decision": [
+    { "text": "Data privacy consent gets its own checkbox, separate from the waiver checkbox.", "timestamp": "5:53", "basis": "transcript" },
+    { "text": "Registration page goes up with all elements, payment method first; QR-only payment expected by Tuesday.", "timestamp": "9:02", "basis": "transcript" }
+  ],
+  "action": [
+    { "description": "Show ticket details and inclusions on the registration page so users need not return to the homepage.", "ownerName": "ADVO", "dueAt": null, "timestamp": "4:27", "basis": "transcript", "status": "open" },
+    { "description": "Restrict the contact number field to digits only.", "ownerName": "ADVO", "dueAt": null, "timestamp": "5:06", "basis": "transcript", "status": "open" },
+    { "description": "Add a separate data privacy checkbox next to the waiver checkbox.", "ownerName": "ADVO", "dueAt": null, "timestamp": "5:53", "basis": "transcript", "status": "open" },
+    { "description": "Send screenshots of the iPad layout bug.", "ownerName": "client", "dueAt": null, "timestamp": "6:17", "basis": "transcript", "status": "open" },
+    { "description": "Fix the iPad/tablet layout bug.", "ownerName": "ADVO", "dueAt": null, "timestamp": "6:38", "basis": "transcript", "status": "open" },
+    { "description": "Fix delayed confirmation email and update the ticket design.", "ownerName": "ADVO", "dueAt": null, "timestamp": "7:03", "basis": "transcript", "status": "open" },
+    { "description": "Finalize DOT and other sponsor details and revise the inclusions so all assets can be finalized.", "ownerName": "client", "dueAt": null, "timestamp": "7:40", "basis": "transcript", "status": "open" },
+    { "description": "Put up the full registration page with payment method in place.", "ownerName": "ADVO", "dueAt": null, "timestamp": "9:02", "basis": "transcript", "status": "open" },
+    { "description": "Proofread all site information and correct the brand name to Fun Ride PH.", "ownerName": "ADVO", "dueAt": null, "timestamp": "10:35", "basis": "transcript", "status": "open" },
+    { "description": "Identify and restore the assets that went missing during the dry run.", "ownerName": "ADVO", "dueAt": null, "timestamp": "4:10", "basis": "transcript", "status": "open" }
+  ],
+  "openQuestion": [
+    { "text": "Which assets went missing during the dry run, and why?", "timestamp": "4:10" },
+    { "text": "Does PayMongo or the registration charge any commission, and will an admin fee be added?", "timestamp": "9:44" }
+  ],
+  "person": [
+    { "name": "Speaker 1", "role": "speaker", "affiliation": "ADVO", "note": "Demos the QR check-in and organizer dashboard." },
+    { "name": "Speaker 5", "role": "speaker", "affiliation": "unknown", "note": "Reports dry-run bugs and explains PayMongo mechanics; possibly ADVO-side tester." },
+    { "name": "David Remo", "role": "mentioned", "affiliation": "ADVO", "note": "Thanked by Speaker 3 at 8:17 ('Good job, David')." },
+    { "name": "Justin", "role": "mentioned", "affiliation": "client", "note": "Source of the 'QR only on Tuesday' expectation (8:50)." },
+    { "name": "Kristina Palumpong", "role": "mentioned", "affiliation": "unknown", "note": "Named by Speaker 3 at 4:00 when asking for dry-run issues." },
+    { "name": "Ben", "role": "mentioned", "affiliation": "unknown", "note": "Named at 3:59 while viewing the registered list." }
+  ],
+  "namedThing": ["Fun Ride PH", "Myriad", "Google Sheets", "Google Form", "PayMongo", "DOT", "iPad"]
+}

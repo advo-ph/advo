@@ -22,6 +22,7 @@ import AdminCalendar from "@/components/admin/AdminCalendar";
 import AdminContracts from "@/components/admin/AdminContracts";
 import AdminMeetings from "@/components/admin/AdminMeetings";
 import AdminMessages from "@/components/admin/AdminMessages";
+import AdminCorpus from "@/components/admin/AdminCorpus";
 import AdminTime from "@/components/admin/AdminTime";
 import AdminSocial from "@/components/admin/AdminSocial";
 import AdminAvailability from "@/components/admin/AdminAvailability";
@@ -199,6 +200,7 @@ const Admin = () => {
           {activeSection === "meetings" && <AdminMeetings projects={projects} />}
 
           {activeSection === "messages" && <AdminMessages />}
+          {activeSection === "corpus" && <AdminCorpus />}
 
           {/* Team comes from useAdminTeam so the load bars can name people rather than
               printing member ids -- a capacity view that says "Member 7 is over" is one

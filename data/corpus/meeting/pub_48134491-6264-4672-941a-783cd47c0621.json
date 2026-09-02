@@ -1,0 +1,316 @@
+{
+  "source": {
+    "kind": "plaud",
+    "externalId": "pub_48134491-6264-4672-941a-783cd47c0621",
+    "url": "https://web.plaud.ai/s/pub_48134491-6264-4672-941a-783cd47c0621::M2yMfLRUKGOsBVdNJRmSR1wrFe3kB7-XE5h7MVtkX4LRjaWXyajwI5AtCdXz1bkRsDWNSad2EjOLTuMzaAOJgQI",
+    "title": "08-09 Meeting: Myriad One Ride Beach — Registration Stress Test, Waivers, Senior/PWD, Paymongo",
+    "recordedAt": "2026-08-09T23:24:31+08:00",
+    "durationSecond": 946,
+    "speaker": ["Speaker 1", "Speaker 2", "Speaker 3", "Speaker 4", "Speaker 5", "Speaker 6"],
+    "isDiarizationSuspect": false,
+    "language": "mixed"
+  },
+  "link": {
+    "projectId": null,
+    "leadName": "Fun Ride PH / MyriadSports",
+    "clientName": null
+  },
+  "summary": "Online walkthrough of the One Ride Beach registration site for the organizer team (Sam, RJ, Aldin, Justin are named) while the stress test is ongoing. Prince (Speaker 4) screen-shares the end-to-end flow: DOT scenery pictures, distances and inclusions, FAQ and footer, then registration where age gates distances (10K only for age 10 and up), minors must download a parent/guardian waiver before continuing and hand in a signed copy at kit claim, and kit fulfillment is claim on event day, pick up before, or delivery. The organizer asks for a footer revision, an extra confirmation before the liability checkbox, and a PWD option alongside the 20% senior discount; ID is required only for discounts since racing events do not normally ask every participant for one. Continue-to-payment goes straight to PayMongo, where only QR is approved and cards are pending with no reply to last week's follow-up. The email confirmation includes tickets and a receipt; the organizer wants race kit inclusions shown in the email, and one participant reported not receiving the email at all.",
+  "fact": [
+    {
+      "claim": "The One Ride Beach website is finished and a stress test is ongoing, with the main issues so far in the registration flow.",
+      "category": "timeline",
+      "quote": "So far, tapos naman na yung website ka. So, stress test na sila ngayon and ongoing pa sila ngayon. May ibang ano lang sa, I think sa registration yung ano nila, yung pinaka-issues nila so far.",
+      "timestamp": "0:08",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Sam had already registered on the site as a participant before the walkthrough.",
+      "category": "process",
+      "quote": "Kahit kay Sam, kahit use Sam's email. Okay po. Nakapag-register na si Sam eh.",
+      "timestamp": "0:52",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The site has distinct organizer and participant views; Prince was in organizer mode during the demo.",
+      "category": "product",
+      "quote": "Ah, kasi naka-organizer mode ka, Prince, no? ... Napalitan ko yung sa akin kasi naka-participant eh. Kaya hindi ko makita.",
+      "timestamp": "2:07",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The landing page shows DOT scenery pictures that differ per room, plus distances and inclusions.",
+      "category": "product",
+      "quote": "So ayan, this is for the DOT sceneries, mga pictures. ... Iba-iba kasi yung makikita nila per room. So ayan, this is the distances.",
+      "timestamp": "2:33",
+      "speaker": "Speaker 4",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The organizer has a revision for the footer text.",
+      "category": "client_need",
+      "quote": "Footer din, may revision tayo ah. ... May revision po, kindly check the...",
+      "timestamp": "3:13",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Distances are gated by age; the 10K is only for participants aged 10 and above.",
+      "category": "scope",
+      "quote": "Kapag bata ka mo lang, may limit na yung Mga distances. Ito. The 10KM is only for 10 and above. So hindi ka pwede.",
+      "timestamp": "3:50",
+      "speaker": "Speaker 4",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "A registrant under 18 cannot continue until they download the parent/guardian waiver.",
+      "category": "product",
+      "quote": "So kapag you're under 18 at pwede ka, you need to have a signed parent or guardian waiver. So as you can see, you can't continue this. You have to download this waiver first.",
+      "timestamp": "4:08",
+      "speaker": "Speaker 4",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "With multiple participants, the waiver download button appears only for the minor participant, not the adult.",
+      "category": "product",
+      "quote": "Since ito, this participant 1 is a minor, so you can see this download button. You have to press this talaga. ... Participant 2 is an adult, so wala siyang worth.",
+      "timestamp": "4:55",
+      "speaker": "Speaker 4",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The signed waiver is printed and handed in at kit claim; kit fulfillment options are claim on event day, pick up before the event, or delivery.",
+      "category": "process",
+      "quote": "You have to print it, get it signed, and then throw it when you're receiving the release kit. Kit claim. So these are the kit fulfillment. It's either claim on event day, pick up before the event, or ipapadeliver.",
+      "timestamp": "5:14",
+      "speaker": "Speaker 4",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The delivery option shows a base price of 150 and an address field.",
+      "category": "pricing",
+      "quote": "So we have a base price of 150. Just put your address here.",
+      "timestamp": "5:45",
+      "speaker": "Speaker 4",
+      "basis": "transcript",
+      "confidence": 0.6,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The waiver includes a certification that all information given is true and correct, to deter lying about age or birthday.",
+      "category": "product",
+      "quote": "Also, in the waiver, it says na, You certify that all the information is true and correct Para hindi sila magsisinungaling about their age or their birthday.",
+      "timestamp": "5:52",
+      "speaker": "Speaker 4",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The organizer wants an additional confirmation step so participants must scroll through the liability text before they can check it.",
+      "category": "client_need",
+      "quote": "So, they have to scroll through this tapos press... ... May isang pang-confirmation dyan before they can actually click it. ... Oh, okay. Sige. Yes, po.",
+      "timestamp": "6:54",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "ID upload for every participant is not required because racing events usually do not ask for it; it can be added if the organizer wants verification.",
+      "category": "decision",
+      "quote": "We can add that option if gusto niya po ng verification. Pero usually kasi yung mga racing events, they don't require ID kasi parang medyo hassle yun sa mga participants.",
+      "timestamp": "7:06",
+      "speaker": "Speaker 4",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The organizer's previous event (MCM) did not require IDs from participants.",
+      "category": "process",
+      "quote": "Nung ma-well fund po natin MCM, may ID ba tayo? ... Wala. Okay po.",
+      "timestamp": "7:39",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.65,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The senior discount is implemented at 20% and requires showing an ID.",
+      "category": "product",
+      "quote": "Yun po ang implemented as of now that they're required to show ID and then they have the discount of 20%.",
+      "timestamp": "7:44",
+      "speaker": "Speaker 6",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "A PWD option will be added, either as a second button or detected by the ID scan, with the same 20% discount as seniors.",
+      "category": "decision",
+      "quote": "But ito, senior citizen, another button lang for PWD, yun na i-click nila. ... Or pwede naman pong one button lang, tapos yung i-algorithm. ... Yung PWD ba is, 20% off rent? Yes. Same.",
+      "timestamp": "11:29",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The ID camera supports driver's license, passport, senior ID and digital IDs, but PWD ID is not yet listed.",
+      "category": "product",
+      "quote": "Yung camera na to, it's supported with all IDs, as seen here on. Driver's license, passport, senior ID, pwede yan lahat. Pwede rin yung digital. Form ng ID. ... Walang PWD.",
+      "timestamp": "11:45",
+      "speaker": "Speaker 4",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Pressing 'continue to payment' now moves the user directly to the PayMongo screen, and only one payment method is currently enabled.",
+      "category": "product",
+      "quote": "When you press the continue to payment. You'll be directly moved to Paymongo screen lang. Para wala nang additional bottlenecks. So ayan, currently we only have one payment method kasi yun pa lang yung naano ng Paymongo sa atin.",
+      "timestamp": "12:46",
+      "speaker": "Speaker 4",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "PayMongo has approved only QR so far; credit card, debit and other methods are pending.",
+      "category": "risk",
+      "quote": "So far, ang approved pa lang is the QR. So lahat pending pa for the credit cards, debit, and everything.",
+      "timestamp": "13:06",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "A follow-up was sent to PayMongo but there has been no feedback since last week; Tuesday was the supposed date.",
+      "category": "risk",
+      "quote": "Supposedly, Tuesday, no? ... Hindi lang natin siya hawak kasi nagpadala na ng follow-up but wala pa pong feedback since last week ah.",
+      "timestamp": "13:32",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The confirmation email includes a QR that works offline without signal for kit pickup, and tickets can also be viewed online.",
+      "category": "product",
+      "quote": "May QR po, kahit daw po offline, wala daw pong signal magagamit na siya. ... So, ayan, you can also view it online.",
+      "timestamp": "14:48",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "The organizer wants the race kit inclusions shown in the confirmation email, and Prince agreed to redesign the email.",
+      "category": "client_need",
+      "quote": "Is there a way na pag sa email, makikita yung race kit inclusion? Para eye candy lang siya. ... Will you redesign the email design? Sure.",
+      "timestamp": "15:06",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "With multiple participants the email lists all tickets for download plus a receipt.",
+      "category": "product",
+      "quote": "Kapag multiple participants, you'll see all of their tickets here. You can download them. Ganoon na naman. Tapos ito yung receipt ko.",
+      "timestamp": "15:26",
+      "speaker": "Speaker 4",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    },
+    {
+      "claim": "Speaker 3 did not receive the confirmation email after registering earlier that day.",
+      "category": "risk",
+      "quote": "Pero wala akong na-receive kanina sa email ah.",
+      "timestamp": "15:43",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-09T23:24:31+08:00",
+      "projectId": null
+    }
+  ],
+  "decision": [
+    { "text": "Add an extra confirmation/scroll gate before the liability checkbox can be checked.", "timestamp": "6:54", "basis": "transcript" },
+    { "text": "Do not require ID from every participant; ID is only for the senior/PWD discount.", "timestamp": "7:06", "basis": "transcript" },
+    { "text": "Add a PWD option with the same 20% discount as seniors, verified by ID.", "timestamp": "11:29", "basis": "transcript" },
+    { "text": "Continue-to-payment goes straight to PayMongo; payment methods stay QR-only until PayMongo approves the rest.", "timestamp": "12:46", "basis": "transcript" },
+    { "text": "Redesign the confirmation email to show race kit inclusions.", "timestamp": "15:26", "basis": "transcript" }
+  ],
+  "action": [
+    { "description": "Apply the organizer's footer text revision.", "ownerName": "ADVO", "dueAt": null, "timestamp": "3:13", "basis": "transcript", "status": "open" },
+    { "description": "Add a scroll-through confirmation before the liability checkbox.", "ownerName": "ADVO", "dueAt": null, "timestamp": "6:54", "basis": "transcript", "status": "open" },
+    { "description": "Add a PWD discount option and PWD ID support to the ID scan.", "ownerName": "ADVO", "dueAt": null, "timestamp": "11:29", "basis": "transcript", "status": "open" },
+    { "description": "Keep following up with PayMongo on credit/debit and other payment method approvals.", "ownerName": "ADVO", "dueAt": null, "timestamp": "13:32", "basis": "transcript", "status": "open" },
+    { "description": "Redesign the confirmation email to include race kit inclusions.", "ownerName": "Prince Wagan", "dueAt": null, "timestamp": "15:26", "basis": "transcript", "status": "open" },
+    { "description": "Investigate why Speaker 3 did not receive the confirmation email.", "ownerName": "ADVO", "dueAt": null, "timestamp": "15:43", "basis": "transcript", "status": "open" }
+  ],
+  "openQuestion": [
+    { "text": "Will PayMongo approve cards and other methods by the 15th or Tuesday?", "timestamp": "13:16" },
+    { "text": "Should minors be blocked entirely or only gated by waiver when adding another participant?", "timestamp": "4:33" },
+    { "text": "Why was a confirmation email not received after registration?", "timestamp": "15:43" }
+  ],
+  "person": [
+    { "name": "Prince Wagan", "role": "speaker", "affiliation": "ADVO", "note": "Speaker 4; addressed as Prince at 1:31 and 2:07; screen-shares the registration flow." },
+    { "name": "Speaker 2", "role": "speaker", "affiliation": "ADVO", "note": "Gives the status update that the site is done and under stress test." },
+    { "name": "Speaker 1", "role": "speaker", "affiliation": "client", "note": "Organizer-side; asks for liability confirmation, PWD handling, and email inclusions; refers to Kuya Sam, Aldin, Justin." },
+    { "name": "Speaker 3", "role": "speaker", "affiliation": "client", "note": "Organizer-side; reports PayMongo status and did not receive the confirmation email." },
+    { "name": "Sam", "role": "mentioned", "affiliation": "client", "note": "Already registered as participant; asked about ID requirement." },
+    { "name": "RJ", "role": "mentioned", "affiliation": "client", "note": "Meant to see the end-to-end walkthrough." },
+    { "name": "Aldin", "role": "mentioned", "affiliation": "client", "note": "Referenced at 14:25; likely same person as Alden in the 08-08 meeting." },
+    { "name": "Justin", "role": "mentioned", "affiliation": "client", "note": "Addressed at 14:25." }
+  ],
+  "namedThing": ["One Ride Beach", "Myriad", "PayMongo", "DOT", "MCM", "Google login"]
+}

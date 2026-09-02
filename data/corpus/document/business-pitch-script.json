@@ -1,0 +1,210 @@
+{
+  "source": {
+    "kind": "drive_doc",
+    "externalId": "1cKqEnn-YhZcmsFW1qGTvfO2gStD-p-5AwPfXvNo9jw8",
+    "url": "https://docs.google.com/document/d/1cKqEnn-YhZcmsFW1qGTvfO2gStD-p-5AwPfXvNo9jw8/edit",
+    "title": "ADVO Business Pitch Script",
+    "documentDate": null,
+    "owner": "princewagan08@gmail.com",
+    "documentKind": "script"
+  },
+  "link": {
+    "projectId": null,
+    "leadName": null,
+    "clientName": null
+  },
+  "summary": "A nine-slide spoken pitch script for ADVO, delivered by Prince (slides 1, 2, 3, 5, 9), Gelo (4), Anthony (6), Au (7) and Schiff (8), aimed at an audience whose network can supply introductions. It positions ADVO as a Philippine web development company using AI-assisted development to build systems that work, serving two client types: businesses needing internal systems (clinics, construction, manufacturing) and businesses needing an online presence. Proof points are the FourlinQ Windows and Doors website with its Smart Quote system, in development at the time, and a Medical Registry Application for Medical City's Section of Endocrinology starting with thyroid cancer, which extracts EMR data into a structured template with AI double-checking. Target verticals are construction, healthcare and government-adjacent organisations; the finance slide promises written agreements, milestone-based payment, scoped pricing and full expense records. The document carries no printed date; SOURCE-DOCS.md dates it 20 March 2026.",
+  "fact": [
+    {
+      "claim": "ADVO describes itself as a web development company that builds web apps and websites for businesses that want to modernize how they operate or show up online, using AI-assisted development.",
+      "category": "identity",
+      "quote": "We're a web development company. We build web apps and websites for businesses that want to modernize how they operate or how they show up online.",
+      "sectionHeading": "SLIDE 1 — WHAT IS ADVO",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "ADVO's stated differentiator is building products around what the business actually needs rather than just what looks good, and delivering faster with AI-assisted development.",
+      "category": "brand",
+      "quote": "ADVO builds with purpose. Every product we make is designed around what the business actually needs. And we use AI-assisted development to deliver it faster and at a higher standard than what traditional development allows.",
+      "sectionHeading": "SLIDE 1 — WHAT IS ADVO",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "ADVO serves two client types: businesses that need internal systems (clinics, construction companies, manufacturers) and businesses that need an external online presence.",
+      "category": "brand",
+      "quote": "There are two types of clients we serve. The first is businesses that need to fix how they operate internally.",
+      "sectionHeading": "SLIDE 2 — CLIENTS WHO NEED INTERNAL SYSTEMS",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "The pitch frames a website as a business's first impression in 2026 and claims thousands of Philippine businesses are behind operationally or digitally.",
+      "category": "brand",
+      "quote": "In 2026, your website is your first impression. And most businesses in the Philippines are still making a bad one, or making no impression at all.",
+      "sectionHeading": "SLIDE 3 — CLIENTS WHO NEED EXTERNAL PRESENCE",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "Gelo is ADVO's lead developer and was actively building the FourlinQ Windows and Doors website at the time of the pitch.",
+      "category": "contact",
+      "quote": "I'm Gelo, ADVO's lead developer. ... Right now, I'm actively building a live client project, a website for FourlinQ Windows and Doors. It's in development as we speak.",
+      "sectionHeading": "SLIDE 4 — HOW WE BUILD IT",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": null,
+      "projectId": 3
+    },
+    {
+      "claim": "ADVO claims AI-assisted development turns projects that took months into weeks without lowering quality.",
+      "category": "process",
+      "quote": "A project that used to take months now takes weeks. And quality doesn't drop.",
+      "sectionHeading": "SLIDE 4 — HOW WE BUILD IT",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "FourlinQ Windows and Doors is named as ADVO's first client, with a lead-generation, search-optimized website and a Smart Quote system routing visitor quote requests to the sales team.",
+      "category": "product",
+      "quote": "Our first client is FourlinQ Windows and Doors. We're building their website, designed for lead generation, optimized for search, with a Smart Quote system built into the site",
+      "sectionHeading": "SLIDE 5 — PROOF / ACTIVE PROJECTS",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": null,
+      "projectId": 3
+    },
+    {
+      "claim": "ADVO is building a Medical Registry Application for Medical City's Section of Endocrinology, starting with thyroid cancer patients, personally led by Prince.",
+      "category": "product",
+      "quote": "We're building a Medical Registry Application for Medical City, specifically for their Section of Endocrinology, starting with Thyroid Cancer patients.",
+      "sectionHeading": "SLIDE 5 — PROOF / ACTIVE PROJECTS",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": null,
+      "projectId": 7
+    },
+    {
+      "claim": "The registry app connects to the hospital EMR, extracts and categorizes patient data into a structured template, has AI double-check the extraction, and lets the doctor review and sign off, removing the need for a human encoder.",
+      "category": "product",
+      "quote": "Our app connects to the EMR, scans patient data, extracts the relevant information, and categorizes it into a structured medical template automatically. AI double-checks the extraction. Then the doctor reviews and signs off.",
+      "sectionHeading": "SLIDE 5 — PROOF / ACTIVE PROJECTS",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": null,
+      "projectId": 7
+    },
+    {
+      "claim": "The registry is intended to expand from thyroid cancer to other diseases, sections and hospitals nationwide.",
+      "category": "commitment",
+      "quote": "And once it works for Thyroid Cancer, it expands to other diseases, other sections, and other hospitals. Long term, this becomes a standard tool for medical institutions across the country.",
+      "sectionHeading": "SLIDE 5 — PROOF / ACTIVE PROJECTS",
+      "basis": "document",
+      "confidence": 0.95,
+      "occurredAt": null,
+      "projectId": 7
+    },
+    {
+      "claim": "Anthony is one of ADVO's project managers, responsible for on-time delivery and client status.",
+      "category": "contact",
+      "quote": "I'm Anthony, one of ADVO's project managers. My job is making sure every project gets delivered on time and that the client always knows where things stand.",
+      "sectionHeading": "SLIDE 6 — WHO WE'RE BUILT FOR",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "ADVO's target verticals are construction companies, healthcare (clinics, specialty practices, hospitals), government-adjacent organisations, and any business still on paper or disconnected tools, sought as long-term partnerships.",
+      "category": "brand",
+      "quote": "Construction companies are one of our top targets. ... Healthcare is another major focus. ... We're also interested in government-adjacent organizations and offices managing large-scale public data.",
+      "sectionHeading": "SLIDE 6 — WHO WE'RE BUILT FOR",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "The team is Prince (CEO and founder), Gelo (lead developer), Schiff (finances and operations), Anthony and Au (project managers) and David (growth and partnerships lead).",
+      "category": "contact",
+      "quote": "Prince is our CEO and founder. ... Gelo is our lead developer ... Schiff handles our finances ... Anthony and I keep everything on track. And David is our growth and partnerships lead.",
+      "sectionHeading": "SLIDE 7 — THE TEAM",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "Every project starts with a written agreement covering scope, deliverables, timeline and payment structure, with milestone-based payment: a downpayment to begin and the balance tied to delivery.",
+      "category": "process",
+      "quote": "Our payment structure is milestone-based. A downpayment is required to begin and the remaining balance is tied to delivery.",
+      "sectionHeading": "SLIDE 8 — FINANCES & TRUST",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "Quotes are scoped to the project and adjusted to the client's budget, and the number does not change without client approval.",
+      "category": "process",
+      "quote": "What we commit to in every case is that the client knows the number before anything is signed, and that number doesn't change without their approval.",
+      "sectionHeading": "SLIDE 8 — FINANCES & TRUST",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "Schiff keeps full records of every expense tied to a project or operational need, and every engagement is covered by a signed web development agreement with scope, payment, IP and termination terms.",
+      "category": "process",
+      "quote": "Every client engagement is covered by a formal web development agreement, signed by both parties, with clear terms for scope, payment, intellectual property, and termination.",
+      "sectionHeading": "SLIDE 8 — FINANCES & TRUST",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "The close asks the audience for introductions to construction companies, hospitals or clinics, and paper-bound business owners.",
+      "category": "commitment",
+      "quote": "We're showing you what we're already doing and asking for the right introductions so we can do more of it.",
+      "sectionHeading": "SLIDE 9 — CLOSE",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": null,
+      "projectId": null
+    }
+  ],
+  "term": [
+    { "name": "slide_count", "value": 9, "unit": null, "quote": "**SLIDE 9 — CLOSE****Speaker: Prince**" },
+    { "name": "traditional_agency_delivery_month_count", "value": "6-12", "unit": "month", "quote": "A standard agency might take six months to a year to deliver something." }
+  ],
+  "action": [
+    {
+      "description": "Follow up with the pitch audience for introductions to construction companies, healthcare providers and paper-based businesses.",
+      "ownerName": "David",
+      "dueAt": null,
+      "basis": "document",
+      "status": "open"
+    }
+  ],
+  "person": [
+    { "name": "Prince", "role": "representative", "affiliation": "ADVO" },
+    { "name": "Gelo", "role": "representative", "affiliation": "ADVO" },
+    { "name": "Anthony", "role": "representative", "affiliation": "ADVO" },
+    { "name": "Au", "role": "representative", "affiliation": "ADVO" },
+    { "name": "Schiff", "role": "representative", "affiliation": "ADVO" },
+    { "name": "David", "role": "mentioned", "affiliation": "ADVO" }
+  ]
+}

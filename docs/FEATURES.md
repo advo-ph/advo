@@ -453,6 +453,18 @@ Paste a Facebook page URL → extracts company data via authenticated Playwright
 
 ---
 
+## Corpus (`/admin` → Corpus, `/api/corpus`, migration 027)
+
+Every fact ADVO has stated, with the line it rests on. Five tables: `corpus_source` (a Drive doc, a Plaud recording, a pasted text; unique per kind + external id so re-ingesting replaces rather than duplicates), `corpus_fact` (one checkable claim, its verbatim quote, its `m:ss` or heading, its `basis` — transcript / document / ai_note / heuristic / human — and a confidence; a generated tsvector for search; superseded, never deleted), `corpus_term` (a document's parameters as typed values: revision rounds, deemed-approval days, infra fee in centavos), `corpus_action` (accountability: who said they would do what, by when, on which recording; open / done / dropped with a resolution timestamp the DB insists on), `corpus_template` (contract, proposal, sign-off, addendum, pitch deck, brand brief, minutes; `{{placeholders}}`; a new version per body change).
+
+**Ingest** three ways. `POST /api/corpus/ingest/json` takes a curated bundle (the shape the ingestion pass writes under `data/corpus/`). `POST /api/corpus/ingest/plaud` takes a share link, fetches the transcript, lands the recording in `meeting` under the mapped project or Inbox, and extracts. `POST /api/corpus/ingest/text` takes pasted minutes or a chat export. Extraction is Claude when `ANTHROPIC_API_KEY` is set (`CORPUS_EXTRACT_MODEL` picks the model, so the first pass can run on Opus and the steady state on something cheaper) and a regex heuristic otherwise, which marks every guess `basis: heuristic` at 30%.
+
+**Fact-check.** `POST /api/corpus/check { claim }` searches claim + quote by words (numbers are deliberately not search terms), then compares the numbers in the claim against the numbers in each match and answers supported / conflicting / unknown with the matches, quotes, timestamps and sources shown. It is a comparison, not an oracle, and the screen says so.
+
+**Loader.** `npm run corpus:load` posts every bundle under `data/corpus/meeting` and `data/corpus/document`, plus `data/corpus/document/TEMPLATE.json` and `data/corpus/template/*.json`, to an API (`ADVO_API_URL`, `ADVO_EMAIL`, `ADVO_PASSWORD`). Idempotent; exit 1 if anything was skipped. A bundle that names a project id the target database does not have is loaded with the id dropped and remembered in `meta.unresolvedProjectId`. A `leadName` the pipeline has never seen becomes a `lead` row.
+
+**First pass (2026-09-03).** 17 Plaud recordings and 11 Drive documents, mapped by two agents reading the full transcripts; see `data/corpus/meeting/INDEX.md` and `data/corpus/document/INDEX.md` for the tables and the contradictions they found. Templates distilled: contract, proposal, sign-off, addendum, pitch deck, campaign, brand brief, minutes.
+
 ## Email Notifications
 
 Handled by the ADVO API email service (`advo-api/src/services/email.service.ts`).

@@ -1,0 +1,378 @@
+{
+  "source": {
+    "kind": "drive_doc",
+    "externalId": "1luDnBhb-nRjQjn00h7e1EOHgiXMkh69OEcnkgj7imck",
+    "url": "https://docs.google.com/document/d/1luDnBhb-nRjQjn00h7e1EOHgiXMkh69OEcnkgj7imck/edit",
+    "title": "THE OFFICIAL ADVO INTERNAL COMMISSION AND OPERATIONS AGREEMENT",
+    "documentDate": null,
+    "owner": "agramos0765@gmail.com",
+    "documentKind": "agreement"
+  },
+  "link": {
+    "projectId": null,
+    "leadName": null,
+    "clientName": null
+  },
+  "summary": "ADVO's internal contractor agreement, which every incoming contractor including junior developers must sign before engagement. It identifies ADVO Web Development Services as a DTI-registered entity owned by CEO Prince Alpherson A. Wagan, and splits Net Project Revenue (gross collected minus direct third-party costs) 55% to a Developer Pool, 35% to a Staff Pool (20% lead partnerships, 50% management, 20% marketing, 10% accounting) and 10% to a Company Reserve, with 5% EWT withheld from every gross allocation. Junior and creatives developers draw 5%, 10% or 15% of the developer pool by a three-tier contribution matrix; tool expenses beyond a company-provided AI baseline are reimbursed from the pool only when pre-approved. It also fixes role declarations, forfeiture on non-performance, ADVO ownership of all work product, a two-year NDA, non-circumvention, payouts 3–5 business days after the client's final payment clears, independent-contractor status, a 3–5 business-day notice period, 72-hour asset turnover, and a 12-month non-solicitation. The document carries no printed date (Drive shows it modified 31 July 2026); several internal section cross-references point to the wrong section.",
+  "fact": [
+    {
+      "claim": "All incoming contractors, including formally contracted junior developers, must review and sign the agreement before official engagement with ADVO.",
+      "category": "process",
+      "quote": "All incoming contractors, including formally contracted Junior Developers, are required to review, sign, and adhere to the terms and conditions outlined in this Internal Commission and Operations Agreement prior to their official engagement with ADVO.",
+      "sectionHeading": "SECTION I. PARTIES TO THIS AGREEMENT",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "ADVO Web Development Services is registered with the Department of Trade and Industry of the Philippines, with Prince Alpherson A. Wagan as registered owner and Chief Executive Officer.",
+      "category": "identity",
+      "quote": "ADVO Web Development Services, the official legal entity registered with the Department of Trade and Industry (DTI) of the Republic of the Philippines, with Prince Alpherson A. Wagan formally recognized as the registered owner and Chief Executive Officer",
+      "sectionHeading": "SECTION I. PARTIES TO THIS AGREEMENT",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "Net Project Revenue is the gross amount collected from the client minus direct third-party project expenses such as hosting, domain registration and payment gateway fees.",
+      "category": "contract_term",
+      "quote": "Net Project Revenue is defined as the gross amount collected from the client minus direct third-party project expenses (e.g., hosting, domain registration, and payment gateway fees).",
+      "sectionHeading": "SECTION II. COMPENSATION STRUCTURE",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "A mandatory 5% Expanded Withholding Tax is deducted from every gross commission allocation before the net cash payout.",
+      "category": "contract_term",
+      "quote": "the mandatory 5% Expanded Withholding Tax (EWT) is deducted from all gross allocations as required by Philippine law before the final Net Cash Payout is issued.",
+      "sectionHeading": "SECTION II. COMPENSATION STRUCTURE",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "Net Project Revenue is split 55% Developer Pool, 35% Staff Pool and 10% Company Reserve.",
+      "category": "contract_term",
+      "quote": "| Developer Pool | 55% | Senior Developer(s) + Junior Developer(s) + Creatives Developer(s) |\n| Staff Pool | 35% | All contributing non-developer staff |\n| Company Reserve | 10% | ADVO operations, expenses, investments |",
+      "sectionHeading": "SECTION II. COMPENSATION STRUCTURE",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "The referral allocation sits inside the Staff Pool and is redistributed proportionally within it when a project has no referral.",
+      "category": "contract_term",
+      "quote": "The referral allocation will be placed under the staff pool. If no referral is associated with the project. It is redistributed proportionally into the staff pool.",
+      "sectionHeading": "SECTION II. COMPENSATION STRUCTURE",
+      "basis": "document",
+      "confidence": 0.95,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "The CEO may act as a developer on a project and then draws from the Developer Pool at the agreed rate for that role, not additionally from the Company Reserve.",
+      "category": "contract_term",
+      "quote": "When doing so, the Chief Executive Officer draws from the Developer Pool at the agreed rate for that role and does not draw additionally from the Company Reserve for the same project.",
+      "sectionHeading": "SECTION II. COMPENSATION STRUCTURE",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "A developer who fails to perform and whose work is absorbed by another forfeits their Developer Pool share in proportion to the undelivered work, with disputes escalated to the CEO.",
+      "category": "contract_term",
+      "quote": "the non-performing developer forfeits their share of the Developer Pool, or a portion thereof, proportional to the work they failed to deliver.",
+      "sectionHeading": "SECTION II. COMPENSATION STRUCTURE",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "Project-specific tool expenses (AI credits, model subscriptions, cloud storage) are deducted from the Developer Pool before distribution, and the Senior Developer receives the baseline share of the net pool.",
+      "category": "contract_term",
+      "quote": "Project-specific tool expenses, including AI credits, model subscriptions, and cloud storage, are deducted from the Developer Pool before distribution.",
+      "sectionHeading": "SECTION III. DEVELOPER POOL & TIERED CONTRIBUTION",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "Tier 1 contribution (routine and assisted execution) earns a 5% allocation of the developer pool.",
+      "category": "contract_term",
+      "quote": "**Tier 1 Contribution (5% Allocation): Routine & Assisted Execution.** This tier encompasses routine manual labor, basic data population, and simple AI image generation.",
+      "sectionHeading": "SECTION III. DEVELOPER POOL & TIERED CONTRIBUTION",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "Tier 2 contribution (independent high-volume client-ready AI image assets needing zero correction) earns a 10% allocation.",
+      "category": "contract_term",
+      "quote": "**Tier 2 Contribution (10% Allocation): Independent High-Volume Asset Creation.**",
+      "sectionHeading": "SECTION III. DEVELOPER POOL & TIERED CONTRIBUTION",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "Tier 3 contribution (complex, public-ready AI video assets) earns a 15% allocation.",
+      "category": "contract_term",
+      "quote": "**Tier 3 Contribution (15% Allocation): Advanced Media & Public-Ready Execution.** This tier requires the successful generation and delivery of complex AI video assets.",
+      "sectionHeading": "SECTION III. DEVELOPER POOL & TIERED CONTRIBUTION",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "The company provides a monthly baseline of AI tooling: AI chat and coding (Claude 5x/20x, ChatGPT Pro, Gemini Pro), image generation (ChatGPT Pro, Gemini Pro) and video generation (1000 Google Flow credits).",
+      "category": "commitment",
+      "quote": "AI Chat & Coding (e.g., Claude 5x/20x as required, ChatGPT Pro, Gemini Pro)",
+      "sectionHeading": "SECTION III. Developer Expenses & Resource Allocation",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "Out-of-pocket tool expenses beyond the baseline are reimbursed from the Developer Pool only if pre-approved in writing by the CEO or designated management; unapproved expenses are borne by the contractor.",
+      "category": "process",
+      "quote": "Any out-of-pocket expenses must be pre-approved in writing (including digital messaging) by the Chief Executive Officer or designated Management prior to purchase.",
+      "sectionHeading": "SECTION III. Pre-Approval Safeguard",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "Developers may waive reimbursement of approved expenses, and the CEO may unilaterally absorb losses to protect contractor payouts on a given project.",
+      "category": "contract_term",
+      "quote": "the Chief Executive Officer retains the unilateral right to absorb these financial losses.",
+      "sectionHeading": "SECTION III. Voluntary Waiver & Executive Loss Absorption",
+      "basis": "document",
+      "confidence": 0.96,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "The Company Reserve is used only for operational expenses, tool subscriptions, business registration, repaying investment ROI and investment return obligations under the ADVO Investment Agreement; no contractor may draw from it personally.",
+      "category": "contract_term",
+      "quote": "It is also used to fulfill any investment return obligations as agreed in the ADVO Investment Agreement.",
+      "sectionHeading": "SECTION IV. COMPANY RESERVE",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "The Staff Pool is split 20% Lead Partnerships, 50% Management, 20% Marketing and 10% Accounting.",
+      "category": "contract_term",
+      "quote": "| Lead Partnerships | 20% |\n| Management | 50% |\n| Marketing | 20% |\n| Accounting | 10% |",
+      "sectionHeading": "SECTION V. STAFF POOL",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "A staff role held by several people splits its share by agreed contribution, a non-performing staff contractor forfeits their allocation to whoever absorbed the work, and an unoccupied role's share redistributes proportionally among occupied roles.",
+      "category": "contract_term",
+      "quote": "If a role is unoccupied for a given project and no coverage is declared, that role's share redistributes proportionally among the remaining occupied Staff Pool roles for that project.",
+      "sectionHeading": "SECTION V. STAFF POOL",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "Every project begins with a formal Role Declaration that is the binding basis for compensation; contractors may Full Stack multiple roles and earn the combined percentages, and role changes need CEO approval.",
+      "category": "process",
+      "quote": "Every project shall begin with a formal Role Declaration identifying every participating contractor and their designated role for that project.",
+      "sectionHeading": "SECTION VI. ROLE DECLARATION & PERFORMANCE",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "Compensation disputes over absorbed or forfeited tasks are first agreed between the parties, then mediated by Management, and escalated to the CEO only as a last resort.",
+      "category": "process",
+      "quote": "If no agreement is reached, the dispute shall be mediated by designated Management. Escalation to the Chief Executive Officer is permitted strictly as a final resort if Management-level mediation fails to produce a resolution.",
+      "sectionHeading": "SECTION VI. ROLE DECLARATION & PERFORMANCE",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "All work produced by a contractor in connection with ADVO, on personal or company hours, is the exclusive property of ADVO Web Development Services.",
+      "category": "contract_term",
+      "quote": "All work produced by any contractor in connection with ADVO, whether for a client project or for the internal operations of the Company, is the exclusive property of ADVO Web Development Services.",
+      "sectionHeading": "SECTION VII. INTELLECTUAL PROPERTY, NDA, & NON-SOLICITATION",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "On separation a contractor must surrender all ADVO files, assets, credentials and proprietary materials within 72 hours.",
+      "category": "contract_term",
+      "quote": "the contractor agrees to surrender all ADVO-related files, assets, credentials, and proprietary materials in their possession within seventy-two (72) hours of separation.",
+      "sectionHeading": "SECTION VII. INTELLECTUAL PROPERTY, NDA, & NON-SOLICITATION",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "Signing the agreement creates an NDA covering source code, workflows, client lists, scope, pricing, compensation figures and architectures, lasting the engagement plus two years.",
+      "category": "contract_term",
+      "quote": "This obligation applies during the Contractor's engagement with ADVO and for a period of two (2) years following the end of their engagement, regardless of the reason for separation.",
+      "sectionHeading": "SECTION VII. INTELLECTUAL PROPERTY, NDA, & NON-SOLICITATION",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "Contractors may not bypass ADVO to serve any client introduced through ADVO or compete using confidential workflows.",
+      "category": "contract_term",
+      "quote": "Non-Circumvention: Contractors are strictly prohibited from bypassing ADVO to provide services directly to any client introduced through ADVO or competing using confidential workflows.",
+      "sectionHeading": "SECTION VII. INTELLECTUAL PROPERTY, NDA, & NON-SOLICITATION",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "Violations are raised in a formal team meeting and penalties, decided by the CEO in consultation with the team, may include forfeiture of compensation, suspension, removal or legal action.",
+      "category": "process",
+      "quote": "Penalties shall be determined by the Chief Executive Officer in consultation with the team and may include forfeiture of compensation, temporary suspension from projects, removal from the team, or legal action where applicable.",
+      "sectionHeading": "SECTION VII. INTELLECTUAL PROPERTY, NDA, & NON-SOLICITATION",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "Commission payouts are processed within 3 to 5 business days after full delivery and handover and after the client's final payment has cleared into ADVO's accounts.",
+      "category": "process",
+      "quote": "Commission payouts are strictly processed within three (3) to five (5) business days after the following conditions have been met:",
+      "sectionHeading": "SECTION VIII. VIOLATIONS, PENALTIES & DISBURSEMENT",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "The relationship is strictly independent contractor: ADVO sets deadlines and deliverables but not working hours or methods, contractors supply their own equipment, file their own taxes and pay their own SSS, PhilHealth and Pag-IBIG, and ADVO withholds only the 5% EWT.",
+      "category": "contract_term",
+      "quote": "Contractors are solely responsible for filing their own annual income taxes and voluntarily paying their own statutory contributions (SSS, PhilHealth, Pag-IBIG). ADVO will only withhold the mandatory 5% EWT as required by law.",
+      "sectionHeading": "SECTION IX. INDEPENDENT CONTRACTOR RELATIONSHIP",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "A contractor leaving ADVO must give 3 to 5 business days' written notice to the CEO, complete a formal handover, and return all company assets within 72 hours; final pay is released only after asset turnover is signed off by the CEO.",
+      "category": "process",
+      "quote": "A contractor who intends to terminate their contract with ADVO must provide a minimum notice period of three (3) to five (5) business days prior to their intended last day of engagement.",
+      "sectionHeading": "SECTION X. CONTRACT TERMINATION AND SEPARATION",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "The agreement is governed by the laws of the Republic of the Philippines and is the entire understanding on commission, IP, conduct and separation.",
+      "category": "contract_term",
+      "quote": "This Agreement is governed by the laws of the Republic of the Philippines.",
+      "sectionHeading": "SECTION XI. GENERAL TERMS",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "For 12 months after separation a contractor may not solicit or accept work from ADVO clients or recruit ADVO contractors for outside ventures.",
+      "category": "contract_term",
+      "quote": "For twelve (12) months following separation, the Contractor is prohibited from soliciting ADVO clients, accepting work from such clients, or recruiting ADVO contractors for outside ventures.",
+      "sectionHeading": "SECTION XII. NON-SOLICITATION",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "The signature page has blocks for seven contractors and the CEO Prince Alpherson A. Wagan; none is filled in the Drive copy.",
+      "category": "identity",
+      "quote": "| **Contractor \\#1 Signature**   | **Chief Executive Officer** Prince Alpherson A. Wagan  |",
+      "sectionHeading": "SIGNATURES",
+      "basis": "document",
+      "confidence": 0.9,
+      "occurredAt": null,
+      "projectId": null
+    },
+    {
+      "claim": "The agreement's internal cross-references are wrong: Section VII refers to penalties 'as described in Section VII', Section VIII cites confidentiality 'as described in Section VI', and Section X cites IP and confidentiality as 'Sections V and VI', but IP, NDA and penalties all sit in Section VII.",
+      "category": "risk",
+      "quote": "Intellectual property obligations and confidentiality obligations survive separation as described in Sections V and VI respectively.",
+      "sectionHeading": "SECTION X. CONTRACT TERMINATION AND SEPARATION",
+      "basis": "document",
+      "confidence": 0.9,
+      "occurredAt": null,
+      "projectId": null
+    }
+  ],
+  "term": [
+    { "name": "ewt_pct", "value": 5, "unit": "pct", "quote": "the mandatory 5% Expanded Withholding Tax (EWT) is deducted from all gross allocations" },
+    { "name": "developer_pool_pct", "value": 55, "unit": "pct", "quote": "| Developer Pool | 55% | Senior Developer(s) + Junior Developer(s) + Creatives Developer(s) |" },
+    { "name": "staff_pool_pct", "value": 35, "unit": "pct", "quote": "| Staff Pool | 35% | All contributing non-developer staff |" },
+    { "name": "company_reserve_pct", "value": 10, "unit": "pct", "quote": "| Company Reserve | 10% | ADVO operations, expenses, investments |" },
+    { "name": "junior_tier_1_pct", "value": 5, "unit": "pct", "quote": "**Tier 1 Contribution (5% Allocation): Routine & Assisted Execution.**" },
+    { "name": "junior_tier_2_pct", "value": 10, "unit": "pct", "quote": "**Tier 2 Contribution (10% Allocation): Independent High-Volume Asset Creation.**" },
+    { "name": "junior_tier_3_pct", "value": 15, "unit": "pct", "quote": "**Tier 3 Contribution (15% Allocation): Advanced Media & Public-Ready Execution.**" },
+    { "name": "video_generation_credit_count_per_month", "value": 1000, "unit": "month", "quote": "Video Generation (e.g., 1000 Google Flow credits)" },
+    { "name": "staff_lead_partnership_pct", "value": 20, "unit": "pct", "quote": "| Lead Partnerships | 20% |" },
+    { "name": "staff_management_pct", "value": 50, "unit": "pct", "quote": "| Management | 50% |" },
+    { "name": "staff_marketing_pct", "value": 20, "unit": "pct", "quote": "| Marketing | 20% |" },
+    { "name": "staff_accounting_pct", "value": 10, "unit": "pct", "quote": "| Accounting | 10% |" },
+    { "name": "asset_surrender_hour_count", "value": 72, "unit": null, "quote": "within seventy-two (72) hours of separation" },
+    { "name": "nda_post_separation_year_count", "value": 2, "unit": null, "quote": "for a period of two (2) years following the end of their engagement" },
+    { "name": "payout_business_day_count", "value": "3-5", "unit": "business_day", "quote": "Commission payouts are strictly processed within three (3) to five (5) business days" },
+    { "name": "resignation_notice_business_day_count", "value": "3-5", "unit": "business_day", "quote": "a minimum notice period of three (3) to five (5) business days prior to their intended last day of engagement" },
+    { "name": "non_solicitation_month_count", "value": 12, "unit": "month", "quote": "For twelve (12) months following separation, the Contractor is prohibited from soliciting ADVO clients" },
+    { "name": "contractor_signature_block_count", "value": 7, "unit": null, "quote": "| **Contractor \\#7 Signature**   |" }
+  ],
+  "action": [
+    {
+      "description": "Every incoming contractor, including junior developers, signs the Internal Commission and Operations Agreement before engagement.",
+      "ownerName": "Prince Alpherson A. Wagan",
+      "dueAt": null,
+      "basis": "document",
+      "status": "open"
+    },
+    {
+      "description": "Each project opens with a formal Role Declaration naming every contractor and their role.",
+      "ownerName": "ADVO management",
+      "dueAt": null,
+      "basis": "document",
+      "status": "open"
+    }
+  ],
+  "person": [
+    { "name": "Prince Alpherson A. Wagan", "role": "signatory", "affiliation": "ADVO" }
+  ]
+}

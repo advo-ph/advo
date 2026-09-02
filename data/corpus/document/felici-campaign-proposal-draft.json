@@ -1,0 +1,165 @@
+{
+  "source": {
+    "kind": "drive_doc",
+    "externalId": "1lN7n9-YM2yfvgNRU73SQamGpJ80yjS0bvAoVaMM7tYg",
+    "url": "https://docs.google.com/document/d/1lN7n9-YM2yfvgNRU73SQamGpJ80yjS0bvAoVaMM7tYg/edit",
+    "title": "CAMPAIGN PROPOSAL - FELICI GELATO COLLABORATION (DRAFT)",
+    "documentDate": "2026-05-26",
+    "owner": "agramos0765@gmail.com",
+    "documentKind": "campaign"
+  },
+  "link": {
+    "projectId": 6,
+    "leadName": null,
+    "clientName": "Felici Artisan Gelato"
+  },
+  "summary": "A draft influencer campaign proposal dated 26 May 2026 (SOURCE-DOCS.md lists it as 28 May) between Felici Artisan Gelato and the KarJack tandem, DJ Kara (Klariz Magboo, 3,688,000 total reach) and Papa Jack (John Gemperle, 2,069,000 total reach). The theme is 'Cold Gelato In Summer. Masarap pag may ka share', shot in one production day on-site at the Felici branch, delivering one Instagram/Facebook reel, one social media post and two Instagram stories. Talent fees are ₱40,000 each (₱80,000 total) plus ₱5,000 for production (photography, video, editing). The fee table names the second talent 'Papa Jackson' while the rest of the document says 'Papa Jack'. It is signed by a KarJack talent representative and Felici Artisan Gelato; both blocks are blank and ADVO is not a named party.",
+  "fact": [
+    {
+      "claim": "The campaign proposal is dated May 26, 2026, the client is Felici Artisan Gelato, and the talent is the KarJack tandem of DJ Kara (Klariz Magboo) and Papa Jack (John Gemperle).",
+      "category": "identity",
+      "quote": "**Date:** May 26, 2026\n\n**Client:** Felici Artisan Gelato \n\n**Talent:** DJ Kara (Klariz Magboo) & Papa Jack (John Gemperle) – \"KarJack\"",
+      "sectionHeading": "Header",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-05-26",
+      "projectId": 6
+    },
+    {
+      "claim": "The collaboration is for social media marketing and brand integration between Felici Artisan Gelato and KarJack.",
+      "category": "scope",
+      "quote": "This contract outlines the terms of collaboration between Felici Artisan Gelato and the \"KarJack\" digital tandem for social media marketing and brand integration.",
+      "sectionHeading": "Summary",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-05-26",
+      "projectId": 6
+    },
+    {
+      "claim": "DJ Kara (Klariz Magboo) has a total reach of 3,688,000: Facebook 2.1 million, YouTube 1.2 million, Instagram 388K, and is the Tagalog dub voice of Ash Ketchum in Pokémon.",
+      "category": "brand",
+      "quote": "Metrics: Facebook: 2.1 Million | YouTube: 1.2 Million | Instagram: 388K.",
+      "sectionHeading": "Talent Overview and Combined Reach",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-05-26",
+      "projectId": 6
+    },
+    {
+      "claim": "Papa Jack (John Gemperle) has a total reach of 2,069,000: Facebook 1.1 million, YouTube 419K, TikTok 387K, Instagram 163K.",
+      "category": "brand",
+      "quote": "Metrics: Facebook: 1.1 Million | YouTube: 419K | TikTok: 387K | Instagram: 163K.",
+      "sectionHeading": "Talent Overview and Combined Reach",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-05-26",
+      "projectId": 6
+    },
+    {
+      "claim": "The campaign theme is 'Cold Gelato In Summer. Masarap pag may ka share', aiming at brand recall through kilig, comedy and banter.",
+      "category": "brand",
+      "quote": "**Theme:** “Cold Gelato In Summer. Masarap pag may ka share”",
+      "sectionHeading": "Campaign Concept & Scope of Work",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-05-26",
+      "projectId": 6
+    },
+    {
+      "claim": "Production is one day, on-site at the Felici Artisan Gelato branch.",
+      "category": "scope",
+      "quote": "Shoot Duration: One (1) Production day\n      - Location: On-site at the Felici Artisan Gelato branch",
+      "sectionHeading": "Campaign Concept & Scope of Work",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-05-26",
+      "projectId": 6
+    },
+    {
+      "claim": "Deliverables are one Instagram/Facebook reel, one social media post (photo carousel or promo post) and two Instagram stories.",
+      "category": "scope",
+      "quote": "**1x Instagram / Facebook Reel:** ... **1x Social Media Post:** ... **2x Instagram Stories:**",
+      "sectionHeading": "Campaign Concept & Scope of Work",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-05-26",
+      "projectId": 6
+    },
+    {
+      "claim": "DJ Kara's talent fee is ₱40,000.00.",
+      "category": "pricing",
+      "quote": "| DJ Kara | ₱40,000.00  |",
+      "sectionHeading": "Talent Fee",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-05-26",
+      "projectId": 6
+    },
+    {
+      "claim": "Papa Jack's talent fee is ₱40,000.00, though the fee table names him 'Papa Jackson'.",
+      "category": "pricing",
+      "quote": "| Papa Jackson | ₱40,000.00 |",
+      "sectionHeading": "Talent Fee",
+      "basis": "document",
+      "confidence": 0.97,
+      "occurredAt": "2026-05-26",
+      "projectId": 6
+    },
+    {
+      "claim": "The total talent fee is ₱80,000.00.",
+      "category": "pricing",
+      "quote": "| TOTAL FEE | ₱80,000.00 |",
+      "sectionHeading": "Talent Fee",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-05-26",
+      "projectId": 6
+    },
+    {
+      "claim": "Production (photography, video, content editing) is an additional ₱5,000.00.",
+      "category": "pricing",
+      "quote": "| Production (Photography, Video, Content Editing) | ₱5,000.00 |",
+      "sectionHeading": "Additionals",
+      "basis": "document",
+      "confidence": 0.98,
+      "occurredAt": "2026-05-26",
+      "projectId": 6
+    },
+    {
+      "claim": "The signatories are a Talent Representative (KarJack) and Felici Artisan Gelato; ADVO is not a named party and both blocks are blank.",
+      "category": "identity",
+      "quote": "Talent Representative (KarJack)                                   Signature/Date",
+      "sectionHeading": "Signatures",
+      "basis": "document",
+      "confidence": 0.9,
+      "occurredAt": "2026-05-26",
+      "projectId": 6
+    }
+  ],
+  "term": [
+    { "name": "dj_kara_total_reach_count", "value": 3688000, "unit": null, "quote": "**DJ Kara (Klariz Magboo): 3,688,000 Total Reach**" },
+    { "name": "papa_jack_total_reach_count", "value": 2069000, "unit": null, "quote": "**Papa Jack (John Gemperle): 2,069,000 Total Reach**" },
+    { "name": "production_day_count", "value": 1, "unit": "day", "quote": "Shoot Duration: One (1) Production day" },
+    { "name": "reel_count", "value": 1, "unit": null, "quote": "**1x Instagram / Facebook Reel:**" },
+    { "name": "post_count", "value": 1, "unit": null, "quote": "**1x Social Media Post:**" },
+    { "name": "story_count", "value": 2, "unit": null, "quote": "**2x Instagram Stories:**" },
+    { "name": "talent_fee_dj_kara_cents", "value": 4000000, "unit": "cents", "quote": "| DJ Kara | ₱40,000.00  |" },
+    { "name": "talent_fee_papa_jack_cents", "value": 4000000, "unit": "cents", "quote": "| Papa Jackson | ₱40,000.00 |" },
+    { "name": "total_talent_fee_cents", "value": 8000000, "unit": "cents", "quote": "| TOTAL FEE | ₱80,000.00 |" },
+    { "name": "production_fee_cents", "value": 500000, "unit": "cents", "quote": "| Production (Photography, Video, Content Editing) | ₱5,000.00 |" }
+  ],
+  "action": [
+    {
+      "description": "Finalize the draft (fix the 'Papa Jackson' name in the fee table) and obtain signatures from the KarJack talent representative and Felici Artisan Gelato.",
+      "ownerName": "ADVO",
+      "dueAt": null,
+      "basis": "document",
+      "status": "open"
+    }
+  ],
+  "person": [
+    { "name": "DJ Kara (Klariz Magboo)", "role": "signatory", "affiliation": "other" },
+    { "name": "Papa Jack (John Gemperle)", "role": "signatory", "affiliation": "other" },
+    { "name": "Felici Artisan Gelato", "role": "signatory", "affiliation": "client" }
+  ]
+}

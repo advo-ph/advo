@@ -25,6 +25,7 @@
     "migration:drift": "node scripts/migration-drift.mjs",
     "env:drift": "node scripts/env-drift.mjs",
     "bench:env": "node bench/roadmap/env-drift/scoring.mjs",
+    "corpus:load": "node scripts/corpus-load.mjs",
     "db:local": "node scripts/db-local.mjs",
     "bench:drift": "node bench/roadmap/migration-drift/scoring.mjs",
     "bench:drawer": "node bench/roadmap/drawer-a11y/scoring.mjs",

@@ -1,0 +1,363 @@
+{
+  "source": {
+    "kind": "plaud",
+    "externalId": "pub_5989e12d-2393-4a61-a219-1e0ab13ac3d2",
+    "url": "https://web.plaud.ai/s/pub_5989e12d-2393-4a61-a219-1e0ab13ac3d2::F9SkgJv_lisfIooRKDtGFnTdThz3n-7ZTGWMxXV4Ibq19jPmYjeDTJQW87F0lgPlvYNShXBWdSNhIFWDFmFyDAI",
+    "title": "08-11 Meeting: ADVO — Power Mac Center Spotlight 4 — Digital Transformation: QR Showroom Tracking, Offline Attendance, Digital Handbook",
+    "recordedAt": "2026-08-11T12:00:00+08:00",
+    "durationSecond": 1057,
+    "speaker": ["Speaker 1", "Speaker 2", "Speaker 3", "Speaker 4"],
+    "isDiarizationSuspect": true,
+    "language": "mixed"
+  },
+  "link": {
+    "projectId": 3,
+    "leadName": null,
+    "clientName": "FourlinQ Windows and Doors"
+  },
+  "summary": "ADVO (Speaker 1) offers to make check-in and biometrics work offline, which the client (Speaker 2) says is important; she asks for a final, lowest price, wants to test the system with staff for feedback, and wants things firmed up first. She adds a digital company handbook requirement inside the attendance app: all policies readable by staff, downloadable only by executives for printing and signing. For her showrooms, where coordinators currently report daily visitors manually, she wants a QR code that opens the website, lets the customer pick the showroom (Digas, Alamang, NCB are mentioned), and produces an exportable daily summary. She asks ADVO to polish the attendance proposal, mark the CRM stages as work in progress, keep sales separate, and integrate a downloadable catalog/brochure (possibly via Telegram); ADVO explains uploads live in database storage so the website code stays light. Marketing is discussed: Shane will make AI-assisted graphics with reference images, the social page must stay active, and the client wants a start-to-finish project reel ending on the finished windows; Dave is to photograph the Excalibur project, whose windows and doors are all the client's. Linked to project 3: showrooms, 'four link' and windows and doors, and Excalibur as a contractor client match FourLinq.",
+  "fact": [
+    {
+      "claim": "ADVO offered to make check-in and biometrics offline-ready so they work without WiFi.",
+      "category": "commitment",
+      "quote": "At saka kung gusto nyo rin, pwede natin gawing offline ready yung check-in. So kung gusto mo mga biometrics, pwede natin gawing offline. Paano? Like kahit wala kang wifi, gagana siya.",
+      "timestamp": "0:00",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client considers offline-ready attendance important.",
+      "category": "client_need",
+      "quote": "Ah, oo. Yun ang importante. Mas maganda. So maganda natin to.",
+      "timestamp": "0:12",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client asked ADVO for the final, lowest price.",
+      "category": "pricing",
+      "quote": "Bigyan sa akin yung final price. Yung pinaka-pinaka...",
+      "timestamp": "0:16",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.9,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client wants to test the system now to gather staff feedback before finalizing.",
+      "category": "process",
+      "quote": "Pero pwede ko na i-test. Opo. Para may makuha tayong feedback sa staff. Sige po.",
+      "timestamp": "0:22",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client wants the scope firmed up first and wants a face-to-face meeting.",
+      "category": "process",
+      "quote": "I-firm up natin muna ito. Kasi gusto ko magkita.",
+      "timestamp": "0:33",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client wants a company handbook in the app so staff can read all agency and administrative policies.",
+      "category": "client_need",
+      "quote": "Ah, dadagdagan mo palang handbook pala. Handbook? Company handbook. Ah, sige. Lahat ng policy, dapat nababasa nila. Agency policy, administrative policy, yung ano.",
+      "timestamp": "1:44",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Handbook documents are read-only for staff; only executives may download them, to print and have staff sign; this lives in the attendance app.",
+      "category": "client_need",
+      "quote": "Oo. Pero hindi na pwede download. Ah, hindi? Basahin lang din na balanse mo. Pero ang pwede mag-download, executive lang. Para i-print, papapirmahin lang sila. Ah, sige. Saan yan? Sa... Sa attendance. Attendance, yeah. Attendance.",
+      "timestamp": "2:08",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Showroom visitor reporting is currently done manually and reported to the owner every day.",
+      "category": "process",
+      "quote": "Manually, nagre-report pa. Halimbawa yan, sa, Ano ba, nasasabi pa nila Sa akin kung sino nag-, kanina, sino yun.",
+      "timestamp": "3:01",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client wants a QR code that takes showroom visitors to the website with a showroom selector (Digas, Alamang, NCB mentioned) so a visit summary is generated automatically.",
+      "category": "client_need",
+      "quote": "Yung QR code, ibibigay lang namin. Papasok na siya sa website natin. Pwede ba, Yosh? Oo. Pwede mo lagyan ng option na anong showroom, Or digas, or alamang, showroom, NCB. Yeah. Parang pipindutin na lang nila. Tapos from there, makakagawa ng summary.",
+      "timestamp": "3:33",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The daily showroom summary should be something the coordinator posts or copy-pastes to the owner, sourced from the website.",
+      "category": "client_need",
+      "quote": "Na ipopost niya sa akin. I-cocopy-paste. Na ito yung per day na pumasok. Kaya ba? Yung sa website na lang.",
+      "timestamp": "4:04",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Each showroom has a coordinator who currently enters visitor data manually.",
+      "category": "process",
+      "quote": "May coordinator talaga kami. So internal, kapag ma-manual pa siya, ilalagay niya lahat, Pasok lang siya doon sa QR code.",
+      "timestamp": "4:15",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Coordinators need an export of the walk-in customer report.",
+      "category": "client_need",
+      "quote": "Ipopost lang nila as ganyan. Kumbaga may export lang sila. I-export lang nila yung report nila. At yung mga kapost. Pwede ba yun? Yung sa may website. Yung QR, pasok siya. Diba? Mga customers siya. Oo, customers.",
+      "timestamp": "4:26",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Prince is identified in the room as the one who was making games at 14.",
+      "category": "contact",
+      "quote": "Prince, the genius.",
+      "timestamp": "5:07",
+      "speaker": "Speaker 4",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client asked ADVO to polish the attendance proposal so that item can be closed.",
+      "category": "client_need",
+      "quote": "Gandahan po proposal. Para tapos na tayo dyan.",
+      "timestamp": "6:23",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The CRM stages should be marked work in progress; the client still wants sales kept outside the shared system because she fears losing it.",
+      "category": "decision",
+      "quote": "So, lagyan mo na. Work in progress. Para pwede na siya. Sige na. Pero parang gusto ko pa rin sales outside. Outside that. Parang gusto ko pa rin. Takot ako mawala. Sales ng costares.",
+      "timestamp": "6:42",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The CRM is segregated per company across all the client's companies.",
+      "category": "scope",
+      "quote": "Ay, hindi, hindi. Puso na yan sa lahat ng companies? Oo po. Mga CRM. In-segregated.",
+      "timestamp": "7:02",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.65,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Uploaded files go to database storage, so the website itself is only code and does not get heavier with more features.",
+      "category": "product",
+      "quote": "Pag in-upload mo yung file, Makikita yun sa database storage. So yung website mismo, code lang siya. Yung website, walang mabigat doon kasi code lang. So pag nag-upload ka doon, Pupunta sa database.",
+      "timestamp": "7:13",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client wants the new catalog made downloadable from the website's online catalog / download brochure section, possibly integrated via Telegram for clients.",
+      "category": "client_need",
+      "quote": "Catalog eh. Part dyan, ano eh, download brochure. Paggawa mo na kay Cloud. Sige po. Yung catalog namin mabagal, O isang dami lumakas sayo, Integrate nyo na lang. Sa telegram. Tapos para yung client, I-download na lang siya from there.",
+      "timestamp": "7:59",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Speaker 4 mentioned a coffee shop in Palawan that also uses an attendance system.",
+      "category": "product",
+      "quote": "May coffee shop siya sa Palawan, Isa rin siyang kong attendance.",
+      "timestamp": "8:22",
+      "speaker": "Speaker 4",
+      "basis": "transcript",
+      "confidence": 0.55,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Figures of 2,500 and 3,000 were mentioned in connection with contacting someone about a quotation tool; the context is unclear.",
+      "category": "pricing",
+      "quote": "Parang kukontakin namin yung mga. 2,500 yata.",
+      "timestamp": "9:38",
+      "speaker": "Speaker 1",
+      "basis": "transcript",
+      "confidence": 0.4,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client is bringing Shane in to produce marketing graphics like the examples shown.",
+      "category": "contact",
+      "quote": "Ito yung papagawa ko kay Shane. Kaya ako siya sinama. Oo. So parang papagawa lang ko lang sa kanya yung mga ganyan.",
+      "timestamp": "10:58",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "AI-generated graphics still require manual work and a reference image for the AI to copy.",
+      "category": "process",
+      "quote": "Kasi minsan ano, kailangan mas maganda magpakita ka ng reference sa AI para yun yung gagayahin niya mismo.",
+      "timestamp": "11:24",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.75,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "ADVO's graphics are all AI-made, with David doing the work.",
+      "category": "process",
+      "quote": "Sa amin puro AI lang po. Yung mga yan. Ha? Magaling na lang sa amin yun. Yung sa amin po, puro AI lang. Si David lang gumagawa. Ako lang po nagpapaano.",
+      "timestamp": "11:40",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.6,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client says the social page must stay active or people will think the business is gone.",
+      "category": "client_need",
+      "quote": "Kailangan kasi active yung page, otherwise sa tingin nila wala ka na.",
+      "timestamp": "12:02",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.8,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "The client wants an ad or reel that follows a project from the architect's start to the finished windows, ending on the finished product.",
+      "category": "client_need",
+      "quote": "Ito yung Dave's yung sabi ko, yung from start to finish. Hanggang sa magka-window siya, Dapat gumawa ka ng isang ganyan. Parang as an architect, Nag-voicemail ka, Hanggang makita mo na yung finished product. Yun yung gusto ko sa isang ad.",
+      "timestamp": "12:51",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Photos are to be taken at the Excalibur project, where all the windows and doors are the client's products.",
+      "category": "commitment",
+      "quote": "Babe, kukuha kayo ng picture dito sa Excalibur, kasi project namin lahat yan. Client ko yan, product ko yan lahat.",
+      "timestamp": "13:36",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Excalibur is a contractor and a client of the owner; the windows and doors in its projects are supplied by her.",
+      "category": "contact",
+      "quote": "Kaya sa kanya, client namin yan. Contractor kasi siya eh. Pero lahat ng windows, amin. Kasi sabi ko yung mga windows and doors niya, amin lahat. Yan o. Pero kilala tong si Excalibur.",
+      "timestamp": "14:31",
+      "speaker": "Speaker 2",
+      "basis": "transcript",
+      "confidence": 0.85,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    },
+    {
+      "claim": "Speaker 3 is an architecture student with about seven years to go, including two years of internship before the board exam.",
+      "category": "contact",
+      "quote": "Kasi after five years, May two years ako ng internship. Ayun, ayun, ayun. Tapos tsaka ako mag-board.",
+      "timestamp": "15:11",
+      "speaker": "Speaker 3",
+      "basis": "transcript",
+      "confidence": 0.7,
+      "occurredAt": "2026-08-11T12:00:00+08:00",
+      "projectId": 3
+    }
+  ],
+  "decision": [
+    { "text": "Check-in/biometrics to be offline-ready.", "timestamp": "0:12", "basis": "transcript" },
+    { "text": "Company handbook goes into the attendance app: read-only for staff, download restricted to executives.", "timestamp": "2:08", "basis": "transcript" },
+    { "text": "Showroom walk-ins tracked via QR code to the website with showroom selection and exportable daily summary, replacing manual reporting.", "timestamp": "3:33", "basis": "transcript" },
+    { "text": "CRM stages marked work in progress; sales stays outside the shared system for now.", "timestamp": "6:42", "basis": "transcript" }
+  ],
+  "action": [
+    { "description": "Provide the final price for the full project", "ownerName": "ADVO", "dueAt": null, "timestamp": "0:16", "basis": "transcript", "status": "open" },
+    { "description": "Provide a testable version so the client can gather staff feedback", "ownerName": "ADVO", "dueAt": null, "timestamp": "0:22", "basis": "transcript", "status": "open" },
+    { "description": "Polish and resend the attendance proposal", "ownerName": "ADVO", "dueAt": null, "timestamp": "6:23", "basis": "transcript", "status": "open" },
+    { "description": "Add the company handbook module with executive-only download", "ownerName": "ADVO", "dueAt": null, "timestamp": "2:08", "basis": "transcript", "status": "open" },
+    { "description": "Build QR-code showroom visitor tracking with showroom selector, summary and export", "ownerName": "ADVO", "dueAt": null, "timestamp": "3:33", "basis": "transcript", "status": "open" },
+    { "description": "Make the new catalog/brochure downloadable from the website (and via Telegram if useful)", "ownerName": "ADVO", "dueAt": null, "timestamp": "7:59", "basis": "transcript", "status": "open" },
+    { "description": "Search Google for a reference image of the pedestal-base product the client described", "ownerName": "Speaker 1", "dueAt": null, "timestamp": "1:18", "basis": "transcript", "status": "open" },
+    { "description": "Produce marketing graphics with AI plus manual fixes", "ownerName": "Shane", "dueAt": null, "timestamp": "10:58", "basis": "transcript", "status": "open" },
+    { "description": "Photograph the Excalibur project windows and doors for marketing", "ownerName": "Dave", "dueAt": null, "timestamp": "13:36", "basis": "transcript", "status": "open" },
+    { "description": "Create a start-to-finish project reel ending on the finished product", "ownerName": "ADVO", "dueAt": null, "timestamp": "16:52", "basis": "transcript", "status": "open" }
+  ],
+  "openQuestion": [
+    { "text": "What is the final price for the full scope?", "timestamp": "0:16" },
+    { "text": "What do the 2,500 / 3,000 figures at 9:38 refer to (a quotation tool, a vendor contact)?", "timestamp": "9:38" },
+    { "text": "Is the catalog download served from the website, Telegram, or both?", "timestamp": "7:59" }
+  ],
+  "person": [
+    { "name": "Speaker 1", "role": "speaker", "affiliation": "ADVO", "note": "Offers offline check-in; explains database storage vs website code. Likely Prince Wagan (Speaker 4 says 'Prince, the genius' right after Speaker 1 speaks)." },
+    { "name": "Speaker 2", "role": "speaker", "affiliation": "client", "note": "Owner with multiple showrooms (Digas, Alamang, NCB), windows and doors supplier to Excalibur; likely Ms. Imie of FourLinq." },
+    { "name": "Speaker 3", "role": "speaker", "affiliation": "client", "note": "Architecture student, family of the owner (owner says 'anak ko'); does AI-assisted graphics and knows Shane and David." },
+    { "name": "Speaker 4", "role": "speaker", "affiliation": "unknown", "note": "Calls Prince 'the genius'; mentions a coffee shop in Palawan using attendance." },
+    { "name": "Prince", "role": "mentioned", "affiliation": "ADVO", "note": "Prince Wagan; identified as the 14-year-old game developer." },
+    { "name": "Shane", "role": "mentioned", "affiliation": "client", "note": "Designer the client is bringing in for marketing graphics." },
+    { "name": "Dave / David", "role": "mentioned", "affiliation": "ADVO", "note": "Does the AI graphics; asked to photograph the Excalibur project." },
+    { "name": "Ben", "role": "mentioned", "affiliation": "unknown", "note": "The client's family want to set a meeting to ask about Ben." }
+  ],
+  "namedThing": ["Excalibur", "Telegram", "QR code", "CapCut", "Pinterest", "Google", "House Connection", "four link", "Digas", "Alamang", "NCB"]
+}
