@@ -190,7 +190,9 @@ Two ordering guarantees, both from the 2026-08-19 outage (see [HANDOFF.md](HANDO
 
 API runs under PM2 as `advo-api` (port 6407). Logs: `/var/log/advo-api/{out,error}.log`.
 
-Nginx serves `/var/www/advo/dist` with SPA fallback (`try_files $uri $uri/ /index.html`). `apps/web/.env.production` stays on the box (gitignored) as a fallback for any on-VPS build.
+Nginx serves `/var/www/advo/dist` with SPA fallback (`try_files $uri /index.html`). `apps/web/.env.production` stays on the box (gitignored) as a fallback for any on-VPS build.
+
+The `$uri/` term was removed on 2026-09-02: every directory under `public/` ships into `dist/` (`team/` photos, `landing/` icons), and with `$uri/` present nginx answered any route sharing a directory's name with a 301 to a trailing slash, then 403 — `/team` (the Team page route) was forbidden because `dist/team/` is the team-photo folder. Dropping `$uri/` sends directory-named routes to the SPA and leaves real files (`/team/angelo-revelo.jpg`) on the `$uri` hit. A backup of the old config sits at `/var/tmp/advo-frontend.bak-20260902-*`.
 
 ### SSL
 

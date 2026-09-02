@@ -360,7 +360,7 @@ body:has(.landing-shell) {
 }
 
 .landing-capability { padding-block: var(--landing-section-rhythm); text-align: center; }
-.landing-capability h3 { font-size: var(--landing-text-title); font-weight: 400; letter-spacing: -0.02em; }
+.landing-capability h3 { font-size: var(--landing-text-heading); font-weight: 400; letter-spacing: -0.03em; }
 .landing-page .landing-capability > p {
   max-width: 640px;
   margin-block: 16px 0;
@@ -632,6 +632,11 @@ body:has(.landing-shell) {
   padding: 28px 0;
   overflow: hidden;
 }
+.landing-marquee .landing-marquee-kicker {
+  display: block;
+  margin-bottom: 18px;
+  text-align: center;
+}
 .landing-marquee-track {
   display: flex;
   align-items: center;
@@ -744,7 +749,9 @@ body:has(.landing-shell) {
 }
 .landing-engagement-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .landing-engagement-grid article {
-  min-height: 220px;
+  /* Tall enough for the pinned CTA to breathe; taller only invents a hole
+   * between two lines of copy and the button. */
+  min-height: 184px;
   border: 1px solid rgba(0, 0, 0, 0.06);
   border-radius: 16px;
   padding: 20px;

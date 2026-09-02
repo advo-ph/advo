@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useReducedMotion } from "framer-motion";
 import {
@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
 import { usePortfolio } from "@/hooks/usePortfolio";
+import { useDrawerLock } from "@/hooks/useDrawerLock";
 import LandingFooter from "./landing-footer";
 import "./landing-page.css";
 
@@ -143,7 +144,7 @@ const surface = [
     desc: "Sign-off on the work, not in a chat thread.",
     icon: "/landing/icon/approve.png",
     thumb: "/landing/feature-approve.png",
-    href: "#showcase",
+    href: "/login",
   },
   {
     title: "Planning",
@@ -233,32 +234,13 @@ const LandingPage = () => {
     setOpenPanel(null);
   };
 
-  // The three drawer behaviours the nav rewrite dropped. FloatingNav (still mounted on
-  // /hub) carries all of them; the landing nav that replaced it on / carried none, so a
-  // keyboard user could open the drawer and have no way to dismiss it, and the page
-  // scrolled underneath the overlay on touch. Same regression class as the missing
-  // aria-controls, restored the same way — by porting the behaviour, not re-inventing it.
+  // The three drawer behaviours the nav rewrite dropped — Escape close, scroll
+  // lock, and close on route change — now share one implementation with the
+  // shell and FloatingNav via useDrawerLock (which also keeps focus inside the
+  // open drawer and returns it to the toggle).
 
-  // 1. Escape closes it, and 2. the body does not scroll behind it. Both live in one
-  // effect because both must be undone by the same cleanup: an early return while closed
-  // means neither the listener nor the style lock is ever left attached.
-  useEffect(() => {
-    if (!isMenuOpen) return;
-
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeMenu();
-    };
-    // Restore the PREVIOUS value rather than clearing to "": another overlay may hold its
-    // own lock, and clearing would release theirs too.
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", onKey);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [isMenuOpen]);
+  // 1 + 2. Escape closes it; neither scroll container scrolls behind it.
+  useDrawerLock(isMenuOpen, closeMenu, "mobile-navigation-drawer");
 
   // 3. Navigating closes it. The landing nav mixes in-page anchors with real routes, so a
   // client-side navigation would otherwise leave the drawer covering the page it just
@@ -267,6 +249,18 @@ const LandingPage = () => {
   useEffect(() => {
     closeMenu();
   }, [pathname]);
+
+  // Hover cannot happen on touch, and a keyboard Enter deserves the same menu a
+  // mouse gets — so the first activation of a panel parent opens the panel
+  // instead of navigating; the second follows the link.
+  const handlePanelNav = (item: NavItem, event: MouseEvent<HTMLAnchorElement>) => {
+    if (!item.panel || openPanel === item.label) {
+      closeMenu();
+      return;
+    }
+    event.preventDefault();
+    setOpenPanel(item.label);
+  };
 
   return (
     <main className="landing-page">
@@ -287,7 +281,11 @@ const LandingPage = () => {
                 onMouseEnter={() => item.panel && setOpenPanel(item.label)}
                 onMouseLeave={() => setOpenPanel(null)}
               >
-                <a href={item.href} onClick={closeMenu}>
+                <a
+                  href={item.href}
+                  onClick={item.panel ? (event) => handlePanelNav(item, event) : closeMenu}
+                  aria-expanded={item.panel ? openPanel === item.label : undefined}
+                >
                   {item.label}
                   {item.panel ? (
                     <ChevronDown className={openPanel === item.label ? "is-open" : ""} size={14} />
@@ -340,13 +338,13 @@ const LandingPage = () => {
           <div className="landing-hero-shade" />
           <div className="landing-hero-copy">
             <h1>We digitalize it for you.</h1>
+            <p>Philippine software agency and client workspace. One shared place from brief to launch.</p>
             <div className="landing-hero-action">
               <Link className="landing-button landing-button-light" to="/start">
                 Get Started
                 <ChevronRight size={14} />
               </Link>
             </div>
-            <p>Philippine software agency and client workspace. One shared place from brief to launch.</p>
           </div>
         </div>
       </section>
@@ -388,8 +386,8 @@ const LandingPage = () => {
         <p className="landing-kicker">Built for the floor</p>
         <h3>Clinic, café, shop. The counter on a Saturday night.</h3>
         <p>
-          We sit with paper, Viber, and tally sheets. Then we ship software plus the
-          tablet, printer, and TV already there.
+          One build, different counters: the clinic queue, the café receipt, the shop
+          inventory — each on the devices already sitting there.
         </p>
         <div className="landing-floor-grid">
           {floor.map((item) => (
@@ -461,7 +459,10 @@ const LandingPage = () => {
               </div>
               <div className="landing-approval">
                 <div><strong>Client approval queue</strong><span>View all</span></div>
-                {["Makati Health Dept.", "Lattan Logistics", "Duluy PH"].map((item) => (
+                {/* Deliberately generic — no real or prospective client name
+                    belongs in a product mockup (Makati Health Dept. read as a
+                    nod to a live prospect). */}
+                {["Riverside Dental", "MNL Logistics", "Halo Café"].map((item) => (
                   <p key={item}><span>{item}</span></p>
                 ))}
               </div>
@@ -507,7 +508,12 @@ const LandingPage = () => {
                       <span className="landing-chip-line">Visit the site</span>
                     </a>
                   ) : item.slug ? (
-                    <Link to={`/project/${item.slug}`}>{shot}</Link>
+                    // A slug-only card still needs an affordance — otherwise the
+                    // screenshot reads as a picture while its neighbours read as links.
+                    <Link to={`/project/${item.slug}`}>
+                      {shot}
+                      <span className="landing-chip-line">Read the case study</span>
+                    </Link>
                   ) : (
                     <div>{shot}</div>
                   )}
@@ -554,7 +560,8 @@ const LandingPage = () => {
         </div>
       </section>
 
-      <section className="landing-marquee" aria-label="Integrations">
+      <section className="landing-marquee" aria-label="Tools the floor already runs on">
+        <p className="landing-kicker landing-marquee-kicker">The everyday tools your floor already runs on</p>
         <div className={reduceMotion ? "landing-marquee-track is-static" : "landing-marquee-track"}>
           {[...partner, ...partner, ...partner].map((item, index) => (
             <span className="landing-marquee-item" key={`${item.name}-${index}`}>

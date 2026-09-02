@@ -84,16 +84,40 @@ describe("mobile nav drawer", () => {
     expect(screen.getByRole("dialog", { name: "Mobile navigation" })).toBeInTheDocument();
   });
 
-  it("locks body scroll while open and restores the previous value on close", async () => {
+  it("locks BOTH scroll containers while open and restores the previous values on close", async () => {
+    // The landing scrolls on documentElement (landing-page.css `html:has(.landing-page)`),
+    // so a body-only lock is a no-op there — the page kept scrolling under the open
+    // drawer. The lock has to land on html as well, and both must restore.
+    document.documentElement.style.overflow = "auto";
     document.body.style.overflow = "auto";
     renderNav();
 
     await openDrawer();
+    expect(document.documentElement.style.overflow).toBe("hidden");
     expect(document.body.style.overflow).toBe("hidden");
 
     fireEvent.keyDown(window, { key: "Escape" });
 
-    await waitFor(() => expect(document.body.style.overflow).toBe("auto"));
+    await waitFor(() => {
+      expect(document.documentElement.style.overflow).toBe("auto");
+      expect(document.body.style.overflow).toBe("auto");
+    });
+  });
+
+  it("keeps Tab cycling inside the open drawer", async () => {
+    renderNav();
+    await openDrawer();
+
+    const focusable = screen
+      .getByRole("dialog", { name: "Mobile navigation" })
+      .querySelectorAll("a[href], button:not([disabled])");
+    const first = focusable[0] as HTMLElement;
+    const last = focusable[focusable.length - 1] as HTMLElement;
+    last.focus();
+
+    fireEvent.keyDown(window, { key: "Tab" });
+
+    expect(document.activeElement).toBe(first);
   });
 
   it("closes on a route change it did not initiate", async () => {

@@ -128,6 +128,25 @@ async function run() {
       "body overflow is hidden while the drawer is open and restored when it closes. Without it a touch drag scrolls the page underneath the overlay, which is the single most reported mobile-nav bug.",
     );
 
+    // ── 2b. the lock must actually stop the page, not just set a style ──
+    // A computed overflow:hidden on body is exactly the check that passed while
+    // the page kept scrolling: the landing scrolls on documentElement
+    // (`html:has(.landing-page)` in landing-page.css), where a body-only lock
+    // is a no-op — the wheel just scrolls html. So this check dispatches a real
+    // wheel, the thing a user's drag actually is. (window.scrollTo would prove
+    // nothing: programmatic scroll bypasses overflow:hidden by spec.)
+    const scrolledWhileOpen = await page.evaluate(() => window.scrollY);
+    await page.mouse.wheel(0, 600);
+    await page.waitForTimeout(150);
+    const scrolledWhileOpenAfter = await page.evaluate(() => window.scrollY);
+    record(
+      "scroll-lock-holds",
+      "A wheel scroll behind the open drawer does not move the page",
+      openedState && scrolledWhileOpen === 0 && scrolledWhileOpenAfter === 0,
+      `scrollY before=${scrolledWhileOpen}, after wheel(0, 600)=${scrolledWhileOpenAfter}`,
+      "The lock has to cover every scroll container the page actually uses (documentElement AND body), or the drawer is decorative.",
+    );
+
     // ── 1. escape closes it ──
     await page.keyboard.press("Escape");
     await page.waitForTimeout(150);

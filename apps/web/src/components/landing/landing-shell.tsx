@@ -1,7 +1,9 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type MouseEvent, type ReactNode } from "react";
+import { useLocation } from "react-router-dom";
 import { useReducedMotion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { ChevronDown, Menu, X } from "lucide-react";
+import { useDrawerLock } from "@/hooks/useDrawerLock";
 import LandingFooter from "./landing-footer";
 import "./landing-page.css";
 
@@ -38,7 +40,7 @@ const navItem: NavItem[] = [
   },
   { label: "Work", href: "/#work" },
   { label: "Process", href: "/#process" },
-  { label: "Pricing", href: "/#engagement" },
+  { label: "Quotation", href: "/#engagement" },
 ];
 
 const LandingShell = ({ children }: LandingShellProps) => {
@@ -51,6 +53,30 @@ const LandingShell = ({ children }: LandingShellProps) => {
     setOpenPanel(null);
   };
 
+  // The shell routes (/start /login /team /project/:slug …) mount the same nav
+  // drawer as the landing, so they carry the same behaviours — Escape, scroll
+  // lock on both scroll containers, focus trap — from the same hook. These
+  // routes never got the b401954 restoration because it landed only on
+  // LandingPage.
+  useDrawerLock(isMenuOpen, closeMenu, "mobile-navigation-drawer");
+
+  // Navigating closes it, same as the landing nav.
+  const { pathname } = useLocation();
+  useEffect(() => {
+    closeMenu();
+  }, [pathname]);
+
+  // Hover cannot happen on touch — first activation opens the panel instead of
+  // navigating; the second follows the link. Mirrors LandingPage.
+  const handlePanelNav = (item: NavItem, event: MouseEvent<HTMLAnchorElement>) => {
+    if (!item.panel || openPanel === item.label) {
+      closeMenu();
+      return;
+    }
+    event.preventDefault();
+    setOpenPanel(item.label);
+  };
+
   return (
     <div className={reduceMotion ? "landing-page landing-shell is-reduce-motion" : "landing-page landing-shell"}>
       <header className="landing-nav">
@@ -58,7 +84,11 @@ const LandingShell = ({ children }: LandingShellProps) => {
           <Link className="landing-brand" to="/" aria-label="ADVO home" onClick={closeMenu}>
             <img src="/advo-logo-black.png" alt="ADVO" />
           </Link>
-          <nav className={isMenuOpen ? "landing-nav-link is-open" : "landing-nav-link"} aria-label="Main navigation">
+          <nav
+            id="mobile-navigation-drawer"
+            className={isMenuOpen ? "landing-nav-link is-open" : "landing-nav-link"}
+            aria-label="Main navigation"
+          >
             {navItem.map((item) => (
               <div
                 className="landing-nav-item"
@@ -66,7 +96,11 @@ const LandingShell = ({ children }: LandingShellProps) => {
                 onMouseEnter={() => item.panel && setOpenPanel(item.label)}
                 onMouseLeave={() => setOpenPanel(null)}
               >
-                <Link to={item.href} onClick={closeMenu}>
+                <Link
+                  to={item.href}
+                  onClick={item.panel ? (event) => handlePanelNav(item, event) : closeMenu}
+                  aria-expanded={item.panel ? openPanel === item.label : undefined}
+                >
                   {item.label}
                   {item.panel ? (
                     <ChevronDown className={openPanel === item.label ? "is-open" : ""} size={14} />
@@ -97,8 +131,9 @@ const LandingShell = ({ children }: LandingShellProps) => {
             <button
               className="landing-menu"
               onClick={() => setIsMenuOpen((value) => !value)}
-              aria-label="Toggle navigation"
+              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
               aria-expanded={isMenuOpen}
+              aria-controls="mobile-navigation-drawer"
             >
               {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>

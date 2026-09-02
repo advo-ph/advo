@@ -2,6 +2,7 @@ import { useState, useEffect, useLayoutEffect, useCallback } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowRight, LogIn, Menu, X } from "lucide-react";
+import { useDrawerLock } from "@/hooks/useDrawerLock";
 
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
@@ -39,20 +40,10 @@ const FloatingNav = () => {
     setIsMobileMenuOpen(false);
   }, [location.pathname]);
 
-  // Escape closes the drawer + body scroll lock while open.
-  useEffect(() => {
-    if (!isMobileMenuOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeMobileMenu();
-    };
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [isMobileMenuOpen, closeMobileMenu]);
+  // Escape closes the drawer + the page does not scroll behind it — from the
+  // shared hook, so the /hub drawer carries the same scroll lock (both scroll
+  // containers) and focus trap as the landing and shell drawers.
+  useDrawerLock(isMobileMenuOpen, closeMobileMenu, "mobile-navigation-drawer");
 
   const handleAboutClick = (e: React.MouseEvent) => {
     e.preventDefault();

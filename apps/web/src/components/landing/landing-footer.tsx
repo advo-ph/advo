@@ -93,7 +93,7 @@ const footerCol: { title: string; link: FooterLink[] }[] = [
     link: [
       { label: "Care plan", href: "#engagement" },
       { label: "Hourly support", href: "#engagement" },
-      { label: "Pricing", href: "#engagement" },
+      { label: "Quotation", href: "#engagement" },
       { label: "FAQs", href: "#faq" },
     ],
   },
