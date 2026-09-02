@@ -107,11 +107,10 @@ body:has(.landing-shell) {
 .landing-page button,
 .landing-page input { font: inherit; }
 .landing-page button { cursor: pointer; }
-.landing-page:not(.landing-shell) h1,
-.landing-page:not(.landing-shell) h2,
-.landing-page:not(.landing-shell) h3,
-.landing-page:not(.landing-shell) h4,
-.landing-page:not(.landing-shell) p { margin-block: 0; }
+/* Zero-specificity reset so any section rule below can set a margin without
+ * having to out-rank it. (0,2,1) here once beat every `.card h4` and ate the
+ * gap between the stills and their headings. */
+:where(.landing-page:not(.landing-shell)) :is(h1, h2, h3, h4, p) { margin-block: 0; }
 .landing-page h1,
 .landing-page h2,
 .landing-page h3,
