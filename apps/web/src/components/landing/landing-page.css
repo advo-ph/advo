@@ -48,9 +48,11 @@ html:has(.landing-page) {
   overflow-x: hidden;
   height: auto;
   scroll-behavior: smooth;
-  /* The drawer locks scroll with overflow:hidden; without a reserved gutter
-   * the scrollbar vanishes and the whole page shifts under the open menu. */
-  scrollbar-gutter: stable;
+  /* The drawer lock hides the scrollbar; useDrawerLock measures its width
+   * into --drawer-scrollbar so the page and the bar pad by exactly that
+   * while locked, and by nothing otherwise. (scrollbar-gutter: stable was
+   * tried and reserves a permanent strip under Windows overlay scrollbars.) */
+  padding-right: var(--drawer-scrollbar, 0px);
   scrollbar-width: thin;
   scrollbar-color: rgba(12, 12, 12, 0.28) transparent;
 }
@@ -153,6 +155,7 @@ body:has(.landing-shell) {
   right: 0;
   z-index: 40;
   height: var(--landing-nav-height);
+  padding-right: var(--drawer-scrollbar, 0px);
   color: var(--landing-ink);
   transition: color 0.25s var(--landing-ease);
 }

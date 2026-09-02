@@ -41,6 +41,12 @@ export function useDrawerLock(open: boolean, close: () => void, drawerId: string
     // may hold its own lock, and clearing would release theirs too.
     const previousHtmlOverflow = document.documentElement.style.overflow;
     const previousBodyOverflow = document.body.style.overflow;
+    // Hiding overflow removes a classic scrollbar, and the page (plus any
+    // fixed bar) shifts right by its width under the open drawer. Measure that
+    // width first and hand it out as a custom property; the page and the bar
+    // pad by it only while locked. Overlay scrollbars measure 0 and pad 0.
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    document.documentElement.style.setProperty("--drawer-scrollbar", `${scrollbarWidth}px`);
     document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
     drawer?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
@@ -69,6 +75,7 @@ export function useDrawerLock(open: boolean, close: () => void, drawerId: string
     return () => {
       document.documentElement.style.overflow = previousHtmlOverflow;
       document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.removeProperty("--drawer-scrollbar");
       window.removeEventListener("keydown", onKey);
       // Only pull focus back when the drawer still holds it — a link inside
       // may have already navigated and moved focus itself.
