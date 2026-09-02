@@ -12,6 +12,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
+import { HTTPException } from "hono/http-exception";
 import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin, requireTeam } from "../middleware/rbac.js";
 import type { Variables } from "../types/context.js";
@@ -28,6 +29,17 @@ import {
   getMoneyAtRisk,
   getRevisionBudget,
 } from "../services/ops-insight.service.js";
+import { EXPORT_SHEET, buildSheet } from "../services/bookkeeping.service.js";
+
+/**
+ * U+FEFF, written as a named constant rather than pasted into a template literal.
+ *
+ * Excel on Windows opens a UTF-8 CSV as the system codepage unless the file starts with
+ * this byte order mark, and every peso sign and accented client name arrives as mojibake
+ * in the bookkeeper's copy. An invisible character sitting in source is one the next
+ * editor deletes by accident, and nobody finds out until a file is already sent.
+ */
+const BYTE_ORDER_MARK = String.fromCharCode(0xfeff);
 
 const insightRoutes = new Hono<{ Variables: Variables }>();
 
@@ -122,6 +134,53 @@ insightRoutes.get("/staleness", async (c) => {
   const raw = c.req.query("thresholdDayCount");
   const threshold = raw ? Math.min(365, Math.max(1, Number(raw))) : undefined;
   return c.json({ data: await getClientStaleness(threshold), error: null });
+});
+
+// ─── Bookkeeping export ──────────────────────────────
+
+/**
+ * A period's books as CSV, one sheet per request.
+ *
+ * ADMIN-ONLY, and not because the numbers are secret from the team — because this is the
+ * only endpoint in the codebase that emits every client's money in one document, and an
+ * export is the easiest thing in any system to walk out of the door with.
+ *
+ * Served as an attachment with an explicit filename so the browser saves rather than
+ * renders it, and with `text/csv; charset=utf-8` plus a BOM — without the BOM, Excel on
+ * Windows opens UTF-8 as the system codepage and every peso sign and accented client
+ * name is mojibake in the bookkeeper's file.
+ */
+insightRoutes.get("/export/:sheet", requireAdmin, async (c) => {
+  const sheet = c.req.param("sheet");
+  if (!(EXPORT_SHEET as readonly string[]).includes(sheet)) {
+    throw new HTTPException(404, {
+      message: `Unknown sheet: ${sheet}. Available: ${EXPORT_SHEET.join(", ")}.`,
+    });
+  }
+
+  const fromOn = c.req.query("fromOn");
+  const toOn = c.req.query("toOn");
+  const parsed = z
+    .object({ fromOn: z.string().date(), toOn: z.string().date() })
+    .safeParse({ fromOn, toOn });
+
+  if (!parsed.success) {
+    throw new HTTPException(400, {
+      message: "fromOn and toOn are required, as YYYY-MM-DD.",
+    });
+  }
+  if (parsed.data.fromOn > parsed.data.toOn) {
+    throw new HTTPException(400, { message: "fromOn must not be after toOn." });
+  }
+
+  const csv = await buildSheet(sheet as (typeof EXPORT_SHEET)[number], parsed.data);
+
+  return c.body(`${BYTE_ORDER_MARK}${csv}`, 200, {
+    "Content-Type": "text/csv; charset=utf-8",
+    "Content-Disposition": `attachment; filename="advo-${sheet}-${parsed.data.fromOn}-to-${parsed.data.toOn}.csv"`,
+    // An export of live money must not sit in a proxy or a browser cache.
+    "Cache-Control": "no-store",
+  });
 });
 
 export default insightRoutes;
