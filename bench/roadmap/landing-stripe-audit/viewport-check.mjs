@@ -69,7 +69,6 @@ const viewports = [
   { width: 1440, height: 960, name: "desktop-1440" },
 ];
 
-const expectedLabels = ["Website", "Client Hub", "Admin", "Care Plan"];
 
 const ensureDir = (dir) => fs.mkdirSync(dir, { recursive: true });
 
@@ -102,19 +101,9 @@ const getPageMetrics = async (page) =>
     );
     const header = document.querySelector("header");
     const footer = document.querySelector("footer");
-    const footerLogo = footer?.querySelector('[data-viewport-check="footer-wordmark"]');
     const headerRect = header?.getBoundingClientRect();
     const footerRect = footer?.getBoundingClientRect();
-    const footerLogoRect = footerLogo?.getBoundingClientRect();
-    const productSection = [...document.querySelectorAll("section")].find((section) =>
-      section.textContent?.includes("One system, not just a website."),
-    );
-    const proofSection = [...document.querySelectorAll("section")].find((section) =>
-      section.textContent?.includes("Proof, not just screenshots."),
-    );
     const footerText = footer?.textContent ?? "";
-    const productRect = productSection?.getBoundingClientRect();
-    const proofRect = proofSection?.getBoundingClientRect();
 
     return {
       viewportWidth: window.innerWidth,
@@ -139,28 +128,6 @@ const getPageMetrics = async (page) =>
           }
         : null,
       footerText,
-      footerLogoRect: footerLogoRect
-        ? {
-            left: footerLogoRect.left,
-            right: footerLogoRect.right,
-            width: footerLogoRect.width,
-            height: footerLogoRect.height,
-          }
-        : null,
-      productRect: productRect
-        ? {
-            left: productRect.left,
-            right: productRect.right,
-            width: productRect.width,
-          }
-        : null,
-      proofRect: proofRect
-        ? {
-            left: proofRect.left,
-            right: proofRect.right,
-            width: proofRect.width,
-          }
-        : null,
     };
   });
 
@@ -250,22 +217,13 @@ const run = async () => {
       const heroCtaVisible = await isVisibleEnough(
         page.getByRole("link", { name: /start a project|get started/i }).first(),
       );
-      const heroSystemRailVisible = await isVisibleEnough(
-        page.locator('[data-viewport-check="hero-system-rail"]'),
-      );
-      const serviceHeadingVisible = await isVisibleEnough(
-        page.getByRole("heading", { name: /one system, not just a website/i }),
-      );
-      const proofHeadingVisible = await isVisibleEnough(
-        page.getByRole("heading", { name: /proof, not just screenshots/i }),
-      );
-      const labelsPresent = [];
-      for (const label of expectedLabels) {
-        labelsPresent.push({
-          label,
-          visible: await isVisibleEnough(page.getByText(label, { exact: true })),
-        });
-      }
+      // Four more probes used to run here: a hero-system-rail element, the
+      // headings "One system, not just a website." and "Proof, not just
+      // screenshots.", and the Website/Client Hub/Admin/Care Plan label set.
+      // None of that copy has existed for two redesigns, and none of the four
+      // was ever asserted — they timed out on every run and their results were
+      // dropped. Removed rather than retargeted: the checks below are the ones
+      // that actually gate.
 
       const widthSlack = 2;
       const checks = [

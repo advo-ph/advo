@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 /**
- * Landing audit — retargeted 2026-08-18.
+ * Landing audit — retargeted 2026-09-02.
  *
- * This bench was written against the Stripe-era component set (Hero.tsx,
- * WhyDigital.tsx, ContactCTA.tsx, TechTicker.tsx, ProcessSteps.tsx,
- * ServiceTiers.tsx, InfrastructureDiagram.tsx, FAQ.tsx, Footer.tsx). None of
- * those were ever rendered by `/`; the shipped landing is LandingPage.tsx.
- * They have been deleted, so the checks now assert the same *intent* against
- * the surface that actually ships.
+ * The previous revision scored the eleven-section marketing page: a process
+ * tab strip, an engagement/quotation grid, an FAQ accordion, an integration
+ * marquee, a fake workspace mockup, and stock isometric clipart. Prince cut
+ * all of it ("nobody cares about that... just showcases what we've done and
+ * what we can do"), so twelve of those checks were asserting the presence of
+ * deleted code. Scoring the old architecture louder does not bring it back.
  *
- * It also used `new URL(...).pathname` for repoRoot, which yields `/C:/...` on
- * Windows and resolved to `C:\C:\...` — every read() returned "" and all 15
- * checks failed regardless of the code. Fixed to fileURLToPath, matching the
- * sibling benches.
+ * The checks below guard the page that actually ships, and — more usefully —
+ * guard it against drifting back: no pricing, no process, no clipart, work
+ * panels that fill a viewport, and a footer dot field faithful to the op.al
+ * mechanism it was rebuilt from.
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -29,6 +29,8 @@ const has = (relativePath) => existsSync(join(repoRoot, relativePath));
 
 const files = {
   landingPage: read("apps/web/src/components/landing/LandingPage.tsx"),
+  workShowcase: read("apps/web/src/components/landing/WorkShowcase.tsx"),
+  dotField: read("apps/web/src/components/landing/AdvoDotField.tsx"),
   landingFooter: read("apps/web/src/components/landing/landing-footer.tsx"),
   landingShell: read("apps/web/src/components/landing/landing-shell.tsx"),
   landingCss: read("apps/web/src/components/landing/landing-page.css"),
@@ -41,16 +43,46 @@ const files = {
 
 const hasAll = (source, terms) =>
   terms.every((term) => new RegExp(term, "i").test(source));
+const hasNone = (source, terms) =>
+  terms.every((term) => !new RegExp(term, "i").test(source));
+
+/**
+ * Comments carry em dashes and describe the sections that were removed, so a
+ * naive grep for "engagement" or "—" would fail on the very commit that
+ * deleted them. Copy checks run against code with comments stripped.
+ */
+const stripComments = (source) =>
+  source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+
+const copy = {
+  landingPage: stripComments(files.landingPage),
+  workShowcase: stripComments(files.workShowcase),
+  landingFooter: stripComments(files.landingFooter),
+};
 
 /** Components under landing/ that are allowed to exist, and why. */
 const allowedLandingModule = new Set([
   "LandingPage.tsx", // rendered by /
+  "WorkShowcase.tsx", // the work panels on /
+  "AdvoDotField.tsx", // the footer wordmark canvas
   "landing-footer.tsx", // rendered by / and by every landing-shell route
   "landing-shell.tsx", // /start /login /team /project/:slug /404
   "FloatingNav.tsx", // /hub
   "PortfolioCard.tsx", // proof-card unit under test
   "landing-page.css",
 ]);
+
+/** Every in-page anchor the nav and footer offer must resolve to a real id. */
+const anchorTargets = (() => {
+  const source = `${files.landingPage}\n${files.workShowcase}`;
+  const ids = new Set([...source.matchAll(/id="([a-z0-9-]+)"/gi)].map((m) => m[1]));
+  const hrefs = new Set(
+    [...`${copy.landingPage}\n${copy.landingFooter}`.matchAll(/href[=:]\s*"\/?#([a-z0-9-]+)"/gi)].map(
+      (m) => m[1],
+    ),
+  );
+  return { ids, hrefs, dangling: [...hrefs].filter((href) => !ids.has(href)) };
+})();
 
 const checks = [
   {
@@ -65,34 +97,174 @@ const checks = [
       "Every file under apps/web/src/components/landing is rendered by a live route (or is the PortfolioCard unit under test).",
   },
   {
-    id: "product-surfaces",
-    title: "Services are ADVO product surfaces",
-    passed: hasAll(files.landingPage, [
-      "Client Hub",
-      "Admin",
-      "Public site",
-      "Hardware floor",
+    id: "client-irrelevant-sections-gone",
+    title: "The page carries no section a client did not ask for",
+    passed: hasNone(copy.landingPage, [
+      "landing-usecase", // process tabs
+      "landing-engagement", // pricing / quotation tiers
+      "landing-faq",
+      "landing-marquee", // integration logo strip
+      "landing-surface", // "Apps for Everything" grid
+      "landing-workflow-section", // inquiry-to-floor nodes
+      "landing-app-shell", // fake workspace mockup
+      "landing-floor", // clinic / cafe / shop cards
+      "landing-piece", // "the gap"
     ]),
     expected:
-      "The landing exposes Client Hub, Admin, public site, and hardware-floor surfaces instead of generic agency services.",
+      "The process strip, quotation tiers, FAQ, integration marquee, surface grid, workflow nodes, dashboard mockup, floor cards, and gap section are all gone from the landing.",
   },
   {
-    id: "hero-product-system-offer",
-    title: "Hero sells the website plus system offer",
-    passed:
-      hasAll(files.landingPage, [
-        "We digitalize it for you",
-        "Philippine software agency and client workspace",
-      ]) &&
-      // The missing-piece section carries the system framing under the hero.
-      hasAll(files.landingPage, ["landing-piece", "the system is the fourth"]) &&
-      !/Build together|Ship with clarity/i.test(files.landingPage),
+    id: "no-published-rate",
+    title: "No pricing is published",
+    passed: hasNone(copy.landingPage, ["₱", "starting at", "per month", "/mo\\b"]),
+    expected: "The landing names no rate, retainer price, or per-seat figure.",
+  },
+  {
+    id: "no-stock-clipart",
+    title: "No stock illustration is rendered on the landing",
+    passed: hasNone(`${copy.landingPage}\n${copy.landingFooter}`, [
+      "/landing/icon/",
+      "/landing/service-",
+      "/landing/engagement-",
+      "/landing/feature-",
+      "/landing/integration/",
+      "/landing/rw/",
+    ]),
     expected:
-      "Hero headline and the section under it position ADVO as a website-plus-system builder, not a generic agency intro. The headline is the founder's mission line; the Stripe-era 'Build together. Ship with clarity.' is retired.",
+      "The landing renders no isometric clipart, service card art, or stock photography. Its only bitmap is the ADVO wordmark.",
+  },
+  {
+    id: "hero-is-type-only",
+    title: "Hero is type on white, not a photograph",
+    passed:
+      hasAll(copy.landingPage, ["landing-hero", "We digitalize it for you"]) &&
+      hasNone(copy.landingPage, ["landing-hero-frame", "landing-hero-shade", "hero\\.jpg"]),
+    expected:
+      "The hero is the headline, one line of copy, and two actions. The dim counter photograph and its scrim are retired.",
+  },
+  {
+    id: "work-is-full-viewport",
+    title: "Each shipped project fills a screen",
+    passed:
+      /\.work-panel\s*\{[^}]*height:\s*100svh/.test(files.landingCss) &&
+      /\.work-panel-media\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0/.test(files.landingCss) &&
+      /object-fit:\s*cover/.test(files.landingCss) &&
+      /scroll-snap-align/.test(files.landingCss),
+    expected:
+      "A work panel is 100svh with an absolutely positioned, cover-fitted screenshot behind it, and snaps as you scroll.",
+  },
+  {
+    id: "work-panel-affordance",
+    title: "A work panel is a name, one line, and a text link",
+    passed:
+      hasAll(copy.workShowcase, [
+        "work-panel-title",
+        "work-panel-desc",
+        "work-panel-link",
+        "View site",
+      ]) &&
+      /\.work-panel-link\s*\{[^}]*text-decoration:\s*underline/.test(files.landingCss) &&
+      // Card chrome is what the panel replaced; a border or a chip means it crept back.
+      hasNone(copy.workShowcase, ["landing-work-card", "landing-chip-line", "landing-work-shot"]),
+    expected:
+      "Each panel shows the project name, one clamped line, and an underlined text link. No card border, no chip button.",
+  },
+  {
+    id: "work-never-invents-a-row",
+    title: "An empty portfolio renders no work section",
+    passed:
+      /project\.length === 0/.test(files.workShowcase) &&
+      /return null/.test(files.workShowcase) &&
+      // …and the nav must not offer an anchor to a section that did not render.
+      /shippedProject\.length > 0/.test(files.landingPage),
+    expected:
+      "With no portfolio rows the work section is absent, and the nav drops its Work anchor rather than scrolling nowhere.",
+  },
+  {
+    id: "no-dangling-anchor",
+    title: "Every in-page anchor resolves",
+    passed: anchorTargets.hrefs.size > 0 && anchorTargets.dangling.length === 0,
+    expected: `Every #anchor offered by the nav or footer matches an id that the landing renders. Dangling: ${
+      anchorTargets.dangling.join(", ") || "none"
+    }.`,
+  },
+  {
+    id: "footer-dot-field",
+    title: "The footer is the ADVO dot field on white",
+    passed:
+      /AdvoDotField/.test(files.landingFooter) &&
+      /landing-footer-field/.test(files.landingFooter) &&
+      /\.landing-footer\s*\{[^}]*background:\s*var\(--landing-ground\)/.test(files.landingCss) &&
+      // The old dark footer and its marketing lede are gone.
+      hasNone(copy.landingFooter, ["landing-footer-lede", "Start the system", "landing-footer-grid"]),
+    expected:
+      "The footer opens with the interactive ADVO dot field on the page's own white ground, and the dark four-column footer with its marketing lede is retired.",
+  },
+  {
+    id: "dot-field-fidelity",
+    title: "The dot field reproduces the op.al mechanism",
+    passed:
+      hasAll(files.dotField, [
+        // Gaussian influence around a smoothed pointer, cut off at 3 sigma.
+        "Math\\.exp\\(-distSq / twoSigmaSq\\)",
+        "cutoffSq",
+        // Velocity-scaled sigma.
+        "SIGMA_PER_SPEED",
+        // Linear decay, not a lerp — this is what leaves the comet trail.
+        "DECAY_PER_SECOND = 1 / 3\\.2",
+        // Four tiers, the third of which is a stroked ring.
+        "TIER_SOLID",
+        "TIER_BULLET",
+        "TIER_RING",
+        "ctx\\.stroke\\(\\)",
+        // Mask sampled off the real wordmark, not an approximated path.
+        "getImageData",
+        "advo-logo-black",
+      ]) &&
+      // One fill colour for every tier: the ramp is ink coverage, never colour.
+      (files.dotField.match(/ctx\.fillStyle = DOT_COLOR/g) || []).length === 1,
+    expected:
+      "The field samples the real ADVO artwork into a grid, drives it with a velocity-scaled Gaussian and a 1/3.2-per-second linear decay, renders four tiers including a stroked ring, and uses a single fill colour throughout.",
+  },
+  {
+    id: "dot-field-is-not-a-battery-drain",
+    title: "The dot field stops when it is off screen",
+    passed:
+      /IntersectionObserver/.test(files.dotField) &&
+      /cancelAnimationFrame/.test(files.dotField) &&
+      /ResizeObserver/.test(files.dotField) &&
+      /removeEventListener/.test(files.dotField),
+    expected:
+      "The canvas loop is gated by an IntersectionObserver, cancels its frame when scrolled away, remasks on resize, and unbinds its listeners on unmount.",
+  },
+  {
+    id: "paymongo-disclosures",
+    title: "The four merchant-review policies are reachable from every page",
+    passed:
+      hasAll(copy.landingFooter, [
+        "Terms and Conditions",
+        "Privacy Policy",
+        "Return and Refund Policy",
+        "Dispute Resolution Policy",
+      ]) &&
+      /LandingFooter/.test(files.landingPage) &&
+      /LandingFooter/.test(files.landingShell),
+    expected:
+      "One footer, mounted by both / and the shell routes, carries all four PayMongo disclosures under their full titles.",
+  },
+  {
+    id: "no-em-dash-in-copy",
+    title: "User-facing copy carries no em dash",
+    passed: hasNone(
+      `${copy.landingPage}\n${copy.workShowcase}\n${copy.landingFooter}`,
+      ["—"],
+    ),
+    expected:
+      "Prince's standing copy rule: no em dashes in anything a visitor reads. Code comments are exempt and are stripped before this check.",
   },
   {
     id: "proof-metrics",
-    title: "Portfolio carries case-study proof",
+    title: "Portfolio card carries case-study proof",
     passed:
       /(metric|outcome|before|after|products used|launch timeline|caseStudy)/i.test(
         files.portfolioCard,
@@ -122,13 +294,20 @@ const checks = [
     title: "Drawer escape / scroll-lock / route-close are covered by a test",
     passed:
       has("apps/web/src/test/mobile-nav-drawer.test.ts") &&
-      hasAll(files.drawerTest, [
-        "Escape",
-        "body\\.style\\.overflow",
-        "route change",
-      ]),
+      hasAll(files.drawerTest, ["Escape", "body\\.style\\.overflow", "route change"]),
     expected:
       "An automated test drives the drawer's Escape close, body scroll lock/restore, and route-change close instead of a manual phone check.",
+  },
+  {
+    id: "landing-drawer-shares-one-lock",
+    title: "Both landing mounts use the shared drawer lock",
+    passed:
+      /useDrawerLock/.test(files.landingPage) &&
+      /useDrawerLock/.test(files.landingShell) &&
+      /mobile-navigation-drawer/.test(files.landingPage) &&
+      /mobile-navigation-drawer/.test(files.landingShell),
+    expected:
+      "The landing and the shell both drive their drawer through useDrawerLock, so Escape, scroll lock, and focus trapping cannot drift apart.",
   },
   {
     id: "floating-nav-scroll-threshold",
@@ -141,92 +320,16 @@ const checks = [
   },
   {
     id: "reduced-motion",
-    title: "Landing animations respect reduced motion",
+    title: "Every animated surface respects reduced motion",
     passed:
-      /useReducedMotion/.test(files.landingPage) &&
       /useReducedMotion/.test(files.landingShell) &&
-      /prefers-reduced-motion/.test(files.landingCss),
+      /useReducedMotion/.test(files.workShowcase) &&
+      /useReducedMotion/.test(files.dotField) &&
+      /prefers-reduced-motion/.test(files.landingCss) &&
+      // Snapping is motion too: it must be off under the same preference.
+      /prefers-reduced-motion[\s\S]*scroll-snap-type:\s*none/.test(files.landingCss),
     expected:
-      "Both landing mounts read useReducedMotion and the landing stylesheet has a prefers-reduced-motion block.",
-  },
-  {
-    id: "docs-current-design",
-    title: "README describes current design system",
-    passed:
-      // `#E67A3A` was in the original deny-list, but it is still the live
-      // `--accent` token in index.css — documenting it is correct. The
-      // remaining terms only appear when the README is *describing* the
-      // abandoned 3D/blob direction, not denying it.
-      !/(Isometric 3D scene|organic orange blob|zero scroll animations|React Three Fiber)/i.test(
-        files.readme,
-      ) && /(advo-section-rails|editorial grid|Linear|rail)/i.test(files.readme),
-    expected:
-      "README no longer documents stale 3D/blob design work and describes the current rail/grid direction.",
-  },
-  {
-    id: "private-stack-narrative",
-    title: "The stack handoff is on the page",
-    passed:
-      hasAll(files.landingPage, ["landing-workflow-section", "Inquiry", "Scope", "Build", "Review", "Launch"]) &&
-      /VPS handoff/i.test(files.landingFooter),
-    expected:
-      "The inquiry-to-floor sequence is a rendered section and the VPS handoff is named where the system story closes.",
-  },
-  {
-    id: "why-system-not-generic-digital",
-    title: "The section under the hero explains the system, not digital-transformation",
-    passed:
-      hasAll(files.landingPage, [
-        "Three pieces already exist",
-        "Paper, Viber, tally sheets",
-      ]) &&
-      !/Invest in Your Digital Future|24\/7 Online Presence|Scale Effortlessly|Better Customer Experience/.test(
-        files.landingPage,
-      ),
-    expected:
-      "The first post-hero section names the concrete gap on the floor instead of generic digital-transformation benefits.",
-  },
-  {
-    id: "integration-strip",
-    title: "Integration strip is quiet and locally served",
-    passed:
-      /landing-marquee/.test(files.landingPage) &&
-      /\/landing\/integration\//.test(files.landingPage) &&
-      !/simpleicons|cdn\.simpleicons/.test(files.landingPage),
-    expected:
-      "The integration strip serves its own marks and does not depend on an external logo CDN.",
-  },
-  {
-    id: "engagement-cta",
-    title: "Engagement section is a concrete conversion surface",
-    passed:
-      hasAll(files.landingPage, [
-        "Project",
-        "Retainer",
-        "Hourly",
-        "Enterprise",
-        "quotation",
-      ]) &&
-      !/₱|starting at/i.test(files.landingPage) &&
-      !/Ready to digitalize|Prepare your business for the future/.test(files.landingPage),
-    expected:
-      "The engagement surface names real engagement shapes and routes each one to a quotation request. No published rate, no aspirational CTA.",
-  },
-  {
-    id: "process-system-sequence",
-    title: "Process section is a product-system sequence",
-    passed:
-      hasAll(files.landingPage, [
-        "Discover",
-        "Design",
-        "Build",
-        "Review",
-        "Launch",
-        "Support",
-        "Learn the floor before we write software",
-      ]) && !/How We Work|Understanding your needs, goals, and vision/.test(files.landingPage),
-    expected:
-      "Process defaults describe ADVO's discover-to-support delivery sequence instead of generic agency phases.",
+      "The work panels, the dot field, and the shell all read useReducedMotion; the stylesheet disables transitions and scroll snapping under the same preference.",
   },
   {
     id: "tasteful-interaction-layer",
@@ -240,48 +343,21 @@ const checks = [
       "The landing's own stylesheet owns hover, guards it under prefers-reduced-motion, and the orphaned Stripe-era .interactive-surface utility is gone.",
   },
   {
-    id: "footer-system-continuity",
-    title: "Footer continues the product-system story",
+    id: "docs-current-design",
+    title: "README describes current design system",
     passed:
-      hasAll(files.landingFooter, [
-        "Start the system",
-        "Websites with client systems behind them",
-        "Client Hub",
-        "Admin Console",
-        "VPS handoff",
-        'data-viewport-check="footer-wordmark"',
-      ]) &&
-      !/We digitalize for you|Web Applications|Mobile Apps|Cloud Architecture/.test(
-        files.landingFooter,
-      ) &&
-      // One footer, mounted by both the landing and the shell — no drift.
-      /LandingFooter/.test(files.landingPage) &&
-      /LandingFooter/.test(files.landingShell),
+      !/(Isometric 3D scene|organic orange blob|zero scroll animations|React Three Fiber)/i.test(
+        files.readme,
+      ) && /(advo-section-rails|editorial grid|Linear|rail)/i.test(files.readme),
     expected:
-      "A single footer component uses the product-system language, includes the project CTA and large wordmark, avoids generic service copy, and is shared by / and the shell routes.",
-  },
-  {
-    id: "faq-product-system",
-    title: "FAQ answers product-system questions",
-    passed:
-      hasAll(files.landingPage, [
-        "Questions before we build",
-        "client hub",
-        "admin console",
-        "self-hosted VPS stack",
-      ]) &&
-      !/Common Questions|web applications, mobile solutions|flexible pricing|modern cloud platforms/.test(
-        files.landingPage,
-      ),
-    expected:
-      "FAQ defaults answer concrete website, hub, admin, hosting, and timeline questions instead of generic agency questions.",
+      "README no longer documents stale 3D/blob design work and describes the current rail/grid direction.",
   },
 ];
 
 const passed = checks.every((check) => check.passed);
 const result = {
-  benchmark: "landing-stripe-audit",
-  date: "2026-08-18",
+  benchmark: "landing-audit",
+  date: "2026-09-02",
   passed,
   counts: {
     passed: checks.filter((check) => check.passed).length,
@@ -292,4 +368,3 @@ const result = {
 };
 
 console.log(JSON.stringify(result, null, 2));
-process.exit(passed ? 0 : 1);
