@@ -224,6 +224,9 @@ const LandingPage = () => {
             animate="show"
             transition={{ staggerChildren: 0.1, delayChildren: 0.25 }}
           >
+            <motion.p className="landing-hero-label" variants={heroCopy} transition={{ duration: 0.7, ease: EASE }}>
+              Software + hardware · Philippines
+            </motion.p>
             <motion.h1 variants={heroCopy} transition={{ duration: 0.7, ease: EASE }}>
               We digitalize it for you.
             </motion.h1>
@@ -234,7 +237,7 @@ const LandingPage = () => {
             <motion.div className="landing-hero-action" variants={heroCopy} transition={{ duration: 0.7, ease: EASE }}>
               <Link className="landing-button landing-button-hero" to="/start">
                 Start a project
-                <ChevronRight size={14} />
+                <ChevronRight size={14} strokeWidth={1} absoluteStrokeWidth />
               </Link>
             </motion.div>
           </motion.div>
@@ -292,7 +295,7 @@ const LandingPage = () => {
                 </Action>
                 <Action className="landing-button landing-button-ghost landing-button-small" href={item.secondary.href}>
                   {item.secondary.label}
-                  {item.secondary.href.startsWith("http") ? <ArrowUpRight size={14} /> : null}
+                  {item.secondary.href.startsWith("http") ? <ArrowUpRight size={14} strokeWidth={1} absoluteStrokeWidth /> : null}
                 </Action>
               </div>
             </Reveal>
@@ -371,8 +374,6 @@ const LandingPage = () => {
 
       <section className="landing-band" id="engagement">
         <div className="landing-band-frame">
-          <img src="/landing/rw/story.jpg" alt="" loading="lazy" />
-          <div className="landing-band-shade" />
           <div className="landing-band-inner">
             <Reveal className="landing-band-lede">
               <h2>
@@ -395,7 +396,7 @@ const LandingPage = () => {
                     <strong>{item.title}</strong>
                     <small>{item.copy}</small>
                   </span>
-                  <ArrowUpRight size={16} />
+                  <ArrowUpRight size={16} strokeWidth={1} absoluteStrokeWidth />
                 </Link>
               ))}
             </Reveal>
@@ -428,7 +429,7 @@ const LandingPage = () => {
                   {href ? (
                     <span className="landing-text-link">
                       {study ? "Read the case study" : isExternal ? "Visit the site" : "See the project"}
-                      {isExternal ? <ArrowUpRight size={14} /> : <ChevronRight size={14} />}
+                      {isExternal ? <ArrowUpRight size={14} strokeWidth={1} absoluteStrokeWidth /> : <ChevronRight size={14} strokeWidth={1} absoluteStrokeWidth />}
                     </span>
                   ) : null}
                 </>
@@ -467,7 +468,7 @@ const LandingPage = () => {
                   aria-controls={`faq-${index}`}
                 >
                   <span>{question}</span>
-                  <ChevronDown size={16} />
+                  <ChevronDown size={16} strokeWidth={1} absoluteStrokeWidth />
                 </button>
                 <AnimatePresence initial={false}>
                   {isOpen ? (

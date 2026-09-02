@@ -151,13 +151,11 @@ body:has(.landing-shell) {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: var(--landing-ground);
   border-bottom: 1px solid transparent;
   transition: opacity 0.25s var(--landing-ease), border-color 0.25s var(--landing-ease);
 }
-.landing-nav.is-scrolled::before { border-bottom-color: rgba(12, 12, 12, 0.06); }
+.landing-nav.is-scrolled::before { border-bottom-color: var(--landing-line); }
 .landing-nav-inner {
   position: relative;
   z-index: 1;
@@ -200,7 +198,6 @@ body:has(.landing-shell) {
   border-radius: 10px;
   background: var(--landing-ground);
   color: var(--landing-ink);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.1);
   opacity: 0;
   visibility: hidden;
   transform: translateY(-4px);
@@ -224,14 +221,15 @@ body:has(.landing-shell) {
   align-items: center;
   height: 32px;
   padding: 0 10px;
+  border: 1px solid var(--landing-line);
   border-radius: 6px;
-  background: var(--landing-ghost);
+  background: var(--landing-ground);
   color: var(--landing-ink);
   font-size: var(--landing-text-body);
-  font-weight: 600;
-  transition: background 0.15s var(--landing-ease), transform 0.12s var(--landing-ease);
+  font-weight: 500;
+  transition: background 0.15s var(--landing-ease), border-color 0.15s var(--landing-ease), transform 0.12s var(--landing-ease);
 }
-.landing-login:hover { background: var(--landing-ghost-hover); }
+.landing-login:hover { background: var(--landing-ground-soft); border-color: var(--landing-ink-mute); }
 .landing-login:active { transform: scale(0.96); }
 .landing-menu { display: none; border: 0; background: none; color: inherit; padding: 8px; margin-right: -8px; }
 
@@ -257,9 +255,14 @@ body:has(.landing-shell) {
 .landing-button-primary { background: var(--landing-dark); color: var(--landing-ground) !important; }
 .landing-button-primary:hover { background: var(--landing-deep); }
 .landing-button-ghost,
-.landing-button-secondary { background: var(--landing-ghost); color: var(--landing-ink) !important; }
+.landing-button-secondary {
+  background: var(--landing-ground);
+  color: var(--landing-ink) !important;
+  box-shadow: inset 0 0 0 1px var(--landing-line);
+  font-weight: 500;
+}
 .landing-button-ghost:hover,
-.landing-button-secondary:hover { background: var(--landing-ghost-hover); }
+.landing-button-secondary:hover { background: var(--landing-ground-soft); box-shadow: inset 0 0 0 1px var(--landing-ink-mute); }
 .landing-button-hero {
   height: 40px;
   padding: 0 14px;
@@ -271,13 +274,12 @@ body:has(.landing-shell) {
 .landing-button-hero:hover { background: var(--landing-ground); }
 .landing-button-outline {
   height: 34px;
-  background: rgba(247, 247, 247, 0.06);
+  background: transparent;
   color: var(--landing-ground) !important;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  font-weight: 500;
 }
-.landing-button-outline:hover { background: rgba(247, 247, 247, 0.18); }
+.landing-button-outline:hover { background: var(--landing-ground); color: var(--landing-ink) !important; }
 .landing-button-small { height: 32px; padding: 0 10px; }
 .landing-button-light { background: var(--landing-light); color: var(--landing-ink) !important; }
 .landing-button-light:hover { background: var(--landing-ground); }
@@ -320,6 +322,13 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   flex-direction: column;
   align-items: flex-start;
   gap: 16px;
+}
+.landing-page .landing-hero-label {
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: var(--landing-text-micro);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.78);
 }
 .landing-hero h1 {
   max-width: 14ch;
@@ -488,8 +497,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   background: var(--landing-ink);
   color: var(--landing-ground);
 }
-.landing-band-frame > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.landing-band-shade { position: absolute; inset: 0; background: rgba(12, 12, 12, 0.74); }
+/* Flat #0c0c0c. Colour lives inside the stills, never behind the type. */
 .landing-band-inner {
   position: relative;
   display: grid;
@@ -508,10 +516,10 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   justify-content: space-between;
   gap: 16px;
   padding: 20px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.35);
+  border-top: 1px solid rgba(255, 255, 255, 0.18);
   transition: border-color 0.2s var(--landing-ease);
 }
-.landing-band-row:last-child { border-bottom: 1px solid rgba(255, 255, 255, 0.35); }
+.landing-band-row:last-child { border-bottom: 1px solid rgba(255, 255, 255, 0.18); }
 .landing-band-row strong { display: block; font-size: var(--landing-text-lead); font-weight: 500; color: rgba(255, 255, 255, 0.92); transition: color 0.2s var(--landing-ease); }
 .landing-band-row small { display: block; margin-top: 4px; font-size: var(--landing-text-small); color: rgba(255, 255, 255, 0.6); transition: color 0.2s var(--landing-ease); }
 .landing-band-row svg { flex: none; margin-top: 3px; color: rgba(255, 255, 255, 0.7); transition: transform 0.2s var(--landing-ease), color 0.2s var(--landing-ease); }
@@ -731,6 +739,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-nav.is-overlay::before { opacity: 0; }
   .landing-nav.is-overlay .landing-brand img { filter: invert(1); }
   .landing-nav.is-overlay .landing-button-primary { background: var(--landing-ground); color: var(--landing-ink) !important; }
+  .landing-nav.is-overlay::before { border-bottom-color: transparent; }
   .landing-login { display: none; }
   .landing-menu { display: block; }
 

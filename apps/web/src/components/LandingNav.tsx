@@ -93,7 +93,7 @@ const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps)
     const { className, onClick, expanded } = extra;
     const isHash = link.href.startsWith("#");
     const chevron = "panel" in link && (link as NavItem).panel ? (
-      <ChevronDown className={openPanel === link.label ? "is-open" : ""} size={14} />
+      <ChevronDown className={openPanel === link.label ? "is-open" : ""} size={14} strokeWidth={1} absoluteStrokeWidth />
     ) : null;
 
     if (isHash && anchorPrefix === "") {
@@ -190,7 +190,7 @@ const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps)
             aria-expanded={isMenuOpen}
             aria-controls={DRAWER_ID}
           >
-            {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            {isMenuOpen ? <X size={20} strokeWidth={1} absoluteStrokeWidth /> : <Menu size={20} strokeWidth={1} absoluteStrokeWidth />}
           </button>
         </div>
       </div>

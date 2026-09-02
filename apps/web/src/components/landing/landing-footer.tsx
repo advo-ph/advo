@@ -166,7 +166,7 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
           </p>
           <Link className="landing-footer-cta" to="/start">
             Start the system
-            <ChevronRight size={14} />
+            <ChevronRight size={14} strokeWidth={1} absoluteStrokeWidth />
           </Link>
         </div>
       </div>
@@ -211,7 +211,7 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
                 target={isMail ? undefined : "_blank"}
                 rel={isMail ? undefined : "noopener noreferrer"}
               >
-                <Icon size={16} stroke={1.4} />
+                <Icon size={16} stroke={1.5} />
               </a>
             );
           })}

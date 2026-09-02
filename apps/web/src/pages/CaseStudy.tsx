@@ -36,7 +36,7 @@ const CaseStudy = () => {
     <LandingShell>
       <div className="landing-shell-main landing-case">
         <Link className="landing-case-back" to="/#work">
-          <ArrowLeft size={15} />
+          <ArrowLeft size={15} strokeWidth={1} absoluteStrokeWidth />
           All work
         </Link>
 
@@ -57,7 +57,7 @@ const CaseStudy = () => {
               {live ? (
                 <a className="landing-button landing-button-primary" href={live} target="_blank" rel="noopener noreferrer">
                   Visit the live site
-                  <ArrowUpRight size={15} />
+                  <ArrowUpRight size={15} strokeWidth={1} absoluteStrokeWidth />
                 </a>
               ) : null}
             </Reveal>
