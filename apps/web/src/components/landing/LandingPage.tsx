@@ -1,197 +1,123 @@
-import { useEffect, useState, type MouseEvent } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { useReducedMotion } from "framer-motion";
-import {
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Menu,
-  X,
-} from "lucide-react";
-import { Area, AreaChart, ResponsiveContainer, Tooltip } from "recharts";
+import { useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { ArrowUpRight, ChevronDown, ChevronRight } from "lucide-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
-import { useDrawerLock } from "@/hooks/useDrawerLock";
+import LandingNav from "@/components/LandingNav";
+import { Reveal, RevealGroup } from "@/components/motion/Reveal";
+import { EASE } from "@/lib/motion";
 import LandingFooter from "./landing-footer";
 import "./landing-page.css";
 
-interface NavItem {
-  label: string;
-  href: string;
-  panel?: { label: string; href: string }[];
-}
-
-const navItem: NavItem[] = [
+/**
+ * The three software surfaces plus the hardware on the counter. One system,
+ * shown the way it is used, with the cinematic stills doing the talking.
+ */
+const surface = [
   {
-    label: "Product",
-    href: "#showcase",
-    panel: [
-      { label: "Client Hub", href: "/login" },
-      { label: "Admin", href: "/login" },
-      { label: "Workspace", href: "#showcase" },
-      { label: "Start a project", href: "/start" },
-    ],
+    title: "Public site",
+    heading: "The front door your customers land on.",
+    copy: "On your domain, fast on a phone, and wired to the system behind it. Fourlinq is live at fourlinq.ph.",
+    still: "/landing/rw/story.jpg",
+    primary: { label: "Start a project", href: "/start" },
+    secondary: { label: "See Fourlinq", href: "https://fourlinq.ph" },
   },
   {
-    label: "Services",
-    href: "#service",
-    panel: [
-      { label: "Strategy", href: "#service" },
-      { label: "Design", href: "#service" },
-      { label: "Development", href: "#service" },
-      { label: "Support", href: "#service" },
-    ],
-  },
-  { label: "Work", href: "#work" },
-  { label: "Process", href: "#process" },
-  { label: "Quotation", href: "#engagement" },
-];
-
-const capability = [
-  { title: "Strategy", copy: "Goals, market, plan", icon: "/landing/icon/strategy.png" },
-  { title: "Design", copy: "Brand, UI, content", icon: "/landing/icon/design.png" },
-  { title: "Development", copy: "Web, mobile, systems", icon: "/landing/icon/development.png" },
-  { title: "Support", copy: "Launch and retain", icon: "/landing/icon/hardware.png" },
-];
-
-const floor = [
-  {
-    title: "Clinic",
-    copy: "Queue, records, and the desk that still runs on notebooks.",
-    icon: "/landing/icon/strategy.png",
+    title: "Client Hub",
+    heading: "Scope, files, approvals, and invoices in one place.",
+    copy: "Your team and ours see the same status. Sign-off happens on the work itself, not in a chat thread.",
+    still: "/landing/rw/hero.jpg",
+    primary: { label: "Log in", href: "/login" },
+    secondary: { label: "How it ships", href: "#process" },
   },
   {
-    title: "Café",
-    copy: "Orders, receipts, and the tablet-printer pair on the counter.",
-    icon: "/landing/icon/hardware.png",
-  },
-  {
-    title: "Shop",
-    copy: "Inventory and the floor that cannot wait for a seat in the cloud.",
-    icon: "/landing/icon/surface.png",
+    title: "Admin console",
+    heading: "The back office your staff opens every morning.",
+    copy: "Projects, leads, capacity, and finance. The hardware floor is part of the install: tablet, printer, TV.",
+    still: "/landing/rw/deliver.jpg",
+    primary: { label: "Log in", href: "/login" },
+    secondary: { label: "Request a quotation", href: "#engagement" },
   },
 ];
 
-const useCase = [
+const stage = ["Inquiry", "Scope", "Build", "Review", "Launch"];
+
+const step = [
   {
     title: "Discover",
     heading: "Learn the floor before we write software",
-    desc: "We sit with how the business actually runs: paper, Viber, tally sheets. Then we name the outcome, not a feature list.",
-    chip: ["site visit", "current tools", "constraints", "success metric"],
+    copy: "We sit with how the business actually runs: paper, Viber, tally sheets. Then we name the outcome, not a feature list.",
+    still: "/landing/rw/before.jpg",
   },
   {
     title: "Design",
     heading: "Make the system visible before we build it",
-    desc: "Screens, hardware, and handoffs get specified together so the counter staff and the admin see the same plan.",
-    chip: ["flows", "UI", "hardware", "roles"],
+    copy: "Screens, hardware, and handoffs are specified together, so the counter staff and the admin see the same plan.",
+    still: "/landing/rw/story.jpg",
   },
   {
     title: "Build",
     heading: "Ship in the shared workspace, not in email",
-    desc: "Design, development, and integration happen in one place. You see progress the week it happens.",
-    chip: ["milestones", "previews", "commits", "updates"],
+    copy: "Design, development, and integration happen in one place. You see progress the week it happens.",
+    still: "/landing/rw/hero.jpg",
   },
   {
     title: "Review",
     heading: "Approve what is true, not what was attached",
-    desc: "Feedback and sign-off live on the work itself. No lost versions. No mystery last file.",
-    chip: ["comments", "approvals", "revisions"],
+    copy: "Feedback and sign-off live on the work itself. No lost versions, no mystery last file.",
+    still: "/landing/rw/story.jpg",
   },
   {
     title: "Launch",
     heading: "Install, train, and stay on the floor",
-    desc: "We go live with the tablet, the printer, the TV, and the people who will use them on Saturday night.",
-    chip: ["deploy", "train", "handoff"],
+    copy: "We go live with the tablet, the printer, the TV, and the people who will use them on a Saturday night.",
+    still: "/landing/rw/deliver.jpg",
   },
   {
     title: "Support",
     heading: "Stay after launch, because uptime is the product",
-    desc: "Retainers and hourly support cover the printer that dies at 8PM, not a ticket that waits until Monday.",
-    chip: ["retainer", "hourly", "SLA"],
-  },
-];
-
-const surface = [
-  {
-    title: "Client Hub",
-    desc: "Status, files, invoices, and the team. The same truth your operators see.",
-    icon: "/landing/icon/surface.png",
-    thumb: "/landing/feature-create.png",
-    href: "/login",
-  },
-  {
-    title: "Admin",
-    desc: "Projects, leads, finance, and the tools the studio runs on every day.",
-    icon: "/landing/icon/development.png",
-    thumb: "/landing/feature-deliver.png",
-    href: "/login",
-  },
-  {
-    title: "Public site",
-    desc: "The marketing surface. Fourlinq is live at fourlinq.ph.",
-    icon: "/landing/icon/design.png",
-    thumb: "/landing/rw/story.jpg",
-    href: "https://fourlinq.ph",
-  },
-  {
-    title: "Hardware floor",
-    desc: "Tablet, printer, TV. Commodity devices. Software that survives the counter.",
-    icon: "/landing/icon/hardware.png",
-    thumb: "/landing/rw/deliver.jpg",
-    href: "/start",
-  },
-  {
-    title: "Approvals",
-    desc: "Sign-off on the work, not in a chat thread.",
-    icon: "/landing/icon/approve.png",
-    thumb: "/landing/feature-approve.png",
-    href: "/login",
-  },
-  {
-    title: "Planning",
-    desc: "Briefs, timelines, and scope before a line of code.",
-    icon: "/landing/icon/strategy.png",
-    thumb: "/landing/feature-plan.png",
-    href: "/start",
+    copy: "A care plan or hourly support covers the printer that dies at 8PM, not a ticket that waits until Monday.",
+    still: "/landing/rw/hero.jpg",
   },
 ];
 
 const engagement = [
-  { title: "Project", copy: "Fixed scope, timeline, and deliverables.", action: "Request a quotation" },
-  { title: "Retainer", copy: "A dedicated team for ongoing work.", action: "Request a quotation" },
-  { title: "Hourly", copy: "On-demand help when you need it.", action: "Request a quotation" },
-  { title: "Enterprise", copy: "Custom systems for large teams.", action: "Talk to us" },
+  { title: "Project", copy: "Fixed scope, timeline, and deliverables." },
+  { title: "Retainer", copy: "A dedicated team for ongoing work." },
+  { title: "Hourly", copy: "On-demand help when you need it." },
+  { title: "Enterprise", copy: "Custom systems for large teams." },
 ];
 
 const faq = [
   {
     question: "Do I get a website, or a system?",
     answer:
-      "Both, and they are the same build. The public site is the front door. Behind it sits the client hub your customer signs into, the admin console your staff runs the day on, and the hardware on the counter. We do not ship the door without the room behind it.",
+      "Both, and they are the same build. The public site is the front door. Behind it sit the client hub your customer signs into, the admin console your staff runs the day on, and the hardware on the counter.",
   },
   {
     question: "What is the client hub, and who sees it?",
     answer:
-      "It is the signed-in workspace holding scope, files, milestones, approvals, and invoices for one project. You invite your team and your client by role, so an operator, a partner, and the studio see the same truth without a Viber thread deciding what is current.",
+      "The signed-in workspace holding scope, files, milestones, approvals, and invoices for one project. You invite your team and your client by role, so everyone sees the same truth.",
   },
   {
-    question: "What does the admin console actually do?",
+    question: "What does the admin console do?",
     answer:
-      "It is the back office: projects, leads, tasks, capacity, approvals, and finance. It is the surface your studio opens every morning, not a dashboard we screenshot once for a proposal.",
+      "It is the back office: projects, leads, tasks, capacity, approvals, and finance. The surface your studio opens every morning.",
   },
   {
     question: "Where does it run, and do I own it?",
     answer:
-      "On a self-hosted VPS stack we set up and operate — Postgres, Node, Nginx, TLS. No per-seat cloud tax. At handoff the whole stack moves into your name: server, domain, database, and repository.",
+      "On a self-hosted VPS stack we set up and operate: Postgres, Node, Nginx, TLS. No per-seat cloud tax. At handoff the whole stack moves into your name: server, domain, database, and repository.",
   },
   {
-    question: "Does the hardware on the floor count as your job?",
+    question: "Is the hardware on the floor your job too?",
     answer:
-      "Yes. The tablet at the counter, the receipt printer, and the TV on the wall are part of the system we install, train on, and support. Uptime on a Saturday night is the product, not an accessory to it.",
+      "Yes. The tablet at the counter, the receipt printer, and the TV on the wall are part of the system we install, train on, and support.",
   },
   {
     question: "What happens after launch?",
     answer:
-      "A care plan or hourly support keeps it running: fixes, monitoring, and new work. The printer that dies at 8PM is covered that night, not on Monday when a ticket queue opens.",
+      "A care plan or hourly support keeps it running: fixes, monitoring, and new work. The printer that dies at 8PM is covered that night.",
   },
 ];
 
@@ -207,486 +133,317 @@ const partner = [
   { name: "Teams", asset: "/landing/integration/microsoft-teams.svg" },
 ];
 
-const chartPoint = [
-  { name: "Jan", value: 24 }, { name: "Feb", value: 30 }, { name: "Mar", value: 28 },
-  { name: "Apr", value: 44 }, { name: "May", value: 40 }, { name: "Jun", value: 58 },
-  { name: "Jul", value: 52 }, { name: "Aug", value: 71 }, { name: "Sep", value: 82 },
-];
+const heroCopy = {
+  hidden: { opacity: 0, y: 18 },
+  show: { opacity: 1, y: 0 },
+};
+
+/** In-page anchors stay `<a href>` so the browser owns the smooth scroll. */
+const Action = ({
+  href,
+  className,
+  children,
+}: {
+  href: string;
+  className: string;
+  children: React.ReactNode;
+}) => {
+  if (href.startsWith("http")) {
+    return (
+      <a className={className} href={href} target="_blank" rel="noopener noreferrer">
+        {children}
+      </a>
+    );
+  }
+  if (href.startsWith("#")) {
+    return (
+      <a className={className} href={href}>
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link className={className} to={href}>
+      {children}
+    </Link>
+  );
+};
 
 const LandingPage = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [openPanel, setOpenPanel] = useState<string | null>(null);
-  const [faqOpen, setFaqOpen] = useState(0);
-  const [useCaseIndex, setUseCaseIndex] = useState(0);
-  const [surfacePage, setSurfacePage] = useState(0);
   const reduceMotion = useReducedMotion();
+  const [stepIndex, setStepIndex] = useState(0);
+  const [faqOpen, setFaqOpen] = useState(0);
+  const heroRef = useRef<HTMLDivElement>(null);
+
   // Prince, 08-21: "keep only the section for the websites that we've already
-  // created". Real rows or nothing — an empty table renders no work section.
+  // created". Real portfolio rows or nothing.
   const { project: shippedProject } = usePortfolio();
 
-  const current = useCase[useCaseIndex] ?? useCase[0];
-  const surfacePer = 3;
-  const surfacePageCount = Math.ceil(surface.length / surfacePer);
-  const visibleSurface = surface.slice(surfacePage * surfacePer, surfacePage * surfacePer + surfacePer);
+  // The hero still drifts a little slower than the page. Small on purpose: the
+  // photo is the point, the motion only keeps it from reading as a poster.
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
+  const heroShift = useTransform(scrollYProgress, [0, 1], ["0%", reduceMotion ? "0%" : "14%"]);
 
-  const closeMenu = () => {
-    setIsMenuOpen(false);
-    setOpenPanel(null);
-  };
-
-  // The three drawer behaviours the nav rewrite dropped — Escape close, scroll
-  // lock, and close on route change — now share one implementation with the
-  // shell and FloatingNav via useDrawerLock (which also keeps focus inside the
-  // open drawer and returns it to the toggle).
-
-  // 1 + 2. Escape closes it; neither scroll container scrolls behind it.
-  useDrawerLock(isMenuOpen, closeMenu, "mobile-navigation-drawer");
-
-  // 3. Navigating closes it. The landing nav mixes in-page anchors with real routes, so a
-  // client-side navigation would otherwise leave the drawer covering the page it just
-  // opened.
-  const { pathname } = useLocation();
-  useEffect(() => {
-    closeMenu();
-  }, [pathname]);
-
-  // Hover cannot happen on touch, and a keyboard Enter deserves the same menu a
-  // mouse gets — so the first activation of a panel parent opens the panel
-  // instead of navigating; the second follows the link.
-  const handlePanelNav = (item: NavItem, event: MouseEvent<HTMLAnchorElement>) => {
-    if (!item.panel || openPanel === item.label) {
-      closeMenu();
-      return;
-    }
-    event.preventDefault();
-    setOpenPanel(item.label);
-  };
+  const current = step[stepIndex] ?? step[0];
 
   return (
-    <main className="landing-page">
-      <header className="landing-nav">
-        <div className="landing-nav-inner">
-          <a className="landing-brand" href="#top" aria-label="ADVO home">
-            <img src="/advo-logo-black.png" alt="ADVO" />
-          </a>
-          <nav
-            id="mobile-navigation-drawer"
-            className={isMenuOpen ? "landing-nav-link is-open" : "landing-nav-link"}
-            aria-label="Main navigation"
-          >
-            {navItem.map((item) => (
-              <div
-                className="landing-nav-item"
-                key={item.label}
-                onMouseEnter={() => item.panel && setOpenPanel(item.label)}
-                onMouseLeave={() => setOpenPanel(null)}
-              >
-                <a
-                  href={item.href}
-                  onClick={item.panel ? (event) => handlePanelNav(item, event) : closeMenu}
-                  aria-expanded={item.panel ? openPanel === item.label : undefined}
-                >
-                  {item.label}
-                  {item.panel ? (
-                    <ChevronDown className={openPanel === item.label ? "is-open" : ""} size={14} />
-                  ) : null}
-                </a>
-                {item.panel && openPanel === item.label ? (
-                  <div className="landing-nav-panel">
-                    {item.panel.map((link) =>
-                      link.href.startsWith("/") ? (
-                        <Link key={link.label} to={link.href} onClick={closeMenu}>
-                          {link.label}
-                        </Link>
-                      ) : (
-                        <a key={link.label} href={link.href} onClick={closeMenu}>
-                          {link.label}
-                        </a>
-                      ),
-                    )}
-                  </div>
-                ) : null}
-              </div>
-            ))}
-          </nav>
-          <div className="landing-nav-action">
-            <Link className="landing-login landing-login-wide" to="/team">
-              Team
-            </Link>
-            <Link className="landing-login" to="/login">
-              Log in
-            </Link>
-            <Link className="landing-button landing-button-primary landing-button-small" to="/start">
-              Start a project
-            </Link>
-            <button
-              className="landing-menu"
-              onClick={() => setIsMenuOpen((value) => !value)}
-              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-              aria-expanded={isMenuOpen}
-              aria-controls="mobile-navigation-drawer"
-            >
-              {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
-            </button>
-          </div>
-        </div>
-      </header>
+    <main className={reduceMotion ? "landing-page is-reduce-motion" : "landing-page"}>
+      <LandingNav overlayHero />
 
       <section className="landing-hero" id="top">
-        <div className="landing-hero-frame">
-          <img src="/landing/rw/hero.jpg" alt="" />
+        <div className="landing-hero-frame" ref={heroRef}>
+          <motion.div
+            className="landing-hero-media"
+            style={{ y: heroShift }}
+            initial={reduceMotion ? false : { scale: 1.06 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 1.8, ease: EASE }}
+          >
+            <img src="/landing/rw/hero.jpg" alt="" fetchPriority="high" />
+          </motion.div>
           <div className="landing-hero-shade" />
-          <div className="landing-hero-copy">
-            <h1>We digitalize it for you.</h1>
-            <p>Philippine software agency and client workspace. One shared place from brief to launch.</p>
-            <div className="landing-hero-action">
-              <Link className="landing-button landing-button-light" to="/start">
-                Get Started
+          <motion.div
+            className="landing-hero-copy"
+            initial={reduceMotion ? false : "hidden"}
+            animate="show"
+            transition={{ staggerChildren: 0.1, delayChildren: 0.25 }}
+          >
+            <motion.h1 variants={heroCopy} transition={{ duration: 0.7, ease: EASE }}>
+              We digitalize it for you.
+            </motion.h1>
+            <motion.p variants={heroCopy} transition={{ duration: 0.7, ease: EASE }}>
+              Philippine software agency and client workspace. One shared place from brief to
+              launch.
+            </motion.p>
+            <motion.div className="landing-hero-action" variants={heroCopy} transition={{ duration: 0.7, ease: EASE }}>
+              <Link className="landing-button landing-button-hero" to="/start">
+                Start a project
                 <ChevronRight size={14} />
               </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="landing-piece" id="piece">
-        <div className="landing-piece-inner">
-          <img src="/landing/icon/missing-piece.png" alt="" />
-          <div>
-            <p className="landing-kicker">The gap</p>
-            <h3>Three pieces already exist. The system is the fourth.</h3>
-            <p>
-              Paper, Viber, tally sheets. We drop in the missing piece — software plus the
-              tablet, printer, and TV already on the counter.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="landing-capability" id="service">
-        <h3>Every surface you need to run the work.</h3>
-        <p>
-          Strategy, design, development, and support live in one studio. The client workspace
-          keeps the same truth on both sides of the table.
-        </p>
-        <div className="landing-capability-grid">
-          {capability.map(({ title, copy, icon }) => (
-            <div className="landing-capability-item" key={title}>
-              <img src={icon} alt="" />
-              <div>
-                <strong>{title}</strong>
-                <small>{copy}</small>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="landing-floor" id="floor">
-        <p className="landing-kicker">Built for the floor</p>
-        <h3>Clinic, café, shop. The counter on a Saturday night.</h3>
-        <p>
-          One build, different counters: the clinic queue, the café receipt, the shop
-          inventory — each on the devices already sitting there.
-        </p>
-        <div className="landing-floor-grid">
-          {floor.map((item) => (
-            <article className="landing-floor-card" key={item.title}>
-              <img src={item.icon} alt="" />
-              <h4>{item.title}</h4>
-              <p>{item.copy}</p>
-            </article>
-          ))}
-        </div>
-        <div className="landing-floor-cta">
-          <Link className="landing-button landing-button-primary" to="/start">
-            Start a project
-          </Link>
-        </div>
-      </section>
-
-      <section className="landing-manifesto">
-        <h2>
-          To become the infrastructure of the technological layer for industries
-          around the Philippines. We will modernize the Philippines.
-        </h2>
-      </section>
-
-      <section className="landing-showcase" id="showcase" aria-label="ADVO workspace preview">
-        <div className="landing-app-shell">
-          <aside className="landing-app-side">
-            <img src="/advo-logo-black.png" alt="ADVO" />
-            <div className="landing-search">Search anything...</div>
-            {["Overview", "Projects", "Tasks", "Clients", "Team", "Invoices", "Approvals"].map((label, index) => (
-              <div className={index === 0 ? "landing-app-nav active" : "landing-app-nav"} key={label}>
-                {label}
-              </div>
-            ))}
-          </aside>
-          <div className="landing-app-main">
-            <div className="landing-app-top">
-              <span>Workspace overview</span>
-              <div className="landing-avatar">AM</div>
-            </div>
-            <div className="landing-app-heading">
-              <div>
-                <small>Your projects, workload, approvals, and financials at a glance.</small>
-                <h3>Overview</h3>
-              </div>
-              <button type="button">+ New project</button>
-            </div>
-            <div className="landing-app-stat">
-              <div><small>Active projects</small><strong>24</strong></div>
-              <div><small>Total tasks</small><strong>1,284</strong></div>
-              <div><small>Pending approvals</small><strong>32</strong></div>
-              <div><small>Open quotations</small><strong>7</strong></div>
-            </div>
-            <div className="landing-app-grid">
-              <div className="landing-chart-card">
-                <div><strong>Workload</strong><span>May 5–11</span></div>
-                <ResponsiveContainer width="100%" height={145}>
-                  <AreaChart data={chartPoint}>
-                    <defs>
-                      <linearGradient id="velocity" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#0c0c0c" stopOpacity={0.18} />
-                        <stop offset="100%" stopColor="#0c0c0c" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <Tooltip contentStyle={{ fontSize: 10, borderRadius: 8 }} />
-                    <Area type="monotone" dataKey="value" stroke="#0c0c0c" strokeWidth={1.5} fill="url(#velocity)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="landing-approval">
-                <div><strong>Client approval queue</strong><span>View all</span></div>
-                {/* Deliberately generic — no real or prospective client name
-                    belongs in a product mockup (Makati Health Dept. read as a
-                    nod to a live prospect). */}
-                {["Riverside Dental", "MNL Logistics", "Halo Café"].map((item) => (
-                  <p key={item}><span>{item}</span></p>
-                ))}
-              </div>
-              <div className="landing-activity">
-                <div><strong>Recent activity</strong><span>View all</span></div>
-                {["Brand direction approved", "Client notes received", "Homepage build shipped", "Invoice marked paid"].map((item) => (
-                  <p key={item}>{item}</p>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="landing-work" id="work">
-        <h3>The sites we have already shipped.</h3>
-        <p>
-          Live Philippine businesses, read from the ADVO portfolio database. One
-          large screenshot, one short line, nothing invented.
-        </p>
-        {shippedProject.length > 0 ? (
-          <div className="landing-work-grid">
-            {shippedProject.map((item) => {
-              const shot = (
-                <>
-                  <div className="landing-work-shot">
-                    <img
-                      src={item.screenshotUrl ?? ""}
-                      alt={`${item.title} screenshot`}
-                      loading="lazy"
-                    />
-                  </div>
-                  <h4>{item.title}</h4>
-                  <p>{item.blurb}</p>
-                </>
-              );
-
-              return (
-                <article className="landing-work-card" key={item.portfolio_project_id}>
-                  {item.live_url ? (
-                    <a href={item.live_url} target="_blank" rel="noopener noreferrer">
-                      {shot}
-                      <span className="landing-chip-line">Visit the site</span>
-                    </a>
-                  ) : item.slug ? (
-                    // A slug-only card still needs an affordance — otherwise the
-                    // screenshot reads as a picture while its neighbours read as links.
-                    <Link to={`/project/${item.slug}`}>
-                      {shot}
-                      <span className="landing-chip-line">Read the case study</span>
-                    </Link>
-                  ) : (
-                    <div>{shot}</div>
-                  )}
-                </article>
-              );
-            })}
-          </div>
-        ) : null}
-      </section>
-
-      <section className="landing-usecase" id="process">
-        <div className="landing-usecase-tab">
-          {useCase.map((item, index) => (
-            <button
-              type="button"
-              key={item.title}
-              className={index === useCaseIndex ? "is-active" : ""}
-              onClick={() => setUseCaseIndex(index)}
-            >
-              {item.title}
-            </button>
-          ))}
-        </div>
-        <div className="landing-usecase-body">
-          <div>
-            <h3>{current.heading}</h3>
-            <p>{current.desc}</p>
-            <div className="landing-usecase-chip">
-              {current.chip.map((label) => (
-                <span key={label}>{label}</span>
-              ))}
-            </div>
-          </div>
-          <div className="landing-before-after">
-            <figure>
-              <img src="/landing/rw/before.jpg" alt="Before" />
-              <figcaption>Before</figcaption>
-            </figure>
-            <figure>
-              <img src="/landing/rw/deliver.jpg" alt="After" />
-              <figcaption>After</figcaption>
-            </figure>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
       <section className="landing-marquee" aria-label="Tools the floor already runs on">
-        <p className="landing-kicker landing-marquee-kicker">The everyday tools your floor already runs on</p>
-        <div className={reduceMotion ? "landing-marquee-track is-static" : "landing-marquee-track"}>
-          {[...partner, ...partner, ...partner].map((item, index) => (
-            <span className="landing-marquee-item" key={`${item.name}-${index}`}>
-              <img src={item.asset} alt="" />
-              {item.name}
+        <p>Works alongside the tools your floor already runs on</p>
+        <div className="landing-marquee-mask">
+          <div className={reduceMotion ? "landing-marquee-track is-static" : "landing-marquee-track"}>
+            {[...partner, ...partner].map((item, index) => (
+              <span className="landing-marquee-item" key={`${item.name}-${index}`}>
+                <img src={item.asset} alt="" />
+                {item.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="landing-piece" id="showcase">
+        <Reveal as="h2" className="landing-display">
+          Three pieces already exist. The system is the fourth.
+        </Reveal>
+        <Reveal className="landing-lede" delay={0.08}>
+          <p>
+            Paper, Viber, tally sheets. We drop in the missing piece: software, plus the
+            tablet, printer, and TV already on the counter.
+          </p>
+        </Reveal>
+
+        <RevealGroup className="landing-surface-grid" stagger={0.1}>
+          {surface.map((item) => (
+            <Reveal as="article" className="landing-surface-card" key={item.title}>
+              <h3>{item.title}</h3>
+              <div className="landing-still">
+                <img src={item.still} alt="" loading="lazy" />
+              </div>
+              <h4>{item.heading}</h4>
+              <p>{item.copy}</p>
+              <div className="landing-surface-action">
+                <Action className="landing-button landing-button-primary landing-button-small" href={item.primary.href}>
+                  {item.primary.label}
+                </Action>
+                <Action className="landing-button landing-button-ghost landing-button-small" href={item.secondary.href}>
+                  {item.secondary.label}
+                  {item.secondary.href.startsWith("http") ? <ArrowUpRight size={14} /> : null}
+                </Action>
+              </div>
+            </Reveal>
+          ))}
+        </RevealGroup>
+      </section>
+
+      <section className="landing-process" id="process">
+        <Reveal as="div" className="landing-workflow-section" id="workflow">
+          {stage.map((label, index) => (
+            <span key={label}>
+              {index > 0 ? <i aria-hidden="true" /> : null}
+              {label}
             </span>
           ))}
-        </div>
+        </Reveal>
+
+        <Reveal className="landing-process-card" delay={0.1}>
+          <div className="landing-process-tab" role="tablist" aria-orientation="vertical" aria-label="How it ships">
+            {step.map((item, index) => (
+              <button
+                type="button"
+                role="tab"
+                key={item.title}
+                aria-selected={index === stepIndex}
+                className={index === stepIndex ? "is-active" : ""}
+                onClick={() => setStepIndex(index)}
+              >
+                {item.title}
+              </button>
+            ))}
+          </div>
+
+          <div className="landing-process-panel" role="tabpanel">
+            <div className="landing-still landing-process-still">
+              <AnimatePresence initial={false}>
+                <motion.img
+                  key={current.still + current.title}
+                  src={current.still}
+                  alt=""
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: reduceMotion ? 0 : 0.45, ease: EASE }}
+                />
+              </AnimatePresence>
+            </div>
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={current.title}
+                className="landing-process-copy"
+                initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
+                transition={{ duration: 0.28, ease: EASE }}
+              >
+                <h3>{current.heading}</h3>
+                <p>{current.copy}</p>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </Reveal>
       </section>
 
-      <section className="landing-surface">
-        <h3>Apps for Everything</h3>
-        <p>Use-case surfaces designed so a client, an operator, and the studio share one system.</p>
-        <div className="landing-surface-grid">
-          {visibleSurface.map((item) =>
-            item.href.startsWith("http") ? (
-              <a className="landing-surface-card" key={item.title} href={item.href} target="_blank" rel="noopener noreferrer">
-                <img className="landing-surface-icon" src={item.icon} alt="" />
-                <h4>{item.title}</h4>
-                <p>{item.desc}</p>
-                <img className="landing-surface-thumb" src={item.thumb} alt="" />
-              </a>
-            ) : item.href.startsWith("/") ? (
-              <Link className="landing-surface-card" key={item.title} to={item.href}>
-                <img className="landing-surface-icon" src={item.icon} alt="" />
-                <h4>{item.title}</h4>
-                <p>{item.desc}</p>
-                <img className="landing-surface-thumb" src={item.thumb} alt="" />
+      <section className="landing-band" id="engagement">
+        <div className="landing-band-frame">
+          <img src="/landing/rw/story.jpg" alt="" loading="lazy" />
+          <div className="landing-band-shade" />
+          <div className="landing-band-inner">
+            <Reveal className="landing-band-lede">
+              <h2>
+                To become the infrastructure of the technological layer for industries around
+                the Philippines. We will modernize the Philippines.
+              </h2>
+              <Link className="landing-button landing-button-outline" to="/start">
+                Start a project
               </Link>
-            ) : (
-              <a className="landing-surface-card" key={item.title} href={item.href}>
-                <img className="landing-surface-icon" src={item.icon} alt="" />
-                <h4>{item.title}</h4>
-                <p>{item.desc}</p>
-                <img className="landing-surface-thumb" src={item.thumb} alt="" />
-              </a>
-            ),
-          )}
-        </div>
-        <div className="landing-surface-pager">
-          <button type="button" aria-label="Previous" onClick={() => setSurfacePage((page) => (page - 1 + surfacePageCount) % surfacePageCount)}>
-            <ChevronLeft size={18} />
-          </button>
-          <span>
-            {surfacePage + 1} / {surfacePageCount}
-          </span>
-          <button type="button" aria-label="Next" onClick={() => setSurfacePage((page) => (page + 1) % surfacePageCount)}>
-            <ChevronRight size={18} />
-          </button>
+            </Reveal>
+
+            <Reveal className="landing-band-list" delay={0.12}>
+              <p>
+                We do not publish rates. Tell us what the floor has to do and we send a
+                quotation built on your scope.
+              </p>
+              {engagement.map((item) => (
+                <Link key={item.title} to="/start" className="landing-band-row">
+                  <span>
+                    <strong>{item.title}</strong>
+                    <small>{item.copy}</small>
+                  </span>
+                  <ArrowUpRight size={16} />
+                </Link>
+              ))}
+            </Reveal>
+          </div>
         </div>
       </section>
 
-      <section className="landing-workflow-section" id="workflow">
-        <h3>
-          From inquiry
-          <br />
-          to the floor.
-        </h3>
-        <p>Inquiry to launch, chained as one sequence: brief, scope, build, review, live.</p>
-        <Link className="landing-chip-line" to="/start">
-          Start a project
-        </Link>
-        <div className="landing-node-row">
-          <article className="landing-node">
-            <header>Inquiry</header>
-            <p>Tell us what the floor needs to do on a Saturday night.</p>
-          </article>
-          <article className="landing-node">
-            <header>Scope</header>
-            <img src="/landing/feature-plan.png" alt="" />
-          </article>
-          <article className="landing-node">
-            <header>Build</header>
-            <img src="/landing/feature-create.png" alt="" />
-            <footer>
-              <span>workspace</span>
-              <span className="landing-node-run">Run</span>
-            </footer>
-          </article>
-          <article className="landing-node">
-            <header>Review</header>
-            <img src="/landing/feature-approve.png" alt="" />
-          </article>
-          <article className="landing-node">
-            <header>Launch</header>
-            <img src="/landing/rw/deliver.jpg" alt="" />
-            <footer>
-              <span>live</span>
-              <span className="landing-node-run">Run</span>
-            </footer>
-          </article>
-        </div>
-      </section>
-
-      <section className="landing-engagement" id="engagement">
-        <img className="landing-engagement-mark" src="/landing/icon/pricing.png" alt="" />
-        <h3>Flexible ways to work together.</h3>
-        <p>
-          We do not publish rates. Tell us what the floor has to do and we send a
-          quotation built on your scope.
-        </p>
-        <div className="landing-engagement-grid">
-          {engagement.map((item) => (
-            <article key={item.title}>
-              <h4>{item.title}</h4>
-              <p>{item.copy}</p>
-              <Link to="/start">{item.action}</Link>
-            </article>
-          ))}
-        </div>
-      </section>
+      {shippedProject.length > 0 ? (
+        <section className="landing-work" id="work">
+          <Reveal as="h2" className="landing-display">
+            The sites we have already shipped.
+          </Reveal>
+          <RevealGroup className="landing-work-grid" stagger={0.1}>
+            {shippedProject.map((item) => {
+              const body = (
+                <>
+                  <div className="landing-still landing-work-shot">
+                    <img src={item.screenshotUrl ?? ""} alt={`${item.title} screenshot`} loading="lazy" />
+                  </div>
+                  <h3>{item.title}</h3>
+                  <p>{item.blurb}</p>
+                </>
+              );
+              return (
+                <Reveal as="article" className="landing-work-card" key={item.portfolio_project_id}>
+                  {item.live_url ? (
+                    <a href={item.live_url} target="_blank" rel="noopener noreferrer">
+                      {body}
+                      <span className="landing-text-link">
+                        Visit the site
+                        <ArrowUpRight size={14} />
+                      </span>
+                    </a>
+                  ) : item.slug ? (
+                    <Link to={`/project/${item.slug}`}>
+                      {body}
+                      <span className="landing-text-link">
+                        Read the case study
+                        <ChevronRight size={14} />
+                      </span>
+                    </Link>
+                  ) : (
+                    <div>{body}</div>
+                  )}
+                </Reveal>
+              );
+            })}
+          </RevealGroup>
+        </section>
+      ) : null}
 
       <section className="landing-faq" id="faq">
-        <h3>Questions before we build</h3>
-        <div className="landing-faq-list">
-          {faq.map(({ question, answer }, index) => (
-            <div className={faqOpen === index ? "is-open" : ""} key={question}>
-              <button type="button" onClick={() => setFaqOpen(faqOpen === index ? -1 : index)} aria-expanded={faqOpen === index}>
-                <span>{question}</span>
-                <ChevronDown size={16} />
-              </button>
-              <p>{answer}</p>
-            </div>
-          ))}
-        </div>
+        <Reveal as="h2" className="landing-display">
+          Questions before we build
+        </Reveal>
+        <RevealGroup className="landing-faq-list" stagger={0.05}>
+          {faq.map(({ question, answer }, index) => {
+            const isOpen = faqOpen === index;
+            return (
+              <Reveal className={isOpen ? "landing-faq-item is-open" : "landing-faq-item"} key={question}>
+                <button
+                  type="button"
+                  onClick={() => setFaqOpen(isOpen ? -1 : index)}
+                  aria-expanded={isOpen}
+                  aria-controls={`faq-${index}`}
+                >
+                  <span>{question}</span>
+                  <ChevronDown size={16} />
+                </button>
+                <AnimatePresence initial={false}>
+                  {isOpen ? (
+                    <motion.div
+                      id={`faq-${index}`}
+                      className="landing-faq-answer"
+                      initial={reduceMotion ? false : { height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={reduceMotion ? undefined : { height: 0, opacity: 0 }}
+                      transition={{ duration: 0.32, ease: EASE }}
+                    >
+                      <p>{answer}</p>
+                    </motion.div>
+                  ) : null}
+                </AnimatePresence>
+              </Reveal>
+            );
+          })}
+        </RevealGroup>
       </section>
 
       <LandingFooter />

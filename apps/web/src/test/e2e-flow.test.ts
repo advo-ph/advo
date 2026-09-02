@@ -3,11 +3,17 @@
  *
  * Tests the complete ADVO app flow against the live API:
  * Admin CRUD, client lifecycle, camelCase mapping, auth flows
+ *
+ * The API is PROBED once before anything runs (see live-api.ts). Unreachable →
+ * every block reports SKIPPED instead of failing the file with ECONNREFUSED, so
+ * a red suite keeps meaning "something broke" rather than "the API isn't up".
+ * `VITE_REQUIRE_LIVE_API=1` turns that skip back into a hard failure for CI.
  */
 
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe as describeAlways, it, expect, beforeAll } from "vitest";
+import { API, skipWhenApiDown } from "./live-api.js";
 
-const API = process.env.VITE_API_URL || "http://localhost:6407";
+const describe = describeAlways.skipIf(skipWhenApiDown);
 
 let adminToken: string;
 let teamToken: string;
@@ -27,6 +33,9 @@ async function api(method: string, path: string, body?: unknown, token?: string)
 }
 
 beforeAll(async () => {
+  // Every block is already skipped when the API is down; returning here stops
+  // the login itself from throwing ECONNREFUSED and failing the file.
+  if (skipWhenApiDown) return;
   const { body } = await api("POST", "/api/auth/login", {
     email: "admin@advo.ph",
     password: "changeme",

@@ -4,13 +4,32 @@
  * These tests verify that all frontend modules correctly call the ADVO
  * API. Default target is the local dev API (http://localhost:6407) but
  * can be overridden via VITE_API_URL (e.g. https://api.advo.ph).
+ *
+ * The API is PROBED once before anything runs (see live-api.ts). When it is
+ * unreachable every live block reports SKIPPED rather than failing the file
+ * with ECONNREFUSED — a red that means "you forgot to start the API" is
+ * indistinguishable from a red that means "something broke", and the second one
+ * is the whole point of the suite. `VITE_REQUIRE_LIVE_API=1` turns the skip back
+ * into a hard failure for a deploy gate.
+ *
+ * `describe` below is the GUARDED suite function; `describeAlways` is the raw
+ * one, kept for the source-reading block that needs no API at all and must not
+ * lose coverage just because a port is closed.
  */
 
-import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+import {
+  describe as describeAlways,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  vi,
+} from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { API, skipWhenApiDown } from "./live-api.js";
 
-const API = process.env.VITE_API_URL || "http://localhost:6407";
+const describe = describeAlways.skipIf(skipWhenApiDown);
 
 async function apiGet(path: string, token?: string) {
   const headers: Record<string, string> = {};
@@ -53,6 +72,9 @@ async function apiDelete(path: string, token: string) {
 let adminToken: string;
 
 beforeAll(async () => {
+  // Every live block is already skipped when the API is down; returning here
+  // stops the login itself from throwing ECONNREFUSED and failing the file.
+  if (skipWhenApiDown) return;
   // Login as admin
   const { body } = await apiPost("/api/auth/login", {
     email: "admin@advo.ph",
@@ -1102,7 +1124,8 @@ describe("Availability", () => {
 
 // ─── No Supabase Imports ──────────────────────────────
 
-describe("No Supabase in Source", () => {
+// Source-reading only — no API, so it runs whether or not one is up.
+describeAlways("No Supabase in Source", () => {
   it("No source files import from @/integrations/supabase", async () => {
     // This test verifies the migration is complete by checking
     // that no active source files still import supabase
