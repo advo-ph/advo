@@ -97,7 +97,7 @@ Every colour and every font-size in `landing-page.css` derives from the `:root` 
 | `--landing-dark` | `#262626` | Primary CTA |
 | `--landing-deep` | `#000000` | Primary CTA hover |
 
-**Type**: Instrument Sans on `.landing-page`. Eight steps and no one-off sizes — `--landing-text-micro` `-small` `-body` `-lead` `-title` `-heading` `-display` `-wordmark`. The hero's phone step is a `--landing-text-display` override inside the 680px query, not a ninth size. Tight display tracking, weight 400 on headlines, no mono numerals.
+**Type**: Instrument Sans on `.landing-page`. Seven steps and no one-off sizes — `--landing-text-micro` `-small` `-body` `-lead` `-title` `-heading` `-display`. The footer wordmark is the traced lockup (`public/advo-wordmark.svg`) set to the column width through a CSS mask, not type. The hero's phone step is a `--landing-text-display` override inside the 680px query, not a ninth size. Tight display tracking, weight 400 on headlines, no mono numerals.
 
 **Motion**: framer-motion only where it reads as product, guarded by `useReducedMotion` and a `prefers-reduced-motion` block. Hero copy staggers in on load and the still drifts on scroll; sections fade up 16px once via `motion/Reveal`; the process panel cross-fades; the FAQ animates height; buttons darken on hover and press to 96%; the nav goes from transparent-over-hero (phones) to a blurred white bar on the first scroll.
 

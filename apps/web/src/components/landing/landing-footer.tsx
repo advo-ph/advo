@@ -180,9 +180,11 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
         ))}
       </div>
 
-      <div className="landing-footer-wordmark" data-viewport-check="footer-wordmark" aria-hidden="true">
-        ADVO
-      </div>
+      {/* The actual wordmark, not the name typed in the body face: the traced
+          letterforms from the lockup, set to exactly the width of the rule
+          above them. A CSS mask so it takes its colour from the footer, and
+          aria-hidden because the bar below says the name once already. */}
+      <div className="landing-footer-wordmark" data-viewport-check="footer-wordmark" aria-hidden="true" />
 
       <nav className="landing-footer-legal" aria-label="Legal">
         {legalLink.map((link) => (
@@ -194,7 +196,7 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
 
       <div className="landing-footer-bar">
         <div>
-          <img src="/advo-logo-black.png" alt="ADVO" />
+          <img src="/advo-wordmark.svg" alt="ADVO" />
           <p>
             © 2026 ADVO / <Link to="/start">Contact</Link> / Built with care in the Philippines.
           </p>

@@ -132,7 +132,7 @@ const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps)
     <header className={className}>
       <div className="landing-nav-inner">
         <Link className="landing-brand" to="/" aria-label="ADVO home" onClick={closeMenu}>
-          <img src="/advo-logo-black.png" alt="ADVO" />
+          <img src="/advo-wordmark.svg" alt="ADVO" />
         </Link>
 
         <nav

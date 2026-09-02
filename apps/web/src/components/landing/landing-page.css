@@ -15,7 +15,7 @@
   --landing-dark: #262626;
   --landing-deep: #000000;
 
-  /* Type scale — eight steps, no one-off sizes */
+  /* Type scale — seven steps, no one-off sizes */
   --landing-text-micro: 12px;
   --landing-text-small: 13px;
   --landing-text-body: 14px;
@@ -23,10 +23,17 @@
   --landing-text-title: 22px;
   --landing-text-heading: clamp(28px, 2.8vw, 40px);
   --landing-text-display: clamp(34px, 3.2vw, 46px);
-  --landing-text-wordmark: clamp(72px, 21vw, 400px);
 
   /* Vertical rhythm — every section breathes on the same measure */
   --landing-section-rhythm: clamp(72px, 8vw, 120px);
+  /* Fixed heights the first viewport is cut from: the bar, and the client
+   * strip under the hero. The hero is what remains, so the strip is always
+   * on screen without a scroll, whatever the window height. */
+  --landing-nav-height: 68px;
+  --landing-strip-height: 120px;
+  /* The one gradient on the page: the soft edges of the client strip. */
+  --landing-fade: 12%;
+  --landing-edge-fade: linear-gradient(to right, transparent, #000 var(--landing-fade), #000 calc(100% - var(--landing-fade)), transparent);
   --landing-gutter: clamp(20px, 2.8vw, 40px);
   --landing-ease: cubic-bezier(0.32, 0.72, 0, 1);
 }
@@ -142,7 +149,7 @@ body:has(.landing-shell) {
   left: 0;
   right: 0;
   z-index: 40;
-  height: 68px;
+  height: var(--landing-nav-height);
   color: var(--landing-ink);
   transition: color 0.25s var(--landing-ease);
 }
@@ -295,13 +302,14 @@ body:has(.landing-shell) {
 a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 
 /* ---------------------------------------------------------------- Hero */
-.landing-hero { padding: 68px var(--landing-gutter) 0; }
+.landing-hero { padding: var(--landing-nav-height) var(--landing-gutter) 0; }
 .landing-hero-frame {
   position: relative;
   width: min(1440px, 100%);
   margin-inline: auto;
-  height: min(82vh, 760px);
-  min-height: 520px;
+  height: calc(100vh - var(--landing-nav-height) - var(--landing-strip-height));
+  height: calc(100svh - var(--landing-nav-height) - var(--landing-strip-height));
+  min-height: 440px;
   overflow: hidden;
   border-radius: 16px;
   background: var(--landing-ink);
@@ -339,21 +347,26 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-hero-action { margin-top: 8px; }
 
 /* ---------------------------------------------------------------- Partner strip */
-.landing-marquee { padding: 48px 0 0; text-align: center; }
-.landing-page .landing-marquee > p { font-size: var(--landing-text-body); color: var(--landing-ink-mute); }
+.landing-marquee {
+  height: var(--landing-strip-height);
+  padding: 22px 0 0;
+  text-align: center;
+  overflow: hidden;
+}
+.landing-page .landing-marquee > p { font-size: var(--landing-text-small); line-height: 20px; color: var(--landing-ink-mute); }
 .landing-marquee-mask {
   width: min(1200px, 100%);
-  margin: 20px auto 0;
+  margin: 12px auto 0;
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
-  mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+  -webkit-mask-image: var(--landing-edge-fade);
+  mask-image: var(--landing-edge-fade);
 }
 .landing-marquee-track {
   display: flex;
   align-items: center;
   gap: 56px;
   width: max-content;
-  padding: 12px 28px;
+  padding: 8px 28px;
   color: var(--landing-ink);
   font-size: var(--landing-text-lead);
   font-weight: 500;
@@ -363,7 +376,11 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-marquee-item { display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; }
 .landing-marquee-item img { height: 26px; width: auto; max-width: 140px; object-fit: contain; filter: grayscale(1); }
 .landing-marquee-item.is-wide img { height: 30px; }
-.landing-marquee-track.is-static { animation: none; }
+/* Reduced motion: no scroll, so no clipped edges either — the row wraps and
+ * centres, and the duplicate copy that makes the loop seamless is dropped. */
+.landing-marquee-track.is-static { animation: none; width: 100%; flex-wrap: wrap; justify-content: center; gap: 12px 32px; padding-inline: 16px; }
+.landing-marquee-track.is-static [aria-hidden="true"] { display: none; }
+.landing-marquee-mask:has(.is-static) { -webkit-mask-image: none; mask-image: none; }
 @keyframes landing-marquee {
   from { transform: translate3d(0, 0, 0); }
   to { transform: translate3d(-50%, 0, 0); }
@@ -658,17 +675,17 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-footer-grid a { display: block; width: fit-content; margin-top: 6px; color: rgba(255, 255, 255, 0.9); font-size: var(--landing-text-body); line-height: 1.5; transition: color 0.15s var(--landing-ease); }
 .landing-footer-grid a:hover { color: var(--landing-ground); text-decoration: underline; text-underline-offset: 3px; }
 .landing-footer-grid a span { color: rgba(255, 255, 255, 0.5); }
-/* Oversized wordmark. clamp()'s vw term keeps the four glyphs inside the
- * 360px viewport, and the footer's overflow:hidden is the belt on top of it. */
+/* The wordmark as the footer's floor: the traced lockup, one column wide,
+ * coloured through a mask so it is the footer's own ink at low strength. An
+ * aspect-ratio box, so it can never overflow the 360px viewport. */
 .landing-footer-wordmark {
   width: min(1440px, 100%);
+  aspect-ratio: 1024 / 235;
   margin-inline: auto;
-  margin-bottom: 24px;
-  color: rgba(255, 255, 255, 0.07);
-  font-size: var(--landing-text-wordmark);
-  font-weight: 500;
-  line-height: 0.85;
-  letter-spacing: -0.05em;
+  margin-bottom: 32px;
+  background: rgba(255, 255, 255, 0.14);
+  -webkit-mask: url("/advo-wordmark.svg") no-repeat center / contain;
+  mask: url("/advo-wordmark.svg") no-repeat center / contain;
   user-select: none;
 }
 /* The PayMongo disclosure row. Its own line above the copyright bar: a
@@ -733,7 +750,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-shell-auth { padding: 28px 16px 56px; }
 
   /* Bar over a full-bleed hero: transparent and light until the first scroll */
-  .landing-nav { height: 60px; }
+  .landing-page { --landing-nav-height: 60px; }
   .landing-nav.is-overlay { color: var(--landing-ground); }
   .landing-nav.is-overlay::before { opacity: 0; }
   .landing-nav.is-overlay .landing-brand img { filter: invert(1); }
@@ -745,7 +762,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-nav-link {
     display: none;
     position: absolute;
-    top: 60px;
+    top: var(--landing-nav-height);
     left: 0;
     right: 0;
     padding: 8px 20px 24px;
@@ -754,7 +771,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
     border-top: 1px solid var(--landing-line);
     flex-direction: column;
     align-items: stretch;
-    max-height: calc(100dvh - 60px);
+    max-height: calc(100dvh - var(--landing-nav-height));
     overflow-y: auto;
   }
   .landing-nav-link.is-open { display: flex; }
@@ -777,13 +794,23 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-nav-drawer-action { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
   .landing-nav-drawer-action .landing-button { width: 100%; height: 40px; }
 
+  /* Full-bleed under the transparent bar, and still cut so the client strip
+   * sits inside the first screen. */
   .landing-hero { padding: 0; }
-  .landing-hero-frame { width: 100%; height: 100svh; min-height: 560px; border-radius: 0; }
+  .landing-hero-frame {
+    width: 100%;
+    height: calc(100vh - var(--landing-strip-height));
+    height: calc(100svh - var(--landing-strip-height));
+    min-height: 520px;
+    border-radius: 0;
+  }
   .landing-hero-copy { padding: 0 20px 40px; }
   .landing-hero-shade { background: rgba(0, 0, 0, 0.34); }
 
-  .landing-marquee { padding-top: 40px; }
-  .landing-marquee-track { gap: 36px; }
+  .landing-marquee-mask { --landing-fade: 8%; }
+  .landing-marquee-track { gap: 32px; padding-inline: 12%; }
+  .landing-marquee-item img { height: 22px; }
+  .landing-marquee-item.is-wide img { height: 26px; }
   .landing-piece,
   .landing-work,
   .landing-faq,
