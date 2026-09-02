@@ -1150,3 +1150,118 @@ export const paymentEvent = pgTable(
     index("idx_payment_event_intent").on(t.paymentIntentId),
   ],
 );
+
+// ─── Message channels (migration 023) ────────────────────────
+//
+// The roadmap for this platform was assembled by a human reading a Messenger export,
+// because the platform cannot see any of it. Every commercially load-bearing signal —
+// scope creep, revision requests, "the 12k isnt enough" — arrives on a channel this
+// codebase had no model for and reached the system only when somebody retyped it.
+//
+// Three things to hold onto:
+//
+//   * CONSENT IS A COLUMN. `contactChannel.consentAt` NULL means we know the address and
+//     may NOT use it. Under RA 10173 a scraped phone number is personal data with no
+//     consent basis attached, and this is what stops the ~5K clinic list from becoming an
+//     SMS blast. Storing an address is not permission to use it.
+//   * INBOUND IS APPEND-ONLY apart from triage. What a client said is a fact; facts do
+//     not get edited. `isActioned` is the one mutable column.
+//   * OUTBOUND RECORDS FAILURES, and that is its purpose. email.service.ts swallowed its
+//     own send failures and prod ran with no mail transport for months, invisibly.
+
+export const contactChannel = pgTable(
+  "contact_channel",
+  {
+    contactChannelId: bigserial("contact_channel_id", { mode: "number" }).primaryKey(),
+    clientId: integer("client_id").references(() => client.clientId, { onDelete: "cascade" }),
+    leadId: integer("lead_id").references(() => lead.leadId, { onDelete: "cascade" }),
+    /** App-validated growable set: sms | viber | messenger | whatsapp. */
+    channel: varchar("channel", { length: 20 }).notNull(),
+    /** E.164 for sms/viber, a page-scoped id for messenger. Normalized by the app. */
+    reference: varchar("reference", { length: 255 }).notNull(),
+    displayName: varchar("display_name", { length: 255 }),
+    isPrimary: boolean("is_primary").notNull().default(false),
+    /** NULL = we know the address and MAY NOT use it. The send path refuses. */
+    consentAt: timestamp("consent_at", { withTimezone: true }),
+    /** WHERE permission came from. "We have consent" without provenance is no defence. */
+    consentSource: varchar("consent_source", { length: 100 }),
+    /** Set INSTEAD of deleting — deleting loses the evidence consent was ever given. */
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    note: text("note"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_contact_channel_client").on(t.clientId),
+    index("idx_contact_channel_lead").on(t.leadId),
+    uniqueIndex("idx_contact_channel_reference").on(t.channel, t.reference),
+  ],
+);
+
+export const inboundMessage = pgTable(
+  "inbound_message",
+  {
+    inboundMessageId: bigserial("inbound_message_id", { mode: "number" }).primaryKey(),
+    channel: varchar("channel", { length: 20 }).notNull(),
+    /** The provider's own id. Half of the replay guard — providers redeliver until 2xx. */
+    providerMessageId: varchar("provider_message_id", { length: 255 }).notNull(),
+    contactChannelId: integer("contact_channel_id").references(
+      () => contactChannel.contactChannelId,
+      { onDelete: "set null" },
+    ),
+    clientId: integer("client_id").references(() => client.clientId, { onDelete: "set null" }),
+    projectId: integer("project_id").references(() => project.projectId, { onDelete: "set null" }),
+    leadId: integer("lead_id").references(() => lead.leadId, { onDelete: "set null" }),
+    senderReference: varchar("sender_reference", { length: 255 }).notNull(),
+    senderName: varchar("sender_name", { length: 255 }),
+    body: text("body"),
+    attachment: jsonb("attachment"),
+    /** The PROVIDER's clock. A scope dispute turns on when something was said. */
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Unverified messages are recorded and FLAGGED — a forged row would be a fabricated
+     *  paper trail, which is worse than a missing one. */
+    signatureVerified: boolean("signature_verified").notNull(),
+    /** The only mutable column. */
+    isActioned: boolean("is_actioned").notNull().default(false),
+    actionedAt: timestamp("actioned_at", { withTimezone: true }),
+    actionedByUserId: integer("actioned_by_user_id").references(() => user.userId, {
+      onDelete: "set null",
+    }),
+    rawPayload: jsonb("raw_payload").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("idx_inbound_message_provider").on(t.channel, t.providerMessageId),
+    index("idx_inbound_message_client").on(t.clientId),
+    index("idx_inbound_message_project").on(t.projectId),
+  ],
+);
+
+export const outboundMessage = pgTable(
+  "outbound_message",
+  {
+    outboundMessageId: bigserial("outbound_message_id", { mode: "number" }).primaryKey(),
+    channel: varchar("channel", { length: 20 }).notNull(),
+    provider: varchar("provider", { length: 30 }).notNull(),
+    contactChannelId: integer("contact_channel_id").references(
+      () => contactChannel.contactChannelId,
+      { onDelete: "set null" },
+    ),
+    toReference: varchar("to_reference", { length: 255 }).notNull(),
+    body: text("body").notNull(),
+    /** signoff_deadline | invoice_due | payment_receipt | custom. */
+    purpose: varchar("purpose", { length: 50 }).notNull(),
+    relatedEntityType: varchar("related_entity_type", { length: 50 }),
+    relatedEntityId: integer("related_entity_id"),
+    /** queued | sent | failed | refused. "refused" = declined BEFORE reaching a provider
+     *  (no consent, or no transport). A refusal is not a failure and must not read as one. */
+    status: varchar("status", { length: 20 }).notNull().default("queued"),
+    providerReference: varchar("provider_reference", { length: 255 }),
+    /** Required by CHECK when status = failed. A failure with no reason is the outage. */
+    failureReason: text("failure_reason"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("idx_outbound_message_entity").on(t.relatedEntityType, t.relatedEntityId)],
+);

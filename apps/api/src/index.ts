@@ -43,6 +43,7 @@ import proposalRoutes from "./routes/proposal.routes.js";
 import campaignRoutes from "./routes/campaign.routes.js";
 import libraryRoutes from "./routes/library.routes.js";
 import paymentRoutes from "./routes/payment.routes.js";
+import messageRoutes from "./routes/message.routes.js";
 
 import type { Variables } from "./types/context.js";
 
@@ -163,6 +164,12 @@ app.route("/api/recurring-fee", recurringFeeRoutes);
 // it with no ADVO credential, so its authentication is the request SIGNATURE, verified
 // before anything is judged. Everything else on this router requires a session.
 app.route("/api/payment", paymentRoutes);
+
+// Message channels (migration 023) — SMS / Viber / Messenger, in and out. The inbound
+// webhooks under /api/message/webhook/:channel are public for the same reason the payment
+// one is: the providers call with no ADVO credential, so authentication is the signature.
+// Nothing here auto-replies; a message actuates nothing.
+app.route("/api/message", messageRoutes);
 
 // Commission split — the 60/25/15 payout model (migration 018). TEAM-ONLY: no /hub path
 // reaches this router. Finalizing is an explicit admin POST, never automatic.

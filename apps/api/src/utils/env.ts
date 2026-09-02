@@ -46,6 +46,31 @@ const envSchema = z.object({
   /** Echoed in `x-callback-token`. Without it every Xendit callback is refused. */
   XENDIT_CALLBACK_TOKEN: z.string().optional(),
 
+  /**
+   * Message channels (migration 023). Which SMS gateway serves the `sms` channel.
+   * Defaults to `log`, which RECORDS the message and refuses to claim it was sent —
+   * a transport that reports success without a transport is exactly the failure that
+   * hid the 2026-08-29 mail outage for months.
+   */
+  SMS_PROVIDER: z.enum(["log", "semaphore", "movider"]).default("log"),
+  SEMAPHORE_API_KEY: z.string().optional(),
+  /** Must be pre-registered with Semaphore. Unset → their shared default sender. */
+  SEMAPHORE_SENDER_NAME: z.string().optional(),
+  MOVIDER_API_KEY: z.string().optional(),
+  MOVIDER_API_SECRET: z.string().optional(),
+  /** Shared secret on inbound SMS — Semaphore does not sign its callbacks. */
+  SMS_INBOUND_SECRET: z.string().optional(),
+
+  VIBER_AUTH_TOKEN: z.string().optional(),
+  VIBER_SENDER_NAME: z.string().optional(),
+
+  /** Page access token — sends. */
+  MESSENGER_PAGE_TOKEN: z.string().optional(),
+  /** App secret — signs `X-Hub-Signature-256` on inbound. Unset → every callback unverified. */
+  MESSENGER_APP_SECRET: z.string().optional(),
+  /** Echoed back during Facebook's one-time subscription handshake. */
+  MESSENGER_VERIFY_TOKEN: z.string().optional(),
+
   PORT: z.coerce.number().default(6407),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   UPLOAD_DIR: z.string().default("./uploads"),

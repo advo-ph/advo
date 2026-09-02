@@ -42,3 +42,4 @@ tsconfig*.tsbuildinfo
 bench/roadmap/drawer-a11y/runs/
 
 bench/roadmap/payment-rail/runs/
+bench/roadmap/message-channel/runs/

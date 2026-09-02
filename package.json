@@ -31,7 +31,8 @@
     "bench:legal": "node bench/roadmap/legal-pack/scoring.mjs",
     "bench:preview": "node bench/roadmap/preview-hosting/scoring.mjs",
     "bench:visual": "node bench/roadmap/landing-visual/scoring.mjs",
-    "bench:payment": "node bench/roadmap/payment-rail/scoring.mjs"
+    "bench:payment": "node bench/roadmap/payment-rail/scoring.mjs",
+    "bench:message": "node bench/roadmap/message-channel/scoring.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.0",
