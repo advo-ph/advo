@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminData } from "@/hooks/useAdminData";
 import { useOrgProjects } from "@/hooks/useOrgProjects";
+import { useAdminTeam } from "@/hooks/useAdminTeam";
 import { useTheme } from "@/hooks/useTheme";
 import { formatCurrency } from "@/types/admin";
 
@@ -20,6 +21,8 @@ import AdminSchedule from "@/components/admin/AdminSchedule";
 import AdminCalendar from "@/components/admin/AdminCalendar";
 import AdminContracts from "@/components/admin/AdminContracts";
 import AdminMeetings from "@/components/admin/AdminMeetings";
+import AdminMessages from "@/components/admin/AdminMessages";
+import AdminTime from "@/components/admin/AdminTime";
 import AdminSocial from "@/components/admin/AdminSocial";
 import AdminAvailability from "@/components/admin/AdminAvailability";
 import AdminContentStudio from "@/components/admin/AdminContentStudio";
@@ -61,6 +64,10 @@ const Admin = () => {
     isLoading: orgLoading,
     refetch: orgRefetch,
   } = useOrgProjects();
+
+  // Only the ACTIVE members. A capacity view listing people who have left reads as a
+  // team that is under-loaded, which is the opposite of the truth.
+  const { activeMembers } = useAdminTeam();
 
   const handleSignOut = async () => {
     await signOut();
@@ -190,6 +197,13 @@ const Admin = () => {
           {activeSection === "contracts" && <AdminContracts clients={clients} />}
 
           {activeSection === "meetings" && <AdminMeetings projects={projects} />}
+
+          {activeSection === "messages" && <AdminMessages />}
+
+          {/* Team comes from useAdminTeam so the load bars can name people rather than
+              printing member ids -- a capacity view that says "Member 7 is over" is one
+              nobody acts on. */}
+          {activeSection === "time" && <AdminTime projects={projects} team={activeMembers} />}
 
           {activeSection === "social" && <AdminSocial />}
 

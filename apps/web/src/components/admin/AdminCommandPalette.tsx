@@ -43,6 +43,8 @@ import {
   Instagram,
   LayoutDashboard,
   Mic,
+  MessageSquare,
+  Clock,
   Bell,
   Send,
   Settings,
@@ -82,6 +84,8 @@ const DESTINATION: Destination[] = [
   { id: "availability", label: "Availability", icon: CalendarClock, keyword: "availability capacity blackout school load" },
   { id: "contracts", label: "Contracts", icon: FileSignature, keyword: "contract moa sow nda signed paper agreement" },
   { id: "meetings", label: "Meetings", icon: Mic, keyword: "meeting mom minutes plaud recording transcript" },
+  { id: "messages", label: "Messages", icon: MessageSquare, keyword: "message sms viber messenger inbox inbound outbound consent triage chat text" },
+  { id: "time", label: "Time", icon: Clock, keyword: "time hours effort log timesheet capacity load actual" },
   // The synonym that matters most: nobody navigates to "Finance" looking for an invoice.
   { id: "finance", label: "Finance", icon: Banknote, keyword: "invoice payment money expense billing receipt recurring fee commission payout revenue" },
   { id: "content", label: "Content Studio", icon: FileText, keyword: "content copy cms page" },

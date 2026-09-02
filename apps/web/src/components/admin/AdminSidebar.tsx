@@ -12,6 +12,8 @@ import {
   FileText,
   FileSignature,
   Mic,
+  MessageSquare,
+  Clock,
   Image,
   Banknote,
   Bell,
@@ -43,6 +45,8 @@ export type AdminSection =
   | "availability"
   | "contracts"
   | "meetings"
+  | "messages"
+  | "time"
   | "social"
   | "content"
   | "portfolio"
@@ -88,6 +92,8 @@ const navGroups: { label: string; items: NavItem[] }[] = [
       { id: "availability", label: "Availability", icon: CalendarClock },
       { id: "contracts", label: "Contracts", icon: FileSignature },
       { id: "meetings", label: "Meetings", icon: Mic },
+      { id: "messages", label: "Messages", icon: MessageSquare },
+      { id: "time", label: "Time", icon: Clock },
       { id: "finance", label: "Finance", icon: Banknote },
     ],
   },
