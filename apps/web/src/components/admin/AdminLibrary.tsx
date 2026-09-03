@@ -154,12 +154,12 @@ const AdminLibrary = () => {
   return (
     <div className="space-y-5">
       <PageHeader
-        title="Library"
+        title="Files"
         meta={`${item.length} item${item.length === 1 ? "" : "s"} · website / prompt / module / asset / doc`}
         action={
           <Button
             size="sm"
-            className="h-9 bg-accent text-accent-foreground hover:bg-accent/90"
+            className="h-9 bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={() => {
               setDraft(emptyLibraryDraft());
               setTagInput("");
@@ -188,7 +188,7 @@ const AdminLibrary = () => {
             onClick={() => setFilter((prev) => ({ ...prev, itemType: "all" }))}
             className={`h-7 px-2.5 rounded-md text-xs border transition-colors ${
               filter.itemType === "all"
-                ? "bg-accent/10 text-accent border-accent/30"
+                ? "bg-accent/10 text-accent-ink border-accent/30"
                 : "border-border text-muted-foreground hover:text-foreground"
             }`}
           >
@@ -201,7 +201,7 @@ const AdminLibrary = () => {
               onClick={() => setFilter((prev) => ({ ...prev, itemType }))}
               className={`h-7 px-2.5 rounded-md text-xs border capitalize transition-colors ${
                 filter.itemType === itemType
-                  ? "bg-accent/10 text-accent border-accent/30"
+                  ? "bg-accent/10 text-accent-ink border-accent/30"
                   : "border-border text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -235,7 +235,7 @@ const AdminLibrary = () => {
         </div>
       ) : visible.length === 0 ? (
         <div className="border border-border rounded-lg bg-card">
-          <Empty text={item.length === 0 ? "No library items yet" : "No items match this filter"} icon={BookOpen} />
+          <Empty text={item.length === 0 ? "No files yet. Add your first item to get started." : "No items match this filter"} icon={BookOpen} />
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -433,7 +433,7 @@ const AdminLibrary = () => {
             <Button
               onClick={handleAdd}
               disabled={isSaving}
-              className="bg-accent text-accent-foreground hover:bg-accent/90"
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
             >
               {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Add item

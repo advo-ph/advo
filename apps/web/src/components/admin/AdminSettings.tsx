@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -18,16 +19,10 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useRoles } from "@/hooks/useRoles";
 import * as db from "@/lib/db";
 import { get, patch as apiPatch, post, del } from "@/lib/api";
 import { PageHeader, Panel, Dot } from "@/components/admin/_ui";
-
-interface SiteConfig {
-  agency_name: string;
-  domain_url: string;
-  accent_color: string;
-  logo_url: string;
-}
 
 interface SocialLink {
   platform: string;
@@ -36,22 +31,19 @@ interface SocialLink {
 
 interface AdminMember {
   id: number;
+  name: string;
   email: string;
+  /** False when the account exists but is switched off. */
+  canLogin: boolean;
 }
-
-const DEFAULT_CONFIG: SiteConfig = {
-  agency_name: "ADVO",
-  domain_url: "advo.ph",
-  accent_color: "#22C55E",
-  logo_url: "/advo-logo-black.png",
-};
 
 const AdminSettings = () => {
   const { toast } = useToast();
-  const [config, setConfig] = useState<SiteConfig>(DEFAULT_CONFIG);
+  const { isOwner, viewAsMember, setViewAsMember } = useRoles();
+  const canToggleView = isOwner || viewAsMember;
+
   const [adminEmails, setAdminEmails] = useState<AdminMember[]>([]);
   const [newEmail, setNewEmail] = useState("");
-  const [isSaving, setIsSaving] = useState(false);
   const [isAddEmailOpen, setIsAddEmailOpen] = useState(false);
 
   // Password change
@@ -72,41 +64,25 @@ const AdminSettings = () => {
     checkApiConnection();
     fetchAdminEmails();
     fetchSocialLinks();
-    fetchSiteConfig();
   }, []);
-
-  const settingText = (value: unknown, fallback: string): string => {
-    if (typeof value === "string" && value.length > 0) return value;
-    if (typeof value === "number") return String(value);
-    return fallback;
-  };
-
-  const fetchSiteConfig = async () => {
-    const [agency, domain, accent, logo] = await Promise.all([
-      get("/api/settings/agency_name"),
-      get("/api/settings/domain_url"),
-      get("/api/settings/accent_color"),
-      get("/api/settings/logo_url"),
-    ]);
-    setConfig({
-      agency_name: settingText((agency.data as { value?: unknown } | null)?.value, DEFAULT_CONFIG.agency_name),
-      domain_url: settingText((domain.data as { value?: unknown } | null)?.value, DEFAULT_CONFIG.domain_url),
-      accent_color: settingText((accent.data as { value?: unknown } | null)?.value, DEFAULT_CONFIG.accent_color),
-      logo_url: settingText((logo.data as { value?: unknown } | null)?.value, DEFAULT_CONFIG.logo_url),
-    });
-  };
 
   const fetchAdminEmails = async () => {
     const res = await get<Array<Record<string, unknown>>>("/api/team");
-    if (res.data) {
-      // Admin list includes inactive members; only show active ones with an email
-      // and retain the team_member_id so deletes can target the row.
-      setAdminEmails(
-        res.data
-          .filter((m) => m.isActive !== false && !!m.email)
-          .map((m) => ({ id: Number(m.teamMemberId), email: m.email as string }))
-      );
-    }
+    if (!res.data) return;
+    // People who hold an admin LOGIN account. This used to list every roster row that had an
+    // email address in a column, under the title "Admin users", which meant the panel named
+    // one thing and showed another. loginRole comes from the user table, so the filter now
+    // matches the title. team_member_id is kept so removal can target the row.
+    setAdminEmails(
+      res.data
+        .filter((m) => m.loginRole === "admin" && !!m.loginEmail)
+        .map((m) => ({
+          id: Number(m.teamMemberId),
+          name: (m.name as string) || (m.loginEmail as string),
+          email: m.loginEmail as string,
+          canLogin: m.canLogin !== false,
+        }))
+    );
   };
 
   const fetchSocialLinks = async () => {
@@ -124,32 +100,6 @@ const AdminSettings = () => {
       setApiStatus(isConnected ? "connected" : "disconnected");
     } catch {
       setApiStatus("disconnected");
-    }
-  };
-
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      const results = await Promise.all([
-        apiPatch("/api/settings/agency_name", { value: config.agency_name }),
-        apiPatch("/api/settings/domain_url", { value: config.domain_url }),
-        apiPatch("/api/settings/accent_color", { value: config.accent_color }),
-        apiPatch("/api/settings/logo_url", { value: config.logo_url }),
-      ]);
-      const failed = results.find((r) => r.error);
-      if (failed) {
-        toast({ title: "Error", description: failed.error, variant: "destructive" });
-      } else {
-        toast({ title: "Settings saved", description: "Domain configuration updated" });
-      }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : "Unable to save settings",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -236,16 +186,22 @@ const AdminSettings = () => {
       }
       setAdminEmails([
         ...adminEmails,
-        { id: Number(res.data.teamMemberId), email: newEmail },
+        {
+          id: Number(res.data.teamMemberId),
+          name: (res.data.name as string) || newEmail,
+          email: newEmail,
+          canLogin: res.data.canLogin !== false,
+        },
       ]);
       setNewEmail("");
       setIsAddEmailOpen(false);
-      const tempPassword = typeof res.data.tempPassword === "string" ? res.data.tempPassword : null;
+      const defaultPassword =
+        typeof res.data.defaultPassword === "string" ? res.data.defaultPassword : null;
       toast({
         title: "Admin user created",
-        description: tempPassword
-          ? `Login-capable account created. Temporary password: ${tempPassword}`
-          : "Login-capable admin account created. A welcome email was sent (or logged if SMTP is unset).",
+        description: defaultPassword
+          ? `They can log in with the password ${defaultPassword}, and change it in Settings.`
+          : "This email already had an account. It now has admin access.",
       });
     } catch (err) {
       toast({
@@ -257,8 +213,11 @@ const AdminSettings = () => {
   };
 
   const removeAdminEmail = async (member: AdminMember) => {
-    if (adminEmails.length <= 1) {
-      toast({ title: "Cannot remove last admin", variant: "destructive" });
+    // Count the ones who can actually get in. A list of five admins where four are switched
+    // off is one admin, and removing that one locks everybody out.
+    const usableAdmins = adminEmails.filter((m) => m.canLogin).length;
+    if (member.canLogin && usableAdmins <= 1) {
+      toast({ title: "This is the last admin who can log in", variant: "destructive" });
       return;
     }
     try {
@@ -268,7 +227,10 @@ const AdminSettings = () => {
         return;
       }
       setAdminEmails(adminEmails.filter((m) => m.id !== member.id));
-      toast({ title: "Admin email removed" });
+      toast({
+        title: "Admin removed",
+        description: `${member.name} was hidden from the website and can no longer log in.`,
+      });
     } catch (err) {
       toast({
         title: "Error",
@@ -280,41 +242,7 @@ const AdminSettings = () => {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Settings" meta="Domain configuration and admin preferences" />
-
-      {/* Domain & Branding */}
-      <Panel
-        title="Domain & branding"
-        action={
-          <Button onClick={handleSave} disabled={isSaving} size="sm" className="h-8">
-            {isSaving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <Save className="h-3.5 w-3.5 mr-1.5" />}
-            Save
-          </Button>
-        }
-      >
-        <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <label className="eyebrow block">Agency name</label>
-            <Input className="h-9" value={config.agency_name} onChange={(e) => setConfig({ ...config, agency_name: e.target.value })} />
-          </div>
-          <div className="space-y-1.5">
-            <label className="eyebrow block">Domain URL</label>
-            <Input className="h-9" value={config.domain_url} onChange={(e) => setConfig({ ...config, domain_url: e.target.value })} />
-          </div>
-          <div className="space-y-1.5">
-            <label className="eyebrow block">Accent color</label>
-            <div className="flex items-center gap-2">
-              <input type="color" value={config.accent_color} onChange={(e) => setConfig({ ...config, accent_color: e.target.value })}
-                className="w-9 h-9 rounded-md border border-border cursor-pointer shrink-0" />
-              <Input className="h-9 tabular-nums" value={config.accent_color} onChange={(e) => setConfig({ ...config, accent_color: e.target.value })} />
-            </div>
-          </div>
-          <div className="space-y-1.5">
-            <label className="eyebrow block">Logo URL</label>
-            <Input className="h-9" value={config.logo_url} onChange={(e) => setConfig({ ...config, logo_url: e.target.value })} />
-          </div>
-        </div>
-      </Panel>
+      <PageHeader title="Settings" meta="Admin preferences" />
 
       {/* Social Links */}
       <Panel
@@ -371,7 +299,7 @@ const AdminSettings = () => {
       {/* Admin Users */}
       <Panel
         title="Admin users"
-        meta="Manage who has admin access"
+        meta="Accounts with admin access. Turn a login on or off under Team."
         action={
           <Button variant="outline" size="sm" className="h-8" onClick={() => setIsAddEmailOpen(true)}>
             <Plus className="h-3.5 w-3.5 mr-1.5" /> Add admin
@@ -379,10 +307,26 @@ const AdminSettings = () => {
         }
       >
         <div className="divide-y divide-border">
+          {adminEmails.length === 0 && (
+            <div className="px-4 py-3 text-sm text-muted-foreground">No admin accounts yet.</div>
+          )}
           {adminEmails.map((member) => (
             <div key={member.id} className="flex items-center justify-between gap-3 px-4 h-11">
-              <span className="text-sm truncate">{member.email}</span>
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0" onClick={() => removeAdminEmail(member)}>
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-sm truncate">{member.email}</span>
+                {!member.canLogin && (
+                  <Badge variant="outline" className="shrink-0 text-destructive border-destructive/30">
+                    No access
+                  </Badge>
+                )}
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 shrink-0"
+                title="Remove admin. Hides them from the website and turns off their login."
+                onClick={() => removeAdminEmail(member)}
+              >
                 <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
               </Button>
             </div>
@@ -409,7 +353,10 @@ const AdminSettings = () => {
                 {import.meta.env.VITE_API_URL || "Not configured"}
               </span>
             </div>
-            <Badge variant="outline" className={`gap-1 shrink-0 ${apiStatus === "connected" ? "text-green-500 border-green-500/30" : apiStatus === "checking" ? "text-yellow-500 border-yellow-500/30" : "text-red-500 border-red-500/30"}`}>
+            {/* Semantic tokens: light → -700 values (≥4.5:1 on near-white); dark → -500
+                values (≥5.1:1 on near-black). Avoids a hardcoded -700 that fails dark mode.
+                Verified: red-700 dark was 2.97:1 (fail); danger token uses -500 → 5.1:1. */}
+            <Badge variant="outline" className={`gap-1 shrink-0 ${apiStatus === "connected" ? "text-success border-success/40" : apiStatus === "checking" ? "text-warning border-warning/40" : "text-danger border-danger/40"}`}>
               {apiStatus === "connected" && <Check className="h-3 w-3" />}
               {apiStatus === "checking" && <Loader2 className="h-3 w-3 animate-spin" />}
               {apiStatus === "connected" ? "Connected" : apiStatus === "checking" ? "Checking..." : "Disconnected"}
@@ -421,12 +368,20 @@ const AdminSettings = () => {
               <span className="text-sm">Vercel</span>
               <span className="text-xs text-muted-foreground truncate">Deployment platform</span>
             </div>
-            <Badge variant="outline" className="text-green-500 border-green-500/30 gap-1 shrink-0">
+            <Badge variant="outline" className="text-success border-success/40 gap-1 shrink-0">
               <Check className="h-3 w-3" /> Connected
             </Badge>
           </div>
         </div>
       </Panel>
+
+      {/* See as member — owner only */}
+      {canToggleView && (
+        <div className="flex items-center justify-between rounded-lg border border-border bg-card px-4 h-12">
+          <span className="text-sm">See as member</span>
+          <Switch checked={viewAsMember} onCheckedChange={setViewAsMember} />
+        </div>
+      )}
 
       {/* Password Change Dialog */}
       <Dialog open={isPasswordOpen} onOpenChange={setIsPasswordOpen}>
@@ -436,15 +391,15 @@ const AdminSettings = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-1.5">
-              <label className="eyebrow block">Current password</label>
+              <label className="text-xs text-muted-foreground block">Current password</label>
               <Input className="h-9" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <label className="eyebrow block">New password</label>
+              <label className="text-xs text-muted-foreground block">New password</label>
               <Input className="h-9" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Min 8 characters" />
             </div>
             <div className="space-y-1.5">
-              <label className="eyebrow block">Confirm new password</label>
+              <label className="text-xs text-muted-foreground block">Confirm new password</label>
               <Input className="h-9" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handlePasswordChange()} />
             </div>
@@ -467,7 +422,7 @@ const AdminSettings = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-1.5">
-              <label className="eyebrow block">Email address</label>
+              <label className="text-xs text-muted-foreground block">Email address</label>
               <Input className="h-9" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)}
                 placeholder="admin@example.com" onKeyDown={(e) => e.key === "Enter" && addAdminEmail()} />
             </div>

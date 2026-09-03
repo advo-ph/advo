@@ -157,7 +157,7 @@ const AdminContracts = ({ clients }: { clients: Client[] }) => {
         action={
           <Button
             size="sm"
-            className="h-9 bg-accent text-accent-foreground hover:bg-accent/90 gap-1.5"
+            className="h-9 bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
             onClick={openCreate}
           >
             <Plus className="h-4 w-4" /> New contract
@@ -232,7 +232,7 @@ const AdminContracts = ({ clients }: { clients: Client[] }) => {
             />
 
             <div>
-              <span className="eyebrow block mb-1">Client</span>
+              <span className="text-xs text-muted-foreground block mb-1">Client</span>
               <Select
                 value={form.clientId}
                 onValueChange={(v) => setForm((f) => ({ ...f, clientId: v }))}
@@ -252,7 +252,7 @@ const AdminContracts = ({ clients }: { clients: Client[] }) => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <span className="eyebrow block mb-1">Type</span>
+                <span className="text-xs text-muted-foreground block mb-1">Type</span>
                 <Select
                   value={form.contractType}
                   onValueChange={(v) => setForm((f) => ({ ...f, contractType: v }))}
@@ -270,7 +270,7 @@ const AdminContracts = ({ clients }: { clients: Client[] }) => {
                 </Select>
               </div>
               <div>
-                <span className="eyebrow block mb-1">Status</span>
+                <span className="text-xs text-muted-foreground block mb-1">Status</span>
                 <Select
                   value={form.status}
                   onValueChange={(v) => setForm((f) => ({ ...f, status: v }))}
@@ -293,7 +293,7 @@ const AdminContracts = ({ clients }: { clients: Client[] }) => {
             </div>
 
             <div>
-              <span className="eyebrow block mb-1">Value (₱)</span>
+              <span className="text-xs text-muted-foreground block mb-1">Value (₱)</span>
               <Input
                 type="number"
                 min="0"
@@ -307,7 +307,7 @@ const AdminContracts = ({ clients }: { clients: Client[] }) => {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <span className="eyebrow block mb-1">Signed</span>
+                <span className="text-xs text-muted-foreground block mb-1">Signed</span>
                 <Input
                   type="date"
                   value={form.signedAt}
@@ -316,7 +316,7 @@ const AdminContracts = ({ clients }: { clients: Client[] }) => {
                 />
               </div>
               <div>
-                <span className="eyebrow block mb-1">Expires</span>
+                <span className="text-xs text-muted-foreground block mb-1">Expires</span>
                 <Input
                   type="date"
                   value={form.expiresAt}
@@ -360,7 +360,7 @@ const AdminContracts = ({ clients }: { clients: Client[] }) => {
               </Button>
               <Button
                 size="sm"
-                className="h-9 bg-accent text-accent-foreground hover:bg-accent/90"
+                className="h-9 bg-primary text-primary-foreground hover:bg-primary/90"
                 onClick={handleSave}
                 disabled={isSaving || !form.title.trim() || !form.clientId}
               >

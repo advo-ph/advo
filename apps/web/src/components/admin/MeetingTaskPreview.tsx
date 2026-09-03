@@ -13,9 +13,9 @@ const viaLabel = (method: ProposeTaskResult["method"]) =>
   method === "ai"
     ? "Claude"
     : method === "note"
-      ? "Plaud note"
+      ? "transcription note"
       : method === "ask"
-        ? "Ask Plaud"
+        ? "ask transcription"
         : "heuristic";
 
 export function MeetingTaskPreview({
@@ -66,7 +66,7 @@ export function MeetingTaskPreview({
           </Button>
           <Button
             size="sm"
-            className="h-9 bg-accent text-accent-foreground hover:bg-accent/90"
+            className="h-9 bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={onConfirm}
             disabled={isConfirming || task.length === 0}
           >

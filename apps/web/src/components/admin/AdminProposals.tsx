@@ -237,7 +237,7 @@ const AdminProposals = () => {
         </div>
       ) : (
         <div className="border border-border rounded-lg bg-card overflow-hidden">
-          <div className="flex items-center gap-3 px-3 h-9 border-b border-border text-[11px] uppercase tracking-wider text-muted-foreground/70">
+          <div className="flex items-center gap-3 px-3 h-9 border-b border-border text-[11px] uppercase tracking-wider text-muted-foreground">
             <span className="flex-1 min-w-0">Company</span>
             <span className="w-44 shrink-0 hidden sm:block">Email</span>
             <span className="w-28 shrink-0">Status</span>
@@ -287,7 +287,7 @@ const AdminProposals = () => {
                     <span
                       className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] uppercase tracking-wider ${
                         item.method === "ai"
-                          ? "bg-accent/15 text-accent"
+                          ? "bg-accent/15 text-accent-ink"
                           : "bg-secondary text-muted-foreground"
                       }`}
                       title={
@@ -332,7 +332,7 @@ const AdminProposals = () => {
           {preview?.bodyHtml && (
             <button
               type="button"
-              className="text-xs text-accent underline self-start"
+              className="text-xs text-accent-ink underline self-start"
               onClick={() => {
                 const popup = window.open("", "_blank");
                 if (popup) {

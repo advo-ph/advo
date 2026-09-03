@@ -1,41 +1,68 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import {
   Plus,
   Pencil,
   Save,
   X,
   Loader2,
-  Linkedin,
   Camera,
-  Github,
   GripVertical,
   Eye,
   EyeOff,
   Users,
+  KeyRound,
+  Globe,
+  Ban,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { upload } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminTeam, type TeamMember } from "@/hooks/useAdminTeam";
-import { PageHeader, StatStrip, Stat, Empty } from "./_ui";
+import { useRoles } from "@/hooks/useRoles";
+import TeamMemberCard from "@/components/TeamMemberCard";
+import ImageCropDialog from "@/components/ImageCropDialog";
+import { PageHeader, Empty } from "./_ui";
+
+const TEAM_ROLES = [
+  "Founder",
+  "Developer",
+  "Junior Developer",
+  "Project Manager",
+  "Externals & Operations",
+  "Marketing & Partnerships",
+  "Legal & Contracts",
+  "Designer",
+  "Content Creator",
+  "Videographer",
+  "Photographer",
+  "Accountant",
+];
 
 const AdminTeam = () => {
+  const { isOwner } = useRoles();
   const { toast } = useToast();
   const {
     members,
     isLoading,
     createMember,
     updateMember,
+    setLoginAccess,
+    isSettingLoginAccess,
     reorderMembers,
     isSaving,
   } = useAdminTeam();
@@ -46,23 +73,32 @@ const AdminTeam = () => {
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [localOrder, setLocalOrder] = useState<TeamMember[] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const previewFileInputRef = useRef<HTMLInputElement>(null);
   const [showInactive, setShowInactive] = useState(false);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [cropAspect, setCropAspect] = useState(1);
+  const [cropTarget, setCropTarget] = useState<"avatar" | "preview">("avatar");
 
   const allMembers = localOrder || members;
   const displayMembers = showInactive ? allMembers : allMembers.filter((m) => m.is_active);
   const inactiveCount = allMembers.filter((m) => !m.is_active).length;
-  const activeCount = allMembers.filter((m) => m.is_active).length;
+
+  // The login switch writes straight through, so the dialog has to read the live row rather
+  // than the snapshot taken when it opened, or it shows the old state until it is reopened.
+  const editingLive = editingMember
+    ? allMembers.find((m) => m.team_member_id === editingMember.team_member_id) ?? editingMember
+    : null;
 
   const [formData, setFormData] = useState({
     name: "",
     role: "",
     email: "",
     avatar_url: "",
+    preview_image_url: "",
     bio: "",
     linkedin_url: "",
     github_url: "",
     is_active: true,
-    penalty_point_count: 0,
   });
 
   const handleDragStart = (idx: number) => setDraggedIdx(idx);
@@ -98,11 +134,11 @@ const AdminTeam = () => {
       role: "",
       email: "",
       avatar_url: "",
+      preview_image_url: "",
       bio: "",
       linkedin_url: "",
       github_url: "",
       is_active: true,
-      penalty_point_count: 0,
     });
     setIsDialogOpen(true);
   };
@@ -114,17 +150,18 @@ const AdminTeam = () => {
       role: member.role,
       email: member.email || "",
       avatar_url: member.avatar_url || "",
+      preview_image_url: member.preview_image_url || "",
       bio: member.bio || "",
       linkedin_url: member.linkedin_url || "",
       github_url: member.github_url || "",
       is_active: member.is_active,
-      penalty_point_count: member.penalty_point_count ?? 0,
     });
     setIsDialogOpen(true);
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const openCropFromFile = (e: React.ChangeEvent<HTMLInputElement>, aspect: number, target: "avatar" | "preview") => {
     const file = e.target.files?.[0];
+    e.target.value = "";
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
@@ -136,15 +173,28 @@ const AdminTeam = () => {
       return;
     }
 
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropSrc(reader.result as string);
+      setCropAspect(aspect);
+      setCropTarget(target);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCropped = useCallback(async (blob: Blob) => {
+    setCropSrc(null);
     setIsUploading(true);
     try {
+      const filename = cropTarget === "preview" ? "preview.jpg" : "avatar.jpg";
+      const file = new File([blob], filename, { type: "image/jpeg" });
       const result = await upload(file, "avatars");
       if (result.error) {
         toast({ title: "Upload failed", description: result.error, variant: "destructive" });
         return;
       }
-      setFormData({ ...formData, avatar_url: result.url });
-      toast({ title: "Uploaded", description: "Photo uploaded successfully" });
+      const field = cropTarget === "preview" ? "preview_image_url" : "avatar_url";
+      setFormData((prev) => ({ ...prev, [field]: result.url }));
     } catch (err) {
       toast({
         title: "Upload failed",
@@ -154,7 +204,7 @@ const AdminTeam = () => {
     } finally {
       setIsUploading(false);
     }
-  };
+  }, [toast, cropTarget]);
 
   const handleSave = async () => {
     if (!formData.name || !formData.role) {
@@ -167,13 +217,11 @@ const AdminTeam = () => {
       role: formData.role,
       email: formData.email || null,
       avatar_url: formData.avatar_url || null,
+      preview_image_url: formData.preview_image_url || null,
       bio: formData.bio || null,
       linkedin_url: formData.linkedin_url || null,
       github_url: formData.github_url || null,
       is_active: formData.is_active,
-      ...(editingMember && {
-        penalty_point_count: Math.max(0, Math.floor(Number(formData.penalty_point_count) || 0)),
-      }),
     };
 
     setIsDialogOpen(false);
@@ -183,6 +231,15 @@ const AdminTeam = () => {
       } else {
         await createMember(input);
       }
+    } catch {
+      // Hook surfaces the toast
+    }
+  };
+
+  const handleToggleLogin = async (member: TeamMember) => {
+    if (member.can_login === null) return;
+    try {
+      await setLoginAccess(member.team_member_id, !member.can_login);
     } catch {
       // Hook surfaces the toast
     }
@@ -206,13 +263,13 @@ const AdminTeam = () => {
                 className="h-9 gap-1.5"
               >
                 {showInactive ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                {inactiveCount} inactive
+                {inactiveCount} hidden
               </Button>
             )}
             <Button
               size="sm"
               onClick={openCreateDialog}
-              className="h-9 gap-1.5 bg-accent text-accent-foreground hover:bg-accent/90"
+              className="h-9 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
             >
               <Plus className="h-4 w-4" />
               Add member
@@ -220,12 +277,6 @@ const AdminTeam = () => {
           </div>
         }
       />
-
-      <StatStrip cols={3}>
-        <Stat label="Members" value={String(allMembers.length)} />
-        <Stat label="Active" value={String(activeCount)} accent />
-        <Stat label="Inactive" value={String(inactiveCount)} />
-      </StatStrip>
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
@@ -238,12 +289,10 @@ const AdminTeam = () => {
       ) : (
         <div className="border border-border rounded-lg bg-card overflow-hidden">
           {/* Header row */}
-          <div className="flex items-center gap-3 px-3 h-9 border-b border-border text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/70">
+          <div className="flex items-center gap-3 px-3 h-9 border-b border-border text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
             <span className="w-4 shrink-0" />
             <span className="flex-1 min-w-0">Member</span>
             <span className="hidden lg:block flex-1 min-w-0">Bio</span>
-            <span className="hidden sm:block w-16 shrink-0 text-right">Pts</span>
-            <span className="hidden md:block w-44 shrink-0">Links</span>
             <span className="w-4 shrink-0" />
           </div>
 
@@ -252,15 +301,21 @@ const AdminTeam = () => {
             {displayMembers.map((member, index) => (
               <div
                 key={member.team_member_id}
-                draggable
-                onDragStart={() => handleDragStart(index)}
                 onDragOver={(e) => handleDragOver(e, index)}
-                onDragEnd={handleDragEnd}
-                className={`flex items-center gap-3 px-3 h-14 text-sm hover:bg-secondary/40 transition-colors cursor-grab active:cursor-grabbing ${
+                onClick={() => openEditDialog(member)}
+                className={`flex items-center gap-3 px-3 h-[72px] text-sm hover:bg-secondary/40 transition-colors cursor-pointer ${
                   draggedIdx === index ? "opacity-50" : ""
                 }`}
               >
-                <GripVertical className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+                <div
+                  draggable
+                  onDragStart={() => handleDragStart(index)}
+                  onDragEnd={handleDragEnd}
+                  onClick={(e) => e.stopPropagation()}
+                  className="cursor-grab active:cursor-grabbing shrink-0"
+                >
+                  <GripVertical className="h-4 w-4 text-muted-foreground/40" />
+                </div>
 
                 <div className="flex-1 min-w-0 flex items-center gap-2.5">
                   <Avatar className="h-8 w-8 shrink-0">
@@ -273,8 +328,28 @@ const AdminTeam = () => {
                     <div className="flex items-center gap-2">
                       <span className="font-medium truncate">{member.name}</span>
                       {!member.is_active && (
-                        <span className="text-[10px] text-muted-foreground border border-border rounded px-1.5 py-0.5 shrink-0">
-                          Inactive
+                        <span
+                          className="text-[10px] text-muted-foreground border border-border rounded px-1.5 py-0.5 shrink-0"
+                          title="Not shown on the public website"
+                        >
+                          Hidden
+                        </span>
+                      )}
+                      {member.can_login === false && (
+                        <span
+                          className="flex items-center gap-1 text-[10px] text-destructive border border-destructive/30 rounded px-1.5 py-0.5 shrink-0"
+                          title="This person cannot log in"
+                        >
+                          <Ban className="h-2.5 w-2.5" />
+                          No access
+                        </span>
+                      )}
+                      {member.can_login === null && (
+                        <span
+                          className="text-[10px] text-muted-foreground border border-border rounded px-1.5 py-0.5 shrink-0"
+                          title="No login account exists for this person yet"
+                        >
+                          No account
                         </span>
                       )}
                     </div>
@@ -291,50 +366,7 @@ const AdminTeam = () => {
                   {member.bio || "—"}
                 </span>
 
-                <span
-                  className={`hidden sm:block w-16 shrink-0 text-right tabular-nums text-xs font-medium ${
-                    member.penalty_point_count > 0 ? "text-destructive" : "text-muted-foreground"
-                  }`}
-                  title="Penalty points (manual; auto-accrual deferred)"
-                >
-                  {member.penalty_point_count}
-                </span>
-
-                <div className="hidden md:flex w-44 shrink-0 items-center gap-3 text-xs">
-                  {member.linkedin_url ? (
-                    <a
-                      href={member.linkedin_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <Linkedin className="h-3 w-3" /> LinkedIn
-                    </a>
-                  ) : null}
-                  {member.github_url ? (
-                    <a
-                      href={member.github_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <Github className="h-3 w-3" /> GitHub
-                    </a>
-                  ) : null}
-                  {!member.linkedin_url && !member.github_url && (
-                    <span className="text-muted-foreground/50">—</span>
-                  )}
-                </div>
-
-                <button
-                  onClick={() => openEditDialog(member)}
-                  className="w-4 shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-                  aria-label="Edit member"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </button>
+                <Pencil className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
               </div>
             ))}
           </div>
@@ -342,11 +374,22 @@ const AdminTeam = () => {
       )}
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-card border-border max-w-lg rounded-lg">
-          <DialogHeader>
-            <DialogTitle>{editingMember ? "Edit Team Member" : "Add Team Member"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
+        <DialogContent className="bg-card border-border max-w-4xl rounded-lg" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <div className="flex gap-6">
+          <div
+            className="hidden md:flex w-1/2 shrink-0 py-4 cursor-pointer"
+            onClick={() => previewFileInputRef.current?.click()}
+          >
+            <TeamMemberCard
+              name={formData.name || "Name"}
+              role={formData.role || "Role"}
+              avatar_url={formData.avatar_url || null}
+              preview_image_url={formData.preview_image_url || null}
+              className="w-full aspect-auto h-full"
+            />
+            <input ref={previewFileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => openCropFromFile(e, 3 / 4, "preview")} />
+          </div>
+          <div className="w-full md:w-1/2 min-w-0 grid gap-4 py-4 content-start">
             <div className="flex items-center gap-4">
               <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                 <Avatar className="h-16 w-16">
@@ -358,7 +401,7 @@ const AdminTeam = () => {
                 <div className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   {isUploading ? <Loader2 className="h-5 w-5 text-white animate-spin" /> : <Camera className="h-5 w-5 text-white" />}
                 </div>
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => openCropFromFile(e, 1, "avatar")} />
               </div>
               <div className="text-sm text-muted-foreground">
                 <p className="font-medium text-foreground">Profile picture</p>
@@ -372,7 +415,16 @@ const AdminTeam = () => {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Role</label>
-                <Input value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })} placeholder="e.g. Developer" />
+                <Select value={formData.role} onValueChange={(v) => setFormData({ ...formData, role: v })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TEAM_ROLES.map((r) => (
+                      <SelectItem key={r} value={r}>{r}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="space-y-2">
@@ -394,33 +446,13 @@ const AdminTeam = () => {
               </div>
             </div>
 
-            {editingMember && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Penalty points</label>
-                <Input
-                  type="number"
-                  min={0}
-                  step={1}
-                  value={formData.penalty_point_count}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      penalty_point_count: Math.max(0, Math.floor(Number(e.target.value) || 0)),
-                    })
-                  }
-                />
+            {isOwner && (
+            <>
+            <div className="flex items-center justify-between pt-3 border-t border-border">
+              <div className="pr-4">
+                <p className="text-sm font-medium">Show on website</p>
                 <p className="text-xs text-muted-foreground">
-                  Manual tally only. Automatic accrual is deferred (rules open).
-                </p>
-              </div>
-            )}
-
-            {/* Active / Inactive toggle */}
-            <div className="flex items-center justify-between pt-2 border-t border-border">
-              <div>
-                <p className="text-sm font-medium">Status</p>
-                <p className="text-xs text-muted-foreground">
-                  Inactive members are hidden from all admin views
+                  Puts this person on the public team page. Does not affect logging in.
                 </p>
               </div>
               <Button
@@ -428,15 +460,55 @@ const AdminTeam = () => {
                 variant={formData.is_active ? "default" : "outline"}
                 size="sm"
                 onClick={() => setFormData({ ...formData, is_active: !formData.is_active })}
-                className="gap-1.5"
+                className="gap-1.5 shrink-0"
+                data-testid="toggle-show-on-website"
               >
                 {formData.is_active ? (
-                  <><Eye className="h-3.5 w-3.5" /> Active</>
+                  <><Globe className="h-3.5 w-3.5" /> Shown</>
                 ) : (
-                  <><EyeOff className="h-3.5 w-3.5" /> Inactive</>
+                  <><EyeOff className="h-3.5 w-3.5" /> Hidden</>
                 )}
               </Button>
             </div>
+
+            {editingLive && (
+              <div className="flex items-center justify-between pt-3 border-t border-border">
+                <div className="pr-4">
+                  <p className="text-sm font-medium">Can log in</p>
+                  <p className="text-xs text-muted-foreground">
+                    {editingLive.can_login === null
+                      ? "No login account yet. Add an email address and save to create one."
+                      : editingLive.can_login
+                      ? "Turning this off signs them out everywhere, right away."
+                      : "This person cannot sign in. Saved logins on their devices were removed."}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant={editingLive.can_login ? "default" : "outline"}
+                  size="sm"
+                  disabled={editingLive.can_login === null || isSettingLoginAccess}
+                  onClick={() => handleToggleLogin(editingLive)}
+                  className="gap-1.5 shrink-0"
+                  data-testid="toggle-can-log-in"
+                >
+                  {isSettingLoginAccess ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <KeyRound className="h-3.5 w-3.5" />
+                  )}
+                  {editingLive.can_login === null
+                    ? "No account"
+                    : editingLive.can_login
+                    ? "Allowed"
+                    : "Blocked"}
+                </Button>
+              </div>
+            )}
+            </>
+            )}
+          </div>
+
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
@@ -449,6 +521,14 @@ const AdminTeam = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ImageCropDialog
+        open={!!cropSrc}
+        imageSrc={cropSrc}
+        aspect={cropAspect}
+        onClose={() => setCropSrc(null)}
+        onCropped={handleCropped}
+      />
     </div>
   );
 };

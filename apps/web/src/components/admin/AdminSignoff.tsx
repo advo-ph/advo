@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { FileSignature, Send, Ban, ShieldCheck } from "lucide-react";
+import { Send, Ban, ShieldCheck, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Panel, Empty, Dot } from "@/components/admin/_ui";
 import {
   useProjectSignoff,
@@ -11,6 +10,9 @@ import {
   formatPeso,
   type ProjectSignoff,
 } from "@/hooks/useProjectSignoff";
+import { post } from "@/lib/api";
+import { startPolling } from "@/hooks/useJobPoller";
+import { useToast } from "@/hooks/use-toast";
 
 /**
  * Team panel for the Project Sign-off document (/admin -> Projects -> project ->
@@ -92,7 +94,7 @@ const SignoffRow = ({ row }: { row: ProjectSignoff }) => {
               <p className="text-xs font-medium tabular-nums">
                 Round {r.roundNumber}
                 {r.isPostSignoff && (
-                  <span className="ml-1.5 text-accent">post-sign-off</span>
+                  <span className="ml-1.5 text-accent-ink">post-sign-off</span>
                 )}
                 <span className="ml-1.5 text-muted-foreground font-normal">
                   {fmtDate(r.createdAt)}
@@ -159,8 +161,7 @@ const SignoffRow = ({ row }: { row: ProjectSignoff }) => {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            This mints the final-payment invoice exactly as a client signature does. Put the basis
-            (dates of the notice) in the internal note first.
+            This records a final approval the same way a client signature does. Add the notice dates in your internal notes first.
           </p>
         </div>
       )}
@@ -169,105 +170,40 @@ const SignoffRow = ({ row }: { row: ProjectSignoff }) => {
 };
 
 const AdminSignoff = ({ projectId }: { projectId: number }) => {
-  const { signoff, isLoading, createSignoff, isCreating } = useProjectSignoff(projectId);
-  const [isOpen, setIsOpen] = useState(false);
-  const [title, setTitle] = useState("");
-  const [scopeSummary, setScopeSummary] = useState("");
-  const [finalPaymentPeso, setFinalPaymentPeso] = useState("");
-  const [note, setNote] = useState("");
+  const { signoff, isLoading } = useProjectSignoff(projectId);
+  const { toast } = useToast();
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  const onCreate = async () => {
-    const peso = Number(finalPaymentPeso);
-    if (!title.trim() || !scopeSummary.trim() || Number.isNaN(peso) || peso < 0) return;
-    await createSignoff({
-      projectId,
-      title: title.trim(),
-      scopeSummary: scopeSummary.trim(),
-      // Pesos -> integer CENTS. Multiplied exactly ONCE, here, and rounded so a
-      // 22500.005 float can never become a fractional cent.
-      finalPaymentCents: Math.round(peso * 100),
-      note: note.trim() || null,
-    });
-    setTitle("");
-    setScopeSummary("");
-    setFinalPaymentPeso("");
-    setNote("");
-    setIsOpen(false);
+  const onGenerateDraft = async () => {
+    setIsGenerating(true);
+    try {
+      await post(`/api/project-signoff/0/generate-draft`, { projectId });
+      startPolling();
+      toast({ title: "Draft generation started", description: "Watch the progress box in the bottom right." });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Could not start draft generation.";
+      toast({ title: "Could not start", description: msg, variant: "destructive" });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   return (
     <Panel
-      title="Project Sign-off"
+      className="h-full"
+      title="Client Sign-Off"
       meta={signoff.length > 0 ? `${signoff.length} document` : undefined}
       action={
-        <Button size="sm" variant="outline" onClick={() => setIsOpen((v) => !v)}>
-          <FileSignature className="h-3.5 w-3.5 mr-1.5" />
-          {isOpen ? "Cancel" : "Draft sign-off"}
+        <Button size="sm" variant="outline" disabled={isGenerating} onClick={onGenerateDraft}>
+          {isGenerating && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+          {isGenerating ? "Starting…" : "Generate Draft"}
         </Button>
       }
     >
-      {isOpen && (
-        <div className="px-4 py-4 space-y-2.5 border-b border-border">
-          <div className="space-y-1.5">
-            <Label htmlFor="so-title" className="text-xs">
-              Commissioned system
-            </Label>
-            <Input
-              id="so-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Phase 1: Core Attendance System"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="so-scope" className="text-xs">
-              Scope being accepted as delivered
-            </Label>
-            <Textarea
-              id="so-scope"
-              rows={4}
-              value={scopeSummary}
-              onChange={(e) => setScopeSummary(e.target.value)}
-              placeholder="Biometric time-tracking, offline queuing, agency filtering, geofencing, accomplishment reports."
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="so-peso" className="text-xs">
-              Final payment (₱, pesos)
-            </Label>
-            <Input
-              id="so-peso"
-              type="number"
-              inputMode="decimal"
-              value={finalPaymentPeso}
-              onChange={(e) => setFinalPaymentPeso(e.target.value)}
-              placeholder="22500"
-            />
-            <p className="text-xs text-muted-foreground">
-              Stored as integer cents. FourlinQ Tier 1 = ₱22,500 · Tier 2 = ₱35,000.
-            </p>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="so-note" className="text-xs">
-              Internal note (never shown to the client)
-            </Label>
-            <Textarea
-              id="so-note"
-              rows={2}
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
-          </div>
-          <Button size="sm" disabled={isCreating} onClick={onCreate}>
-            {isCreating ? "Saving…" : "Save draft"}
-          </Button>
-        </div>
-      )}
-
       {isLoading ? (
         <Empty text="Loading…" />
       ) : signoff.length === 0 ? (
-        <Empty text="No sign-off on this project yet. Draft one when the build is ready for final delivery." />
+        <Empty text="No approval document yet. Click Generate Draft to create one from the contract and deliverables." />
       ) : (
         signoff.map((row) => <SignoffRow key={row.projectSignoffId} row={row} />)
       )}

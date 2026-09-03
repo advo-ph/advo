@@ -11,7 +11,30 @@ export interface AvailabilityBlock {
   start_time: string;
   end_time: string;
   block_type: BlockType;
-  label?: string;
+  label: string | null;
+  /** Manila dates bounding the recurrence. null = open-ended. Migration 024. */
+  effective_from: string | null;
+  effective_to: string | null;
+}
+
+/**
+ * Does this recurring block apply on a given Manila date?
+ *
+ * The day-of-week match is only half the question. Without the effective window a
+ * student's "Tuesdays 10:00" class was asserted for every Tuesday that has ever existed
+ * and every Tuesday to come — navigate the calendar to 2029 and the chip was still there.
+ *
+ * `dateKey` is YYYY-MM-DD, so the bound comparisons are plain string comparisons.
+ */
+export function blockAppliesOn(
+  block: Pick<AvailabilityBlock, "day_of_week" | "effective_from" | "effective_to">,
+  dateKey: string,
+  dayOfWeek: number,
+): boolean {
+  if (block.day_of_week !== dayOfWeek) return false;
+  if (block.effective_from && dateKey < block.effective_from) return false;
+  if (block.effective_to && dateKey > block.effective_to) return false;
+  return true;
 }
 
 function mapBlock(b: Record<string, unknown>): AvailabilityBlock {
@@ -22,7 +45,9 @@ function mapBlock(b: Record<string, unknown>): AvailabilityBlock {
     start_time: (b.startTime ?? b.start_time) as string,
     end_time: (b.endTime ?? b.end_time) as string,
     block_type: (b.blockType ?? b.block_type) as BlockType,
-    label: (b.label as string) || undefined,
+    label: (b.label as string | null) || null,
+    effective_from: ((b.effectiveFrom ?? b.effective_from) as string | null) || null,
+    effective_to: ((b.effectiveTo ?? b.effective_to) as string | null) || null,
   };
 }
 
@@ -32,7 +57,9 @@ export interface AvailabilityBlockInput {
   start_time: string;
   end_time: string;
   block_type: BlockType;
-  label?: string;
+  label: string | null;
+  effective_from: string | null;
+  effective_to: string | null;
 }
 
 function toApiPayload(input: AvailabilityBlockInput) {
@@ -42,7 +69,12 @@ function toApiPayload(input: AvailabilityBlockInput) {
     startTime: input.start_time,
     endTime: input.end_time,
     blockType: input.block_type,
-    label: input.label || undefined,
+    // null, never undefined. The server PATCH is .partial(), so an absent key is a no-op
+    // — coercing "" to undefined here meant clearing a label sent nothing and the old
+    // label stayed in the database while the dialog closed as if it had saved.
+    label: input.label && input.label.trim() ? input.label.trim() : null,
+    effectiveFrom: input.effective_from || null,
+    effectiveTo: input.effective_to || null,
   };
 }
 

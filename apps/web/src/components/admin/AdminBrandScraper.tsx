@@ -92,7 +92,7 @@ const CopyButton = ({ text }: { text: string }) => {
   return (
     <button onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500); }}
       className="p-1 rounded hover:bg-secondary/50 transition-colors" title="Copy">
-      {copied ? <Check className="h-3 w-3 text-accent" /> : <Copy className="h-3 w-3 text-muted-foreground" />}
+      {copied ? <Check className="h-3 w-3 text-accent-ink" /> : <Copy className="h-3 w-3 text-muted-foreground" />}
     </button>
   );
 };
@@ -125,23 +125,50 @@ const AdminBrandScraper = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<BrandData | null>(null);
   const [history, setHistory] = useState<ScrapeHistoryItem[]>([]);
+  const [historyError, setHistoryError] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [activeScreenshot, setActiveScreenshot] = useState<"desktop" | "tablet" | "mobile">("desktop");
   const [useFullScrape, setUseFullScrape] = useState(true);
 
+  // `get` resolves with { data, error } and never rejects, so there is no
+  // `.catch` that could fire here. An unreachable history endpoint has to be
+  // read off `res.error` or it is not read at all.
   useEffect(() => {
-    get<ScrapeHistoryItem[]>("/api/scrape/history?type=brand").then(res => {
-      if (res.data) setHistory(res.data);
+    get<ScrapeHistoryItem[]>("/api/scrape/history?type=brand").then((res) => {
+      if (res.error) {
+        setHistoryError(res.error);
+        return;
+      }
+      setHistoryError(null);
+      setHistory(res.data ?? []);
     });
   }, []);
 
   const loadFromHistory = async (id: number) => {
     const res = await get<{ data: BrandData }>(`/api/scrape/history/${id}`);
-    if (res.data) {
-      setResult((res.data as unknown as { data: BrandData }).data);
-      setShowHistory(false);
-      toast({ title: "Loaded from history" });
+    // This used to be a bare `if (res.data)`. A failed load did nothing at all:
+    // the row stayed highlighted, the panel stayed open, and the user was left
+    // to conclude the click had not registered.
+    if (res.error) {
+      toast({
+        title: "Could not open that scrape",
+        description: res.error,
+        variant: "destructive",
+      });
+      return;
     }
+    const saved = (res.data as unknown as { data?: BrandData } | null)?.data;
+    if (!saved) {
+      toast({
+        title: "That scrape is empty",
+        description: "The record exists but holds no data. Run the scrape again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setResult(saved);
+    setShowHistory(false);
+    toast({ title: "Loaded from history" });
   };
 
   const deleteFromHistory = async (id: number) => {
@@ -170,6 +197,11 @@ const AdminBrandScraper = () => {
       body.compareUrl = normCompare;
     }
 
+    // `post` and `get` resolve with { data, error } and never reject, so the
+    // API failure path is the `res.error` checks below, NOT the catch. The
+    // catch is kept only for a genuine unexpected throw (a render bug in
+    // withoutUnboundedScreenshot, say) so that one cannot leave the button
+    // stuck in "Analyzing…" forever.
     try {
       const res = await post<BrandData>(endpoint, body);
       if (res.error) {
@@ -187,7 +219,14 @@ const AdminBrandScraper = () => {
           toast({ title: "Scrape complete" });
         }
         const histRes = await get<ScrapeHistoryItem[]>("/api/scrape/history?type=brand");
-        if (histRes.data) setHistory(histRes.data);
+        if (histRes.error) {
+          // The scrape itself is fine and already on screen. Only the sidebar
+          // list is stale, so say that rather than implying the scrape failed.
+          setHistoryError(histRes.error);
+        } else {
+          setHistoryError(null);
+          setHistory(histRes.data ?? []);
+        }
       }
     } catch (err) {
       toast({
@@ -215,7 +254,7 @@ const AdminBrandScraper = () => {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Brand Scraper"
+        title="Brand Research"
         meta="Branding, design system, performance, SEO & accessibility from any site"
       />
 
@@ -229,7 +268,7 @@ const AdminBrandScraper = () => {
                 onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleScrape()} className="pl-9 h-9" />
             </div>
             <Button onClick={handleScrape} disabled={isLoading || !url}
-              className="h-9 bg-accent text-accent-foreground hover:bg-accent/90 min-w-[120px]">
+              className="h-9 bg-primary text-primary-foreground hover:bg-primary/90 min-w-[120px]">
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Search className="h-4 w-4 mr-2" />}
               {isLoading ? "Analyzing…" : "Analyze"}
             </Button>
@@ -240,7 +279,7 @@ const AdminBrandScraper = () => {
                 className="rounded border-border" />
               Full analysis (screenshots, SEO, performance, accessibility)
             </label>
-            <button onClick={() => setShowCompare(!showCompare)} className="text-xs text-accent hover:underline flex items-center gap-1">
+            <button onClick={() => setShowCompare(!showCompare)} className="text-xs text-accent-ink hover:underline flex items-center gap-1">
               <GitCompare className="h-3 w-3" /> {showCompare ? "Hide compare" : "Compare with another site"}
             </button>
           </div>
@@ -253,6 +292,14 @@ const AdminBrandScraper = () => {
           )}
         </div>
       </Panel>
+
+      {/* History failed to load. Say so instead of rendering an empty list that
+          reads as "you have no saved scrapes". */}
+      {historyError && (
+        <p className="text-xs text-destructive">
+          Saved scrapes could not be loaded: {historyError}. Reload the page to try again.
+        </p>
+      )}
 
       {/* History */}
       {history.length > 0 && (
@@ -316,7 +363,7 @@ const AdminBrandScraper = () => {
                 <h2 className="font-semibold text-base truncate">{result.meta?.ogTitle || result.meta?.title || result.url}</h2>
                 {result.meta?.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{result.meta.description}</p>}
                 <a href={result.url} target="_blank" rel="noopener noreferrer"
-                  className="text-xs text-accent hover:underline flex items-center gap-1 mt-2">
+                  className="text-xs text-accent-ink hover:underline flex items-center gap-1 mt-2">
                   <ExternalLink className="h-3 w-3" /> {result.url}
                 </a>
               </div>
@@ -725,7 +772,7 @@ const AdminBrandScraper = () => {
               <div className="space-y-1.5">
                 {crawledPages.map((p, i) => (
                   <div key={i} className="flex items-center justify-between p-2 bg-secondary/30 rounded-lg">
-                    <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-xs text-accent hover:underline truncate flex-1">{p.url}</a>
+                    <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-xs text-accent-ink hover:underline truncate flex-1">{p.url}</a>
                     <span className="text-[10px] text-muted-foreground ml-2 truncate max-w-[200px]">{p.title}</span>
                   </div>
                 ))}

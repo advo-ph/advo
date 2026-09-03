@@ -8,12 +8,28 @@ export interface TeamMember {
   role: string;
   email: string | null;
   avatar_url: string | null;
+  preview_image_url: string | null;
   bio: string | null;
   linkedin_url: string | null;
   github_url: string | null;
+  /** Shown on the public website. Nothing to do with logging in. */
   is_active: boolean;
-  /** Manual tally; auto-accrual deferred. */
-  penalty_point_count: number;
+  /**
+   * Whether this person's login is switched on.
+   *
+   * null means there is no login account at all, which is a different state from false and
+   * has to stay distinguishable: false is "switched off", null is "never had one".
+   */
+  can_login: boolean | null;
+  /** The address on the login account, which may differ from the roster email. */
+  login_email: string | null;
+  /** Role on the login account: admin, team or client. */
+  login_role: string | null;
+}
+
+function nullableBool(value: unknown): boolean | null {
+  if (value === null || value === undefined) return null;
+  return Boolean(value);
 }
 
 function mapMember(m: Record<string, unknown>): TeamMember {
@@ -23,11 +39,14 @@ function mapMember(m: Record<string, unknown>): TeamMember {
     role: m.role as string,
     email: (m.email as string) || null,
     avatar_url: (m.avatarUrl ?? m.avatar_url ?? null) as string | null,
+    preview_image_url: (m.previewImageUrl ?? m.preview_image_url ?? null) as string | null,
     bio: (m.bio as string) || null,
     linkedin_url: (m.linkedinUrl ?? m.linkedin_url ?? null) as string | null,
     github_url: (m.githubUrl ?? m.github_url ?? null) as string | null,
     is_active: Boolean(m.isActive ?? m.is_active ?? true),
-    penalty_point_count: Number(m.penaltyPointCount ?? m.penalty_point_count ?? 0),
+    can_login: nullableBool(m.canLogin ?? m.can_login),
+    login_email: (m.loginEmail ?? m.login_email ?? null) as string | null,
+    login_role: (m.loginRole ?? m.login_role ?? null) as string | null,
   };
 }
 
@@ -36,12 +55,11 @@ export interface TeamMemberInput {
   role: string;
   email?: string | null;
   avatar_url?: string | null;
+  preview_image_url?: string | null;
   bio?: string | null;
   linkedin_url?: string | null;
   github_url?: string | null;
   is_active?: boolean;
-  /** Admin-only; omit on create (DB default 0). */
-  penalty_point_count?: number;
 }
 
 function toApiPayload(input: TeamMemberInput) {
@@ -53,13 +71,11 @@ function toApiPayload(input: TeamMemberInput) {
     role: input.role,
     ...(input.email !== undefined && { email: input.email || null }),
     ...(input.avatar_url !== undefined && { avatarUrl: input.avatar_url || null }),
+    ...(input.preview_image_url !== undefined && { previewImageUrl: input.preview_image_url || null }),
     ...(input.bio !== undefined && { bio: input.bio || null }),
     ...(input.linkedin_url !== undefined && { linkedinUrl: input.linkedin_url || null }),
     ...(input.github_url !== undefined && { githubUrl: input.github_url || null }),
     ...(input.is_active !== undefined && { isActive: input.is_active }),
-    ...(input.penalty_point_count !== undefined && {
-      penaltyPointCount: input.penalty_point_count,
-    }),
   };
 }
 
@@ -99,11 +115,20 @@ export function useAdminTeam() {
     mutationFn: async (input: TeamMemberInput) => {
       const res = await post<Record<string, unknown>>("/api/team", toApiPayload(input));
       if (res.error) throw new Error(res.error);
-      return mapMember(res.data!);
+      return {
+        member: mapMember(res.data!),
+        // Present only when this request created a brand new login account.
+        defaultPassword: (res.data?.defaultPassword as string) || null,
+      };
     },
-    onSuccess: (created) => {
-      queryClient.setQueryData<TeamMember[]>(QUERY_KEY, (old = []) => [...old, created]);
-      toast({ title: "Created", description: `${created.name} added to team` });
+    onSuccess: ({ member, defaultPassword }) => {
+      queryClient.setQueryData<TeamMember[]>(QUERY_KEY, (old = []) => [...old, member]);
+      toast({
+        title: "Created",
+        description: defaultPassword
+          ? `${member.name} added. They can log in with the password ${defaultPassword}.`
+          : `${member.name} added to team`,
+      });
     },
     onError: (err: Error) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -146,6 +171,41 @@ export function useAdminTeam() {
     onSuccess: () => toast({ title: "Order saved" }),
   });
 
+  /**
+   * Switch one person's login on or off.
+   *
+   * Separate from updateMember on purpose. This writes a different column on a different
+   * table, it ends that person's open sessions when it turns off, and it applies the moment
+   * it is clicked rather than waiting for a form save that might be cancelled.
+   */
+  const loginAccessMutation = useMutation({
+    mutationFn: async ({ id, canLogin }: { id: number; canLogin: boolean }) => {
+      const res = await patch<Record<string, unknown>>(`/api/team/${id}/login`, { canLogin });
+      if (res.error) throw new Error(res.error);
+      return {
+        team_member_id: id,
+        can_login: Boolean(res.data?.canLogin),
+        message: (res.data?.message as string) || "",
+      };
+    },
+    onSuccess: (result) => {
+      queryClient.setQueryData<TeamMember[]>(QUERY_KEY, (old = []) =>
+        old.map((m) =>
+          m.team_member_id === result.team_member_id
+            ? { ...m, can_login: result.can_login }
+            : m,
+        ),
+      );
+      toast({
+        title: result.can_login ? "Login turned on" : "Login turned off",
+        description: result.message,
+      });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
   const activeMembers = members.filter((m) => m.is_active);
 
   return {
@@ -155,6 +215,9 @@ export function useAdminTeam() {
     createMember: createMutation.mutateAsync,
     updateMember: (id: number, input: TeamMemberInput) =>
       updateMutation.mutateAsync({ id, input }),
+    setLoginAccess: (id: number, canLogin: boolean) =>
+      loginAccessMutation.mutateAsync({ id, canLogin }),
+    isSettingLoginAccess: loginAccessMutation.isPending,
     reorderMembers: reorderMutation.mutate,
     isSaving: createMutation.isPending || updateMutation.isPending,
   };

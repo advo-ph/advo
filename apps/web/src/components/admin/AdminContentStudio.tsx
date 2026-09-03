@@ -5,6 +5,7 @@ import {
   ChevronDown,
   ChevronUp,
   Save,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,13 +15,40 @@ import { PageHeader, Panel } from "./_ui";
 
 /* ─── Content edit forms per section ──────────────────────── */
 
-const HeroForm = ({
-  section,
-  onSave,
-}: {
+/**
+ * Every form takes the same three things. `isSaving` is the one that was
+ * missing: these buttons fired a mutation and then looked exactly as they had
+ * a moment before, so the only way to tell a save from a no-op was to wait for
+ * a toast. A slow save read as a dead button, and an impatient second click
+ * sent the whole payload again.
+ */
+interface SectionFormProps {
   section: SiteSection;
   onSave: (c: Record<string, unknown>) => void;
-}) => {
+  isSaving: boolean;
+}
+
+/** The one save affordance, so no form can quietly go back to having none. */
+const SaveButton = ({
+  isSaving,
+  onClick,
+  children,
+}: {
+  isSaving: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) => (
+  <Button size="sm" className="w-fit" onClick={onClick} disabled={isSaving}>
+    {isSaving ? (
+      <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+    ) : (
+      <Save className="h-3.5 w-3.5 mr-1.5" />
+    )}
+    {isSaving ? "Saving…" : children}
+  </Button>
+);
+
+const HeroForm = ({ section, onSave, isSaving }: SectionFormProps) => {
   const c = (section.content || {}) as Record<string, unknown>;
   const [headline, setHeadline] = useState((c.headline as string) || "");
   const [subtext, setSubtext] = useState((c.subtext as string) || "");
@@ -90,9 +118,8 @@ const HeroForm = ({
           </Button>
         </div>
       </div>
-      <Button
-        size="sm"
-        className="w-fit mt-1"
+      <SaveButton
+        isSaving={isSaving}
         onClick={() =>
           onSave({
             headline,
@@ -104,20 +131,13 @@ const HeroForm = ({
           })
         }
       >
-        <Save className="h-3.5 w-3.5 mr-1.5" />
         Save Hero
-      </Button>
+      </SaveButton>
     </div>
   );
 };
 
-const ContactForm = ({
-  section,
-  onSave,
-}: {
-  section: SiteSection;
-  onSave: (c: Record<string, unknown>) => void;
-}) => {
+const ContactForm = ({ section, onSave, isSaving }: SectionFormProps) => {
   const c = (section.content || {}) as Record<string, unknown>;
   const [email, setEmail] = useState((c.email as string) || "");
   const [calendlyUrl, setCalendlyUrl] = useState(
@@ -153,9 +173,8 @@ const ContactForm = ({
           {showForm ? "Contact Form Visible" : "Contact Form Hidden"}
         </Button>
       </div>
-      <Button
-        size="sm"
-        className="w-fit mt-1"
+      <SaveButton
+        isSaving={isSaving}
         onClick={() =>
           onSave({
             email,
@@ -164,20 +183,13 @@ const ContactForm = ({
           })
         }
       >
-        <Save className="h-3.5 w-3.5 mr-1.5" />
         Save Contact
-      </Button>
+      </SaveButton>
     </div>
   );
 };
 
-const ClientDashboardForm = ({
-  section,
-  onSave,
-}: {
-  section: SiteSection;
-  onSave: (c: Record<string, unknown>) => void;
-}) => {
+const ClientDashboardForm = ({ section, onSave, isSaving }: SectionFormProps) => {
   const c = (section.content || {}) as Record<string, unknown>;
   const [welcomeMessage, setWelcomeMessage] = useState(
     (c.welcome_message as string) || ""
@@ -195,25 +207,14 @@ const ClientDashboardForm = ({
           rows={2}
         />
       </div>
-      <Button
-        size="sm"
-        className="w-fit mt-1"
-        onClick={() => onSave({ welcome_message: welcomeMessage })}
-      >
-        <Save className="h-3.5 w-3.5 mr-1.5" />
+      <SaveButton isSaving={isSaving} onClick={() => onSave({ welcome_message: welcomeMessage })}>
         Save
-      </Button>
+      </SaveButton>
     </div>
   );
 };
 
-const ServicesForm = ({
-  section,
-  onSave,
-}: {
-  section: SiteSection;
-  onSave: (c: Record<string, unknown>) => void;
-}) => {
+const ServicesForm = ({ section, onSave, isSaving }: SectionFormProps) => {
   const c = (section.content || {}) as Record<string, unknown>;
   const initial = (c.items as Array<Record<string, string>>) || [];
   const [items, setItems] = useState(initial);
@@ -256,26 +257,15 @@ const ServicesForm = ({
         >
           + Add Service
         </Button>
-        <Button
-          size="sm"
-          className="w-fit"
-          onClick={() => onSave({ items })}
-        >
-          <Save className="h-3.5 w-3.5 mr-1.5" />
+        <SaveButton isSaving={isSaving} onClick={() => onSave({ items })}>
           Save Services
-        </Button>
+        </SaveButton>
       </div>
     </div>
   );
 };
 
-const PricingForm = ({
-  section,
-  onSave,
-}: {
-  section: SiteSection;
-  onSave: (c: Record<string, unknown>) => void;
-}) => {
+const PricingForm = ({ section, onSave, isSaving }: SectionFormProps) => {
   const c = (section.content || {}) as Record<string, unknown>;
   interface Plan {
     name: string;
@@ -361,26 +351,15 @@ const PricingForm = ({
         >
           + Add Plan
         </Button>
-        <Button
-          size="sm"
-          className="w-fit"
-          onClick={() => onSave({ plans })}
-        >
-          <Save className="h-3.5 w-3.5 mr-1.5" />
+        <SaveButton isSaving={isSaving} onClick={() => onSave({ plans })}>
           Save Pricing
-        </Button>
+        </SaveButton>
       </div>
     </div>
   );
 };
 
-const TestimonialsForm = ({
-  section,
-  onSave,
-}: {
-  section: SiteSection;
-  onSave: (c: Record<string, unknown>) => void;
-}) => {
+const TestimonialsForm = ({ section, onSave, isSaving }: SectionFormProps) => {
   const c = (section.content || {}) as Record<string, unknown>;
   interface Testimonial {
     quote: string;
@@ -433,26 +412,15 @@ const TestimonialsForm = ({
         >
           + Add Testimonial
         </Button>
-        <Button
-          size="sm"
-          className="w-fit"
-          onClick={() => onSave({ items })}
-        >
-          <Save className="h-3.5 w-3.5 mr-1.5" />
+        <SaveButton isSaving={isSaving} onClick={() => onSave({ items })}>
           Save Testimonials
-        </Button>
+        </SaveButton>
       </div>
     </div>
   );
 };
 
-const FAQForm = ({
-  section,
-  onSave,
-}: {
-  section: SiteSection;
-  onSave: (c: Record<string, unknown>) => void;
-}) => {
+const FAQForm = ({ section, onSave, isSaving }: SectionFormProps) => {
   const c = (section.content || {}) as Record<string, unknown>;
   interface FAQ { question: string; answer: string }
   const initial = (c.items as FAQ[]) || [];
@@ -474,21 +442,15 @@ const FAQForm = ({
         <Button variant="outline" size="sm" onClick={() => setItems([...items, { question: "", answer: "" }])}>
           + Add FAQ
         </Button>
-        <Button size="sm" className="w-fit" onClick={() => onSave({ items })}>
-          <Save className="h-3.5 w-3.5 mr-1.5" /> Save FAQ
-        </Button>
+        <SaveButton isSaving={isSaving} onClick={() => onSave({ items })}>
+          Save FAQ
+        </SaveButton>
       </div>
     </div>
   );
 };
 
-const ProcessForm = ({
-  section,
-  onSave,
-}: {
-  section: SiteSection;
-  onSave: (c: Record<string, unknown>) => void;
-}) => {
+const ProcessForm = ({ section, onSave, isSaving }: SectionFormProps) => {
   const c = (section.content || {}) as Record<string, unknown>;
   interface Step { title: string; description: string }
   const initial = (c.steps as Step[]) || [];
@@ -511,21 +473,15 @@ const ProcessForm = ({
         <Button variant="outline" size="sm" onClick={() => setSteps([...steps, { title: "", description: "" }])}>
           + Add Step
         </Button>
-        <Button size="sm" className="w-fit" onClick={() => onSave({ steps })}>
-          <Save className="h-3.5 w-3.5 mr-1.5" /> Save Process
-        </Button>
+        <SaveButton isSaving={isSaving} onClick={() => onSave({ steps })}>
+          Save Process
+        </SaveButton>
       </div>
     </div>
   );
 };
 
-const WhyDigitalForm = ({
-  section,
-  onSave,
-}: {
-  section: SiteSection;
-  onSave: (c: Record<string, unknown>) => void;
-}) => {
+const WhyDigitalForm = ({ section, onSave, isSaving }: SectionFormProps) => {
   const c = (section.content || {}) as Record<string, unknown>;
   const [headline, setHeadline] = useState((c.headline as string) || "");
   const [subtext, setSubtext] = useState((c.subtext as string) || "");
@@ -551,21 +507,15 @@ const WhyDigitalForm = ({
         <Button variant="outline" size="sm" onClick={() => setFeatures([...features, { title: "", description: "" }])}>
           + Add Feature
         </Button>
-        <Button size="sm" className="w-fit" onClick={() => onSave({ headline, subtext, features })}>
-          <Save className="h-3.5 w-3.5 mr-1.5" /> Save
-        </Button>
+        <SaveButton isSaving={isSaving} onClick={() => onSave({ headline, subtext, features })}>
+          Save
+        </SaveButton>
       </div>
     </div>
   );
 };
 
-const TeamSectionForm = ({
-  section,
-  onSave,
-}: {
-  section: SiteSection;
-  onSave: (c: Record<string, unknown>) => void;
-}) => {
+const TeamSectionForm = ({ section, onSave, isSaving }: SectionFormProps) => {
   const c = (section.content || {}) as Record<string, unknown>;
   const [headline, setHeadline] = useState((c.headline as string) || "");
   const [subtext, setSubtext] = useState((c.subtext as string) || "");
@@ -575,20 +525,14 @@ const TeamSectionForm = ({
       <Input placeholder="Headline" value={headline} onChange={(e) => setHeadline(e.target.value)} />
       <Textarea placeholder="Subtext" value={subtext} onChange={(e) => setSubtext(e.target.value)} rows={2} />
       <p className="text-xs text-muted-foreground">Team members are managed in the Team section. This controls the heading text only.</p>
-      <Button size="sm" className="w-fit" onClick={() => onSave({ headline, subtext })}>
-        <Save className="h-3.5 w-3.5 mr-1.5" /> Save
-      </Button>
+      <SaveButton isSaving={isSaving} onClick={() => onSave({ headline, subtext })}>
+        Save
+      </SaveButton>
     </div>
   );
 };
 
-const PortfolioSectionForm = ({
-  section,
-  onSave,
-}: {
-  section: SiteSection;
-  onSave: (c: Record<string, unknown>) => void;
-}) => {
+const PortfolioSectionForm = ({ section, onSave, isSaving }: SectionFormProps) => {
   const c = (section.content || {}) as Record<string, unknown>;
   const [headline, setHeadline] = useState((c.headline as string) || "");
   const [subtext, setSubtext] = useState((c.subtext as string) || "");
@@ -598,22 +542,16 @@ const PortfolioSectionForm = ({
       <Input placeholder="Headline" value={headline} onChange={(e) => setHeadline(e.target.value)} />
       <Textarea placeholder="Subtext" value={subtext} onChange={(e) => setSubtext(e.target.value)} rows={2} />
       <p className="text-xs text-muted-foreground">Portfolio items are managed in the Portfolio section. This controls the heading text only.</p>
-      <Button size="sm" className="w-fit" onClick={() => onSave({ headline, subtext })}>
-        <Save className="h-3.5 w-3.5 mr-1.5" /> Save
-      </Button>
+      <SaveButton isSaving={isSaving} onClick={() => onSave({ headline, subtext })}>
+        Save
+      </SaveButton>
     </div>
   );
 };
 
 /* ─── Section → Form mapping ─────────────────────────────── */
 
-const EDITABLE_SECTIONS: Record<
-  string,
-  React.ComponentType<{
-    section: SiteSection;
-    onSave: (c: Record<string, unknown>) => void;
-  }>
-> = {
+const EDITABLE_SECTIONS: Record<string, React.ComponentType<SectionFormProps>> = {
   hero: HeroForm,
   services: ServicesForm,
   pricing: PricingForm,
@@ -647,12 +585,12 @@ const ToggleRow = ({
   >
     <Icon
       className={`h-3.5 w-3.5 transition-colors ${
-        active ? "text-foreground/80" : "text-muted-foreground/50"
+        active ? "text-foreground/80" : "text-muted-foreground"
       }`}
     />
     <span
       className={`text-[11px] uppercase tracking-wider hidden md:inline transition-colors ${
-        active ? "text-foreground/80" : "text-muted-foreground/50"
+        active ? "text-foreground/80" : "text-muted-foreground"
       }`}
     >
       {label}
@@ -674,7 +612,7 @@ const ToggleRow = ({
 /* ─── Main Component ─────────────────────────────────────── */
 
 const AdminContentStudio = () => {
-  const { sections, isLoading, toggle, updateContent } = useSiteContent();
+  const { sections, isLoading, toggle, updateContent, isSavingContent } = useSiteContent();
   const [expanded, setExpanded] = useState<string | null>(null);
 
   if (isLoading) {
@@ -689,7 +627,7 @@ const AdminContentStudio = () => {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Content Studio"
+        title="Content"
         meta="Toggle visibility and edit content per section"
         action={
           <div className="flex items-center gap-4 text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -717,7 +655,7 @@ const AdminContentStudio = () => {
                   {/* Label + id */}
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{section.label}</p>
-                    <p className="text-[11px] text-muted-foreground/70 mt-0.5">
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
                       {section.section_id}
                     </p>
                   </div>
@@ -775,6 +713,7 @@ const AdminContentStudio = () => {
                     <FormComponent
                       section={section}
                       onSave={(c) => updateContent(section.section_id, c)}
+                      isSaving={isSavingContent}
                     />
                   </div>
                 )}

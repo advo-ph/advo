@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { get, patch } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { errorText } from "@/lib/error-text";
 
 export interface SiteSection {
   section_id: string;
@@ -64,10 +65,18 @@ export function useSiteContent() {
       );
       return { prev };
     },
-    onError: (_err, _vars, ctx) => {
+    onError: (err: Error, _vars, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
-      toast({ title: "Error", description: "Failed to toggle visibility", variant: "destructive" });
+      toast({
+        title: "Visibility not changed",
+        description: errorText(err, "The section is still set the way it was. Try again."),
+        variant: "destructive",
+      });
     },
+    // This toggle decides whether a section is visible on the public site. A
+    // switch that shows "on" while the database says "off" is the worst version
+    // of this bug, so it re-reads on every outcome.
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
   });
 
   const contentMutation = useMutation({
@@ -91,11 +100,16 @@ export function useSiteContent() {
       );
       return { prev };
     },
-    onError: (_err, _vars, ctx) => {
+    onError: (err: Error, _vars, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
-      toast({ title: "Error", description: "Failed to update content", variant: "destructive" });
+      toast({
+        title: "Content not saved",
+        description: errorText(err, "Your edits were not stored. Copy them before leaving the page."),
+        variant: "destructive",
+      });
     },
     onSuccess: () => toast({ title: "Content saved" }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
   });
 
   return {
@@ -105,6 +119,8 @@ export function useSiteContent() {
       toggleMutation.mutate({ sectionId, field, value }),
     updateContent: (sectionId: string, content: Record<string, unknown>) =>
       contentMutation.mutate({ sectionId, content }),
+    /** Drives the disabled state and spinner on every Save button in Content Studio. */
+    isSavingContent: contentMutation.isPending,
     getSection: (sectionId: string) => sections.find((s) => s.section_id === sectionId),
   };
 }

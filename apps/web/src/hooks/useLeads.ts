@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { get, patch, del } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { errorText } from "@/lib/error-text";
 
 export type LeadStatus =
   | "new"
@@ -92,11 +93,17 @@ export function useLeads() {
       );
       return { prev };
     },
-    onError: (_err, _vars, ctx) => {
+    onError: (err: Error, _vars, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
-      toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
+      toast({
+        title: "Status not updated",
+        description: errorText(err, "The lead still has its old status. Try again."),
+        variant: "destructive",
+      });
     },
     onSuccess: () => toast({ title: "Status updated" }),
+    // The optimistic write above is a guess. This is where it stops being one.
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
   });
 
   const notesMutation = useMutation({
@@ -112,11 +119,16 @@ export function useLeads() {
       );
       return { prev };
     },
-    onError: (_err, _vars, ctx) => {
+    onError: (err: Error, _vars, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
-      toast({ title: "Error", description: "Failed to save notes", variant: "destructive" });
+      toast({
+        title: "Notes not saved",
+        description: errorText(err, "Your text was not stored. Copy it before leaving the page."),
+        variant: "destructive",
+      });
     },
     onSuccess: () => toast({ title: "Notes saved" }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
   });
 
   const assignMutation = useMutation({
@@ -134,11 +146,16 @@ export function useLeads() {
       );
       return { prev };
     },
-    onError: (_err, _vars, ctx) => {
+    onError: (err: Error, _vars, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
-      toast({ title: "Error", description: "Failed to assign", variant: "destructive" });
+      toast({
+        title: "Lead not assigned",
+        description: errorText(err, "The owner did not change. Try again."),
+        variant: "destructive",
+      });
     },
     onSuccess: () => toast({ title: "Lead assigned" }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
   });
 
   const deleteMutation = useMutation({
@@ -154,11 +171,16 @@ export function useLeads() {
       );
       return { prev };
     },
-    onError: (_err, _vars, ctx) => {
+    onError: (err: Error, _vars, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
-      toast({ title: "Error", description: "Failed to delete lead", variant: "destructive" });
+      toast({
+        title: "Lead not deleted",
+        description: errorText(err, "The lead is still there. Try again."),
+        variant: "destructive",
+      });
     },
     onSuccess: () => toast({ title: "Lead deleted" }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
   });
 
   return {

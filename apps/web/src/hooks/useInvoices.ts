@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { get, post, patch, del } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { errorText } from "@/lib/error-text";
 import { triggerNotification } from "@/lib/notifications";
 
 export type InvoiceStatus = "unpaid" | "paid" | "overdue";
@@ -80,21 +81,41 @@ export function useInvoices() {
       if (res.error) throw new Error(res.error);
       return mapInvoice(res.data);
     },
-    onSuccess: (newInvoice) => {
+    onSuccess: async (newInvoice) => {
       queryClient.invalidateQueries({ queryKey });
       toast({ title: "Invoice created" });
-      if (newInvoice.project?.client_id) {
-        triggerNotification({
-          client_id: newInvoice.project.client_id,
-          project_id: newInvoice.project_id,
-          title: `New invoice: ${newInvoice.label}`,
-          body: `An invoice for ₱${(newInvoice.amount_cents / 100).toFixed(2)} has been issued.`,
-          type: "invoice_issued",
+
+      if (!newInvoice.project?.client_id) return;
+
+      // The invoice is already saved, so a failed notification is not a failed
+      // create and must not be reported as one. It is still worth saying: the
+      // admin's next assumption is that the client has been told, and if this
+      // failed nobody has told them.
+      const notified = await triggerNotification({
+        client_id: newInvoice.project.client_id,
+        project_id: newInvoice.project_id,
+        title: `New invoice: ${newInvoice.label}`,
+        body: `An invoice for ₱${(newInvoice.amount_cents / 100).toFixed(2)} has been issued.`,
+        type: "invoice_issued",
+      });
+
+      if (!notified.ok) {
+        toast({
+          title: "Invoice saved, client not notified",
+          description: `${notified.error}. Send them the invoice another way.`,
+          variant: "destructive",
         });
       }
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to create invoice", variant: "destructive" });
+    onError: (err: Error) => {
+      // Show what the server said. Now that Postgres constraint violations map
+      // to real statuses and real sentences, "Failed to create invoice" would
+      // be throwing away the only useful part of the response.
+      toast({
+        title: "Invoice not created",
+        description: errorText(err, "The invoice was not saved. Try again."),
+        variant: "destructive",
+      });
     },
   });
 
@@ -106,20 +127,32 @@ export function useInvoices() {
     onMutate: async ({ invoiceId, status }) => {
       await queryClient.cancelQueries({ queryKey });
       const prev = queryClient.getQueryData<Invoice[]>(queryKey);
+      // Only `status` is guessed, because only `status` is something we actually
+      // know. `paid_at` used to be filled in here with `new Date()` off the
+      // BROWSER's clock while the server wrote its own, so the UI displayed a
+      // payment timestamp that had never been in the database and did not match
+      // the one that was. A wrong number shown confidently is worse than a
+      // stale one: the real value arrives via onSettled a moment later.
       queryClient.setQueryData<Invoice[]>(queryKey, (old) =>
         (old || []).map((i) =>
-          i.invoice_id === invoiceId
-            ? { ...i, status: status as Invoice["status"], paid_at: status === "paid" ? new Date().toISOString() : i.paid_at }
-            : i
+          i.invoice_id === invoiceId ? { ...i, status: status as Invoice["status"] } : i
         )
       );
       return { prev };
     },
-    onError: (_err, _vars, ctx) => {
+    onError: (err: Error, _vars, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
-      toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
+      toast({
+        title: "Invoice not updated",
+        description: errorText(err, "The status was not saved. Try again."),
+        variant: "destructive",
+      });
     },
     onSuccess: () => toast({ title: "Invoice updated" }),
+    // Re-read the server whether it worked or not. Success replaces the guess
+    // with the truth (including the real paid_at); failure replaces the
+    // rolled-back copy with whatever the server actually holds.
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
   });
 
   const deleteMutation = useMutation({
@@ -135,11 +168,16 @@ export function useInvoices() {
       );
       return { prev };
     },
-    onError: (_err, _vars, ctx) => {
+    onError: (err: Error, _vars, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
-      toast({ title: "Error", description: "Failed to delete invoice", variant: "destructive" });
+      toast({
+        title: "Invoice not deleted",
+        description: errorText(err, "The invoice is still there. Try again."),
+        variant: "destructive",
+      });
     },
     onSuccess: () => toast({ title: "Invoice deleted" }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
   });
 
   return {

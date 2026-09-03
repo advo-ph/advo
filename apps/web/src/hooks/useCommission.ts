@@ -3,7 +3,7 @@ import { get, post, patch, del } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 /**
- * /api/commission — the 60/25/15 commission split (migration 018).
+ * /api/commission — the 55/35/10 commission split (migration 018, defaults updated by 030).
  *
  * Three things this hook must never do:
  *
@@ -26,6 +26,8 @@ export type CommissionStatus = "draft" | "finalized" | "void";
 export type CommissionRole =
   | "main_developer"
   | "assistant_developer"
+  | "creatives_developer"
+  | "lead_partnerships"
   | "referral"
   | "marketing"
   | "accounting"
@@ -58,6 +60,7 @@ export interface CommissionDerived {
   staffPoolCents: number;
   companyCents: number;
   staffRolePoolCents: {
+    lead_partnerships: number;
     referral: number;
     marketing: number;
     accounting: number;
@@ -80,7 +83,7 @@ export interface CommissionPlan {
   /** Integer CENTS being split. */
   basisCents: number;
   basisNote: string | null;
-  /** Basis points, snapshotted per plan. 6000 = 60%. */
+  /** Basis points, snapshotted per plan. 5500 = 55%. */
   developerBps: number;
   staffBps: number;
   companyBps: number;
@@ -112,21 +115,24 @@ export interface CommissionShareInput {
   note?: string | null;
 }
 
-export function useCommission() {
+export function useCommission(projectId?: number) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const queryKey = ["commission"];
+  const queryKey = projectId !== undefined ? ["commission", projectId] : ["commission"];
 
   const { data: commissionPlan = [], isLoading } = useQuery({
     queryKey,
     queryFn: async () => {
-      const res = await get<CommissionPlan[]>("/api/commission");
+      const url = projectId !== undefined
+        ? `/api/commission?projectId=${projectId}`
+        : "/api/commission";
+      const res = await get<CommissionPlan[]>(url);
       return res.data || [];
     },
     staleTime: 2 * 60 * 1000,
   });
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey });
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["commission"] });
 
   const fail = (title: string) => (err: Error) =>
     toast({ title, description: err.message, variant: "destructive" });
@@ -139,12 +145,17 @@ export function useCommission() {
     },
     onSuccess: () => {
       invalidate();
-      toast({
-        title: "Commission plan drafted",
-        description: "60% developer · 25% staff · 15% company reserve, seeded from the project value.",
-      });
     },
     onError: fail("Could not draft the plan"),
+  });
+
+  const deletePlanMutation = useMutation({
+    mutationFn: async (commissionPlanId: number) => {
+      const res = await del(`/api/commission/${commissionPlanId}`);
+      if (res.error) throw new Error(res.error);
+    },
+    onSuccess: () => invalidate(),
+    onError: fail("Could not delete the plan"),
   });
 
   const updatePlanMutation = useMutation({
@@ -199,6 +210,18 @@ export function useCommission() {
     onError: fail("Could not remove that share"),
   });
 
+  const setTierMutation = useMutation({
+    mutationFn: async ({
+      commissionShareId,
+      tierLabel,
+    }: { commissionShareId: number; tierLabel: string }) => {
+      const res = await post(`/api/commission/share/${commissionShareId}/tier`, { tierLabel });
+      if (res.error) throw new Error(res.error);
+    },
+    onSuccess: () => invalidate(),
+    onError: fail("Could not set tier"),
+  });
+
   const seedMutation = useMutation({
     mutationFn: async (commissionPlanId: number) => {
       const res = await post<{ seeded: unknown[]; unassigned: unknown[] }>(
@@ -250,14 +273,17 @@ export function useCommission() {
     commissionPlan,
     isLoading,
     createCommissionPlan: createMutation.mutate,
+    deleteCommissionPlan: deletePlanMutation.mutate,
     updateCommissionPlan: updatePlanMutation.mutate,
     addCommissionShare: addShareMutation.mutate,
     updateCommissionShare: updateShareMutation.mutate,
     removeCommissionShare: removeShareMutation.mutate,
+    setTier: setTierMutation.mutate,
     seedFromProjectAccess: seedMutation.mutate,
     finalizeCommissionPlan: finalizeMutation.mutate,
     voidCommissionPlan: voidMutation.mutate,
     isCreating: createMutation.isPending,
+    isDeleting: deletePlanMutation.isPending,
     isFinalizing: finalizeMutation.isPending,
   };
 }

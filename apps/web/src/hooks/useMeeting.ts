@@ -6,25 +6,39 @@ import { useAuth } from "@/hooks/useAuth";
 // Mirrors /api/meeting row (drizzle camelCase).
 export interface Meeting {
   meetingId: number;
-  projectId: number;
+  projectId: number | null;
   title: string;
   recordedAt: string;
+  startsAt: string | null;
+  endsAt: string | null;
   transcript: string;
   summary: string | null;
+  location: string | null;
+  description: string | null;
   plaudFileId: string | null;
   plaudShareKey: string | null;
   isVisibleClient: boolean;
   createdBy: number | null;
   createdAt: string;
   updatedAt: string;
+  attendees: Array<{
+    userId: number;
+    name: string;
+    avatarUrl: string | null;
+    joinedAt: string;
+  }>;
 }
 
 export interface MeetingInput {
-  projectId: number;
+  projectId?: number | null;
   title: string;
-  recordedAt: string;
-  transcript: string;
+  recordedAt?: string;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  transcript?: string;
   summary?: string | null;
+  location?: string | null;
+  description?: string | null;
   plaudFileId?: string | null;
   plaudShareKey?: string | null;
   isVisibleClient?: boolean;
@@ -169,7 +183,7 @@ export function useMeeting(projectId?: number | null) {
     onSuccess: (data) => {
       invalidate();
       toast({
-        title: data.created ? "Imported from Plaud" : "Updated from Plaud",
+        title: data.created ? "Imported from transcription service" : "Updated from transcription service",
         description: data.meeting.title,
       });
     },
@@ -206,21 +220,48 @@ export function useMeeting(projectId?: number | null) {
     },
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["adminDeliverables"] });
-      qc.invalidateQueries({ queryKey: ["deliverables"] });
+      // Tasks minted from a meeting become deliverable rows, so the Calendar is
+      // stale too. The key here used to be ["deliverables"], which matches no
+      // query in this app and therefore invalidated nothing.
+      qc.invalidateQueries({ queryKey: ["calendar"] });
       const n = data.deliverable.length;
       const via =
         data.method === "ai"
           ? "Claude"
           : data.method === "note"
-            ? "Plaud note"
+            ? "transcription note"
             : data.method === "ask"
-              ? "Ask Plaud"
+              ? "ask transcription"
               : "heuristic";
       const assigned = data.deliverable.filter((d) => d.assignedTo != null).length;
       toast({
         title: `${n} deliverable${n === 1 ? "" : "s"} created`,
         description: `Via ${via} · ${assigned} assigned · project #${data.projectId}`,
       });
+    },
+    onError: onErr,
+  });
+
+  const joinMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const r = await post(`/api/meeting/${id}/join`, {});
+      if (r.error) throw new Error(r.error);
+    },
+    onSuccess: () => {
+      invalidate();
+      toast({ title: "Joined meeting" });
+    },
+    onError: onErr,
+  });
+
+  const leaveMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const r = await del(`/api/meeting/${id}/join`);
+      if (r.error) throw new Error(r.error);
+    },
+    onSuccess: () => {
+      invalidate();
+      toast({ title: "Left meeting" });
     },
     onError: onErr,
   });
@@ -236,9 +277,12 @@ export function useMeeting(projectId?: number | null) {
     proposeTask: proposeTaskMutation.mutateAsync,
     generateTask: (id: number, task?: ProposedTask[], method?: TaskMethod) =>
       generateTaskMutation.mutateAsync({ id, task, method }),
+    joinMeeting: joinMutation.mutateAsync,
+    leaveMeeting: leaveMutation.mutateAsync,
     isSaving: createMutation.isPending || updateMutation.isPending,
     isImporting: importMutation.isPending,
     isGeneratingTask: generateTaskMutation.isPending || proposeTaskMutation.isPending,
+    isJoining: joinMutation.isPending || leaveMutation.isPending,
   };
 }
 
@@ -284,12 +328,12 @@ export function usePlaudSync() {
       toast({
         title: data.importedCount
           ? `Imported ${data.importedCount} new recording${data.importedCount === 1 ? "" : "s"}`
-          : "Plaud folder is up to date",
+          : "Transcriptions folder is up to date",
         description: data.lastError ?? `${data.seenCount} ADVO file${data.seenCount === 1 ? "" : "s"} seen`,
       });
     },
     onError: (e: Error) =>
-      toast({ title: "Plaud sync failed", description: e.message, variant: "destructive" }),
+      toast({ title: "Transcription sync failed", description: e.message, variant: "destructive" }),
   });
 
   return {
