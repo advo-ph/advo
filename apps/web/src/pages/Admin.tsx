@@ -79,7 +79,7 @@ const Admin = () => {
   const sidebarWidth = isSidebarCollapsed ? 72 : 240;
 
   return (
-    <div className={`min-h-screen bg-background${theme === "light" ? " admin-light" : ""}`}>
+    <div className={`min-h-screen bg-background text-foreground${theme === "light" ? " admin-light" : ""}`}>
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="px-4 sm:px-6 h-16 flex items-center justify-between gap-3">

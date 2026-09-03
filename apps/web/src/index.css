@@ -61,6 +61,10 @@
 
   .admin-light {
     color-scheme: light;
+    /* The variables below only take effect for text that RESOLVES colour here. Body
+       set `color` once from the dark :root, and inherited text never re-reads it, so
+       the light console rendered its headings and stat values in near-white. */
+    color: hsl(222 18% 11%);
 
     --background: 0 0% 100%;
     --foreground: 222 18% 11%;      /* cool ink */
