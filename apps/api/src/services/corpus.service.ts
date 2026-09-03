@@ -435,31 +435,44 @@ export async function checkClaim(claim: string, limit = 10) {
     order by rank desc, f.confidence desc
     limit ${limit * 5}
   `);
-  let row: unknown = [];
+  const wanted = numberIn(q);
+  // Names in the claim — a client, a product, a person — read as capitalised words
+  // that are not sentence-initial stopwords. A wide result is kept to matches that
+  // name what the claim names, so "Felici pays ..." is answered by Felici's sources
+  // and not by whichever fact shares the word "month".
+  const name = [...q.matchAll(/\b([A-Z][\p{L}\p{N}-]{2,})\b/gu)]
+    .map((m) => m[1].toLowerCase())
+    .filter((w) => !["the", "our", "their", "this", "that", "each", "every", "does", "will"].includes(w));
+  const narrowByName = (list: Record<string, unknown>[]) => {
+    if (name.length === 0) return list;
+    const narrowed = list.filter((r) => {
+      const hay = `${r.claim ?? ""} ${r.quote ?? ""} ${r.title ?? ""}`.toLowerCase();
+      return name.some((n) => hay.includes(n));
+    });
+    return narrowed.length > 0 ? narrowed : list;
+  };
+  const carriesEvery = (r: Record<string, unknown>) => {
+    const have = numberIn(`${r.claim ?? ""} ${r.quote ?? ""}`);
+    return wanted.every((n) => have.includes(n));
+  };
+  let row: Record<string, unknown>[] = [];
   if (word.length > 0) {
-    row = await select(sql`plainto_tsquery('english', ${word.join(" ")})`);
-    if ((row as unknown[]).length === 0) {
-      const anyOf = word.map((w) => w.replace(/[^\p{L}\p{N}]/gu, "")).filter(Boolean).join(" | ");
-      row = await select(sql`to_tsquery('english', ${anyOf})`);
-      // The any-word fallback is wide. If the claim names something — a client, a
-      // product, a person — keep only matches that name it too, so "Felici pays ..."
-      // is answered by Felici's sources and not by whichever fact shares the word
-      // "month". Names are read as capitalised words that are not sentence-initial
-      // stopwords; a claim with no names keeps the wide result.
-      const name = [...q.matchAll(/\b([A-Z][\p{L}\p{N}-]{2,})\b/gu)]
-        .map((m) => m[1].toLowerCase())
-        .filter((w) => !["the", "our", "their", "this", "that", "each", "every", "does", "will"].includes(w));
-      if (name.length > 0) {
-        const narrowed = (row as Record<string, unknown>[]).filter((r) => {
-          const hay = `${r.claim ?? ""} ${r.quote ?? ""} ${r.title ?? ""}`.toLowerCase();
-          return name.some((n) => hay.includes(n));
-        });
-        if (narrowed.length > 0) row = narrowed;
-      }
+    const anyOf = word.map((w) => w.replace(/[^\p{L}\p{N}]/gu, "")).filter(Boolean).join(" | ");
+    row = (await select(sql`plainto_tsquery('english', ${word.join(" ")})`)) as unknown as Record<string, unknown>[];
+    if (row.length === 0) {
+      row = narrowByName((await select(sql`to_tsquery('english', ${anyOf})`)) as unknown as Record<string, unknown>[]);
+    } else if (wanted.length > 0 && !row.some(carriesEvery)) {
+      // Every word matched, but no match carries the claim's figure. The figure may sit
+      // in a fact that does not repeat the client's name ("The ₱200,000 total fee covers
+      // design and development"): look once more for any-word matches that carry it,
+      // and put them first, so a true claim is not called conflicting for the phrasing.
+      const rescue = narrowByName((await select(sql`to_tsquery('english', ${anyOf})`)) as unknown as Record<string, unknown>[])
+        .filter(carriesEvery)
+        .filter((r) => !row.some((x) => x.corpus_fact_id === r.corpus_fact_id));
+      row = [...rescue, ...row];
     }
   }
-  const wanted = numberIn(q);
-  const match: CheckMatch[] = (row as unknown as Record<string, unknown>[]).slice(0, limit).map((r) => {
+  const match: CheckMatch[] = row.slice(0, limit).map((r) => {
     const have = numberIn(`${r.claim ?? ""} ${r.quote ?? ""}`);
     return {
       corpusFactId: Number(r.corpus_fact_id),
