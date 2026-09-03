@@ -26,7 +26,7 @@ Cross-links:
 - **No real discount is recorded yet.** The three fields are empty on every prod project; the corpus holds the referral discounts (20% for a referred meeting, 50% for a signed referral) and FourlinQ's free first year as prose only. Which discounts ADVO actually gives, and to whom, is Mar's to say.
 - **One discount per text.** `discountTermIn()` types the first discount it finds; a note that grants two different discounts keeps the second as a fact only.
 - **A discount on a recurring fee** (a waived first year) is still a fact, not a row: `recurring_fee` has no discount fields.
-- **The admin Corpus screen has no delete button.** The route exists; the screen does not call it yet.
+- ~~**The admin Corpus screen has no delete button.**~~ Shipped: each source row has a trash button behind a confirm, and the check result shows the discount arithmetic when one explains it.
 - As before: no facts verified by a person; the prod admin password is the seed default.
 
 ---
