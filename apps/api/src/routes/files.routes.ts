@@ -24,16 +24,26 @@ const ALLOWED_TYPES = new Set([
   "image/heif",
   "image/avif",
   "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "video/mp4",
   "video/webm",
   "video/quicktime",
   "video/ogg",
+  // Audio — meeting recordings (mp3 / m4a). Browsers report these inconsistently
+  // so we accept all common variants.
+  "audio/mpeg",
+  "audio/mp3",
+  "audio/mp4",
+  "audio/m4a",
+  "audio/x-m4a",
 ]);
 
 const BUCKET_LIMITS: Record<string, number> = {
   avatars: 5 * 1024 * 1024, // 5MB
   portfolio: 100 * 1024 * 1024, // 100MB
   assets: 25 * 1024 * 1024, // 25MB
+  recordings: 500 * 1024 * 1024, // 500MB — long meeting recordings
 };
 
 files.post("/upload", requireAuth, async (c) => {

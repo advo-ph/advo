@@ -52,7 +52,10 @@ import {
   commissionShare,
   project,
   projectAccess,
+  projectRoleAssignment,
+  projectTierAssignment,
   teamMember,
+  user,
 } from "../db/schema.js";
 import { createLogger } from "../utils/logger.js";
 
@@ -60,13 +63,32 @@ const log = createLogger("commission");
 
 // ─── The role vocabulary ─────────────────────────────
 
-export const DEVELOPER_ROLE = ["main_developer", "assistant_developer"] as const;
-export const STAFF_ROLE = ["referral", "marketing", "accounting", "management"] as const;
+export const DEVELOPER_ROLE = [
+  "main_developer",
+  "assistant_developer",
+  "creatives_developer",
+] as const;
+export const STAFF_ROLE = ["lead_partnerships", "referral", "marketing", "accounting", "management"] as const;
 export const COMMISSION_ROLE = [...DEVELOPER_ROLE, ...STAFF_ROLE, "company"] as const;
 
 export type DeveloperRole = (typeof DEVELOPER_ROLE)[number];
 export type StaffRole = (typeof STAFF_ROLE)[number];
 export type CommissionRole = (typeof COMMISSION_ROLE)[number];
+
+// The four staff sub-pool roles that map to commission_plan columns.
+// "lead_partnerships" uses the referral_bps column (column rename avoided via app label only).
+// "referral" is kept valid for reading historical rows.
+export const STAFF_POOL_ROLES = ["lead_partnerships", "referral", "marketing", "accounting", "management"] as const;
+
+// Maps a project_role_assignment.project_role to the commission role that represents it.
+// Roles not present in this map are skipped — not every project role has a commission seat.
+export const PROJECT_ROLE_TO_COMMISSION_ROLE: Record<string, CommissionRole> = {
+  lead_developer: "main_developer",
+  assistant_developer: "assistant_developer",
+  creatives_developer: "creatives_developer",
+  referral: "referral",
+  project_manager: "management",
+};
 
 export const COMMISSION_STATUS = ["draft", "finalized", "void"] as const;
 export type CommissionStatus = (typeof COMMISSION_STATUS)[number];
@@ -75,15 +97,19 @@ export type CommissionStatus = (typeof COMMISSION_STATUS)[number];
  * Prince's numbers, as basis points. These are the DEFAULTS a new plan is seeded with —
  * they are copied into the plan row and read back from there forever after. Nothing in
  * the allocation path may read these constants; that is the whole point of storing them.
+ *
+ * Updated by Phase 8 / migration 030: 55/35/10 top split; 20/50/10/20 staff sub-split
+ * (Lead Partnerships 20%, Management 50%, Marketing 20%, Accounting 10%).
  */
 export const DEFAULT_BPS = {
-  developer: 6000,
-  staff: 2500,
-  company: 1500,
-  referral: 2800,
-  marketing: 2400,
-  accounting: 2400,
-  management: 2400,
+  developer: 5500,
+  staff: 3500,
+  company: 1000,
+  // "referral" column in DB is now displayed as "Lead Partnerships". Default updated.
+  referral: 2000,
+  marketing: 5000,
+  accounting: 1000,
+  management: 2000,
 } as const;
 
 // ─── THE ALLOCATOR ───────────────────────────────────
@@ -156,7 +182,7 @@ export type SplitDerived = {
   developerPoolCents: number;
   staffPoolCents: number;
   companyCents: number;
-  /** The staff quarter, already sub-split 28/24/24/24. */
+  /** The staff pool, sub-split by the plan's staff bps columns. */
   staffRolePoolCents: Record<StaffRole, number>;
   /** Cents belonging to a pool that has NOBODY in it. Must be 0 to finalize. */
   unallocatedCents: number;
@@ -184,16 +210,41 @@ const isDeveloperRole = (role: string): role is DeveloperRole =>
   (DEVELOPER_ROLE as readonly string[]).includes(role);
 
 /**
+ * Map a commission_share.role to the plan column that holds its staff pool BPS.
+ * "lead_partnerships" uses referral_bps (the DB column was not renamed).
+ * "referral" also maps to referral_bps for historical rows.
+ */
+function staffRoleBpsKey(role: string): keyof PlanRow | null {
+  switch (role) {
+    case "lead_partnerships":
+    case "referral":
+      return "referralBps";
+    case "marketing":
+      return "marketingBps";
+    case "accounting":
+      return "accountingBps";
+    case "management":
+      return "managementBps";
+    default:
+      return null;
+  }
+}
+
+/**
  * The whole split, computed from the plan snapshot plus the ledger. PURE — it touches no
  * database, which is exactly why the test can hammer it with awkward numbers.
  *
  * Three levels, each exact:
- *   basis      -> [developer pool, staff pool, company]        by the plan's top bps
- *   staff pool -> [referral, marketing, accounting, management] by the plan's staff bps
- *   each pool  -> its people                                    by contribution_bps
+ *   basis      -> [developer pool, staff pool, company]                    by the plan's top bps
+ *   staff pool -> [lead_partnerships/referral, marketing, accounting, management] by the plan's staff bps
+ *   each pool  -> its people                                               by contribution_bps
  *
  * A pool with no share rows keeps its cents as `unallocatedCents` rather than having them
  * absorbed anywhere. Nameless money is a blocker, not a rounding detail.
+ *
+ * Staff role mapping (Phase 8):
+ *   "lead_partnerships" is the new canonical name. "referral" is kept valid for historical rows.
+ *   Both map to the referral_bps column. For pool distribution they are treated as the same pool.
  */
 export function computeSplit(
   plan: PlanRow,
@@ -208,15 +259,17 @@ export function computeSplit(
     plan.companyBps,
   ]);
 
-  // Level 2 — the staff quarter's internal split.
+  // Level 2 — the staff pool's internal split.
   const staffPortion = allocate(staffPoolCents, [
     plan.referralBps,
     plan.marketingBps,
     plan.accountingBps,
     plan.managementBps,
   ]);
+  // "referral" key is kept for backward compatibility with the SplitDerived type.
   const staffRolePoolCents: Record<StaffRole, number> = {
-    referral: staffPortion[0],
+    lead_partnerships: staffPortion[0],
+    referral: staffPortion[0], // same pool, historical alias
     marketing: staffPortion[1],
     accounting: staffPortion[2],
     management: staffPortion[3],
@@ -238,19 +291,19 @@ export function computeSplit(
     row.forEach((r, index) => amountByShareId.set(r.commissionShareId, part[index]));
   };
 
-  // The developer 60% is ONE pool shared by the main and assistant developer, split by
-  // contribution — not two fixed sub-slices. Prince specified the headcount, not a ratio.
+  // Developer pool: main_developer, assistant_developer, creatives_developer all share ONE pool.
+  // Split by contribution — not fixed sub-slices.
   spread(
     developerPoolCents,
     share.filter((r) => isDeveloperRole(r.role)),
   );
 
-  for (const role of STAFF_ROLE) {
-    spread(
-      staffRolePoolCents[role],
-      share.filter((r) => r.role === role),
-    );
-  }
+  // Staff pools by named role. lead_partnerships and referral share the referral_bps pool.
+  const referralPool = share.filter((r) => r.role === "lead_partnerships" || r.role === "referral");
+  spread(staffRolePoolCents.referral, referralPool);
+  spread(staffRolePoolCents.marketing, share.filter((r) => r.role === "marketing"));
+  spread(staffRolePoolCents.accounting, share.filter((r) => r.role === "accounting"));
+  spread(staffRolePoolCents.management, share.filter((r) => r.role === "management"));
 
   const companyShare = share.filter((r) => r.role === "company");
   if (companyShare.length === 0) unallocatedCents += companyCents;
@@ -292,15 +345,12 @@ export function finalizeBlocker(
 
   if (plan.status === "finalized") blocker.push("This plan is already finalized.");
   if (plan.status === "void") blocker.push("This plan is void.");
-  if (plan.basisCents <= 0) blocker.push("The split basis is zero — there is nothing to split.");
+  if (plan.basisCents <= 0) blocker.push("The split basis is zero.");
   if (projectStatus !== null && projectStatus !== "shipped") {
-    // Prince: the contribution split is agreed ON PROJECT COMPLETION. Finalizing a split
-    // for a project still in development would freeze contributions nobody has finished
-    // making yet.
-    blocker.push("The project is not shipped — the split is agreed on project completion.");
+    blocker.push("The project is not shipped yet.");
   }
   if (!share.some((r) => r.role === "main_developer")) {
-    blocker.push("No main developer is assigned — every project has exactly one.");
+    blocker.push("No main developer assigned.");
   }
   if (!share.some((r) => r.role === "company")) {
     blocker.push("The company reserve row is missing.");
@@ -496,6 +546,64 @@ export async function createCommissionPlan(input: CreatePlanInput): Promise<Plan
       agreedAt: new Date(),
       note: "Company reserve — expenses and investment ROI payback.",
     });
+
+    // Draft auto-seed: pull active team members from the project's role assignments and
+    // mirror them into the commission ledger. Weights stay at 0 — contribution is mutually
+    // agreed by the people involved on project completion, never by the machine that created
+    // the plan. Same philosophy as seedFromProjectAccess (~line 715): suggest, don't decide.
+    //
+    // If there are no role assignments, the plan is born exactly as before (company row only).
+    // This block must never throw and break plan creation — errors here are logged, not
+    // propagated, so the plan lands cleanly even on a misconfigured project.
+    try {
+      const roleAssignments = await tx
+        .select({
+          teamMemberId: projectRoleAssignment.teamMemberId,
+          projectRole: projectRoleAssignment.projectRole,
+        })
+        .from(projectRoleAssignment)
+        .innerJoin(teamMember, eq(teamMember.teamMemberId, projectRoleAssignment.teamMemberId))
+        .where(
+          and(
+            eq(projectRoleAssignment.projectId, input.projectId),
+            eq(teamMember.isActive, true),
+          ),
+        );
+
+      // Single-slot roles: the DB partial unique index allows exactly one row per plan for
+      // main_developer and assistant_developer. Track which have already been filled so a
+      // second person mapped to the same single-slot role is skipped rather than colliding.
+      const SINGLE_SLOT_ROLES = new Set<CommissionRole>(["main_developer", "assistant_developer"]);
+      const filledSingleSlot = new Set<CommissionRole>();
+
+      // Deduplicate on (teamMemberId, mappedRole) so a person with the same project role
+      // twice (data anomaly) does not generate two identical share rows.
+      const inserted = new Set<string>();
+
+      for (const row of roleAssignments) {
+        const mappedRole = PROJECT_ROLE_TO_COMMISSION_ROLE[row.projectRole];
+        if (!mappedRole) continue; // project role has no commission seat — skip
+
+        if (SINGLE_SLOT_ROLES.has(mappedRole)) {
+          if (filledSingleSlot.has(mappedRole)) continue; // slot already taken — skip
+          filledSingleSlot.add(mappedRole);
+        }
+
+        const key = `${row.teamMemberId}:${mappedRole}`;
+        if (inserted.has(key)) continue; // exact duplicate in this loop — skip
+        inserted.add(key);
+
+        await tx.insert(commissionShare).values({
+          commissionPlanId: created.commissionPlanId,
+          teamMemberId: row.teamMemberId,
+          role: mappedRole,
+          contributionBps: 0,
+          note: "Auto-added from project roles — contribution still to be agreed.",
+        });
+      }
+    } catch (err) {
+      log.warn({ err, projectId: input.projectId }, "commission auto-seed from project roles failed — plan created with company row only");
+    }
 
     await tx.insert(activityLog).values({
       userId: input.userId,
@@ -847,6 +955,25 @@ export async function finalizeCommissionPlan(
  * is superseded by voiding nothing and drafting nothing — it stands. Correcting one is a
  * deliberate, separate act, not a button.
  */
+export async function deleteCommissionPlan(
+  commissionPlanId: number,
+  userId: number,
+): Promise<void> {
+  const plan = await planOr404(commissionPlanId);
+  assertDraft(plan);
+
+  await db().delete(commissionShare).where(eq(commissionShare.commissionPlanId, commissionPlanId));
+  await db().delete(commissionPlan).where(eq(commissionPlan.commissionPlanId, commissionPlanId));
+
+  await db().insert(activityLog).values({
+    userId,
+    action: "commission_plan_deleted",
+    entityType: "commission_plan",
+    entityId: commissionPlanId,
+    metadata: {},
+  });
+}
+
 export async function voidCommissionPlan(
   commissionPlanId: number,
   reason: string,
@@ -882,4 +1009,146 @@ export async function voidCommissionPlan(
   });
 
   return decorate(updated);
+}
+
+// ─── Tier assignment (Phase 8) ───────────────────────
+
+export const TIER_OPTIONS = [
+  {
+    tierLabel: "Tier 1 Contribution (5% Allocation): Routine and Assisted Execution. Routine manual labor, basic data population, and simple AI image generation. Low complexity, and normally needs oversight or later clean-up by the Senior Developer.",
+    allocationBps: 500,
+  },
+  {
+    tierLabel: "Tier 2 Contribution (10% Allocation): Independent High-Volume Asset Creation. Independent execution and high-volume generation of quality AI image assets. Output must be consistently high quality and client-ready, needing zero manual correction, quality checking, or Senior Developer help before it is used.",
+    allocationBps: 1000,
+  },
+  {
+    tierLabel: "Tier 3 Contribution (15% Allocation): Advanced Media and Public-Ready Execution. Successful generation and delivery of complex AI video assets. Must be premium, public-facing quality, ready for immediate client presentation or live deployment with no further edits.",
+    allocationBps: 1500,
+  },
+] as const;
+
+/**
+ * Upsert a tier pick for an assistant_developer or creatives_developer share row.
+ * Replaces any existing tier assignment for that share.
+ */
+export async function upsertTierAssignment(
+  commissionShareId: number,
+  tierLabel: string,
+): Promise<{ tierAssignmentId: number; tierLabel: string; allocationBps: number }> {
+  const option = TIER_OPTIONS.find((t) => t.tierLabel === tierLabel);
+  if (!option) {
+    throw new HTTPException(400, { message: "Invalid tier label. Must be one of the three defined tiers." });
+  }
+
+  const [share] = await db()
+    .select()
+    .from(commissionShare)
+    .where(eq(commissionShare.commissionShareId, commissionShareId))
+    .limit(1);
+  if (!share) throw new HTTPException(404, { message: "Commission share not found" });
+
+  if (share.role !== "assistant_developer" && share.role !== "creatives_developer") {
+    throw new HTTPException(400, {
+      message: "Tier assignment only applies to assistant_developer and creatives_developer roles.",
+    });
+  }
+
+  const plan = await planOr404(share.commissionPlanId);
+  assertDraft(plan);
+
+  // Delete existing then insert (upsert via delete+insert to handle ON CONFLICT edge cases).
+  await db()
+    .delete(projectTierAssignment)
+    .where(eq(projectTierAssignment.commissionShareId, commissionShareId));
+
+  const [created] = await db()
+    .insert(projectTierAssignment)
+    .values({
+      commissionShareId,
+      tierLabel: option.tierLabel,
+      allocationBps: option.allocationBps,
+    })
+    .returning();
+
+  return {
+    tierAssignmentId: created.tierAssignmentId,
+    tierLabel: created.tierLabel,
+    allocationBps: created.allocationBps,
+  };
+}
+
+// ─── Visibility redaction (Phase 8) ─────────────────
+
+/**
+ * Redact commission share rows so the API never sends figures the caller
+ * is not permitted to see.
+ *
+ * Rules (enforced server-side — the UI matches):
+ *   - Owner (isOwner true) or admin role: sees everything.
+ *   - Team member assigned to this project:
+ *       * Always sees: name, role.
+ *       * Sees amounts + agreed status ONLY for rows whose role matches their own role on this project.
+ *   - Not on the project: sees names and roles only. No amount, no agreed status.
+ */
+export function redactShares(
+  shares: ShareComputed[],
+  callerRole: string | null,
+  isOwnerOrAdmin: boolean,
+): ShareComputed[] {
+  if (isOwnerOrAdmin) return shares;
+
+  return shares.map((s) => {
+    const canSee = callerRole !== null && s.role === callerRole;
+    if (canSee) return s;
+    return {
+      ...s,
+      computedAmountCents: 0,
+      amountCents: null,
+      contributionBps: 0,
+      isAgreed: false,
+      agreedAt: null,
+    };
+  });
+}
+
+/**
+ * Look up the project_role_assignment role for a given user on a given project.
+ * Returns null when the user has no team_member record or no assignment.
+ */
+export async function getCallerProjectRole(
+  userId: number,
+  projectId: number,
+): Promise<string | null> {
+  const [tm] = await db()
+    .select({ teamMemberId: teamMember.teamMemberId })
+    .from(teamMember)
+    .where(eq(teamMember.userId, userId))
+    .limit(1);
+  if (!tm) return null;
+
+  const [assignment] = await db()
+    .select({ projectRole: projectRoleAssignment.projectRole })
+    .from(projectRoleAssignment)
+    .where(
+      and(
+        eq(projectRoleAssignment.projectId, projectId),
+        eq(projectRoleAssignment.teamMemberId, tm.teamMemberId),
+      ),
+    )
+    .limit(1);
+
+  return assignment?.projectRole ?? null;
+}
+
+/**
+ * Look up whether a user is the owner (is_owner column).
+ */
+export async function getIsOwner(userId: number): Promise<boolean> {
+  const [u] = await db()
+    .select({ isOwner: user.isOwner })
+    .from(user)
+    .where(eq(user.userId, userId))
+    .limit(1);
+  return u?.isOwner ?? false;
 }

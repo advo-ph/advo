@@ -1,14 +1,15 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { eq, and, gte, lte, or, isNull, isNotNull, between } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { db } from "../db/connection.js";
-import { calendarEvent, contract, deliverable, invoice, project, socialPost } from "../db/schema.js";
+import { calendarEvent, contract, deliverable, invoice, meeting, project, socialPost } from "../db/schema.js";
 import { COMPLIANCE_DEADLINES } from "../data/compliance-deadlines.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireTeam } from "../middleware/rbac.js";
 import type { Variables } from "../types/context.js";
+import { zodMessageHook } from "../utils/validators.js";
 
 const calendar = new Hono<{ Variables: Variables }>();
 calendar.use("*", requireAuth);
@@ -39,7 +40,7 @@ const AGENCY_TAG: Record<string, string> = {
 // Unified event shape returned to the client. Derived events are read-only.
 interface CalEvent {
   id: string;
-  source: "manual" | "deliverable" | "invoice" | "project" | "social" | "contract" | "compliance";
+  source: "manual" | "deliverable" | "invoice" | "project" | "social" | "contract" | "compliance" | "meeting";
   category: string;
   title: string;
   start: string; // ISO
@@ -57,19 +58,44 @@ const rangeSchema = z.object({
   to: z.string().datetime().optional(),
 });
 
+/**
+ * Widest window this endpoint will answer for. The compliance layer generates rows per
+ * year in range with no table behind it, so an unbounded `to` is a request to synthesise
+ * events until the process runs out of memory. Five years covers every real view (the
+ * month grid asks for six weeks) and makes the pathological one a 400.
+ */
+const MAX_RANGE_MS = 5 * 366 * 24 * 60 * 60 * 1000;
+
 // GET /api/calendar?from=&to=  →  manual events UNION derived (team-only)
-calendar.get("/", requireTeam, zValidator("query", rangeSchema), async (c) => {
+calendar.get("/", requireTeam, zValidator("query", rangeSchema, zodMessageHook), async (c) => {
   const { from, to } = c.req.valid("query");
   const now = new Date();
   const start = from ? new Date(from) : new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const end = to ? new Date(to) : new Date(now.getFullYear(), now.getMonth() + 2, 0);
+
+  if (end < start) {
+    throw new HTTPException(400, { message: "`to` must be on or after `from`" });
+  }
+  if (end.getTime() - start.getTime() > MAX_RANGE_MS) {
+    throw new HTTPException(400, { message: "Date range too wide (max 5 years)" });
+  }
   const d = db();
 
-  const [manual, delivs, invs, projs, socials, contractRows] = await Promise.all([
+  const [manual, delivs, invs, projs, socials, contractRows, meetingRows] = await Promise.all([
+    // An event OVERLAPS the window; it does not merely start inside it. Windowing on
+    // starts_at alone dropped a multi-day event that began before the visible month,
+    // even though it ran through the middle of it.
     d
       .select()
       .from(calendarEvent)
-      .where(and(gte(calendarEvent.startsAt, start), lte(calendarEvent.startsAt, end))),
+      .where(
+        and(
+          lte(calendarEvent.startsAt, end),
+          or(isNull(calendarEvent.endsAt), gte(calendarEvent.endsAt, start)),
+          // An event with no end is a point in time, so it must start inside the window.
+          or(gte(calendarEvent.startsAt, start), gte(calendarEvent.endsAt, start)),
+        ),
+      ),
     d
       .select({
         id: deliverable.deliverableId,
@@ -91,13 +117,19 @@ calendar.get("/", requireTeam, zValidator("query", rangeSchema), async (c) => {
         projectTitle: project.title,
       })
       .from(invoice)
-      .innerJoin(project, eq(invoice.projectId, project.projectId)),
+      .innerJoin(project, eq(invoice.projectId, project.projectId))
+      // Two dates per row, either of which can land in the window. Filtered in SQL now;
+      // this used to read the whole invoice table and narrow it in JS.
+      .where(
+        or(
+          between(invoice.dueDate, start, end),
+          between(invoice.paidAt, start, end),
+        ),
+      ),
     d
       .select({ id: project.projectId, title: project.title, createdAt: project.createdAt })
       .from(project)
       .where(and(gte(project.createdAt, start), lte(project.createdAt, end))),
-    // Social posts carry no FK to a range, so filter scheduled/published in JS
-    // below (mirrors the invoice due/paid pattern) rather than a SQL window.
     d
       .select({
         id: socialPost.socialPostId,
@@ -105,8 +137,14 @@ calendar.get("/", requireTeam, zValidator("query", rangeSchema), async (c) => {
         scheduledFor: socialPost.scheduledFor,
         publishedAt: socialPost.publishedAt,
       })
-      .from(socialPost),
-    // Contracts: surface signed + expiry dates (filtered in JS, like invoices).
+      .from(socialPost)
+      .where(
+        or(
+          between(socialPost.scheduledFor, start, end),
+          between(socialPost.publishedAt, start, end),
+        ),
+      ),
+    // Contracts: surface signed + expiry dates.
     d
       .select({
         id: contract.contractId,
@@ -115,7 +153,31 @@ calendar.get("/", requireTeam, zValidator("query", rangeSchema), async (c) => {
         expiresAt: contract.expiresAt,
         projectId: contract.projectId,
       })
-      .from(contract),
+      .from(contract)
+      .where(
+        or(
+          between(contract.signedAt, start, end),
+          between(contract.expiresAt, start, end),
+        ),
+      ),
+    // Scheduled meetings — only those with starts_at set, overlapping the window.
+    d
+      .select({
+        id: meeting.meetingId,
+        title: meeting.title,
+        startsAt: meeting.startsAt,
+        endsAt: meeting.endsAt,
+        projectId: meeting.projectId,
+        location: meeting.location,
+      })
+      .from(meeting)
+      .where(
+        and(
+          isNotNull(meeting.startsAt),
+          lte(meeting.startsAt, end),
+          or(isNull(meeting.endsAt), gte(meeting.endsAt, start)),
+        ),
+      ),
   ]);
 
   const events: CalEvent[] = [];
@@ -278,6 +340,25 @@ calendar.get("/", requireTeam, zValidator("query", rangeSchema), async (c) => {
     }
   }
 
+  // Scheduled meetings — derived, read-only. Managed from the meetings tab.
+  for (const mt of meetingRows) {
+    if (!mt.startsAt) continue;
+    events.push({
+      id: `meeting-${mt.id}`,
+      source: "meeting",
+      category: "scheduled_meeting",
+      title: mt.title,
+      start: mt.startsAt.toISOString(),
+      end: mt.endsAt ? mt.endsAt.toISOString() : null,
+      allDay: false,
+      projectId: mt.projectId ?? null,
+      projectTitle: null,
+      editable: false,
+      location: mt.location ?? null,
+      description: null,
+    });
+  }
+
   // Compliance deadlines (BIR/SSS/PhilHealth/Pag-IBIG/DOLE) — generated per year
   // in range from COMPLIANCE_DEADLINES (no DB rows). Statutory dates only; not
   // adjusted for weekends/holidays.
@@ -321,7 +402,7 @@ calendar.get("/", requireTeam, zValidator("query", rangeSchema), async (c) => {
   return c.json({ data: events, error: null });
 });
 
-const createSchema = z.object({
+const eventShape = {
   title: z.string().min(1).max(255),
   category: z.enum(MANUAL_CATEGORIES).default("event"),
   description: z.string().max(5000).nullable().optional(),
@@ -330,9 +411,20 @@ const createSchema = z.object({
   endsAt: z.string().datetime().nullable().optional(),
   isAllDay: z.boolean().default(false),
   projectId: z.number().int().nullable().optional(),
+};
+
+/** An event that ends before it starts is a typo, and used to save without complaint. */
+const ORDER_MESSAGE = "End time must be after the start time.";
+const isOutOfOrder = (startsAt?: string | null, endsAt?: string | null) =>
+  Boolean(startsAt && endsAt && new Date(endsAt) <= new Date(startsAt));
+
+const createSchema = z.object(eventShape).superRefine((v, ctx) => {
+  if (isOutOfOrder(v.startsAt, v.endsAt)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: ORDER_MESSAGE, path: ["endsAt"] });
+  }
 });
 
-calendar.post("/", requireTeam, zValidator("json", createSchema), async (c) => {
+calendar.post("/", requireTeam, zValidator("json", createSchema, zodMessageHook), async (c) => {
   const data = c.req.valid("json");
   const [created] = await db()
     .insert(calendarEvent)
@@ -350,11 +442,31 @@ calendar.post("/", requireTeam, zValidator("json", createSchema), async (c) => {
   return c.json({ data: created, error: null }, 201);
 });
 
-const updateSchema = createSchema.partial();
+const updateSchema = z.object(eventShape).partial();
 
-calendar.patch("/:id", requireTeam, zValidator("json", updateSchema), async (c) => {
+calendar.patch("/:id", requireTeam, zValidator("json", updateSchema, zodMessageHook), async (c) => {
   const id = Number(c.req.param("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new HTTPException(400, { message: "Invalid event id" });
+  }
   const data = c.req.valid("json");
+
+  // A partial patch cannot be ordered in isolation: sending only endsAt against a stored
+  // startsAt needs the stored value to be checkable. So merge, then check.
+  const [existing] = await db()
+    .select({ startsAt: calendarEvent.startsAt, endsAt: calendarEvent.endsAt })
+    .from(calendarEvent)
+    .where(eq(calendarEvent.calendarEventId, id))
+    .limit(1);
+  if (!existing) throw new HTTPException(404, { message: "Event not found" });
+
+  const mergedStart = data.startsAt ?? existing.startsAt.toISOString();
+  const mergedEnd =
+    data.endsAt !== undefined ? data.endsAt : (existing.endsAt?.toISOString() ?? null);
+  if (isOutOfOrder(mergedStart, mergedEnd)) {
+    throw new HTTPException(400, { message: ORDER_MESSAGE });
+  }
+
   const values: Record<string, unknown> = { updatedAt: new Date() };
   if (data.title !== undefined) values.title = data.title;
   if (data.category !== undefined) values.category = data.category;
@@ -376,6 +488,9 @@ calendar.patch("/:id", requireTeam, zValidator("json", updateSchema), async (c) 
 
 calendar.delete("/:id", requireTeam, async (c) => {
   const id = Number(c.req.param("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new HTTPException(400, { message: "Invalid event id" });
+  }
   const [deleted] = await db()
     .delete(calendarEvent)
     .where(eq(calendarEvent.calendarEventId, id))

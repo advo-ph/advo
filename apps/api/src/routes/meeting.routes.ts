@@ -1,12 +1,13 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, inArray } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { db } from "../db/connection.js";
-import { meeting, project, client, deliverable, teamMember } from "../db/schema.js";
+import { meeting, meetingAttendee, meetingRecording, backgroundJob, project, client, deliverable, teamMember, user } from "../db/schema.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireTeam } from "../middleware/rbac.js";
+import { requireAdmin } from "../middleware/rbac.js";
 import {
   formatTaskDescription,
   generateTaskFromMeeting,
@@ -66,15 +67,46 @@ meetingRoutes.use("*", requireAuth);
 // Team: full CRUD. Client: GET list scoped to own projects
 // (project → client.user_id). Optional ?projectId= filter.
 
-const createSchema = z.object({
-  projectId: z.number().int(),
+const ORDER_MESSAGE = "End must be after start.";
+const isOutOfOrder = (a?: string | null, b?: string | null) =>
+  Boolean(a && b && new Date(b) <= new Date(a));
+
+// Base shape — used for both create (with superRefine) and partial update.
+const meetingBaseShape = z.object({
+  projectId: z.number().int().optional().nullable(),
   title: z.string().min(1).max(255),
-  recordedAt: z.string().datetime(),
-  transcript: z.string().min(1).max(500_000),
+  // recordedAt kept optional for backward compat; old clients still send it.
+  recordedAt: z.string().datetime().optional(),
+  startsAt: z.string().datetime().optional().nullable(),
+  endsAt: z.string().datetime().optional().nullable(),
+  transcript: z.string().max(500_000).optional().default(""),
   summary: z.string().max(200_000).nullable().optional(),
+  location: z.string().max(255).nullable().optional(),
+  description: z.string().max(10_000).nullable().optional(),
   plaudShareKey: z.string().max(500).nullable().optional(),
   plaudFileId: z.string().max(64).nullable().optional(),
   isVisibleClient: z.boolean().optional(),
+});
+
+// updateSchema is a plain partial — no superRefine cross-field checks on partial patches.
+const updateSchema = meetingBaseShape.partial();
+
+// createSchema requires at least one date field.
+const createSchema = meetingBaseShape.superRefine((v, ctx) => {
+  if (!v.recordedAt && !v.startsAt) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Provide a date or scheduled time.",
+      path: ["startsAt"],
+    });
+  }
+  if (isOutOfOrder(v.startsAt, v.endsAt)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: ORDER_MESSAGE,
+      path: ["endsAt"],
+    });
+  }
 });
 
 const importSchema = z.object({
@@ -82,8 +114,6 @@ const importSchema = z.object({
   fileId: z.string().min(1).max(128).optional(),
   shareUrl: z.string().min(1).max(2000).optional(),
 });
-
-const updateSchema = createSchema.partial();
 
 const proposedTaskSchema = z.object({
   title: z.string().min(3).max(255),
@@ -151,8 +181,62 @@ function asProposed(raw: z.infer<typeof proposedTaskSchema>, grounding: MeetingG
   };
 }
 
+// Attendee row shape used in the list response.
+interface AttendeeRow {
+  userId: number;
+  name: string;
+  avatarUrl: string | null;
+  joinedAt: string;
+}
+
+/** Sort meetings: upcoming (startsAt in future) soonest-first, then past newest-first. */
+function sortMeetings<T extends { startsAt: Date | null; recordedAt: Date }>(rows: T[]): T[] {
+  const now = Date.now();
+  const keyOf = (r: T) =>
+    r.startsAt ? r.startsAt.getTime() : r.recordedAt.getTime();
+  const isUpcoming = (r: T) => r.startsAt != null && r.startsAt.getTime() > now;
+  return [...rows].sort((a, b) => {
+    const aUp = isUpcoming(a);
+    const bUp = isUpcoming(b);
+    if (aUp && !bUp) return -1;
+    if (!aUp && bUp) return 1;
+    if (aUp && bUp) return keyOf(a) - keyOf(b); // upcoming: soonest first
+    return keyOf(b) - keyOf(a);                  // past: newest first
+  });
+}
+
+/** Fetch attendees for a list of meeting IDs in one query; group by meetingId. */
+async function fetchAttendeeMap(ids: number[]): Promise<Map<number, AttendeeRow[]>> {
+  const map = new Map<number, AttendeeRow[]>();
+  if (ids.length === 0) return map;
+  const d = db();
+  const atts = await d
+    .select({
+      meetingId: meetingAttendee.meetingId,
+      userId: meetingAttendee.userId,
+      joinedAt: meetingAttendee.joinedAt,
+      name: teamMember.name,
+      avatarUrl: teamMember.avatarUrl,
+      email: user.email,
+    })
+    .from(meetingAttendee)
+    .innerJoin(user, eq(meetingAttendee.userId, user.userId))
+    .leftJoin(teamMember, eq(teamMember.userId, user.userId))
+    .where(inArray(meetingAttendee.meetingId, ids));
+  for (const a of atts) {
+    if (!map.has(a.meetingId)) map.set(a.meetingId, []);
+    map.get(a.meetingId)!.push({
+      userId: a.userId,
+      name: a.name ?? a.email ?? `User #${a.userId}`,
+      avatarUrl: a.avatarUrl ?? null,
+      joinedAt: a.joinedAt.toISOString(),
+    });
+  }
+  return map;
+}
+
 meetingRoutes.get("/", async (c) => {
-  const user = c.get("user");
+  const currentUser = c.get("user");
   const d = db();
   const projectIdParam = c.req.query("projectId");
   const projectIdFilter = projectIdParam ? Number(projectIdParam) : null;
@@ -160,22 +244,27 @@ meetingRoutes.get("/", async (c) => {
     throw new HTTPException(400, { message: "Invalid projectId" });
   }
 
-  if (user.role === "client") {
+  if (currentUser.role === "client") {
+    // Client path: inner join restricts to meetings with a project that belongs to this client.
     const condition = [
-      eq(client.userId, user.userId),
+      eq(client.userId, currentUser.userId),
       eq(meeting.isVisibleClient, true),
     ];
     if (projectIdFilter != null) {
       condition.push(eq(meeting.projectId, projectIdFilter));
     }
-    const row = await d
+    const rows = await d
       .select({
         meetingId: meeting.meetingId,
         projectId: meeting.projectId,
         title: meeting.title,
         recordedAt: meeting.recordedAt,
+        startsAt: meeting.startsAt,
+        endsAt: meeting.endsAt,
         transcript: meeting.transcript,
         summary: meeting.summary,
+        location: meeting.location,
+        description: meeting.description,
         plaudFileId: meeting.plaudFileId,
         plaudShareKey: meeting.plaudShareKey,
         isVisibleClient: meeting.isVisibleClient,
@@ -186,23 +275,29 @@ meetingRoutes.get("/", async (c) => {
       .from(meeting)
       .innerJoin(project, eq(meeting.projectId, project.projectId))
       .innerJoin(client, eq(project.clientId, client.clientId))
-      .where(and(...condition))
-      .orderBy(desc(meeting.recordedAt));
-    return c.json({ data: row, error: null });
+      .where(and(...condition));
+    const sorted = sortMeetings(rows);
+    const attendeeMap = await fetchAttendeeMap(sorted.map((r) => r.meetingId));
+    return c.json({
+      data: sorted.map((r) => ({ ...r, attendees: attendeeMap.get(r.meetingId) ?? [] })),
+      error: null,
+    });
   }
 
   // team + admin
+  let rows: (typeof meeting.$inferSelect)[];
   if (projectIdFilter != null) {
-    const row = await d
-      .select()
-      .from(meeting)
-      .where(eq(meeting.projectId, projectIdFilter))
-      .orderBy(desc(meeting.recordedAt));
-    return c.json({ data: row, error: null });
+    rows = await d.select().from(meeting).where(eq(meeting.projectId, projectIdFilter));
+  } else {
+    rows = await d.select().from(meeting);
   }
 
-  const row = await d.select().from(meeting).orderBy(desc(meeting.recordedAt));
-  return c.json({ data: row, error: null });
+  const sorted = sortMeetings(rows);
+  const attendeeMap = await fetchAttendeeMap(sorted.map((r) => r.meetingId));
+  return c.json({
+    data: sorted.map((r) => ({ ...r, attendees: attendeeMap.get(r.meetingId) ?? [] })),
+    error: null,
+  });
 });
 
 // List Plaud recordings. query=advo resolves the ADVO filetag, then
@@ -253,30 +348,81 @@ meetingRoutes.post("/import", requireTeam, zValidator("json", importSchema), asy
 
 meetingRoutes.post("/", requireTeam, zValidator("json", createSchema), async (c) => {
   const data = c.req.valid("json");
-  const user = c.get("user");
+  const currentUser = c.get("user");
 
-  const [proj] = await db()
-    .select({ projectId: project.projectId })
-    .from(project)
-    .where(eq(project.projectId, data.projectId))
-    .limit(1);
-  if (!proj) throw new HTTPException(400, { message: "Project not found" });
+  // Only verify project exists when one was provided.
+  if (data.projectId != null) {
+    const [proj] = await db()
+      .select({ projectId: project.projectId })
+      .from(project)
+      .where(eq(project.projectId, data.projectId))
+      .limit(1);
+    if (!proj) throw new HTTPException(400, { message: "Project not found" });
+  }
+
+  // recordedAt is used for list ordering. Fall back to startsAt, then now.
+  const recordedAt = data.recordedAt
+    ? new Date(data.recordedAt)
+    : data.startsAt
+      ? new Date(data.startsAt)
+      : new Date();
 
   const [created] = await db()
     .insert(meeting)
     .values({
-      projectId: data.projectId,
+      projectId: data.projectId ?? null,
       title: data.title,
-      recordedAt: new Date(data.recordedAt),
-      transcript: data.transcript,
+      recordedAt,
+      startsAt: data.startsAt ? new Date(data.startsAt) : null,
+      endsAt: data.endsAt ? new Date(data.endsAt) : null,
+      transcript: data.transcript ?? "",
       summary: data.summary ?? null,
+      location: data.location ?? null,
+      description: data.description ?? null,
       plaudFileId: data.plaudFileId ?? null,
       plaudShareKey: data.plaudShareKey ?? null,
       isVisibleClient: data.isVisibleClient ?? false,
-      createdBy: user.userId,
+      createdBy: currentUser.userId,
     })
     .returning();
   return c.json({ data: created, error: null }, 201);
+});
+
+// ─── Self-serve attendance ────────────────────────────
+// /:id/join must be registered BEFORE /:id so Hono does not route "join"
+// as a meeting id. requireAuth allows any logged-in user (not just team).
+
+meetingRoutes.post("/:id/join", requireAuth, async (c) => {
+  const id = Number(c.req.param("id"));
+  if (Number.isNaN(id)) throw new HTTPException(400, { message: "Invalid meeting id" });
+  const currentUser = c.get("user");
+
+  // Confirm meeting exists.
+  const [row] = await db()
+    .select({ meetingId: meeting.meetingId })
+    .from(meeting)
+    .where(eq(meeting.meetingId, id))
+    .limit(1);
+  if (!row) throw new HTTPException(404, { message: "Meeting not found" });
+
+  await db()
+    .insert(meetingAttendee)
+    .values({ meetingId: id, userId: currentUser.userId })
+    .onConflictDoNothing();
+
+  return c.json({ data: { meetingId: id, userId: currentUser.userId }, error: null }, 201);
+});
+
+meetingRoutes.delete("/:id/join", requireAuth, async (c) => {
+  const id = Number(c.req.param("id"));
+  if (Number.isNaN(id)) throw new HTTPException(400, { message: "Invalid meeting id" });
+  const currentUser = c.get("user");
+
+  await db()
+    .delete(meetingAttendee)
+    .where(and(eq(meetingAttendee.meetingId, id), eq(meetingAttendee.userId, currentUser.userId)));
+
+  return c.json({ data: { message: "Left meeting" }, error: null });
 });
 
 meetingRoutes.patch("/:id", requireTeam, zValidator("json", updateSchema), async (c) => {
@@ -284,7 +430,8 @@ meetingRoutes.patch("/:id", requireTeam, zValidator("json", updateSchema), async
   if (Number.isNaN(id)) throw new HTTPException(400, { message: "Invalid meeting id" });
   const data = c.req.valid("json");
 
-  if (data.projectId !== undefined) {
+  // Only verify project when one is explicitly being set (not when clearing to null).
+  if (data.projectId != null) {
     const [proj] = await db()
       .select({ projectId: project.projectId })
       .from(project)
@@ -294,11 +441,15 @@ meetingRoutes.patch("/:id", requireTeam, zValidator("json", updateSchema), async
   }
 
   const values: Record<string, unknown> = { updatedAt: new Date() };
-  if (data.projectId !== undefined) values.projectId = data.projectId;
+  if (data.projectId !== undefined) values.projectId = data.projectId ?? null;
   if (data.title !== undefined) values.title = data.title;
   if (data.recordedAt !== undefined) values.recordedAt = new Date(data.recordedAt);
+  if (data.startsAt !== undefined) values.startsAt = data.startsAt ? new Date(data.startsAt) : null;
+  if (data.endsAt !== undefined) values.endsAt = data.endsAt ? new Date(data.endsAt) : null;
   if (data.transcript !== undefined) values.transcript = data.transcript;
   if (data.summary !== undefined) values.summary = data.summary ?? null;
+  if (data.location !== undefined) values.location = data.location ?? null;
+  if (data.description !== undefined) values.description = data.description ?? null;
   if (data.plaudFileId !== undefined) values.plaudFileId = data.plaudFileId ?? null;
   if (data.plaudShareKey !== undefined) values.plaudShareKey = data.plaudShareKey ?? null;
   if (data.isVisibleClient !== undefined) values.isVisibleClient = data.isVisibleClient;
@@ -349,6 +500,9 @@ meetingRoutes.post("/:id/propose-task", requireTeam, async (c) => {
 
   const row = await loadMeetingForTask(id);
   if (!row) throw new HTTPException(404, { message: "Meeting not found" });
+  if (!row.projectId) {
+    throw new HTTPException(400, { message: "Assign a project before generating tasks." });
+  }
 
   const transcript = (row.transcript ?? "").trim();
   const summary = (row.summary ?? "").trim();
@@ -388,20 +542,52 @@ meetingRoutes.post("/:id/generate-task", requireTeam, async (c) => {
 
   const row = await loadMeetingForTask(id);
   if (!row) throw new HTTPException(404, { message: "Meeting not found" });
+  if (!row.projectId) {
+    throw new HTTPException(400, { message: "Assign a project before generating tasks." });
+  }
 
   const grounding = await loadGrounding(row.projectId);
 
+  /**
+   * Two very different failures used to land in the same `catch`: "there was no
+   * body" (fine, the caller wants us to generate) and "there was a body and it
+   * did not validate" (absolutely not fine). Collapsing them meant a user who
+   * edited the proposed task list and pressed Confirm could get heuristically
+   * regenerated tasks written to their project INSTEAD of the ones they wrote,
+   * answered 201, with nothing anywhere saying a substitution had happened.
+   * A write that silently does something other than what was asked.
+   *
+   * They are now separate. An empty body still means "generate for me". A body
+   * that is present but unreadable is a 400 and writes nothing.
+   */
   let confirmed: ProposedTask[] | null = null;
   let methodFromBody: "heuristic" | "ai" | "note" | "ask" | undefined;
-  try {
-    const raw = await c.req.json();
-    const parsed = generateSchema.parse(raw ?? {});
-    if (parsed.task?.length) {
-      confirmed = parsed.task.map((t) => asProposed(t, grounding));
-      methodFromBody = parsed.method;
+
+  const rawBody = await c.req.text().catch(() => "");
+  if (rawBody.trim().length > 0) {
+    let parsedJson: unknown;
+    try {
+      parsedJson = JSON.parse(rawBody);
+    } catch {
+      throw new HTTPException(400, {
+        message:
+          "The task list could not be read, so nothing was saved. Reload the meeting and confirm the tasks again.",
+      });
     }
-  } catch {
-    confirmed = null;
+
+    const parsed = generateSchema.safeParse(parsedJson ?? {});
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const where = issue?.path.length ? `${issue.path.join(".")}: ` : "";
+      throw new HTTPException(400, {
+        message: `The task list was rejected, so nothing was saved. ${where}${issue?.message ?? "Invalid task list."}`,
+      });
+    }
+
+    if (parsed.data.task?.length) {
+      confirmed = parsed.data.task.map((t) => asProposed(t, grounding));
+      methodFromBody = parsed.data.method;
+    }
   }
 
   let method: "heuristic" | "ai" | "note" | "ask" = methodFromBody ?? "heuristic";
@@ -430,11 +616,12 @@ meetingRoutes.post("/:id/generate-task", requireTeam, async (c) => {
     });
   }
 
+  // row.projectId is guaranteed non-null here (checked above).
   const values = extracted.map((t) => ({
-    projectId: t.projectId ?? row.projectId,
+    projectId: (t.projectId ?? row.projectId)!,
     title: t.title,
     description: formatTaskDescription(t),
-    status: "not_started" as const,
+    status: "todo" as const,
     priority: 0,
     assignedTo: t.assignedTo,
   }));
@@ -454,6 +641,123 @@ meetingRoutes.post("/:id/generate-task", requireTeam, async (c) => {
     },
     201
   );
+});
+
+// ─── Meeting Recordings ──────────────────────────────
+// Upload an audio file and store a row. Transcription is a separate request.
+
+const recordingCreateSchema = z.object({
+  meetingId: z.number().int().optional(),
+  fileUrl: z.string().url(),
+  fileName: z.string().min(1).max(500),
+  mimeType: z.string().min(1).max(100),
+});
+
+// POST /api/meeting/recordings — create a recording row
+meetingRoutes.post(
+  "/recordings",
+  requireTeam,
+  zValidator("json", recordingCreateSchema),
+  async (c) => {
+    const data = c.req.valid("json");
+
+    const [created] = await db()
+      .insert(meetingRecording)
+      .values({
+        meetingId: data.meetingId ?? null,
+        fileUrl: data.fileUrl,
+        fileName: data.fileName,
+        mimeType: data.mimeType,
+      })
+      .returning();
+
+    return c.json({ data: created, error: null }, 201);
+  },
+);
+
+// GET /api/meeting/recordings?meetingId= — list recordings for a meeting
+meetingRoutes.get("/recordings", requireTeam, async (c) => {
+  const meetingIdParam = c.req.query("meetingId");
+  if (!meetingIdParam) {
+    throw new HTTPException(400, { message: "meetingId query param is required" });
+  }
+  const meetingId = Number(meetingIdParam);
+  if (Number.isNaN(meetingId)) {
+    throw new HTTPException(400, { message: "Invalid meetingId" });
+  }
+
+  const rows = await db()
+    .select()
+    .from(meetingRecording)
+    .where(eq(meetingRecording.meetingId, meetingId))
+    .orderBy(desc(meetingRecording.createdAt));
+
+  return c.json({ data: rows, error: null });
+});
+
+// POST /api/meeting/recordings/:id/transcribe — create a transcription background job
+meetingRoutes.post("/recordings/:id/transcribe", requireAdmin, async (c) => {
+  const id = Number(c.req.param("id"));
+  if (Number.isNaN(id)) throw new HTTPException(400, { message: "Invalid recording id" });
+
+  const user = c.get("user");
+  const d = db();
+
+  const [rec] = await d
+    .select()
+    .from(meetingRecording)
+    .where(eq(meetingRecording.recordingId, id))
+    .limit(1);
+
+  if (!rec) throw new HTTPException(404, { message: "Recording not found" });
+
+  // Check there isn't already an active job for this recording.
+  if (rec.jobId) {
+    const [existingJob] = await d
+      .select({ status: backgroundJob.status })
+      .from(backgroundJob)
+      .where(eq(backgroundJob.jobId, rec.jobId))
+      .limit(1);
+
+    if (existingJob && (existingJob.status === "queued" || existingJob.status === "running")) {
+      throw new HTTPException(409, { message: "A transcription is already running for this recording" });
+    }
+  }
+
+  // Create the background job. Store recordingId in result so the handler knows which row to update.
+  const [newJob] = await d
+    .insert(backgroundJob)
+    .values({
+      jobType: "transcribe_recording",
+      title: "Transcribing Audio",
+      steps: [{ label: rec.fileName, status: "pending" }],
+      result: { recordingId: id },
+      createdBy: user.userId,
+    })
+    .returning({ jobId: backgroundJob.jobId });
+
+  // Link the job back to the recording.
+  await d
+    .update(meetingRecording)
+    .set({ jobId: newJob.jobId })
+    .where(eq(meetingRecording.recordingId, id));
+
+  return c.json({ data: { jobId: newJob.jobId }, error: null }, 201);
+});
+
+// DELETE /api/meeting/recordings/:id — delete a recording row
+meetingRoutes.delete("/recordings/:id", requireAdmin, async (c) => {
+  const id = Number(c.req.param("id"));
+  if (Number.isNaN(id)) throw new HTTPException(400, { message: "Invalid recording id" });
+
+  const [deleted] = await db()
+    .delete(meetingRecording)
+    .where(eq(meetingRecording.recordingId, id))
+    .returning();
+
+  if (!deleted) throw new HTTPException(404, { message: "Recording not found" });
+
+  return c.body(null, 204);
 });
 
 export default meetingRoutes;

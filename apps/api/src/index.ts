@@ -9,10 +9,15 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import { loadEnv, env } from "./utils/env.js";
 import { logger, createLogger } from "./utils/logger.js";
 import { recordError } from "./utils/error-capture.js";
+import { mapDbError } from "./utils/db-error.js";
 import { initDb, closeDb } from "./db/connection.js";
 import { requestId } from "./middleware/requestId.js";
 import { cleanExpiredSessions } from "./services/auth.service.js";
 import { startPlaudPoll, stopPlaudPoll } from "./services/plaud-poll.service.js";
+import { startRunner, stopRunner, crashRecovery } from "./services/job-runner.service.js";
+// Import handlers so they register themselves before the runner starts
+import "./services/signoff-draft.service.js";
+import "./services/transcription.service.js";
 
 import authRoutes from "./routes/auth.routes.js";
 import projectRoutes from "./routes/projects.routes.js";
@@ -42,6 +47,8 @@ import recurringFeeRoutes from "./routes/recurring-fee.routes.js";
 import proposalRoutes from "./routes/proposal.routes.js";
 import campaignRoutes from "./routes/campaign.routes.js";
 import libraryRoutes from "./routes/library.routes.js";
+import jobRoutes from "./routes/jobs.routes.js";
+import financeRoutes from "./routes/finance.routes.js";
 
 import type { Variables } from "./types/context.js";
 
@@ -150,6 +157,9 @@ app.route("/api/settings", settingRoutes);
 // Contracts (red-flag review)
 app.route("/api/contracts", contractRoutes);
 
+// Finance summary (cross-project aggregates — main Finance page stat cards)
+app.route("/api/finance", financeRoutes);
+
 // Expense ledger (Admin Finance)
 app.route("/api/expense", expenseRoutes);
 
@@ -176,6 +186,9 @@ app.route("/api/preview", previewRoutes);
 // Internal library (team-wide catalog)
 app.route("/api/library", libraryRoutes);
 
+// Background jobs
+app.route("/api/jobs", jobRoutes);
+
 // Scrapers
 app.route("/api/scrape", scrapeRoutes);
 app.route("/api/scrape", fbScrapeRoutes);
@@ -190,6 +203,19 @@ app.onError((err, c) => {
       { data: null, error: err.message },
       err.status
     );
+  }
+
+  // A constraint the database enforces is not a server fault. The schema leans
+  // on DB-level guards deliberately (see the double-send and double-spend
+  // comments in schema.ts), so when one fires the caller deserves a 409 or a
+  // 400 and a sentence they can act on, not "Internal server error".
+  const dbMapping = mapDbError(err);
+  if (dbMapping && !dbMapping.isServerFault) {
+    log.warn(
+      { requestId: reqId, pgCode: dbMapping.code },
+      "Rejected by a database constraint"
+    );
+    return c.json({ data: null, error: dbMapping.message }, dbMapping.status);
   }
 
   // Unexpected error — log full details, return sanitized message.
@@ -214,6 +240,9 @@ const port = e.PORT;
 serve({ fetch: app.fetch, port }, () => {
   log.info(`ADVO API running on port ${port} (${e.NODE_ENV})`);
   startPlaudPoll();
+  // Re-queue any jobs that were running when the previous process died.
+  crashRecovery().catch((err) => log.error({ err }, "Crash recovery failed"));
+  startRunner();
 });
 
 // ─── Periodic Cleanup ─────────────────────────────────
@@ -232,6 +261,7 @@ setInterval(async () => {
 async function shutdown(signal: string) {
   log.info(`${signal} received, shutting down...`);
   stopPlaudPoll();
+  stopRunner();
   await closeDb();
   process.exit(0);
 }

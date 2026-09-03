@@ -6,30 +6,38 @@ import { requireAdmin, requireTeam } from "../middleware/rbac.js";
 import type { Variables } from "../types/context.js";
 import {
   COMMISSION_ROLE,
+  TIER_OPTIONS,
   addCommissionShare,
   createCommissionPlan,
   finalizeCommissionPlan,
+  getCallerProjectRole,
   getCommissionPlan,
+  getIsOwner,
   listCommissionPlan,
   listMemberEarning,
+  redactShares,
   removeCommissionShare,
   seedFromProjectAccess,
   updateCommissionPlan,
   updateCommissionShare,
+  upsertTierAssignment,
+  deleteCommissionPlan,
   voidCommissionPlan,
 } from "../services/commission.service.js";
 
 /**
- * /api/commission — the 60/25/15 split (migration 018).
+ * /api/commission — the 55/35/10 split (migration 018, updated by 030).
  *
  * TEAM-ONLY, every route. Compensation is not client-facing: no /hub path reaches this
- * router, and nothing here is joined into a client-visible response. A client seeing how
- * their fee is divided among the people who built it is a different product decision,
- * and it is not this one.
+ * router, and nothing here is joined into a client-visible response.
  *
- * All money on the wire is integer CENTS; all percentages are integer BASIS POINTS. The
- * zod schemas below are where that is actually enforced — z.number().int(), never a
- * coerced string, never a peso float.
+ * All money on the wire is integer CENTS; all percentages are integer BASIS POINTS.
+ *
+ * Phase 8 visibility rules (enforced HERE, not just in the UI):
+ *   - Owner (is_owner=true) or admin: sees all rows with all fields.
+ *   - Team member on the project: sees names+roles always; sees amounts/agreed ONLY
+ *     for rows whose role matches their own project_role_assignment.role.
+ *   - Not on the project: sees names and roles only, no figures.
  */
 const commissionRoutes = new Hono<{ Variables: Variables }>();
 
@@ -96,9 +104,33 @@ const shareUpdateSchema = z.object({
 // ─── Read ────────────────────────────────────────────
 
 commissionRoutes.get("/", async (c) => {
+  const user = c.get("user");
   const raw = c.req.query("projectId");
   const projectId = raw ? Number(raw) : undefined;
-  return c.json({ data: await listCommissionPlan(projectId), error: null });
+
+  const plans = await listCommissionPlan(projectId);
+
+  // Apply visibility redaction per plan.
+  const isAdmin = user.role === "admin";
+  const isOwner = isAdmin ? false : await getIsOwner(user.userId);
+  const isOwnerOrAdmin = isOwner || isAdmin;
+
+  if (isOwnerOrAdmin) {
+    return c.json({ data: plans, error: null });
+  }
+
+  // For non-admin, non-owner callers: redact amounts per project.
+  const redacted = await Promise.all(
+    plans.map(async (plan) => {
+      const callerRole = await getCallerProjectRole(user.userId, plan.projectId);
+      return {
+        ...plan,
+        share: redactShares(plan.share, callerRole, false),
+      };
+    }),
+  );
+
+  return c.json({ data: redacted, error: null });
 });
 
 /** Everything one team member has been agreed to earn, across every project. */
@@ -111,9 +143,25 @@ commissionRoutes.get("/member/:teamMemberId", async (c) => {
  * The plan, its ledger, and the derived block — pool amounts, unallocated cents, and the
  * list of reasons finalize would currently refuse. While the plan is draft every share
  * amount here is DERIVED on this read; once finalized they are the frozen record.
+ * Amounts are redacted for callers who cannot see them.
  */
 commissionRoutes.get("/:id", async (c) => {
-  return c.json({ data: await getCommissionPlan(Number(c.req.param("id"))), error: null });
+  const user = c.get("user");
+  const plan = await getCommissionPlan(Number(c.req.param("id")));
+
+  const isAdmin = user.role === "admin";
+  const isOwner = isAdmin ? false : await getIsOwner(user.userId);
+  const isOwnerOrAdmin = isOwner || isAdmin;
+
+  if (isOwnerOrAdmin) {
+    return c.json({ data: plan, error: null });
+  }
+
+  const callerRole = await getCallerProjectRole(user.userId, plan.projectId);
+  return c.json({
+    data: { ...plan, share: redactShares(plan.share, callerRole, false) },
+    error: null,
+  });
 });
 
 // ─── Write ───────────────────────────────────────────
@@ -166,6 +214,12 @@ commissionRoutes.delete("/share/:shareId", requireAdmin, async (c) => {
  * numbers. Refuses with the full blocker list while the project is unshipped, a role pool
  * has nobody in it, or any share is still unagreed.
  */
+commissionRoutes.delete("/:id", requireAdmin, async (c) => {
+  const id = Number(c.req.param("id"));
+  await deleteCommissionPlan(id, c.get("user").userId);
+  return c.json({ data: null, error: null });
+});
+
 commissionRoutes.post("/:id/finalize", requireAdmin, async (c) => {
   const id = Number(c.req.param("id"));
   return c.json({ data: await finalizeCommissionPlan(id, c.get("user").userId), error: null });
@@ -179,6 +233,39 @@ commissionRoutes.post(
     const id = Number(c.req.param("id"));
     const { reason } = c.req.valid("json");
     return c.json({ data: await voidCommissionPlan(id, reason, c.get("user").userId), error: null });
+  },
+);
+
+// ─── Tier assignment ─────────────────────────────────
+
+const TIER_LABELS = TIER_OPTIONS.map((t) => t.tierLabel) as [string, ...string[]];
+const tierSchema = z.object({
+  tierLabel: z.enum(TIER_LABELS),
+});
+
+/**
+ * Upsert a tier pick for an assistant_developer or creatives_developer share row.
+ * POST to create, PATCH to update (both upsert — same semantics).
+ */
+commissionRoutes.post(
+  "/share/:shareId/tier",
+  requireAdmin,
+  zValidator("json", tierSchema),
+  async (c) => {
+    const shareId = Number(c.req.param("shareId"));
+    const { tierLabel } = c.req.valid("json");
+    return c.json({ data: await upsertTierAssignment(shareId, tierLabel), error: null }, 201);
+  },
+);
+
+commissionRoutes.patch(
+  "/share/:shareId/tier",
+  requireAdmin,
+  zValidator("json", tierSchema),
+  async (c) => {
+    const shareId = Number(c.req.param("shareId"));
+    const { tierLabel } = c.req.valid("json");
+    return c.json({ data: await upsertTierAssignment(shareId, tierLabel), error: null });
   },
 );
 

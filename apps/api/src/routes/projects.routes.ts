@@ -10,6 +10,7 @@ import {
   progressUpdate,
   projectAsset,
   projectAccess,
+  projectRoleAssignment,
   teamMember,
   githubEvent,
   notification,
@@ -27,13 +28,24 @@ import {
   safeArtifactPath,
   writePreviewArtifact,
 } from "../services/preview-host.service.js";
+import {
+  generateScreenshot,
+  clearScreenshotCache,
+  hasCachedScreenshot,
+  screenshotPublicUrl,
+} from "../services/screenshot.service.js";
 import type { PreviewArtifactEntry } from "../services/preview-host.service.js";
 import { suggestTimeline } from "../services/timeline-suggestion.service.js";
 import { buildRevisionTaskDescription } from "../services/revision-task.service.js";
 import { buildPresentationDraft } from "../services/presentation-draft.service.js";
 import { looseUrl, requiredUrl } from "../utils/validators.js";
 import { attachTeamMemberId } from "../utils/project-capacity.js";
+import { createLogger } from "../utils/logger.js";
+import { describeDbError } from "../utils/db-error.js";
+import { recordError } from "../utils/error-capture.js";
 import type { Variables, AuthUser } from "../types/context.js";
+
+const log = createLogger("projects");
 
 const projects = new Hono<{ Variables: Variables }>();
 
@@ -263,7 +275,14 @@ projects.patch("/:id", requireAdmin, zValidator("json", updateSchema), async (c)
 
   if (!updated) throw new HTTPException(404, { message: "Project not found" });
 
-  // Auto-notify client on status change
+  // Auto-notify client on status change.
+  //
+  // The status update is already committed, so a failure here must not roll it
+  // back or 500 the request. But it must not vanish either: previously the
+  // client was never told their project moved phase and nothing anywhere
+  // recorded that the notification was lost. The caller now gets a `warning`
+  // alongside the updated project, and the server logs the real cause.
+  let warning: string | null = null;
   if (data.projectStatus && old && data.projectStatus !== old.projectStatus) {
     try {
       await d.insert(notification).values({
@@ -273,10 +292,21 @@ projects.patch("/:id", requireAdmin, zValidator("json", updateSchema), async (c)
         title: `Project status updated to ${data.projectStatus}`,
         body: `Your project "${updated.title}" has moved to the ${data.projectStatus} phase.`,
       });
-    } catch { /* non-critical */ }
+    } catch (err) {
+      warning = "The project was updated, but the client was not notified. Send them a note.";
+      log.error(
+        { projectId: id, clientId: old.clientId, db: describeDbError(err), err },
+        "Project status-change notification insert failed",
+      );
+    }
   }
 
-  return c.json({ data: updated, error: null });
+  if (data.previewUrl !== undefined) {
+    clearScreenshotCache(id).catch(() => {});
+    if (data.previewUrl) generateScreenshot(id, data.previewUrl).catch(() => {});
+  }
+
+  return c.json({ data: updated, error: null, ...(warning ? { warning } : {}) });
 });
 
 // ─── Delete Project ───────────────────────────────────
@@ -576,6 +606,27 @@ projects.delete("/:id/assets/:assetId", requireTeam, async (c) => {
   return c.json({ data: { message: "Asset deleted" }, error: null });
 });
 
+// ─── Website Screenshot (cached) ─────────────────────
+
+projects.get("/:id/screenshot", async (c) => {
+  const id = Number(c.req.param("id"));
+  const [row] = await db()
+    .select({ previewUrl: project.previewUrl })
+    .from(project)
+    .where(eq(project.projectId, id))
+    .limit(1);
+
+  if (!row?.previewUrl) return c.json({ ready: false, url: null });
+
+  const ready = await generateScreenshot(id, row.previewUrl);
+
+  if (ready) {
+    return c.json({ ready: true, url: screenshotPublicUrl(id) });
+  }
+
+  return c.json({ ready: false, url: null });
+});
+
 // ─── Show Client Now — signed expiring preview link ──
 
 // Team mints a short-lived link to the project's stored preview_url.
@@ -703,7 +754,7 @@ projects.post(
         projectId: id,
         title: "Client revision",
         description,
-        status: "not_started",
+        status: "todo",
         priority: 0,
       })
       .returning();
@@ -806,7 +857,10 @@ projects.post(
       startDate: body.startDate ?? null,
     });
 
-    // Lightweight audit trail — suggestion stays response-primary.
+    // Lightweight audit trail. The suggestion stays response-primary, so a
+    // failed audit row must not fail the request. It must still be visible:
+    // an audit trail that drops rows without saying so is worse than none,
+    // because it reads as complete.
     try {
       await d.insert(activityLog).values({
         userId: user.userId,
@@ -820,8 +874,12 @@ projects.post(
           summary: suggestion.summary,
         },
       });
-    } catch {
-      /* non-critical */
+    } catch (err) {
+      log.error(
+        { projectId: id, userId: user.userId, action: "timeline_suggested", db: describeDbError(err), err },
+        "Activity log insert failed",
+      );
+      recordError("activity-log", err);
     }
 
     return c.json({
@@ -931,6 +989,195 @@ projects.post(
     });
   },
 );
+
+// ─── Repository name (in-tab save) ───────────────────────────────────────────
+
+const repositoryNameSchema = z.object({
+  repositoryName: z.string().max(255),
+});
+
+projects.patch(
+  "/:id/repository",
+  requireAdmin,
+  zValidator("json", repositoryNameSchema),
+  async (c) => {
+    const id = Number(c.req.param("id"));
+    if (Number.isNaN(id)) throw new HTTPException(400, { message: "Invalid project id" });
+
+    const { repositoryName } = c.req.valid("json");
+    const [updated] = await db()
+      .update(project)
+      .set({ repositoryName: repositoryName.trim() || null, updatedAt: new Date() })
+      .where(eq(project.projectId, id))
+      .returning({ projectId: project.projectId, repositoryName: project.repositoryName });
+
+    if (!updated) throw new HTTPException(404, { message: "Project not found" });
+
+    return c.json({ data: updated, error: null });
+  },
+);
+
+// ─── Project Role Assignments ────────────────────────────────────────────────
+//
+// Three endpoints for managing per-project job roles:
+//   GET    /:id/members           — list all assignments on a project
+//   POST   /:id/members           — add an assignment (requireAdmin)
+//   DELETE /:id/members/:assignId — remove one assignment (requireAdmin)
+//
+// Allowed role values (app-validated, not a DB enum so the list can grow):
+const ALLOWED_PROJECT_ROLES = [
+  "referral",
+  "project_manager",
+  "lead_developer",
+  "assistant_developer",
+  "creatives_developer",
+] as const;
+
+// GET /api/projects/:id/members
+// Access: owner or admin sees all rows. A team member assigned to this project
+// sees all rows (names and roles are visible to participants). Anyone else: 403.
+projects.get("/:id/members", async (c) => {
+  const projectId = Number(c.req.param("id"));
+  const user = c.get("user");
+  const d = db();
+
+  if (Number.isNaN(projectId)) {
+    throw new HTTPException(400, { message: "Invalid project id" });
+  }
+
+  // Verify project exists
+  const [proj] = await d
+    .select({ projectId: project.projectId })
+    .from(project)
+    .where(eq(project.projectId, projectId))
+    .limit(1);
+  if (!proj) throw new HTTPException(404, { message: "Project not found" });
+
+  // Admins and owners always have access
+  if (user.role !== "admin") {
+    // Look up the caller's team_member_id
+    const [tm] = await d
+      .select({ teamMemberId: teamMember.teamMemberId })
+      .from(teamMember)
+      .where(eq(teamMember.userId, user.userId))
+      .limit(1);
+
+    if (!tm) throw new HTTPException(403, { message: "Access denied" });
+
+    // Must have a role assignment on this project to see the people list
+    const [assigned] = await d
+      .select({ projectRoleAssignmentId: projectRoleAssignment.projectRoleAssignmentId })
+      .from(projectRoleAssignment)
+      .where(
+        and(
+          eq(projectRoleAssignment.projectId, projectId),
+          eq(projectRoleAssignment.teamMemberId, tm.teamMemberId),
+        ),
+      )
+      .limit(1);
+
+    if (!assigned) throw new HTTPException(403, { message: "Access denied" });
+  }
+
+  const rows = await d
+    .select({
+      assignmentId: projectRoleAssignment.projectRoleAssignmentId,
+      teamMemberId: projectRoleAssignment.teamMemberId,
+      name: teamMember.name,
+      projectRole: projectRoleAssignment.projectRole,
+    })
+    .from(projectRoleAssignment)
+    .leftJoin(teamMember, eq(projectRoleAssignment.teamMemberId, teamMember.teamMemberId))
+    .where(eq(projectRoleAssignment.projectId, projectId))
+    .orderBy(projectRoleAssignment.projectRole, teamMember.name);
+
+  return c.json({ data: rows, error: null });
+});
+
+const addMemberSchema = z.object({
+  teamMemberId: z.number().int().positive(),
+  projectRole: z.enum(ALLOWED_PROJECT_ROLES),
+});
+
+// POST /api/projects/:id/members
+// Admin assigns a team member to a project in a named role.
+// The partial unique index on (project_id) WHERE project_role = 'referral' is enforced
+// by the DB and caught here as a 409 with a plain message.
+projects.post(
+  "/:id/members",
+  requireAdmin,
+  zValidator("json", addMemberSchema),
+  async (c) => {
+    const projectId = Number(c.req.param("id"));
+    const { teamMemberId: memberId, projectRole } = c.req.valid("json");
+    const user = c.get("user");
+    const d = db();
+
+    if (Number.isNaN(projectId)) {
+      throw new HTTPException(400, { message: "Invalid project id" });
+    }
+
+    const [proj] = await d
+      .select({ projectId: project.projectId })
+      .from(project)
+      .where(eq(project.projectId, projectId))
+      .limit(1);
+    if (!proj) throw new HTTPException(404, { message: "Project not found" });
+
+    const [member] = await d
+      .select({ teamMemberId: teamMember.teamMemberId })
+      .from(teamMember)
+      .where(eq(teamMember.teamMemberId, memberId))
+      .limit(1);
+    if (!member) throw new HTTPException(404, { message: "Team member not found" });
+
+    try {
+      const [created] = await d
+        .insert(projectRoleAssignment)
+        .values({ projectId, teamMemberId: memberId, projectRole, createdBy: user.userId })
+        .returning();
+
+      return c.json({ data: created, error: null }, 201);
+    } catch (err: unknown) {
+      // Postgres unique constraint violation
+      const code = (err as { code?: string }).code;
+      if (code === "23505") {
+        const msg =
+          projectRole === "referral"
+            ? "This project already has a referral. Remove the existing one first."
+            : "This team member already has that role on this project.";
+        throw new HTTPException(409, { message: msg });
+      }
+      throw err;
+    }
+  },
+);
+
+// DELETE /api/projects/:id/members/:assignmentId
+// Admin removes one role assignment row.
+projects.delete("/:id/members/:assignmentId", requireAdmin, async (c) => {
+  const projectId = Number(c.req.param("id"));
+  const assignmentId = Number(c.req.param("assignmentId"));
+  const d = db();
+
+  if (Number.isNaN(projectId) || Number.isNaN(assignmentId)) {
+    throw new HTTPException(400, { message: "Invalid id" });
+  }
+
+  const [deleted] = await d
+    .delete(projectRoleAssignment)
+    .where(
+      and(
+        eq(projectRoleAssignment.projectRoleAssignmentId, assignmentId),
+        eq(projectRoleAssignment.projectId, projectId),
+      ),
+    )
+    .returning();
+
+  if (!deleted) throw new HTTPException(404, { message: "Assignment not found" });
+
+  return c.body(null, 204);
+});
 
 export default projects;
 
