@@ -2,6 +2,7 @@ import {
   pgTable,
   pgEnum,
   bigserial,
+  bigint,
   varchar,
   text,
   boolean,
@@ -11,6 +12,7 @@ import {
   jsonb,
   uniqueIndex,
   index,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 
 // ─── Enums ────────────────────────────────────────────
@@ -30,12 +32,12 @@ export const projectStatusEnum = pgEnum("project_status", [
 ]);
 
 export const deliverableStatusEnum = pgEnum("deliverable_status", [
-  "not_started",
-  "in_progress",
+  "todo",
+  "ongoing",
   "review",
-  "completed",
-  "blocked",
+  "finished",
 ]);
+
 
 export const leadStatusEnum = pgEnum("lead_status", [
   "new",
@@ -104,6 +106,8 @@ export const user = pgTable("user", {
   passwordHash: varchar("password_hash", { length: 255 }),
   role: userRoleEnum("role").notNull().default("client"),
   isActive: boolean("is_active").notNull().default(true),
+  /** Migration 026. True for the single owner account (admin@advo.ph). Phase 8 money visibility reads this. */
+  isOwner: boolean("is_owner").notNull().default(false),
   magicToken: varchar("magic_token", { length: 255 }),
   magicTokenExpiresAt: timestamp("magic_token_expires_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -122,9 +126,17 @@ export const session = pgTable(
     ipAddress: varchar("ip_address", { length: 45 }),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    /** One login lineage; every rotation of the same login shares it. Migration 022. */
+    familyId: varchar("family_id", { length: 64 }).notNull(),
+    /** NULL means live. Set when superseded, which is what makes the grace window possible. */
+    rotatedAt: timestamp("rotated_at", { withTimezone: true }),
+    /** Non-rotating per-browser credential behind one-tap login. Survives logout. */
+    isDeviceKey: boolean("is_device_key").notNull().default(false),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
   },
   (t) => [
     index("idx_session_user").on(t.userId),
+    index("idx_session_family").on(t.familyId),
   ]
 );
 
@@ -197,6 +209,7 @@ export const teamMember = pgTable(
     role: varchar("role", { length: 100 }).notNull(),
     email: varchar("email", { length: 255 }),
     avatarUrl: varchar("avatar_url", { length: 500 }),
+    previewImageUrl: varchar("preview_image_url", { length: 500 }),
     bio: text("bio"),
     linkedinUrl: varchar("linkedin_url", { length: 500 }),
     githubUrl: varchar("github_url", { length: 500 }),
@@ -210,6 +223,43 @@ export const teamMember = pgTable(
   (t) => [
     index("idx_team_user").on(t.userId),
   ]
+);
+
+// ─── Project Role Assignments (migration 025) ────────────────────────────────
+//
+// Tracks which team member holds which named job role on which project.
+// This is the source of truth for Commission (Phase 8) and the per-project
+// people list in ProjectCommandCenter.
+//
+// The five allowed role values are app-validated varchar (not a DB enum) so the
+// list can grow without a migration:
+//   referral | project_manager | lead_developer | assistant_developer | creatives_developer
+//
+// Partial unique indexes live in 025_project_role_assignment.sql:
+//   • (project_id, team_member_id, project_role) — same role twice on one project rejected.
+//   • (project_id) WHERE project_role = 'referral' — exactly one referral per project.
+
+export const projectRoleAssignment = pgTable(
+  "project_role_assignment",
+  {
+    projectRoleAssignmentId: bigserial("project_role_assignment_id", { mode: "number" }).primaryKey(),
+    projectId: integer("project_id")
+      .notNull()
+      .references(() => project.projectId, { onDelete: "cascade" }),
+    teamMemberId: integer("team_member_id")
+      .notNull()
+      .references(() => teamMember.teamMemberId, { onDelete: "restrict" }),
+    /** app-validated: referral | project_manager | lead_developer | assistant_developer | creatives_developer */
+    projectRole: varchar("project_role", { length: 40 }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    createdBy: integer("created_by").references(() => user.userId, { onDelete: "set null" }),
+  },
+  (t) => [
+    index("idx_project_role_assignment_project").on(t.projectId),
+    index("idx_project_role_assignment_member").on(t.teamMemberId),
+    // The partial unique indexes (one role per person per project; one referral per project)
+    // live in 025_project_role_assignment.sql — drizzle cannot express the WHERE predicate here.
+  ],
 );
 
 export const projectAccess = pgTable(
@@ -241,11 +291,15 @@ export const deliverable = pgTable(
     title: varchar("title", { length: 255 }).notNull(),
     description: text("description"),
     priority: integer("priority").default(0),
-    status: deliverableStatusEnum("status").notNull().default("not_started"),
+    status: deliverableStatusEnum("status").notNull().default("todo"),
     dueDate: timestamp("due_date", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     /** Team QA sign-off; independent of status/completed_at. Null = unverified. */
     verifiedAt: timestamp("verified_at", { withTimezone: true }),
+    /** Optional PDF/file attachment URL for the deliverable (migration 036). */
+    attachmentUrl: varchar("attachment_url", { length: 500 }),
+    /** When the assignee last read the comment thread (migration 036). Null = never read. */
+    commentsReadAt: timestamp("comments_read_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -254,6 +308,33 @@ export const deliverable = pgTable(
     index("idx_deliverable_assigned").on(t.assignedTo),
   ]
 );
+
+// ─── Deliverable comments (migration 036) ────────────────────────────────────
+//
+// An owner can send a deliverable in "review" back to "ongoing" with a comment
+// explaining what needs to change. The assignee reads it via GET /:id/comments.
+// comments_read_at on the deliverable row tracks when the assignee last read the
+// thread, enabling the hasUnreadComments flag on list endpoints.
+
+export const deliverableComment = pgTable(
+  "deliverable_comment",
+  {
+    commentId: bigserial("comment_id", { mode: "number" }).primaryKey(),
+    deliverableId: integer("deliverable_id")
+      .notNull()
+      .references(() => deliverable.deliverableId, { onDelete: "cascade" }),
+    /** Null when the author account has been deleted. */
+    authorUserId: integer("author_user_id").references(() => user.userId, { onDelete: "set null" }),
+    /** Snapshot of the author's display name at write time; survives user deletion. */
+    authorName: varchar("author_name", { length: 255 }).notNull(),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_deliverable_comment_deliverable").on(t.deliverableId),
+  ]
+);
+
 
 export const invoice = pgTable(
   "invoice",
@@ -311,19 +392,26 @@ export const calendarEvent = pgTable(
   ]
 );
 
-// Expense ledger (migration 005). amount_cents is integer cents. is_reimbursable
-// is derived at read time as (receipt_url IS NOT NULL) — never stored as a column.
-// category is app-validated varchar (growable set).
+// Expense ledger (migration 005, updated by 032).
+// amount_cents is integer cents.
+// receipt_url removed in migration 032 — is_reimbursable (derived as receipt_url IS NOT NULL)
+// no longer exists. expense_paid_status ('paid' | 'unpaid') replaces it.
+// expense_type ('development_expenses' | 'general_expenses') classifies each expense.
+// category is kept for backward compat but is no longer shown in the Phase 8 UI.
 export const expense = pgTable(
   "expense",
   {
     expenseId: bigserial("expense_id", { mode: "number" }).primaryKey(),
     projectId: integer("project_id").references(() => project.projectId, { onDelete: "set null" }),
+    teamMemberId: integer("team_member_id").references(() => teamMember.teamMemberId, { onDelete: "set null" }),
     purpose: text("purpose").notNull(),
     authorizedBy: varchar("authorized_by", { length: 255 }).notNull(),
     amountCents: integer("amount_cents").notNull(),
     location: varchar("location", { length: 255 }),
-    receiptUrl: varchar("receipt_url", { length: 500 }),
+    /** migration 032: 'development_expenses' | 'general_expenses' */
+    expenseType: varchar("expense_type", { length: 40 }).notNull().default("general_expenses"),
+    /** migration 032: 'paid' | 'unpaid' */
+    expensePaidStatus: varchar("expense_paid_status", { length: 20 }).notNull().default("unpaid"),
     category: varchar("category", { length: 50 }).notNull().default("other"),
     createdBy: integer("created_by").references(() => user.userId, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -365,6 +453,32 @@ export const contract = pgTable(
   ]
 );
 
+// Contract files (migration 027). Uploaded PDF/Word files per project for AI review.
+// status is app-validated varchar: draft | final | signed.
+// ai_review_text is NULL until a review is run; ai_reviewed_at mirrors it (constrained together).
+export const contractFile = pgTable(
+  "contract_file",
+  {
+    contractFileId: bigserial("contract_file_id", { mode: "number" }).primaryKey(),
+    projectId: integer("project_id")
+      .notNull()
+      .references(() => project.projectId, { onDelete: "cascade" }),
+    fileUrl: text("file_url").notNull(),
+    fileName: text("file_name").notNull(),
+    mimeType: varchar("mime_type", { length: 100 }).notNull(),
+    status: varchar("status", { length: 20 }).notNull().default("draft"),
+    aiReviewText: text("ai_review_text"),
+    aiReviewedAt: timestamp("ai_reviewed_at", { withTimezone: true }),
+    createdBy: integer("created_by").references(() => user.userId, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_contract_file_project").on(t.projectId),
+    index("idx_contract_file_created_at").on(t.createdAt),
+  ]
+);
+
 // Change orders (migration 009). Client files scope + reason from /hub
 // (CONTRACTS.md policy 3). status is app-validated varchar (growable set).
 export const changeOrder = pgTable(
@@ -390,18 +504,21 @@ export const changeOrder = pgTable(
   ]
 );
 
-// Meeting MoM records (migration 006 + 012). Full transcript per project;
-// optional Plaud file id / share key / AI summary. project_id required CASCADE.
+// Meeting MoM records (migration 006 + 012 + 034). Full transcript per project;
+// optional Plaud file id / share key / AI summary. project_id nullable since
+// migration 034 (scheduled meetings may have no project). starts_at / ends_at
+// added for calendar scheduling; recorded_at retains its original Plaud meaning.
 export const meeting = pgTable(
   "meeting",
   {
     meetingId: bigserial("meeting_id", { mode: "number" }).primaryKey(),
+    // Nullable since migration 034 — scheduled meetings need no project.
     projectId: integer("project_id")
-      .notNull()
       .references(() => project.projectId, { onDelete: "cascade" }),
     title: varchar("title", { length: 255 }).notNull(),
     recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull(),
-    transcript: text("transcript").notNull(),
+    // Empty string (not NULL) for scheduled meetings with no transcript yet.
+    transcript: text("transcript").notNull().default(""),
     summary: text("summary"),
     plaudFileId: varchar("plaud_file_id", { length: 64 }),
     plaudShareKey: varchar("plaud_share_key", { length: 500 }),
@@ -409,12 +526,35 @@ export const meeting = pgTable(
     createdBy: integer("created_by").references(() => user.userId, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    // Scheduling fields (migration 034).
+    // starts_at = scheduled start; NULL for past/Plaud-imported records.
+    startsAt: timestamp("starts_at", { withTimezone: true }),
+    endsAt: timestamp("ends_at", { withTimezone: true }),
+    location: varchar("location", { length: 255 }),
+    description: text("description"),
   },
   (t) => [
     index("idx_meeting_project").on(t.projectId),
     index("idx_meeting_recorded_at").on(t.recordedAt),
     index("idx_meeting_created_by").on(t.createdBy),
     uniqueIndex("idx_meeting_plaud_file").on(t.plaudFileId),
+    index("idx_meeting_starts_at").on(t.startsAt),
+  ]
+);
+
+// Self-serve attendance (migration 034). Composite PK prevents duplicate joins.
+export const meetingAttendee = pgTable(
+  "meeting_attendee",
+  {
+    meetingId: bigint("meeting_id", { mode: "number" }).notNull()
+      .references(() => meeting.meetingId, { onDelete: "cascade" }),
+    userId: integer("user_id").notNull()
+      .references(() => user.userId, { onDelete: "cascade" }),
+    joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.meetingId, t.userId] }),
+    index("idx_meeting_attendee_user").on(t.userId),
   ]
 );
 
@@ -576,16 +716,26 @@ export const availabilityBlock = pgTable(
       .notNull()
       .references(() => teamMember.teamMemberId, { onDelete: "cascade" }),
     dayOfWeek: integer("day_of_week").notNull(), // 0=Sunday, 6=Saturday
-    startTime: varchar("start_time", { length: 5 }).notNull(), // "HH:MM"
+    // varchar(5) "HH:MM", not TIME — verified against the live column with \d, and the
+    // reason for the defensive .slice(0, 5) calls that used to be dotted through the UI.
+    // An end_time of "00:00" means midnight at the END of the day; see
+    // ../utils/manila-date.ts. Both columns are constrained by migration 024.
+    startTime: varchar("start_time", { length: 5 }).notNull(),
     endTime: varchar("end_time", { length: 5 }).notNull(),
     blockType: varchar("block_type", { length: 20 }).notNull().default("work"), // school|break|work|unavailable
     label: varchar("label", { length: 100 }),
+    // Bounds on the recurrence (migration 024). NULL from = unbounded backwards, NULL to
+    // = open-ended. Without these a "Tuesdays 10:00" class projects onto every Tuesday in
+    // recorded time, forwards and backwards. Manila dates.
+    effectiveFrom: date("effective_from"),
+    effectiveTo: date("effective_to"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
     index("idx_availability_member").on(t.teamMemberId),
     index("idx_availability_day").on(t.dayOfWeek),
+    index("idx_availability_effective").on(t.effectiveTo),
   ]
 );
 
@@ -963,15 +1113,15 @@ export const commissionPlan = pgTable(
     /** Integer CENTS being split. Seeded from project.totalValueCents, then editable. */
     basisCents: integer("basis_cents").notNull().default(0),
     basisNote: text("basis_note"),
-    /** Basis points. 6000 = 60%. CHECK-summed to 10000 with staff + company in 018. */
-    developerBps: integer("developer_bps").notNull().default(6000),
-    staffBps: integer("staff_bps").notNull().default(2500),
-    companyBps: integer("company_bps").notNull().default(1500),
-    /** Basis points OF THE STAFF POOL. These four CHECK-sum to 10000. */
-    referralBps: integer("referral_bps").notNull().default(2800),
-    marketingBps: integer("marketing_bps").notNull().default(2400),
-    accountingBps: integer("accounting_bps").notNull().default(2400),
-    managementBps: integer("management_bps").notNull().default(2400),
+    /** Basis points. 5500 = 55%. CHECK-summed to 10000 with staff + company in 018. Updated by migration 030. */
+    developerBps: integer("developer_bps").notNull().default(5500),
+    staffBps: integer("staff_bps").notNull().default(3500),
+    companyBps: integer("company_bps").notNull().default(1000),
+    /** Basis points OF THE STAFF POOL. These four CHECK-sum to 10000. Updated by migration 030. */
+    referralBps: integer("referral_bps").notNull().default(2000),
+    marketingBps: integer("marketing_bps").notNull().default(5000),
+    accountingBps: integer("accounting_bps").notNull().default(1000),
+    managementBps: integer("management_bps").notNull().default(2000),
     /** App-validated growable set: draft | finalized | void. */
     status: varchar("status", { length: 20 }).notNull().default("draft"),
     /** THE stamp. NULL = draft and fully editable. Non-NULL = frozen forever. */
@@ -1005,7 +1155,10 @@ export const commissionShare = pgTable(
     teamMemberId: integer("team_member_id").references(() => teamMember.teamMemberId, {
       onDelete: "restrict",
     }),
-    /** main_developer | assistant_developer | referral | marketing | accounting | management | company */
+    /**
+     * main_developer | assistant_developer | creatives_developer |
+     * lead_partnerships | referral (historical) | marketing | accounting | management | company
+     */
     role: varchar("role", { length: 30 }).notNull(),
     /** Relative weight WITHIN this role's pool. 60/40 and 6000/4000 allocate identically. */
     contributionBps: integer("contribution_bps").notNull().default(0),
@@ -1023,6 +1176,132 @@ export const commissionShare = pgTable(
     index("idx_commission_share_member").on(t.teamMemberId),
     // The three partial unique indexes — one main developer, one assistant developer and
     // one company reserve per plan — live in 018_commission_split.sql.
+  ],
+);
+
+// ─── Project tier assignment (migration 033) ─────────────────────────────────
+//
+// Stores the tier pick for assistant_developer and creatives_developer share rows.
+// The tier label is stored verbatim so it can be displayed later without re-deriving.
+// ONE tier pick per commission_share_id (UNIQUE index in 033).
+//
+// allocation_bps: derived from tier — 500 (5%), 1000 (10%), 1500 (15%).
+
+export const projectTierAssignment = pgTable(
+  "project_tier_assignment",
+  {
+    tierAssignmentId: bigserial("tier_assignment_id", { mode: "number" }).primaryKey(),
+    commissionShareId: integer("commission_share_id")
+      .notNull()
+      .references(() => commissionShare.commissionShareId, { onDelete: "cascade" }),
+    /** Verbatim tier label — one of the three fixed strings. */
+    tierLabel: varchar("tier_label", { length: 500 }).notNull(),
+    /** Derived from tier: 500 = Tier 1 (5%), 1000 = Tier 2 (10%), 1500 = Tier 3 (15%). */
+    allocationBps: integer("allocation_bps").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("idx_tier_assignment_share").on(t.commissionShareId),
+  ],
+);
+
+// ─── Background job queue (migration 028) ────────────
+//
+// Persistent queue for long-running server-side work. The in-process runner
+// (job-runner.service.ts) polls this table every 2 seconds. Crash recovery
+// at boot re-queues any row stuck in 'running' from the previous process.
+// The widget in the browser polls GET /api/jobs/active every 2 seconds.
+//
+// Steps jsonb shape: [{ label: string, status: 'pending' | 'running' | 'done' | 'failed' }]
+// Result jsonb shape: job-type specific payload (e.g. { signoffId: number })
+
+export const backgroundJob = pgTable(
+  "background_job",
+  {
+    jobId: bigserial("job_id", { mode: "number" }).primaryKey(),
+    jobType: varchar("job_type", { length: 60 }).notNull(),
+    projectId: integer("project_id").references(() => project.projectId, { onDelete: "set null" }),
+    status: varchar("status", { length: 20 }).notNull().default("queued"),
+    title: text("title").notNull(),
+    steps: jsonb("steps").notNull().default([]),
+    result: jsonb("result"),
+    error: text("error"),
+    createdBy: integer("created_by").references(() => user.userId, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+  },
+  (t) => [
+    index("idx_background_job_status").on(t.status),
+    index("idx_background_job_created_by_status").on(t.createdBy, t.status),
+  ],
+);
+
+// ─── Meeting recording (migration 029) ───────────────
+//
+// Uploaded audio files (mp3 / m4a) for a meeting. transcript is NULL until a
+// background Whisper transcription job completes. job_id links the last job
+// that was started for this recording.
+
+export const meetingRecording = pgTable(
+  "meeting_recording",
+  {
+    recordingId: bigserial("recording_id", { mode: "number" }).primaryKey(),
+    meetingId: integer("meeting_id").references(() => meeting.meetingId, { onDelete: "cascade" }),
+    fileUrl: text("file_url").notNull(),
+    fileName: text("file_name").notNull(),
+    mimeType: varchar("mime_type", { length: 100 }).notNull(),
+    transcript: text("transcript"),
+    jobId: integer("job_id").references(() => backgroundJob.jobId, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_meeting_recording_meeting").on(t.meetingId),
+    index("idx_meeting_recording_job").on(t.jobId),
+  ],
+);
+
+// ─── Invoice file (migration 031) ────────────────────
+//
+// Upload-first invoice PDFs per project.  The existing `invoice` table is kept intact for
+// backward compatibility.  New UI uses `invoice_file` exclusively.
+//
+// total_cents is NULL when pdf-parse cannot find a currency amount in the document; the UI
+// renders "—" in that case rather than ₱0.
+//
+// recurring_fee_id is set for uploaded recurring invoice PDFs (State B of RecurringInvoicesPanel).
+
+export const invoiceFile = pgTable(
+  "invoice_file",
+  {
+    invoiceFileId: bigserial("invoice_file_id", { mode: "number" }).primaryKey(),
+    projectId: integer("project_id")
+      .notNull()
+      .references(() => project.projectId, { onDelete: "cascade" }),
+    recurringFeeId: integer("recurring_fee_id").references(
+      () => recurringFee.recurringFeeId,
+      { onDelete: "set null" },
+    ),
+    fileUrl: text("file_url").notNull(),
+    /** Standard name: "Invoice 001 - Sep 2026". Written on upload, editable after. */
+    fileName: text("file_name").notNull(),
+    /** Sequential per project, starting at 0.  Unique index enforced by 031. */
+    fileNumber: integer("file_number").notNull(),
+    /** "Sep 2026" — derived from upload date, displayed in UI. */
+    billingMonth: varchar("billing_month", { length: 20 }),
+    /** Extracted from PDF via pdf-parse.  NULL when extraction fails. */
+    totalCents: integer("total_cents"),
+    /** downpayment | full */
+    phaseStatus: varchar("phase_status", { length: 30 }).notNull().default("downpayment"),
+    /** unpaid | paid | overdue */
+    paidStatus: varchar("paid_status", { length: 20 }).notNull().default("unpaid"),
+    createdBy: integer("created_by").references(() => user.userId, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("idx_invoice_file_project_number").on(t.projectId, t.fileNumber),
+    index("idx_invoice_file_project").on(t.projectId),
   ],
 );
 

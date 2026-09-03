@@ -346,17 +346,34 @@ Key-value config table. Most keys are admin-only via `/api/settings/*`. The allo
 
 Per-member schedule blocks used by [`AdminAvailability`](../apps/web/src/components/admin/AdminAvailability.tsx) to track when each team member is in school / on break / available for work / unavailable.
 
-| Column           | Type           | Description                              |
-| ---------------- | -------------- | ---------------------------------------- |
-| `block_id`       | BIGSERIAL (PK) |                                          |
-| `team_member_id` | BIGINT (FK)    | → `team_member` ON DELETE CASCADE        |
-| `day_of_week`    | INTEGER        | 0–6 (Sunday–Saturday)                    |
-| `start_time`     | TIME           |                                          |
-| `end_time`       | TIME           |                                          |
-| `block_type`     | ENUM           | `school`, `break`, `work`, `unavailable` |
-| `label`          | VARCHAR(255)   | Optional (e.g. "CS 101", "Lunch")        |
-| `created_at`     | TIMESTAMPTZ    |                                          |
-| `updated_at`     | TIMESTAMPTZ    |                                          |
+Created by [migration 024](../apps/api/migrations/024_availability_block_bounds.sql). Before
+that this table had no migration at all — it reached every database through
+`drizzle-kit push`, which kept it out of the 019 ledger backfill and out of the drift
+detector's view entirely.
+
+| Column           | Type           | Description                                                               |
+| ---------------- | -------------- | ------------------------------------------------------------------------- |
+| `block_id`       | BIGSERIAL (PK) |                                                                           |
+| `team_member_id` | INTEGER (FK)   | → `team_member` ON DELETE CASCADE                                         |
+| `day_of_week`    | INTEGER        | 0–6 (Sunday–Saturday), CHECKed                                            |
+| `start_time`     | VARCHAR(5)     | `"HH:MM"`. Not a `TIME` column.                                           |
+| `end_time`       | VARCHAR(5)     | `"HH:MM"`. `"00:00"` means midnight at the **end** of the day.            |
+| `block_type`     | VARCHAR(20)    | CHECKed to `school`, `break`, `work`, `unavailable`. Not a Postgres ENUM.  |
+| `label`          | VARCHAR(100)   | Optional (e.g. "CS 101", "Lunch")                                         |
+| `effective_from` | DATE           | First Manila date the block applies. NULL = unbounded backwards.          |
+| `effective_to`   | DATE           | Last Manila date the block applies, inclusive. NULL = open-ended.         |
+| `created_at`     | TIMESTAMPTZ    |                                                                           |
+| `updated_at`     | TIMESTAMPTZ    |                                                                           |
+
+`start_time`/`end_time` are `VARCHAR(5)`, not `TIME`. They were documented as `TIME`, which
+is what the defensive `.slice(0, 5)` calls scattered through the calendar UI were guarding
+against. Ordering is enforced by `chk_availability_block_time_order`
+(`end_time = '00:00' OR end_time > start_time`): `<input type="time">` cannot emit
+`"24:00"`, so `"00:00"` is the only way to express a block running to midnight.
+
+`effective_from`/`effective_to` bound the recurrence. Without them a "Tuesdays 10:00"
+block is asserted for every Tuesday in recorded time, forwards and backwards. Both are
+read as Manila dates — see [`manila-date.ts`](../apps/api/src/utils/manila-date.ts).
 
 ### scrape_result
 
