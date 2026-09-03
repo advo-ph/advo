@@ -462,14 +462,19 @@ export async function checkClaim(claim: string, limit = 10) {
     if (row.length === 0) {
       row = narrowByName((await select(sql`to_tsquery('english', ${anyOf})`)) as unknown as Record<string, unknown>[]);
     }
-    if (wanted.length > 0 && !row.some(carriesEvery)) {
+    // Only a real figure (four digits or more) is worth rescuing: "60" or "3 rounds"
+    // occur in too many unrelated lines to be evidence of anything.
+    const figure = wanted.filter((n) => n.replace(/\D/g, "").length >= 4);
+    if (figure.length > 0 && !row.some(carriesEvery)) {
       // The words matched, but no match carries the claim's figure. The figure may sit
       // in a fact that does not repeat the client's name ("The ₱200,000 total fee covers
       // design and development"): look once more for any-word matches that carry it,
       // and put them first, so a true claim is not called conflicting for the phrasing.
       // The figure is searched as text here (digits with optional thousands
-      // separators), since the word index deliberately carries no numbers.
-      const pattern = wanted.map((n) => n.replace(/\./g, "\\.").split("").join(",?")).join("|");
+      // separators, on its own digit boundary), since the word index deliberately
+      // carries no numbers.
+      const digitPattern = figure.map((n) => n.replace(/\./g, "\\.").split("").join(",?")).join("|");
+      const pattern = `(^|[^0-9,.])(${digitPattern})([^0-9,]|,[^0-9]|$)`;
       const byNumber = (await d.execute(sql`
         select f.corpus_fact_id, f.claim, f.quote, f.locator, f.basis, f.confidence, f.is_verified,
                f.occurred_at, f.project_id, f.superseded_by_fact_id,
