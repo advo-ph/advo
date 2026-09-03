@@ -22,7 +22,9 @@ import {
   checkClaim,
   corpusStat,
   deleteSource,
+  deleteTemplate,
   extract,
+  resolveProposal,
   getSource,
   getTemplate,
   ingestBundle,
@@ -304,6 +306,18 @@ corpusRoutes.post("/supersede", async (c) => c.json({ data: await supersedeByNew
 
 // ─── Fact-check ──────────────────────────────────────
 
+// ─── Proposal ────────────────────────────────────────
+
+/** Assemble a project's current terms into a draft, refusing when the sources disagree. */
+corpusRoutes.post(
+  "/proposal",
+  zValidator("json", z.object({ projectId: z.number().int().positive(), corpusTemplateId: z.number().int().positive().nullish() })),
+  async (c) => {
+    const { projectId, corpusTemplateId } = c.req.valid("json");
+    return c.json({ data: await resolveProposal(projectId, corpusTemplateId ?? null), error: null });
+  },
+);
+
 corpusRoutes.post("/check", zValidator("json", z.object({ claim: z.string().min(3).max(2000) })), async (c) => {
   return c.json({ data: await checkClaim(c.req.valid("json").claim), error: null });
 });
@@ -311,6 +325,13 @@ corpusRoutes.post("/check", zValidator("json", z.object({ claim: z.string().min(
 // ─── Templates ───────────────────────────────────────
 
 corpusRoutes.get("/template", async (c) => c.json({ data: await listTemplate(c.req.query("kind") || undefined), error: null }));
+
+/** Remove a template (a bench, a retired draft). Admin only. */
+corpusRoutes.delete("/template/:id", requireAdmin, async (c) => {
+  const ok = await deleteTemplate(idParam(c.req.param("id")));
+  if (!ok) throw new HTTPException(404, { message: "No such template" });
+  return c.json({ data: { deleted: true }, error: null });
+});
 
 corpusRoutes.post(
   "/template",

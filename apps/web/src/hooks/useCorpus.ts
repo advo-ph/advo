@@ -115,6 +115,19 @@ export interface CheckResult {
   discount: CheckDiscount | null;
 }
 
+export interface ResolvedTerm { name: string; value: string; unit: string | null; sourceTitle: string; occurredAt: string | null; }
+export interface ContestedTerm { name: string; value: { value: string; sourceTitle: string }[]; }
+export interface ProposalResult {
+  projectId: number;
+  clientName: string | null;
+  resolved: ResolvedTerm[];
+  contested: ContestedTerm[];
+  discount: { listCents: number; discountCents: number; reason: string | null } | null;
+  missing: string[];
+  draft: string | null;
+  corpusTemplateId: number | null;
+}
+
 const KEY = ["corpus"];
 
 export function useCorpus(filter: { q?: string; projectId?: number | null; category?: string; status?: string; verified?: boolean } = {}) {
@@ -154,6 +167,14 @@ export function useCorpus(filter: { q?: string; projectId?: number | null; categ
       if (res.error || !res.data) throw new Error(res.error || "Check failed");
       return res.data;
     },
+  });
+  const proposal = useMutation({
+    mutationFn: async (input: { projectId: number; corpusTemplateId?: number | null }) => {
+      const res = await post<ProposalResult>("/api/corpus/proposal", input);
+      if (res.error || !res.data) throw new Error(res.error || "Could not resolve");
+      return res.data;
+    },
+    onError: (e: Error) => toast({ title: "Could not draft", description: e.message, variant: "destructive" }),
   });
   const verify = useMutation({
     mutationFn: async (input: { corpusFactId: number; isVerified: boolean }) => {
@@ -238,6 +259,9 @@ export function useCorpus(filter: { q?: string; projectId?: number | null; categ
     check: check.mutateAsync,
     checkResult: check.data ?? null,
     isChecking: check.isPending,
+    proposal: proposal.mutateAsync,
+    proposalResult: proposal.data ?? null,
+    isDrafting: proposal.isPending,
     verify: verify.mutate,
     verifyMany: verifyMany.mutate,
     isVerifyingMany: verifyMany.isPending,

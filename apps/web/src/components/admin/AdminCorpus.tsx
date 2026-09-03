@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   ClipboardList,
   ExternalLink,
+  FileSignature,
   FileText,
   Loader2,
   Mic,
@@ -27,8 +28,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { PageHeader, Panel, Empty, Stat, StatStrip, Dot } from "@/components/admin/_ui";
 import { useCorpus, type CorpusAction, type CorpusFact, type CorpusTemplate } from "@/hooks/useCorpus";
+import { useOrgProjects } from "@/hooks/useOrgProjects";
 
-type Tab = "check" | "fact" | "action" | "source" | "template";
+type Tab = "check" | "draft" | "fact" | "action" | "source" | "template";
 
 const basisDot: Record<string, string> = {
   transcript: "bg-green-500",
@@ -166,7 +168,10 @@ const AdminCorpus = () => {
   const [pasteTitle, setPasteTitle] = useState("");
   const [pasteText, setPasteText] = useState("");
   const [unverifiedOnly, setUnverifiedOnly] = useState(false);
+  const [draftProjectId, setDraftProjectId] = useState("");
+  const [draftTemplateId, setDraftTemplateId] = useState("");
   const corpus = useCorpus({ q, category: category || undefined, status: status || undefined, verified: unverifiedOnly ? false : undefined });
+  const { projects } = useOrgProjects();
 
   const categoryList = useMemo(() => Array.from(new Set(corpus.fact.map((f) => f.category))).sort(), [corpus.fact]);
   const s = corpus.stat;
@@ -186,6 +191,7 @@ const AdminCorpus = () => {
         {(
           [
             ["check", "Fact check", Search],
+            ["draft", "Draft", FileSignature],
             ["fact", "Facts", BookOpenCheck],
             ["action", "Accountability", ClipboardList],
             ["source", "Sources", Mic],
@@ -301,6 +307,117 @@ const AdminCorpus = () => {
               </Button>
             </Panel>
           </div>
+        </div>
+      )}
+
+      {tab === "draft" && (
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-4">
+          <Panel title="Draft from the corpus" bodyClassName="p-4 space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Assemble a project's current, non-superseded numbers into a document, with the discount applied. It refuses to draft when two live sources disagree — run supersession first.
+            </p>
+            <div className="space-y-2">
+              <label className="text-xs font-medium">Project</label>
+              <select
+                value={draftProjectId}
+                onChange={(e) => setDraftProjectId(e.target.value)}
+                className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm"
+              >
+                <option value="">Pick a project</option>
+                {projects.map((p) => (
+                  <option key={p.project_id} value={p.project_id}>
+                    {p.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-medium">Template (optional)</label>
+              <select
+                value={draftTemplateId}
+                onChange={(e) => setDraftTemplateId(e.target.value)}
+                className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm"
+              >
+                <option value="">Resolve the numbers only</option>
+                {corpus.template.map((t) => (
+                  <option key={t.corpusTemplateId} value={t.corpusTemplateId}>
+                    {t.kind} · {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Button
+              disabled={!draftProjectId || corpus.isDrafting}
+              onClick={() =>
+                void corpus.proposal({
+                  projectId: Number(draftProjectId),
+                  corpusTemplateId: draftTemplateId ? Number(draftTemplateId) : null,
+                })
+              }
+              className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+            >
+              {corpus.isDrafting ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileSignature className="h-4 w-4" />}
+              Resolve
+            </Button>
+          </Panel>
+
+          <Panel title="Result" bodyClassName="p-4 space-y-3">
+            {!corpus.proposalResult ? (
+              <Empty text="Pick a project and resolve. You'll see the current numbers, anything contested, and the filled draft." />
+            ) : (
+              <div className="space-y-3 text-sm">
+                {corpus.proposalResult.contested.length > 0 && (
+                  <div className="rounded-md border border-red-500/40 bg-red-500/5 p-3 space-y-1">
+                    <p className="font-medium text-red-400">Contested — no draft produced</p>
+                    {corpus.proposalResult.contested.map((c) => (
+                      <p key={c.name} className="text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground">{c.name}</span>: {c.value.map((v) => `${v.value} (${v.sourceTitle})`).join(" vs ")}
+                      </p>
+                    ))}
+                    <p className="text-[11px] text-muted-foreground">Run supersession on the Sources tab, or fix the documents, then resolve again.</p>
+                  </div>
+                )}
+                {corpus.proposalResult.discount && (
+                  <p className="text-xs text-muted-foreground">
+                    Discount applied: {"₱" + (corpus.proposalResult.discount.discountCents / 100).toLocaleString("en-PH")}
+                    {corpus.proposalResult.discount.reason ? ` (${corpus.proposalResult.discount.reason})` : ""}
+                  </p>
+                )}
+                {corpus.proposalResult.resolved.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium mb-1">Resolved terms</p>
+                    <ul className="divide-y divide-border rounded-md border border-border">
+                      {corpus.proposalResult.resolved.map((r) => (
+                        <li key={r.name} className="px-3 py-1.5 flex items-center justify-between gap-2 text-xs">
+                          <span className="font-medium">{r.name}</span>
+                          <span className="tabular-nums">{r.value}</span>
+                          <span className="text-muted-foreground truncate max-w-[40%]">{r.sourceTitle}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {corpus.proposalResult.draft && (
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium">Draft</p>
+                      <button
+                        type="button"
+                        onClick={() => void navigator.clipboard.writeText(corpus.proposalResult?.draft ?? "")}
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                    <pre className="whitespace-pre-wrap rounded-md border border-border bg-secondary/40 p-3 text-xs">{corpus.proposalResult.draft}</pre>
+                    {corpus.proposalResult.missing.length > 0 && (
+                      <p className="text-[11px] text-muted-foreground">Unfilled: {corpus.proposalResult.missing.join(", ")}. The corpus has no term for these yet.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </Panel>
         </div>
       )}
 

@@ -19,6 +19,7 @@
  * never asserts truth the sources do not carry.
  */
 import Anthropic from "@anthropic-ai/sdk";
+import { HTTPException } from "hono/http-exception";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../db/connection.js";
 import {
@@ -792,6 +793,142 @@ export async function updateAction(
   if (patch.dueAt !== undefined) set.dueAt = asDate(patch.dueAt);
   const [row] = await d.update(corpusAction).set(set).where(eq(corpusAction.corpusActionId, corpusActionId)).returning();
   return row ?? null;
+}
+
+// ─── Proposal resolver ───────────────────────────────
+
+const pesoOf = (cents: number) => `₱${(cents / 100).toLocaleString("en-PH")}`;
+/** A term's comparable digits: a cents term matches its peso spelling; a bare count is itself. */
+function termDigitOf(value: string, unit: string | null): string[] {
+  const own = numberIn(value);
+  if (unit === "cents" && /^\d+$/.test(value)) return [...new Set([...own, String(Number(value) / 100).replace(/\.0+$/, "")])];
+  if (/^\d+(?:\.\d+)?$/.test(value)) return [...new Set([...own, value])];
+  return own;
+}
+
+export interface ResolvedTerm { name: string; value: string; unit: string | null; sourceTitle: string; occurredAt: string | null; }
+export interface ContestedTerm { name: string; value: { value: string; sourceTitle: string }[]; }
+export interface ProposalResult {
+  projectId: number;
+  clientName: string | null;
+  resolved: ResolvedTerm[];
+  contested: ContestedTerm[];
+  discount: { listCents: number; discountCents: number; reason: string | null } | null;
+  missing: string[];
+  draft: string | null;
+  corpusTemplateId: number | null;
+}
+
+/**
+ * Assemble a project's current numbers into a draft, and refuse when the sources
+ * disagree. A term is "live" when the source it came from still has a non-superseded
+ * fact carrying its figure (a term whose source carries no facts is taken at face
+ * value). Two live values for one name is a contest, not a draft: run supersession
+ * first. The rendered document only appears when nothing is contested.
+ */
+export async function resolveProposal(projectId: number, corpusTemplateId?: number | null): Promise<ProposalResult> {
+  const d = db();
+  const [proj] = (await d.execute(sql`
+    select p.project_id, p.title, p.total_value_cents, p.list_value_cents, p.discount_cents, p.discount_reason,
+           c.company_name as client_name
+    from project p left join client c on c.client_id = p.client_id
+    where p.project_id = ${projectId}
+  `)) as unknown as { project_id: number; title: string; total_value_cents: number; list_value_cents: number | null; discount_cents: number; discount_reason: string | null; client_name: string | null }[];
+  if (!proj) throw new HTTPException(404, { message: "No such project" });
+
+  const termRow = (await d.execute(sql`
+    select t.name, t.value, t.unit, s.corpus_source_id, s.title as source_title, s.occurred_at
+    from corpus_term t join corpus_source s on s.corpus_source_id = t.corpus_source_id
+    where s.project_id = ${projectId}
+    order by t.name, s.occurred_at desc nulls last, s.corpus_source_id desc
+  `)) as unknown as { name: string; value: string; unit: string | null; corpus_source_id: number; source_title: string; occurred_at: string | null }[];
+
+  // Which figures each source still asserts (non-superseded), and which sources carry no facts at all.
+  const liveFact = (await d.execute(sql`
+    select f.corpus_source_id, f.claim, f.quote from corpus_fact f
+    join corpus_source s on s.corpus_source_id = f.corpus_source_id
+    where s.project_id = ${projectId} and f.superseded_by_fact_id is null
+  `)) as unknown as { corpus_source_id: number; claim: string; quote: string | null }[];
+  const factfulSource = new Set(
+    ((await d.execute(sql`
+      select distinct f.corpus_source_id from corpus_fact f
+      join corpus_source s on s.corpus_source_id = f.corpus_source_id
+      where s.project_id = ${projectId}
+    `)) as unknown as { corpus_source_id: number }[]).map((r) => Number(r.corpus_source_id)),
+  );
+  const liveDigitBySource = new Map<number, Set<string>>();
+  for (const f of liveFact) {
+    const id = Number(f.corpus_source_id);
+    const set = liveDigitBySource.get(id) ?? new Set<string>();
+    for (const n of numberIn(`${f.claim} ${f.quote ?? ""}`)) set.add(n);
+    liveDigitBySource.set(id, set);
+  }
+  const isLive = (t: { corpus_source_id: number; value: string; unit: string | null }) => {
+    if (!factfulSource.has(Number(t.corpus_source_id))) return true; // a pure-term source is taken at face value
+    const digit = termDigitOf(t.value, t.unit);
+    const live = liveDigitBySource.get(Number(t.corpus_source_id));
+    return digit.some((n) => live?.has(n));
+  };
+
+  const byName = new Map<string, typeof termRow>();
+  for (const t of termRow) byName.set(t.name, [...(byName.get(t.name) ?? []), t]);
+
+  const resolved: ResolvedTerm[] = [];
+  const contested: ContestedTerm[] = [];
+  const valueByName = new Map<string, string>();
+  for (const [name, list] of byName) {
+    const liveList = list.filter(isLive);
+    const distinct = [...new Set(liveList.map((t) => t.value))];
+    if (distinct.length > 1) {
+      contested.push({ name, value: liveList.map((t) => ({ value: t.value, sourceTitle: t.source_title })) });
+      continue;
+    }
+    const chosen = liveList[0] ?? list[0]; // one live value, else the newest on record
+    resolved.push({ name, value: chosen.value, unit: chosen.unit, sourceTitle: chosen.source_title, occurredAt: chosen.occurred_at });
+    valueByName.set(name, chosen.value);
+  }
+
+  const discount = proj.list_value_cents != null && proj.discount_cents > 0
+    ? { listCents: proj.list_value_cents, discountCents: proj.discount_cents, reason: proj.discount_reason }
+    : null;
+
+  // The value map a template renders from: every term under its own name, a peso alias
+  // for cents terms (total_fee_cents → total_fee), plus the project's own facts.
+  const value: Record<string, string | number | null> = {
+    client_name: proj.client_name,
+    project_title: proj.title,
+    total_value: pesoOf(proj.total_value_cents),
+    list_value: proj.list_value_cents != null ? pesoOf(proj.list_value_cents) : null,
+    discount: discount ? pesoOf(discount.discountCents) : null,
+    discount_reason: proj.discount_reason,
+    today: todayISO(),
+  };
+  for (const [name, raw] of valueByName) {
+    value[name] = raw;
+    if (name.endsWith("_cents") && /^\d+$/.test(raw)) value[name.slice(0, -"_cents".length)] = pesoOf(Number(raw));
+  }
+
+  let draft: string | null = null;
+  let missing: string[] = [];
+  if (corpusTemplateId && contested.length === 0) {
+    const tpl = await getTemplate(corpusTemplateId);
+    if (tpl) {
+      const rendered = renderTemplate(tpl.body, value);
+      draft = rendered.text;
+      missing = rendered.missing;
+    }
+  }
+  return { projectId, clientName: proj.client_name, resolved, contested, discount, missing, draft, corpusTemplateId: corpusTemplateId ?? null };
+}
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
+
+export async function deleteTemplate(corpusTemplateId: number): Promise<boolean> {
+  const d = db();
+  const [row] = await d.select({ id: corpusTemplate.corpusTemplateId }).from(corpusTemplate).where(eq(corpusTemplate.corpusTemplateId, corpusTemplateId));
+  if (!row) return false;
+  await d.delete(corpusTemplate).where(eq(corpusTemplate.corpusTemplateId, corpusTemplateId));
+  return true;
 }
 
 // ─── Templates ───────────────────────────────────────
