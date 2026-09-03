@@ -4,6 +4,11 @@ import { useReducedMotion } from "framer-motion";
 /**
  * The ADVO wordmark as an interactive dot matrix.
  *
+ * The tagline under it is NOT drawn here. It was, briefly, and Prince killed
+ * it on sight: at the size the measure forces, a light face sampled on this
+ * grid comes out as dashes. It is HTML text in landing-footer.tsx now, which
+ * is also the only version a screen reader was ever going to get.
+ *
  * Prince, 09-02: "analyze the website https://op.al, u need to get it exactly
  * as it is". So the mechanism below is op.al's, read off their bundle rather
  * than guessed at: a mask sampled on a grid, a velocity-scaled Gaussian around
@@ -21,20 +26,24 @@ import { useReducedMotion } from "framer-motion";
  *    falling shapes stop under prefers-reduced-motion. op.al does neither.
  *
  * Ground is white here, not black, so the ink is a light grey — same single
- * fillStyle for every tier, exactly as op.al does it. The brightness ramp you
+ * fillStyle for every tier, exactly as op.al does it. A near-black was tried
+ * and rejected: "i want the gray color before". The brightness ramp you
  * perceive is ink coverage, never colour.
  */
 
 /** op.al ships #969696 for its light theme. One fillStyle for all four tiers. */
 const DOT_COLOR = "#8f8f8f";
 
-/** cell ≈ 0.0042838 × canvas width, floored at 4. Reproduces their 8px @1920, 6px @1440. */
-const CELL_SCALE = 0.0042838;
-const CELL_MIN = 4;
+/**
+ * cell ≈ 0.0030 × canvas width, floored at 3. Roughly half the pitch of the
+ * 8px-at-1920 grid this replaced, which is where "more dots" comes from.
+ */
+const CELL_SCALE = 0.003;
+const CELL_MIN = 3;
 
 /** Glyph em size the tier radii are relative to. */
-const GLYPH_MIN = 6;
-const GLYPH_RATIO = 1.1;
+const GLYPH_MIN = 5;
+const GLYPH_RATIO = 1.25;
 
 /** Influence bleeds off linearly at 1/3.2 per second — this is the trail, not a lerp. */
 const DECAY_PER_SECOND = 1 / 3.2;
@@ -65,19 +74,45 @@ const TIER_RING = 0.12;
 const R_SPECK = 0.14;
 /**
  * A touch device never gets a cursor, so the wordmark sits at the speck tier
- * forever — and a 0.06em hairline on white is a smudge, not a logo. Coarse
- * pointers get a speck you can actually read. Fine pointers keep op.al's value,
- * because there the specks are only ever the backdrop to a cursor.
+ * forever — and a hairline on white is a smudge, not a logo. Coarse pointers
+ * get a speck you can actually read.
  */
 const R_SPECK_COARSE = 0.18;
-const R_BULLET = 0.2;
-const R_RING = 0.3;
+const R_BULLET = 0.22;
+const R_RING = 0.32;
 const R_RING_STROKE = 0.09;
-const R_SOLID = 0.32;
+const R_SOLID = 0.34;
 
 /** A shape falls through the grid every 4s and forces the cells it covers to 1. */
 const SHAPE_INTERVAL_SECONDS = 4;
 const SHAPE_BASE_CELLS = 25;
+
+// ---------------------------------------------------------------- wordmark
+
+/** Side gutter, as a fraction of the canvas width. The wordmark takes the rest. */
+const MARGIN_RATIO = 0.035;
+/** Air kept above and below the wordmark, as a fraction of the canvas height. */
+const BREATHE_RATIO = 0.08;
+
+/**
+ * Dilation applied to the wordmark before sampling, as a fraction of its drawn
+ * height. Prince, 09-03, against the reference lockup: "less thicker". The
+ * artwork's own weight is the target, so nothing is added — the extra dots come
+ * from the finer grid above, not from fattened strokes. Left as a dial because
+ * a coarser grid would need it back.
+ */
+const BOLD_RATIO = 0;
+const DILATE_RING = [
+  [0, 0],
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+  [0.7, 0.7],
+  [0.7, -0.7],
+  [-0.7, 0.7],
+  [-0.7, -0.7],
+] as const;
 
 type ShapeKind = "square" | "rect" | "circle" | "ovoid";
 const SHAPE_KIND: ShapeKind[] = ["square", "rect", "circle", "ovoid"];
@@ -99,6 +134,8 @@ interface AdvoDotFieldProps {
   className?: string;
 }
 
+const TAU = Math.PI * 2;
+
 const AdvoDotField = ({ src = "/advo-logo-black.png", className }: AdvoDotFieldProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const reduceMotion = useReducedMotion();
@@ -115,6 +152,7 @@ const AdvoDotField = ({ src = "/advo-logo-black.png", className }: AdvoDotFieldP
     let pointX = new Float32Array(0);
     let pointY = new Float32Array(0);
     let influence = new Float32Array(0);
+    let tier = new Uint8Array(0);
     let cell = CELL_MIN;
     let glyph = GLYPH_MIN;
     let width = 0;
@@ -126,7 +164,7 @@ const AdvoDotField = ({ src = "/advo-logo-black.png", className }: AdvoDotFieldP
     let lastMoveAt = 0;
 
     let shape: Shape[] = [];
-    let lastSpawnAt = 0;
+    let lastSpawnAt = -SHAPE_INTERVAL_SECONDS;
     let elapsed = 0;
 
     let frame = 0;
@@ -143,6 +181,7 @@ const AdvoDotField = ({ src = "/advo-logo-black.png", className }: AdvoDotFieldP
 
     /**
      * Re-derive the dot grid. Runs on resize and once the artwork decodes.
+     *
      * The offscreen pass works in CSS pixels, not device pixels — the grid is
      * a layout thing, and sampling at DPR would change dot pitch per monitor.
      */
@@ -172,14 +211,29 @@ const AdvoDotField = ({ src = "/advo-logo-black.png", className }: AdvoDotFieldP
       octx.fillStyle = "#ffffff";
       octx.fillRect(0, 0, off.width, off.height);
 
-      const inset = Math.round(off.width * 0.06);
-      const boxW = off.width - inset * 2;
-      const boxH = off.height - Math.round(off.height * 0.12);
-      const scale = Math.min(boxW / mask.naturalWidth, boxH / mask.naturalHeight);
-      const drawW = mask.naturalWidth * scale;
-      const drawH = mask.naturalHeight * scale;
-      octx.drawImage(mask, (off.width - drawW) / 2, (off.height - drawH) / 2, drawW, drawH);
+      // ---- lay the wordmark out ----------------------------------------
+      // Prince, 09-03: "scale more so it fills a bit more the width of website
+      // (with some margin on sides ofc)". So the width is the driver, and the
+      // mark only shrinks if the box is too short to take it.
+      const logoAspect = mask.naturalWidth / mask.naturalHeight;
 
+      const room = off.width - Math.round(off.width * MARGIN_RATIO) * 2;
+      const tall = off.height - Math.round(off.height * BREATHE_RATIO) * 2;
+
+      const logoW = room / logoAspect > tall ? tall * logoAspect : room;
+      const logoH = logoW / logoAspect;
+      const originX = (off.width - logoW) / 2;
+      const originY = (off.height - logoH) / 2;
+
+      // Dilate the wordmark by re-drawing it around a small ring. A morphology
+      // pass on the pixel buffer would be exact, but this is the same result at
+      // a ninth of the cost and it runs on every resize.
+      const bold = BOLD_RATIO * logoH;
+      for (const [dx, dy] of DILATE_RING) {
+        octx.drawImage(mask, originX + dx * bold, originY + dy * bold, logoW, logoH);
+      }
+
+      // ---- sample ------------------------------------------------------
       const data = octx.getImageData(0, 0, off.width, off.height).data;
       const cols = Math.floor(off.width / cell);
       const rows = Math.floor(off.height / cell);
@@ -191,14 +245,14 @@ const AdvoDotField = ({ src = "/advo-logo-black.png", className }: AdvoDotFieldP
       for (let row = 0; row < rows; row += 1) {
         for (let col = 0; col < cols; col += 1) {
           const x = ox + (col + 0.5) * cell;
-          const y = oy + (row + 0.5) * cell;
+          const cy = oy + (row + 0.5) * cell;
           const px = Math.floor(x);
-          const py = Math.floor(y);
+          const py = Math.floor(cy);
           if (px < 0 || py < 0 || px >= off.width || py >= off.height) continue;
           // Red channel is enough: the artwork is greyscale over white.
-          if (data[(py * off.width + px) * 4] < 100) {
+          if (data[(py * off.width + px) * 4] < 140) {
             xs.push(x);
-            ys.push(y);
+            ys.push(cy);
           }
         }
       }
@@ -208,6 +262,7 @@ const AdvoDotField = ({ src = "/advo-logo-black.png", className }: AdvoDotFieldP
       // Dropping the old influences is what stops a resize from leaving a
       // frozen bright patch where the cursor used to be.
       influence = new Float32Array(xs.length);
+      tier = new Uint8Array(xs.length);
     };
 
     // --------------------------------------------------------------- shapes
@@ -255,6 +310,23 @@ const AdvoDotField = ({ src = "/advo-logo-black.png", className }: AdvoDotFieldP
 
     // ----------------------------------------------------------------- draw
 
+    /**
+     * Every dot in a tier shares a radius, so the tier is one path and one
+     * fill. At the pitch this grid runs now that is four draw calls a frame
+     * instead of forty thousand, which is the difference between the footer
+     * costing nothing and the footer costing the scroll.
+     */
+    const strokeTier = (want: number, radius: number, fill: boolean) => {
+      ctx.beginPath();
+      for (let i = 0; i < tier.length; i += 1) {
+        if (tier[i] !== want) continue;
+        ctx.moveTo(pointX[i] + radius, pointY[i]);
+        ctx.arc(pointX[i], pointY[i], radius, 0, TAU);
+      }
+      if (fill) ctx.fill();
+      else ctx.stroke();
+    };
+
     const render = (now: number) => {
       const dt = previous === null ? 0 : Math.min(0.1, (now - previous) / 1000);
       previous = now;
@@ -299,10 +371,6 @@ const AdvoDotField = ({ src = "/advo-logo-black.png", className }: AdvoDotFieldP
         shape = shape.filter((item) => item.y < height + item.h);
       }
 
-      ctx.fillStyle = DOT_COLOR;
-      ctx.strokeStyle = DOT_COLOR;
-      ctx.lineWidth = Math.max(0.7, R_RING_STROKE * glyph);
-
       const decay = dt * DECAY_PER_SECOND;
       for (let i = 0; i < pointX.length; i += 1) {
         const x = pointX[i];
@@ -328,24 +396,20 @@ const AdvoDotField = ({ src = "/advo-logo-black.png", className }: AdvoDotFieldP
         }
 
         influence[i] = value;
-
-        ctx.beginPath();
-        if (value >= TIER_SOLID) {
-          ctx.arc(x, y, R_SOLID * glyph, 0, Math.PI * 2);
-          ctx.fill();
-        } else if (value >= TIER_BULLET) {
-          ctx.arc(x, y, R_BULLET * glyph, 0, Math.PI * 2);
-          ctx.fill();
-        } else if (value >= TIER_RING) {
-          // The hollow ring. Optically larger than the filled bullet inside it,
-          // which is what makes the cursor read as a lens rather than a blob.
-          ctx.arc(x, y, R_RING * glyph, 0, Math.PI * 2);
-          ctx.stroke();
-        } else {
-          ctx.arc(x, y, Math.max(0.5, speckRatio * glyph), 0, Math.PI * 2);
-          ctx.fill();
-        }
+        tier[i] =
+          value >= TIER_SOLID ? 3 : value >= TIER_BULLET ? 2 : value >= TIER_RING ? 1 : 0;
       }
+
+      ctx.fillStyle = DOT_COLOR;
+      ctx.strokeStyle = DOT_COLOR;
+      ctx.lineWidth = Math.max(0.7, R_RING_STROKE * glyph);
+
+      strokeTier(0, Math.max(0.5, speckRatio * glyph), true);
+      strokeTier(2, R_BULLET * glyph, true);
+      strokeTier(3, R_SOLID * glyph, true);
+      // The hollow ring. Optically larger than the filled bullet inside it,
+      // which is what makes the cursor read as a lens rather than a blob.
+      strokeTier(1, R_RING * glyph, false);
 
       frame = requestAnimationFrame(render);
     };

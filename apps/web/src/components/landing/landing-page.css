@@ -59,15 +59,17 @@ html:has(.landing-page)::-webkit-scrollbar-track {
   background: transparent;
 }
 
-/* Only the work panels opt into snapping (they carry scroll-snap-align), and
-   `proximity` means everything else scrolls normally. `mandatory` here would
-   fight the hero and the footer, which are not viewport-height. */
-html:has(.work-panel) {
-  scroll-snap-type: y proximity;
-}
+/* Prince, 09-03: "do not limit or affect the scroll itself." The work section
+   used to snap; it now reads scroll position rather than steering it, so this
+   document deliberately carries no scroll-snap rule at all. */
 
 .landing-page {
-  overflow: hidden;
+  /* `clip`, not `hidden`. Both stop the sideways overflow, but `hidden` makes
+     this a scroll container, and a scroll container is what position: sticky
+     sticks to — the work stage would pin to a box that never scrolls and so
+     would never pin at all. */
+  overflow-x: clip;
+  overflow-y: visible;
   color-scheme: light;
   --landing-muted: var(--landing-ink-soft);
   --landing-ghost: var(--landing-line-soft);
@@ -126,11 +128,23 @@ body:has(.landing-shell) {
 
 .landing-shell-auth {
   flex: 1;
+  /* Fills the viewport under the 64px fixed nav, so the footer sits below the fold and
+     only shows on scroll. dvh so mobile browser chrome does not crop it. */
+  min-height: calc(100vh - 64px);
+  min-height: calc(100dvh - 64px);
   position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 48px 24px 72px;
+}
+
+.login-dot-field {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
 }
 .landing-shell-mark {
   display: block;
@@ -172,6 +186,14 @@ body:has(.landing-shell) {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
+
+/* Only the landing sits a nav on top of a photograph. Every other public route
+   mounts LandingShell, whose first pixel is content, and keeps the plate on. */
+.landing-nav-float::before {
+  opacity: 0;
+  transition: opacity .28s ease;
+}
+.landing-nav-float.is-solid::before { opacity: 1; }
 
 .landing-nav-inner {
   position: relative;
@@ -252,181 +274,396 @@ body:has(.landing-shell) {
 }
 .landing-text-link:hover { text-underline-offset: 8px; }
 
+/* The underline belongs to the words, not to the arrow, so the rule is moved
+   onto the span and the arrow only travels. */
+.landing-text-link-arrow { gap: 8px; text-decoration: none; }
+.landing-text-link-arrow > span {
+  text-decoration: underline;
+  text-underline-offset: 5px;
+  text-decoration-thickness: 1px;
+  transition: text-underline-offset .2s ease;
+}
+.landing-text-link-arrow:hover > span { text-underline-offset: 8px; }
+.landing-text-link-arrow svg { flex: none; transition: transform .2s ease; }
+.landing-text-link-arrow:hover svg { transform: translateX(4px); }
+
 /* ---------------------------------------------------------------- hero */
 
+/* Full-bleed: the hero is a direct child of .landing-page, so dropping the
+   1100px width is all it takes to break the container the type hero sat in. */
 .landing-hero {
-  width: min(1100px, calc(100% - 40px));
-  margin-inline: auto;
-  min-height: min(88svh, 820px);
-  padding: 120px 0 80px;
+  position: relative;
+  height: 100svh;
+  min-height: 640px;
+  overflow: hidden;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  text-align: center;
-  scroll-margin-top: 80px;
+}
+
+.landing-hero-media {
+  position: absolute;
+  inset: 0;
+  background-color: var(--landing-ground);
+  background-image: url("/landing/hero-building.jpg");
+  background-size: cover;
+  /* Same crop as the video below it, or the fade would slide the tower. */
+  background-position: 65% center;
+  background-repeat: no-repeat;
+}
+
+.landing-hero-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 65% center;
+  opacity: 0;
+  transition: opacity .8s ease;
+}
+.landing-hero-video.is-ready { opacity: 1; }
+
+/* The sky is already white on the left of the frame; this only finishes the
+   job so the headline is ink on paper while the glass stays glass. */
+.landing-hero-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0.94) 0%,
+    rgba(255, 255, 255, 0.80) 34%,
+    rgba(255, 255, 255, 0) 62%
+  );
+}
+
+.landing-hero-body {
+  position: relative;
+  z-index: 1;
+  width: min(1600px, calc(100% - 40px));
+  margin-inline: auto;
+  /* The reference sits the wordmark at the page edge and starts the sentence
+     inboard of it. Flush, the logo reads as the first word of the headline. */
+  padding-left: clamp(0px, 3.6vw, 64px);
 }
 .landing-hero h1 {
-  max-width: 16ch;
-  font-size: clamp(44px, 7.5vw, 104px);
+  /* Three lines, breaking after "technological" and after "industries".
+     Measured in Inter at this size: the column has to clear "infrastructure
+     for industries" (18.6ch) and reject "...industries across" (23.6ch), so
+     it sits at the midpoint. Both bounds scale with font-size, so the break
+     holds at every width down to where the container itself is narrower. */
+  max-width: 21ch;
+  font-size: clamp(36px, 4.1vw, 64px);
   font-weight: 400;
-  letter-spacing: -0.045em;
-  line-height: 0.98;
+  letter-spacing: -0.04em;
+  line-height: 1.16;
+  color: var(--landing-ink);
 }
-.landing-page .landing-hero > p {
+.landing-page .landing-hero-body > p {
   max-width: 46ch;
-  margin-top: 24px;
+  margin-top: 28px;
   font-size: var(--landing-text-lead);
   line-height: 1.5;
   color: var(--landing-muted);
 }
 .landing-hero-action {
-  margin-top: 40px;
+  margin-top: 44px;
   display: flex;
   align-items: center;
   gap: 28px;
   flex-wrap: wrap;
-  justify-content: center;
 }
 
 /* ---------------------------------------------------------------- work */
 
-/* One project, one screen. The screenshot is the section. */
-.work { scroll-margin-top: 0; }
-
-.work-panel {
+/* A tall section whose contents are sticky. The height is the scroll budget:
+   one screen to read the deck, plus a step for every card after the first.
+   --work-steps is set on the element by WorkShowcase from the row count. */
+.work {
   position: relative;
+  height: calc(100svh + var(--work-steps, 0) * 72svh);
+  scroll-margin-top: 0;
+}
+
+.work-stage {
+  position: sticky;
+  top: 0;
   height: 100svh;
-  min-height: 520px;
+  min-height: 560px;
+  display: flex;
+  align-items: center;
   overflow: hidden;
-  background: var(--landing-ink);
-  scroll-snap-align: center;
-  scroll-snap-stop: normal;
 }
 
-.work-panel-media {
-  position: absolute;
-  inset: 0;
-}
-.work-panel-media img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: top center;
-  /* Enters at a slight push-in and settles. Also the hover target. */
-  transform: scale(1.08);
-  opacity: 0;
-  transition: transform 1.4s cubic-bezier(.16, 1, .3, 1), opacity .9s ease;
-}
-.work-panel.is-entered .work-panel-media img { transform: scale(1); opacity: 1; }
-.work-panel:hover .work-panel-media img { transform: scale(1.03); }
-
-/* Reads the type at any screenshot brightness without dimming the whole shot. */
-.work-panel-scrim {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(to top, rgba(0, 0, 0, 0.86) 0%, rgba(0, 0, 0, 0.45) 34%, rgba(0, 0, 0, 0) 66%),
-    linear-gradient(to right, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 55%);
-}
-
-.work-panel-body {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: clamp(48px, 7vh, 88px);
+.work-stage-inner {
   width: min(1600px, calc(100% - 40px));
   margin-inline: auto;
-  max-width: min(1600px, calc(100% - 40px));
-  color: #fff;
-  opacity: 0;
-  transform: translateY(28px);
-  transition: opacity .8s ease .18s, transform .8s cubic-bezier(.16, 1, .3, 1) .18s;
+  display: grid;
+  grid-template-columns: minmax(0, 0.68fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 40px;
 }
-.work-panel.is-entered .work-panel-body { opacity: 1; transform: none; }
 
-.work-panel-count {
-  display: block;
-  margin-bottom: 18px;
+.landing-page .work-copy-eyebrow {
   font-size: var(--landing-text-micro);
   font-weight: 500;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.6);
-}
-.landing-page .work-panel-title {
-  max-width: 14ch;
-  font-size: clamp(40px, 6.4vw, 92px);
-  font-weight: 400;
-  letter-spacing: -0.045em;
-  line-height: 0.96;
-}
-.landing-page .work-panel-desc {
-  max-width: 42ch;
-  margin-top: 16px;
-  font-size: var(--landing-text-lead);
-  line-height: 1.45;
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--landing-ink-mute);
 }
 
-/* The text button Prince asked for: underline, no chrome. */
-.work-panel-link {
+/* Remounted on every card change, so this replays as the entrance. */
+.work-copy-swap {
+  margin-top: 28px;
+  animation: work-copy-in .5s cubic-bezier(.16, 1, .3, 1) both;
+}
+@keyframes work-copy-in {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+
+.landing-page .work-copy-title {
+  max-width: 13ch;
+  font-size: clamp(34px, 4.4vw, 68px);
+  font-weight: 400;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+}
+.landing-page .work-copy-desc {
+  max-width: 38ch;
+  margin-top: 16px;
+  font-size: var(--landing-text-lead);
+  line-height: 1.5;
+  color: var(--landing-muted);
+}
+
+/* The text link Prince asked for: underlined words, travelling icon, no chrome. */
+.work-copy-link {
   display: inline-flex;
   align-items: center;
-  margin-top: 28px;
+  gap: 8px;
+  margin-top: 30px;
   font-size: var(--landing-text-body);
   font-weight: 500;
-  color: #fff;
+  color: var(--landing-ink);
+}
+.work-copy-link > span {
   text-decoration: underline;
   text-underline-offset: 6px;
   text-decoration-thickness: 1px;
   transition: text-underline-offset .22s ease;
 }
-.work-panel-link:hover { text-underline-offset: 10px; }
+.work-copy-link:hover > span { text-underline-offset: 10px; }
+.work-copy-link svg { flex: none; transition: transform .22s ease; }
+.work-copy-link:hover svg { transform: translate(3px, -3px); }
 
-/* ------------------------------------------------------------- services */
+/* The deck's own box. CardSwap places itself absolutely inside it, and the
+   stack leans up and to the right of the front card, so the container is
+   pushed down-left to put the visual mass back in the middle. */
+.work-cards {
+  position: relative;
+  height: min(70svh, 560px);
+}
+/* The stack leans up and to the right of the front card, so its visual centre
+   is not the front card's centre. These offsets put the whole deck back in the
+   middle of the column instead of hanging its back half off the page. Both are
+   fractions of the card, and the lean is a fraction of the card too, so one
+   pair of numbers holds at every breakpoint. */
+.work-cards .card-swap-container {
+  top: 50%;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  transform: translate(-56%, -23%);
+  transform-origin: center center;
+}
 
-.landing-service {
+/* Prince, 09-03: "remove the outline on the work cards". CardSwap ships a 1px
+   white hairline, which on a white page is only ever visible as a seam. The
+   shadow is what separates one card from the one behind it now. */
+.work-cards .work-card {
+  overflow: hidden;
+  border: 0;
+  background: var(--landing-ink);
+  box-shadow: 0 30px 60px -24px rgba(12, 12, 12, 0.45);
+  cursor: pointer;
+}
+.work-cards .work-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+/* A card seen out of the corner of the eye should still say what it is; the
+   left column only ever names the one in front. */
+.work-card-label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 34px 18px 14px;
+  font-size: var(--landing-text-small);
+  font-weight: 500;
+  color: #fff;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0));
+}
+
+/* ----------------------------------------------------------- industries */
+
+.landing-industry {
   width: min(1600px, calc(100% - 40px));
   margin-inline: auto;
   padding-block: var(--landing-section-rhythm);
   scroll-margin-top: 80px;
 }
-.landing-page .landing-service > h2 {
+.landing-page .landing-industry > h2 {
   font-size: var(--landing-text-heading);
   font-weight: 400;
   letter-spacing: -0.03em;
 }
-.landing-service-list {
-  margin: 48px 0 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0;
+
+.landing-industry-list {
+  margin-top: 48px;
+  display: flex;
+  flex-direction: column;
 }
-.landing-service-list li {
-  padding: 24px 24px 40px 0;
+
+/* A plain row in normal flow: photograph one side, offers the other. It has no
+   height of its own beyond its content and nothing inside it is sticky, so the
+   section is exactly as long as what it says and the reader sets the pace.
+   Prince, 09-03, on the pinned version this replaced: "u will not be affecting
+   the scroll or anything." */
+.landing-industry-row {
   border-top: 1px solid var(--landing-line);
+  padding-block: clamp(36px, 4vw, 64px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(32px, 4vw, 72px);
 }
-.landing-service-index {
+
+/* Alternating sides. Four identical rows read as a table; this reads as four
+   industries, and the eye still lands on the type first either way. */
+.landing-industry-row:nth-child(even) .landing-industry-media { order: 2; }
+
+/* The ratio is fixed and the slides are taken out of flow, so the box is the
+   same height on every slide. Nothing below it moves as the photograph
+   changes, which is what keeps the cross-fade from costing a layout. */
+.landing-industry-media {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: 14px;
+  background: var(--landing-ground-tint);
+}
+
+/* Stacked, not swapped. Every offer's slide is in the DOM at once and opacity
+   is the only thing that moves, which is what makes the change a cross-fade
+   rather than a cut.
+   The first slide is the one showing before script runs, and from there
+   opacity is written inline by the scroll reader, which outranks both rules
+   below. The short transition is a smoothing filter, not the animation: a
+   wheel notch arrives as one large jump and would otherwise land as a step.
+   150ms is long enough to round a notch off and short enough that the
+   photograph still tracks the scroll rather than trailing it. */
+.landing-industry-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity .5s ease;
+  will-change: opacity;
+}
+.landing-industry-slide:first-child { opacity: 1; }
+.landing-industry-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   display: block;
-  margin-bottom: 20px;
+}
+
+/* The slot before its photograph exists. Named for the offer, so it reads as
+   "not shot yet" rather than as a failed download. */
+.landing-industry-plate {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      var(--landing-ground-soft) 0 10px,
+      var(--landing-ground-tint) 10px 20px
+    );
+}
+.landing-industry-plate span {
+  font-size: var(--landing-text-small);
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--landing-ink-mute);
+}
+
+.landing-industry-index {
+  display: block;
+  margin-bottom: 12px;
   font-size: var(--landing-text-micro);
   font-weight: 500;
   letter-spacing: 0.18em;
   color: var(--landing-ink-mute);
 }
-.landing-page .landing-service-list h3 {
-  font-size: var(--landing-text-title);
+.landing-page .landing-industry-body h3 {
+  font-size: clamp(28px, 2.6vw, 38px);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+.landing-page .landing-industry-copy {
+  max-width: 42ch;
+  margin-top: 12px;
+  font-size: var(--landing-text-lead);
+  line-height: 1.45;
+  color: var(--landing-muted);
+}
+
+.landing-industry-offer {
+  position: relative;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+/* Every offer stays readable; the inactive ones only step back, because the
+   list is also the section's argument and a dimmed-to-nothing list would mean
+   the reader has to scroll to find out what else we build. */
+.landing-industry-offer li {
+  padding-block: 12px;
+  border-top: 1px solid var(--landing-line-soft);
+}
+/* Prince: the line colour must not shift on the active offer. The name dim is
+   the only cue for the cycling state; the rule above every offer stays one
+   colour. */
+.landing-page .landing-industry-offer h4 {
+  margin: 0;
+  font-size: 20px;
   font-weight: 400;
   letter-spacing: -0.02em;
 }
-.landing-page .landing-service-list p {
-  margin-top: 10px;
-  max-width: 28ch;
+/* Only the name dims, and only to 0.6. Measured on white: dimming the whole
+   <li> put the 15px copy at 1.84:1, because --landing-ink-soft starts at just
+   5.78:1 and any perceptible dim drops it under AA. #0c0c0c has the headroom
+   the copy does not, so 0.6 leaves the name at 5.17:1 and the copy keeps its
+   own colour. Black name against grey name is the emphasis, and nothing on
+   screen is dimmed below 4.5:1. */
+.landing-industry-row .landing-industry-offer h4 {
+  opacity: 0.6;
+  transition: opacity .3s ease;
+}
+.landing-industry-row .landing-industry-offer li.is-active h4 { opacity: 1; }
+.landing-page .landing-industry-offer p {
+  max-width: 44ch;
+  margin-top: 4px;
   font-size: var(--landing-text-body);
-  line-height: 1.5;
+  line-height: 1.45;
   color: var(--landing-muted);
 }
 
@@ -459,13 +696,21 @@ body:has(.landing-shell) {
   overflow: hidden;
 }
 
+.landing-footer-lockup {
+  position: relative;
+  z-index: 1;
+  padding-top: clamp(20px, 3vw, 44px);
+}
+
 /* Height tracks width, not the viewport. The wordmark is ~4.36:1 and spans
  * most of the container, so a viewport-height box left a 79px wordmark
- * floating in a 388px void on a phone. */
+ * floating in a 388px void on a phone. 24vw is that ratio plus the air the
+ * canvas keeps above and below it: any taller and the mark fits to height
+ * instead, throwing away the extra width Prince asked it to fill. */
 .landing-footer-field {
   position: relative;
   width: 100%;
-  height: clamp(150px, 28vw, 460px);
+  height: clamp(112px, 24vw, 450px);
 }
 .landing-footer-field canvas {
   display: block;
@@ -474,29 +719,46 @@ body:has(.landing-shell) {
   cursor: crosshair;
 }
 
+/* Set as type, not painted into the grid. The tracking is what carries it out
+   to roughly the wordmark's measure, which is where the reference puts it. */
+.landing-page .landing-footer-tagline {
+  width: 93%;
+  margin: clamp(4px, 0.8vw, 16px) auto 0;
+  text-align: center;
+  /* Deliberately set just inside the wordmark measure, not flush with it.
+     4.05vw keeps the tagline ~5% narrower than the mark at every breakpoint. */
+  font-size: clamp(14px, 4.05vw, 69px);
+  font-weight: 300;
+  letter-spacing: 0.34em;
+  /* Tracking is added after the last letter too, so the glyphs sit half a step
+     left of the centred inline box. This puts them back. */
+  text-indent: 0.17em;
+  text-transform: uppercase;
+  /* One step lighter than DOT_COLOR (AdvoDotField.tsx) so the line recedes
+     behind the mark rather than competing with it. */
+  color: #b0b0b0;
+}
+
 .landing-footer-bar {
   position: relative;
   z-index: 1;
   width: min(1600px, calc(100% - 40px));
   margin-inline: auto;
-  padding: 28px 0 32px;
+  padding: clamp(28px, 4vw, 56px) 0 0;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  gap: 24px 40px;
+  gap: 16px 40px;
   flex-wrap: wrap;
 }
-.landing-footer-id { display: flex; align-items: baseline; gap: 20px; flex-wrap: wrap; }
-.landing-footer-id img {
-  width: 82px;
-  height: 21px;
-  object-fit: contain;
-}
-.landing-page .landing-footer-id p {
-  color: var(--landing-ink-mute);
-  font-size: var(--landing-text-micro);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+
+/* The nav links and the four policies, one continuous row. Two <nav>s (so the
+   "Legal" group keeps its own label) with the same gap read as a single list. */
+.landing-footer-links {
+  display: flex;
+  align-items: center;
+  gap: 4px 28px;
+  flex-wrap: wrap;
 }
 
 .landing-footer-link {
@@ -517,34 +779,51 @@ body:has(.landing-shell) {
 .landing-social a { color: var(--landing-ink); opacity: 0.6; display: grid; place-items: center; transition: opacity .18s ease; }
 .landing-social a:hover { opacity: 1; }
 
-/* The PayMongo disclosure row. Its own line under the bar: a reviewer has to
- * find all four from any page, and they are compliance rather than navigation. */
-.landing-footer-legal {
+/* Just the copyright now — the four PayMongo disclosures moved up into the
+ * link bar. No rule above it: the rule plus a second row of links was the
+ * thing that read as a second footer. */
+.landing-footer-fine {
   position: relative;
   z-index: 1;
   width: min(1600px, calc(100% - 40px));
   margin-inline: auto;
-  padding: 20px 0 28px;
-  border-top: 1px solid var(--landing-line);
+  padding: 14px 0 28px;
   display: flex;
+  align-items: baseline;
+  justify-content: space-between;
   flex-wrap: wrap;
-  gap: 8px 28px;
+  gap: 6px 28px;
 }
-.landing-footer-legal a {
+.landing-footer-fine nav { display: flex; flex-wrap: wrap; gap: 6px 24px; }
+.landing-page .landing-footer-fine p,
+.landing-footer-fine a {
   color: var(--landing-ink-mute);
   font-size: var(--landing-text-small);
 }
-.landing-footer-legal a:hover { color: var(--landing-ink); text-decoration: underline; text-underline-offset: 4px; }
+.landing-footer-fine a:hover { color: var(--landing-ink); text-decoration: underline; text-underline-offset: 4px; }
 
 /* ----------------------------------------------------------- responsive */
 
 @media (max-width: 900px) {
-  .landing-service-list { grid-template-columns: repeat(2, 1fr); }
+  /* Photograph over type. Side by side, the shot is too small to read a
+     feature in and the offer list is too narrow to read at all. Every offer
+     stays on the page: the row scrolls normally, so there is room for all of
+     them and no reason to hide any. */
+  .landing-industry-row { grid-template-columns: 1fr; gap: 22px; }
+  .landing-industry-row:nth-child(even) .landing-industry-media { order: 0; }
+
+  .work-stage-inner { grid-template-columns: 1fr; gap: 20px; }
+  .work-cards { height: min(34svh, 300px); }
+  .landing-page .work-copy-title { max-width: none; font-size: clamp(30px, 6vw, 44px); }
+  .landing-page .work-copy-desc { max-width: 46ch; font-size: var(--landing-text-body); }
+  .work-copy-swap { margin-top: 18px; }
+  .work-copy-link { margin-top: 20px; }
 }
 
 @media (max-width: 680px) {
   .landing-nav-inner,
-  .landing-service,
+  .landing-hero-body,
+  .landing-industry,
   .landing-shell-main { width: min(100% - 28px, 1600px); }
   .landing-shell-main { padding: 16px 0 64px; }
   .landing-shell-auth { padding: 28px 16px 56px; }
@@ -572,26 +851,133 @@ body:has(.landing-shell) {
   .landing-login { display: none; }
   .landing-menu { display: block; }
 
-  .landing-hero { padding: 104px 0 64px; min-height: 82svh; }
-  .landing-hero-action { gap: 20px; }
+  /* The phone shows the portrait video as its whole frame, edge to edge, with
+     the copy laid over the white sky at the top — the exact composition in the
+     client reference. The hero fills the phone's own screen (100svh) so the
+     section owns the whole first screen and the next one does not peek in above
+     the fold. The portrait frame is close to a phone's ratio, so cover only
+     trims ~8% off the sides and the tower still reads. */
+  .landing-hero {
+    height: 100svh;
+    min-height: 0;
+    display: block;
+  }
+  /* Up here the header is the wordmark and the menu, nothing else — the
+     reference carries no pill in the corner, so the small nav CTA stands down. */
+  .landing-nav-action .landing-button-small { display: none; }
 
-  .landing-service-list { grid-template-columns: 1fr; }
-  .landing-service-list li { padding: 20px 0 28px; }
-  .landing-page .landing-service-list p { max-width: none; }
+  /* Copy sits near the top of the frame, not centred in it. A small left pad
+     holds the headline and paragraph inboard of the screen edge so they do not
+     read as flush to it. The top pad drops the whole block down off the wordmark
+     so there is a clear band of sky above the headline, the way the reference
+     sits it. */
+  .landing-hero-body {
+    padding-left: 14px;
+    padding-top: 132px;
+    padding-bottom: 28px;
+  }
+  /* 15ch is about the width of "infrastructure", the longest word in the
+     sentence, so the headline falls into the reference's six lines — one word
+     or short phrase per line — instead of overflowing the right edge. */
+  .landing-hero h1 {
+    max-width: 11ch;
+    font-size: clamp(36px, 9.6vw, 54px);
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+  }
+  .landing-page .landing-hero-body > p {
+    max-width: 22ch;
+    margin-top: 22px;
+    font-size: 16px;
+  }
+  /* Pill on its own row, the text link under it — stacked, as the reference
+     has them, not the desktop's side-by-side row. */
+  .landing-hero-action {
+    margin-top: 30px;
+    gap: 22px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
 
-  .work-panel-body { bottom: 40px; }
+  .landing-page .landing-industry-copy,
+  .landing-page .landing-industry-offer p { max-width: none; }
+  .landing-industry-media { aspect-ratio: 16 / 11; }
+
+  .work-stage { min-height: 520px; }
 
   .landing-footer-bar { flex-direction: column; align-items: flex-start; }
   .landing-footer-link { gap: 4px 20px; }
 }
 
-/* landing-shell sets this from useReducedMotion, which also catches the users
- * whose preference the media query below cannot see (framer-motion reads it
- * per-mount). Without these rules the class was applied and did nothing. */
+/* The sideways wash has fixed stops in viewport percent while the copy is a
+   fixed 46ch, so the narrower the viewport the further the paragraph reaches
+   into the transparent end of it — and the crop has put the glass there.
+   Measured: 768x1024 put the paragraph on rgb(49,47,41) at 2.3:1, 844x390 on
+   1.9:1. It only clears AA on the wide shapes it was drawn for, so everything
+   else gets the vertical wash. */
+@media (max-width: 1023px), (max-aspect-ratio: 5 / 4) {
+  /* The stops are the copy's own geometry, not a taste call. Measured against
+     the hero box: the paragraph ends at 64.3% on 390x844 and 65.1% on 360x800,
+     the button row at 73.3% and 74.6%. So the wash holds flat to 67% and is
+     still 0.57 where the last button ends. 0.93 is the number the paragraph
+     needs, not a round one: #5f6673 over the darkest glass in that band clears
+     4.5:1 at 0.88. Nothing below the buttons has to be read, so the wash goes
+     to nothing there instead of the 0.82 floor that erased the tower. */
+  .landing-hero-scrim {
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.97) 0%,
+      rgba(255, 255, 255, 0.93) 67%,
+      rgba(255, 255, 255, 0.52) 76%,
+      rgba(255, 255, 255, 0) 82%
+    );
+  }
+
+  /* 65% is framed for a 16:9 window. A portrait viewport shows a quarter of the
+     source width, and at 65% that quarter is a slab of curtain wall: the corner
+     falls off the right edge and the palm is a sliver. 84% puts the corner, the
+     apex against sky, and the fronds inside the band the wash now clears.
+     Both declarations or none, or the JPG slides sideways under the video. */
+  .landing-hero-media { background-position: 84% center; }
+  .landing-hero-video { object-position: 84% center; }
+}
+
+/* At the phone break the component swaps in the portrait file, which is already
+   framed for this window — the tower is in the corner and the palm is under it,
+   so there is nothing to shift toward. Centre it and paint the matching poster,
+   or the 84% above would slide a portrait frame off its own edge. This sits
+   after the crop block so it wins at the width both of them match. */
+@media (max-width: 680px) {
+  .landing-hero-media {
+    background-image: url("/landing/hero-building-mobile.jpg");
+    background-position: center;
+  }
+  .landing-hero-video { object-position: center; }
+
+  /* The portrait frame is already white sky where the copy sits, so the wash
+     only lifts the very top and clears before the tower (~53% down) — the
+     glass stays crisp the way the reference shows it. */
+  .landing-hero-scrim {
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.62) 0%,
+      rgba(255, 255, 255, 0.18) 34%,
+      rgba(255, 255, 255, 0) 48%
+    );
+  }
+}
+
+/* Both LandingPage and landing-shell set this from useReducedMotion, which also
+ * catches the users whose preference the media query below cannot see
+ * (framer-motion reads it per-mount). Without these rules the class did
+ * nothing. */
 .landing-page.is-reduce-motion .landing-button:hover { transform: none; box-shadow: none; }
 .landing-page.is-reduce-motion .landing-text-link:hover,
-.landing-page.is-reduce-motion .work-panel-link:hover { text-underline-offset: 5px; }
-.landing-page.is-reduce-motion .work-panel:hover .work-panel-media img { transform: none; }
+.landing-page.is-reduce-motion .landing-text-link-arrow:hover > span,
+.landing-page.is-reduce-motion .work-copy-link:hover > span { text-underline-offset: 6px; }
+.landing-page.is-reduce-motion .landing-text-link-arrow:hover svg,
+.landing-page.is-reduce-motion .work-copy-link:hover svg { transform: none; }
+.landing-page.is-reduce-motion .work-copy-swap { animation: none; }
 
 @media (prefers-reduced-motion: reduce) {
   .landing-page *,
@@ -602,8 +988,30 @@ body:has(.landing-shell) {
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
   }
-  html:has(.work-panel) { scroll-snap-type: none; }
-  .work-panel-media img { transform: none; opacity: 1; }
-  .work-panel:hover .work-panel-media img { transform: none; }
-  .work-panel-body { opacity: 1; transform: none; }
+  .landing-text-link-arrow:hover svg,
+  .work-copy-link:hover svg { transform: none; }
+  .work-copy-swap { opacity: 1; transform: none; }
+
+  /* IndustryRow already withholds .is-fading when useReducedMotion is true, so
+     these normally have nothing to undo. They cover the window between first
+     paint and that hook resolving: one frame of a photograph fading, or of a
+     dimmed offer name, is still motion the reader asked us not to make. Only
+     the first slide is opaque by stylesheet, so pinning every name to full
+     opacity is all that is left to do. */
+  .landing-industry-slide { transition: none; }
+  .landing-industry-row .landing-industry-offer h4 { opacity: 1; }
+}
+
+/* Read but not seen. The footer canvas is aria-hidden and the tagline painted
+   inside it is real copy, so it has to exist as text somewhere. */
+.landing-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  clip-path: inset(50%);
 }

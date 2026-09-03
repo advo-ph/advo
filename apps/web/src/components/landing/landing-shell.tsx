@@ -17,8 +17,8 @@ interface LandingShellProps {
  * which were deleted with the sections they named.
  */
 const navItem: { label: string; href: string }[] = [
-  { label: "Work", href: "/#work" },
-  { label: "What we do", href: "/#services" },
+  { label: "Our Projects", href: "/#work" },
+  { label: "What we build", href: "/#services" },
   { label: "Team", href: "/team" },
 ];
 
@@ -59,7 +59,7 @@ const LandingShell = ({ children }: LandingShellProps) => {
           </nav>
           <div className="landing-nav-action">
             <Link className="landing-login" to="/login" onClick={closeMenu}>
-              Log in
+              Client Hub
             </Link>
             <Link className="landing-button landing-button-primary landing-button-small" to="/start" onClick={closeMenu}>
               Start a project

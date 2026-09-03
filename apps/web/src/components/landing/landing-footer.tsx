@@ -30,7 +30,8 @@ interface SocialLink {
 /**
  * The four PayMongo merchant-review disclosures. Full names on purpose — a
  * reviewer looks for the policy by title, and has to find all four from any
- * page. This row is compliance, not navigation, so it sits on its own line.
+ * page. They now sit in the same footer bar as the links above, so there is
+ * one band, not a compliance row bolted under it.
  */
 const legalLink: { label: string; href: string }[] = [
   { label: "Terms and Conditions", href: "/terms" },
@@ -44,11 +45,13 @@ interface FooterLink {
   href: string;
 }
 
+/**
+ * Prince, 09-04: Work, What we build, and Team were dropped — the header
+ * already carries them, so the footer only kept the two the header does not
+ * lead with, and Log in became Client Hub to match the header label.
+ */
 const footerLink: FooterLink[] = [
-  { label: "Work", href: "#work" },
-  { label: "What we do", href: "#services" },
-  { label: "Team", href: "/team" },
-  { label: "Log in", href: "/login" },
+  { label: "Client Hub", href: "/login" },
   { label: "Start a project", href: "/start" },
 ];
 
@@ -117,19 +120,35 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
 
   return (
     <footer className="landing-footer" id="footer">
-      <div className="landing-footer-field">
-        <AdvoDotField />
+      {/* The canvas is aria-hidden, so the wordmark is named here. The line
+          under it is set as HTML, not painted into the grid: dotted, at the
+          size the wordmark's measure forces, it came out as dashes. */}
+      <div className="landing-footer-lockup">
+        <h2 className="landing-sr-only">ADVO</h2>
+        <div className="landing-footer-field">
+          <AdvoDotField />
+        </div>
+        <p className="landing-footer-tagline">We digitalize it for you</p>
       </div>
 
+      {/* One band, not two. Prince, 09-04: "i want them all together rather
+          than u having 2 footers". The legal links used to sit in their own
+          row below, which read as a second footer. Now the nav links and the
+          four policies share one link group; social sits opposite; only the
+          copyright line follows, as fine print. */}
       <div className="landing-footer-bar">
-        <div className="landing-footer-id">
-          <img src="/advo-logo-black.png" alt="ADVO" />
-          <p>© 2026 ADVO. All rights reserved.</p>
+        <div className="landing-footer-links">
+          <nav className="landing-footer-link" aria-label="Footer">
+            {footerLink.map(renderLink)}
+          </nav>
+          <nav className="landing-footer-link" aria-label="Legal">
+            {legalLink.map((link) => (
+              <Link key={link.href} to={link.href}>
+                {link.label}
+              </Link>
+            ))}
+          </nav>
         </div>
-
-        <nav className="landing-footer-link" aria-label="Footer">
-          {footerLink.map(renderLink)}
-        </nav>
 
         <div className="landing-social">
           {socialLink.map((link) => {
@@ -150,13 +169,9 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
         </div>
       </div>
 
-      <nav className="landing-footer-legal" aria-label="Legal">
-        {legalLink.map((link) => (
-          <Link key={link.href} to={link.href}>
-            {link.label}
-          </Link>
-        ))}
-      </nav>
+      <div className="landing-footer-fine">
+        <p>© 2026 ADVO. All rights reserved.</p>
+      </div>
     </footer>
   );
 };
