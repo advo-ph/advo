@@ -195,12 +195,16 @@ Each of these was considered and declined, so nobody re-opens them as oversights
 |---|---|---|
 | **Fact corpus** | `corpus_source / fact / term / action / template`; facts carry a verbatim quote, a locator and an honest `basis`; supersede, never delete. | `corpus.test.ts` 11/11; drift clean. |
 | **Ingestion** | Curated JSON bundles, a Plaud share (also lands in Meetings), or pasted text. Claude via `CORPUS_EXTRACT_MODEL`, heuristic fallback marked as a guess. | live test: idempotent ingest, conflicting vs supported. |
-| **Fact-check** | `POST /api/corpus/check`: word search, number comparison, matches with quotes and timestamps. | "FourlinQ pays ₱3,000 a month for hosting" → supported, 08-11 transcript 39:20. |
+| **Fact-check** | `POST /api/corpus/check`: word search, number comparison, matches with quotes and timestamps; a superseded fact never counts as support. | "FourlinQ pays ₱3,000 a month for hosting" → supported; "Felici pays ₱3,000 a month" → conflicting, July's line shown as superseded; "The Felici contract is ₱200,000" → supported. |
+| **Supersession** | `POST /api/corpus/supersede`: the newer contract's figure supersedes the older document's and earlier spoken pricing on the same project. | On prod: Felici total, downpayment, downpayment %, infra fee. |
+| **Repository knowledge** | `npm run corpus:repo` turns the case studies into one bundle per client repository, each feature cited by the file that proves it. | 4 `local_file` sources, 62 facts. |
 | **Accountability** | Open / done / dropped actions per recording with owner and due date; overdue count on the screen. | 130 actions from the first pass. |
 | **Templates** | Contract, proposal, sign-off, addendum, pitch deck, campaign, brand brief, minutes, with placeholders and render. | `data/corpus/template`, `data/corpus/document/TEMPLATE.json`. |
 | **First ingestion pass** | 17 recordings (466 facts, 130 actions, 74 decisions) and 11 documents mapped to prod projects and leads by two agents on Opus. `npm run corpus:load`. | `data/corpus/*/INDEX.md`. |
 
 What the pass found that nobody had written down: the four "Power Mac Center" spotlights of 08-11 are FourlinQ sessions (the client names her companies and shows the fourlinq site; the module set matches the six-system contract); the Fun Ride PH / MyriadSports engagement has five recordings and no project row; the 07-10 FourlinQ meeting records the owner already had a friend build a CRM.
+
+**Gaps closed 2026-09-03** (`npm run bench:corpus-gap` against prod, 8/8): VBE linked to its source `CelestialBrain/vbeeyecenter` (outside the org, one commit; not transferred); every linked repository has a commit feed; Nokohi, Flowers and Chocolates and Felici Cafe exist as projects; the gelato project carries ₱45,000 with the ₱20,000 down payment; the three contracted recurring fees (FourlinQ app ₱3,000/month, Felici ₱4,000/month, FourlinQ website ₱5,000/year) have rows, suspension off, start dates placeholders until delivery; superseded facts stay quiet; 32 sources, 825 facts.
 
 Cheaper second pass: set `CORPUS_EXTRACT_MODEL=claude-haiku-4-5-20251001` and `POST /api/corpus/ingest/plaud` per link; the curated files stay the source of truth for what Opus produced.
 

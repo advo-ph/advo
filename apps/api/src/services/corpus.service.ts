@@ -466,7 +466,21 @@ export async function checkClaim(claim: string, limit = 10) {
       // in a fact that does not repeat the client's name ("The ₱200,000 total fee covers
       // design and development"): look once more for any-word matches that carry it,
       // and put them first, so a true claim is not called conflicting for the phrasing.
-      const rescue = narrowByName((await select(sql`to_tsquery('english', ${anyOf})`)) as unknown as Record<string, unknown>[])
+      // The figure is searched as text here (digits with optional thousands
+      // separators), since the word index deliberately carries no numbers.
+      const pattern = wanted.map((n) => n.replace(/\./g, "\\.").split("").join(",?")).join("|");
+      const byNumber = (await d.execute(sql`
+        select f.corpus_fact_id, f.claim, f.quote, f.locator, f.basis, f.confidence, f.is_verified,
+               f.occurred_at, f.project_id, f.superseded_by_fact_id,
+               s.corpus_source_id, s.kind, s.title, s.url,
+               0.0 as rank
+        from corpus_fact f
+        join corpus_source s on s.corpus_source_id = f.corpus_source_id
+        where (f.claim || ' ' || coalesce(f.quote, '')) ~ ${pattern}
+        order by f.confidence desc
+        limit ${limit * 5}
+      `)) as unknown as Record<string, unknown>[];
+      const rescue = narrowByName(byNumber)
         .filter(carriesEvery)
         .filter((r) => !row.some((x) => x.corpus_fact_id === r.corpus_fact_id));
       row = [...rescue, ...row];

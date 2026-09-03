@@ -15,6 +15,28 @@ Cross-links:
 
 ---
 
+## 2026-09-03 — the gaps: supersession, repository knowledge, and the data the contracts said should exist
+
+> A verifier first (`bench/roadmap/corpus-gap`, 8 checks against the running API), then the closures, then 8/8 on prod. `POST /api/corpus/supersede` points every fact an older contract stated at the newer contract's figure; fact-check stops counting a superseded fact as support. The case studies became corpus bundles, one per client repository, every feature cited by the file that proves it. VBE is linked to its real source outside the org and backfilled. Felici's three sister sites, the gelato site's value, and the three contracted recurring fees now exist as rows.
+
+**Supersession.** Terms across contract, proposal and addendum sources are grouped per project and term, newest document first. A cents term matches either spelling, so `300000` finds "₱3,000.00" in prose. The older document's facts carrying the older figure, and pricing / contract-term / commitment / decision facts spoken on recordings dated before the newer document on the same project, point at the newer document's fact. On prod that was Felici's total fee, downpayment, downpayment percentage and infra fee. "Felici pays ₱3,000 a month" is conflicting now, with July's line shown and marked.
+
+**Fact-check, three fixes.** The any-word fallback narrows to matches that name what the claim names. Candidates are over-fetched before narrowing, which brought "FourlinQ pays ₱3,000 a month for hosting" back to supported. When every word matches but none carries the figure, a second any-word pass rescues facts that do; "The Felici contract is ₱200,000" was conflicting because the fee fact does not repeat the word Felici.
+
+**Repositories.** `repositoryName` may be owner-qualified; `repoRef()` resolves feed, backfill, branches, webhook matching and the hub link. `POST /api/github/repos/:name/backfill` reads the last 100 commits from GitHub and stores the ones the webhook never saw. VBE's source is `CelestialBrain/vbeeyecenter` (one commit); it was never transferred to `advo-ph`.
+
+**Prod data.** Project 6 ₱45,000 / ₱20,000 paid; projects 16 Nokohi, 17 Flowers and Chocolates, 18 Felici Cafe at ₱45,000 each under the same client, discovery; recurring fees 1–3 (FourlinQ app ₱3,000 monthly, Felici ₱4,000 monthly, FourlinQ website ₱5,000 annual), suspension off, start dates placeholders noted on each row. Corpus on prod: 32 sources, 825 facts.
+
+**Honest open-items**
+
+- **Recurring-fee start dates are placeholders.** Both monthly fees start on delivery of a system that is not delivered; the rows say so in their notes and must be re-dated at delivery.
+- **The four sister-site projects share one ₱200,000 contract.** Each carries ₱45,000; there is no row for the contract as a whole, and the ₱20,000 down payment sits on the gelato project only.
+- **Supersession covers money and commitments only.** Scope and process facts from an older document (revision rounds, feedback windows) stay live even when the newer document changes them; extend `supersedeByNewerDocument` to non-money terms when a case needs it.
+- **Repository knowledge is the case studies, not the code.** Facts come from `case-study.ts`; nothing reads the client repositories directly.
+- **No facts are verified by a person** and **the prod admin password is still the seed default**, as before.
+
+---
+
 ## 2026-09-03 — the corpus: every fact with the line it rests on, and the first ingestion pass
 
 > Migration 027. Five tables, three ingestion paths, a fact-check endpoint, an accountability ledger, ten templates, and an admin screen. Two agents on Opus read 17 Plaud recordings and 11 Drive documents end to end and wrote curated bundles under `data/corpus/`: 767 facts, 151 typed terms, 160 open actions, 30 sources, mapped to prod projects and leads. Loaded locally and to prod by `npm run corpus:load`.
@@ -30,7 +52,7 @@ Cross-links:
 **Honest open-items**
 
 - **No facts are verified by a person.** 767 rows, 0 with `is_verified`. The corpus is as good as the transcripts and the agents; a human pass over pricing and contract terms is the next real step.
-- **Supersession is manual.** July's Felici contract and August's both sit in the corpus as live facts; `superseded_by_fact_id` exists but nothing sets it. Fact-check flags the contest; it does not pick the newer document.
+- ~~**Supersession is manual.**~~ Closed the same day: `POST /api/corpus/supersede`, see the entry above.
 - **Meetings under Inbox.** Recordings with no project row (Fun Ride, the 07-30 and 08-16 memos) sit under the Inbox project on the Meetings screen.
 - **The prod admin password is still the seed default.** The loader used it to reach prod. Rotate it.
 - **Template rendering is fill-in-the-blanks.** No document generation to PDF; the rendered markdown is copied out.

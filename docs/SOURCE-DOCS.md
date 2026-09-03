@@ -61,3 +61,7 @@ content, 17 files).
 ## Duplicates in the export
 
 Every "(1)", "(2)", "(3)" copy is a Drive re-export of the same document: different bytes (export metadata), identical text. Safe to delete the numbered copies; nothing is lost. The two `ADVO INVOICE TEMPLATE` zips hold the same 17 files.
+
+## Repositories outside the org
+
+VBE Eye Center's source is `CelestialBrain/vbeeyecenter` (one commit on `main`); it was never transferred to `advo-ph`. Project 2 links to it by its owner-qualified name and the feed is backfilled from it.
