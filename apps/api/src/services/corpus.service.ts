@@ -461,8 +461,9 @@ export async function checkClaim(claim: string, limit = 10) {
     row = (await select(sql`plainto_tsquery('english', ${word.join(" ")})`)) as unknown as Record<string, unknown>[];
     if (row.length === 0) {
       row = narrowByName((await select(sql`to_tsquery('english', ${anyOf})`)) as unknown as Record<string, unknown>[]);
-    } else if (wanted.length > 0 && !row.some(carriesEvery)) {
-      // Every word matched, but no match carries the claim's figure. The figure may sit
+    }
+    if (wanted.length > 0 && !row.some(carriesEvery)) {
+      // The words matched, but no match carries the claim's figure. The figure may sit
       // in a fact that does not repeat the client's name ("The ₱200,000 total fee covers
       // design and development"): look once more for any-word matches that carry it,
       // and put them first, so a true claim is not called conflicting for the phrasing.
