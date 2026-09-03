@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { get, patch, post } from "@/lib/api";
+import { del, get, patch, post } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -96,12 +96,23 @@ export interface CheckMatch {
   source: { corpusSourceId: number; kind: string; title: string; url: string | null };
   sharesEveryNumber: boolean;
 }
+export interface CheckDiscount {
+  corpusSourceId: number;
+  sourceTitle: string;
+  listCents: number;
+  discountPct: number | null;
+  discountCents: number;
+  derivedCents: number;
+  reason: string | null;
+  explanation: string;
+}
 export interface CheckResult {
   claim: string;
   numberInClaim: string[];
   verdict: "supported" | "conflicting" | "unknown";
   isContested: boolean;
   match: CheckMatch[];
+  discount: CheckDiscount | null;
 }
 
 const KEY = ["corpus"];
@@ -159,6 +170,17 @@ export function useCorpus(filter: { q?: string; projectId?: number | null; categ
     onSuccess: invalidate,
     onError: (e: Error) => toast({ title: "Not saved", description: e.message, variant: "destructive" }),
   });
+  const deleteSource = useMutation({
+    mutationFn: async (corpusSourceId: number) => {
+      const res = await del(`/api/corpus/source/${corpusSourceId}`);
+      if (res.error) throw new Error(res.error);
+    },
+    onSuccess: () => {
+      invalidate();
+      toast({ title: "Source removed", description: "Its facts, terms and actions went with it." });
+    },
+    onError: (e: Error) => toast({ title: "Not removed", description: e.message, variant: "destructive" }),
+  });
   const ingestPlaud = useMutation({
     mutationFn: async (input: { shareUrl: string; projectId?: number | null; leadName?: string | null }) => {
       const res = await post<{ factCount: number; actionCount: number; method: string }>("/api/corpus/ingest/plaud", input);
@@ -203,6 +225,8 @@ export function useCorpus(filter: { q?: string; projectId?: number | null; categ
     checkResult: check.data ?? null,
     isChecking: check.isPending,
     verify: verify.mutate,
+    deleteSource: deleteSource.mutate,
+    isDeletingSource: deleteSource.isPending,
     updateAction: updateAction.mutate,
     ingestPlaud: ingestPlaud.mutateAsync,
     isIngesting: ingestPlaud.isPending || ingestText.isPending,

@@ -18,6 +18,8 @@ import {
   Mic,
   Search,
   ShieldCheck,
+  Tag,
+  Trash2,
   XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -227,6 +229,11 @@ const AdminCorpus = () => {
                     }
                   />
                   <span className="font-medium capitalize">{corpus.checkResult.verdict}</span>
+                  {corpus.checkResult.discount && (
+                    <span className="ml-2 inline-flex items-center gap-1 text-xs text-muted-foreground">
+                      <Tag className="h-3 w-3" /> {corpus.checkResult.discount.explanation}
+                    </span>
+                  )}
                   {corpus.checkResult.isContested && (
                     <span className="text-xs text-yellow-400">other sources carry a different number — check the dates</span>
                   )}
@@ -369,11 +376,26 @@ const AdminCorpus = () => {
                       {src.project_id ? ` · project ${src.project_id}` : src.lead_name ? ` · lead ${src.lead_name}` : ""}
                     </p>
                   </div>
-                  {src.url && (
-                    <a href={src.url} target="_blank" rel="noopener noreferrer" className="shrink-0 text-muted-foreground hover:text-foreground">
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  )}
+                  <div className="flex shrink-0 items-center gap-2">
+                    {src.url && (
+                      <a href={src.url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    )}
+                    <button
+                      type="button"
+                      disabled={corpus.isDeletingSource}
+                      onClick={() => {
+                        if (window.confirm(`Remove "${src.title}" and its ${src.fact_count} facts? This cannot be undone.`)) {
+                          corpus.deleteSource(src.corpus_source_id);
+                        }
+                      }}
+                      className="text-muted-foreground hover:text-red-400 disabled:opacity-50"
+                      aria-label="Remove source"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
