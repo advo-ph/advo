@@ -24,6 +24,10 @@ export interface Project {
   project_status: ProjectStatus;
   total_value_cents: number;
   amount_paid_cents: number;
+  /** Price before discount; null when there was none. list − discount = total. */
+  list_value_cents?: number | null;
+  discount_cents?: number;
+  discount_reason?: string | null;
   tech_stack: string[];
   created_at: string;
   /** Assigned team members from project_access (singular collection key). */

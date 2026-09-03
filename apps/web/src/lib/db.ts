@@ -31,6 +31,9 @@ function mapProject(p: any): Project {
     project_status: (p.projectStatus ?? p.project_status) as ProjectStatus,
     total_value_cents: p.totalValueCents ?? p.total_value_cents ?? 0,
     amount_paid_cents: p.amountPaidCents ?? p.amount_paid_cents ?? 0,
+    list_value_cents: (p.listValueCents ?? p.list_value_cents ?? null) as number | null,
+    discount_cents: (p.discountCents ?? p.discount_cents ?? 0) as number,
+    discount_reason: (p.discountReason ?? p.discount_reason ?? null) as string | null,
     tech_stack: (p.techStack ?? p.tech_stack ?? []) as string[],
     created_at: p.createdAt ?? p.created_at,
     team_member_id: Array.isArray(p.teamMemberId ?? p.team_member_id)
@@ -85,6 +88,9 @@ export async function createProject(project: {
   project_status: ProjectStatus;
   total_value_cents: number;
   amount_paid_cents: number;
+  list_value_cents?: number | null;
+  discount_cents?: number;
+  discount_reason?: string | null;
   tech_stack: string[];
 }): Promise<DbResult<null>> {
   const res = await post("/api/projects", {
@@ -97,6 +103,9 @@ export async function createProject(project: {
     projectStatus: project.project_status,
     totalValueCents: project.total_value_cents,
     amountPaidCents: project.amount_paid_cents,
+    listValueCents: project.list_value_cents ?? null,
+    discountCents: project.discount_cents ?? 0,
+    discountReason: project.discount_reason ?? null,
     techStack: project.tech_stack,
   });
   return { data: null, error: res.error };
@@ -114,6 +123,9 @@ export async function updateProject(
     project_status: ProjectStatus;
     total_value_cents: number;
     amount_paid_cents: number;
+    list_value_cents: number | null;
+    discount_cents: number;
+    discount_reason: string | null;
     tech_stack: string[];
   }>
 ): Promise<DbResult<null>> {
@@ -127,6 +139,9 @@ export async function updateProject(
   if (updates.project_status !== undefined) body.projectStatus = updates.project_status;
   if (updates.total_value_cents !== undefined) body.totalValueCents = updates.total_value_cents;
   if (updates.amount_paid_cents !== undefined) body.amountPaidCents = updates.amount_paid_cents;
+  if (updates.list_value_cents !== undefined) body.listValueCents = updates.list_value_cents;
+  if (updates.discount_cents !== undefined) body.discountCents = updates.discount_cents;
+  if (updates.discount_reason !== undefined) body.discountReason = updates.discount_reason;
   if (updates.tech_stack !== undefined) body.techStack = updates.tech_stack;
 
   const res = await patch(`/api/projects/${projectId}`, body);

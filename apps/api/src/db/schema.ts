@@ -163,6 +163,10 @@ export const project = pgTable(
     projectStatus: projectStatusEnum("project_status").notNull().default("discovery"),
     totalValueCents: integer("total_value_cents").notNull().default(0),
     amountPaidCents: integer("amount_paid_cents").notNull().default(0),
+    /** The price before any discount; null when there was none. list − discount = total (migration 028). */
+    listValueCents: integer("list_value_cents"),
+    discountCents: integer("discount_cents").notNull().default(0),
+    discountReason: varchar("discount_reason", { length: 120 }),
     techStack: text("tech_stack").array(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),

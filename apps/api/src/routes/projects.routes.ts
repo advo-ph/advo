@@ -235,11 +235,31 @@ const createSchema = z.object({
     .optional(),
   totalValueCents: z.number().int().min(0).optional(),
   amountPaidCents: z.number().int().min(0).optional(),
+  /** Price before discount; null or absent when there was none. */
+  listValueCents: z.number().int().min(0).nullish(),
+  discountCents: z.number().int().min(0).optional(),
+  discountReason: z.string().max(120).nullish(),
   techStack: z.array(z.string()).optional(),
 });
 
+/**
+ * A discount is a fact about a price, not a new price: totalValueCents stays what the
+ * client pays, listValueCents is what the price was, and the two must differ by the
+ * discount. Checked here, with the merged row, so a partial PATCH cannot leave the
+ * three out of step (the DB CHECK would refuse it anyway, as a 500).
+ */
+const discountArithmeticError = (row: { listValueCents?: number | null; discountCents?: number; totalValueCents?: number }) => {
+  const list = row.listValueCents ?? null;
+  const discount = row.discountCents ?? 0;
+  const total = row.totalValueCents ?? 0;
+  if (list == null) return discount > 0 ? "discountCents needs a listValueCents to be a discount from" : null;
+  return list - discount === total ? null : `listValueCents − discountCents must equal totalValueCents (${list} − ${discount} ≠ ${total})`;
+};
+
 projects.post("/", requireAdmin, zValidator("json", createSchema), async (c) => {
   const data = c.req.valid("json");
+  const arithmetic = discountArithmeticError(data);
+  if (arithmetic) throw new HTTPException(400, { message: arithmetic });
   const [created] = await db().insert(project).values(data).returning();
   return c.json({ data: created, error: null }, 201);
 });
@@ -254,8 +274,18 @@ projects.patch("/:id", requireAdmin, zValidator("json", updateSchema), async (c)
   const d = db();
 
   // Get old status before update
-  const [old] = await d.select({ projectStatus: project.projectStatus, clientId: project.clientId })
+  const [old] = await d
+    .select({
+      projectStatus: project.projectStatus,
+      clientId: project.clientId,
+      totalValueCents: project.totalValueCents,
+      listValueCents: project.listValueCents,
+      discountCents: project.discountCents,
+    })
     .from(project).where(eq(project.projectId, id)).limit(1);
+  if (!old) throw new HTTPException(404, { message: "Project not found" });
+  const arithmetic = discountArithmeticError({ ...old, ...data });
+  if (arithmetic) throw new HTTPException(400, { message: arithmetic });
 
   const [updated] = await d
     .update(project)

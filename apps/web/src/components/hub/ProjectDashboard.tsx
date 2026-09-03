@@ -445,6 +445,9 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
         <FundingBar
           totalCents={project.total_value_cents}
           paidCents={project.amount_paid_cents}
+          listCents={project.list_value_cents ?? null}
+          discountCents={project.discount_cents ?? 0}
+          discountReason={project.discount_reason ?? null}
         />
 
         {/* Deliverables Tracker */}

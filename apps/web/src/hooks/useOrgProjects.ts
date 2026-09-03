@@ -55,6 +55,9 @@ async function fetchOrgProjects(): Promise<MergedProject[]> {
     project_status: p.projectStatus ?? p.project_status,
     total_value_cents: p.totalValueCents ?? p.total_value_cents ?? 0,
     amount_paid_cents: p.amountPaidCents ?? p.amount_paid_cents ?? 0,
+    list_value_cents: p.listValueCents ?? p.list_value_cents ?? null,
+    discount_cents: p.discountCents ?? p.discount_cents ?? 0,
+    discount_reason: p.discountReason ?? p.discount_reason ?? null,
     tech_stack: p.techStack ?? p.tech_stack ?? [],
     created_at: p.createdAt ?? p.created_at,
     team_member_id: Array.isArray(p.teamMemberId ?? p.team_member_id)

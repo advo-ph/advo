@@ -107,6 +107,9 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
     project_status: "discovery" as ProjectStatus,
     total_value_cents: 0,
     amount_paid_cents: 0,
+    list_value_cents: null as number | null,
+    discount_cents: 0,
+    discount_reason: "",
     tech_stack: "",
   });
 
@@ -148,6 +151,9 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
       project_status: project.project_status as ProjectStatus,
       total_value_cents: project.total_value_cents,
       amount_paid_cents: project.amount_paid_cents,
+      list_value_cents: project.list_value_cents ?? null,
+      discount_cents: project.discount_cents ?? 0,
+      discount_reason: project.discount_reason ?? "",
       tech_stack: project.tech_stack.join(", "),
     });
     setAssetType("progress_photo");
@@ -184,8 +190,15 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
       project_status: formData.project_status,
       total_value_cents: formData.total_value_cents,
       amount_paid_cents: formData.amount_paid_cents,
+      list_value_cents: formData.list_value_cents,
+      discount_cents: formData.list_value_cents == null ? 0 : formData.discount_cents,
+      discount_reason: formData.list_value_cents == null ? null : formData.discount_reason || null,
       tech_stack: formData.tech_stack.split(",").map(s => s.trim()).filter(Boolean),
     };
+    if (projectData.list_value_cents != null && projectData.list_value_cents - projectData.discount_cents !== projectData.total_value_cents) {
+      toast({ title: "Discount does not add up", description: "List value minus discount must equal the total value.", variant: "destructive" });
+      return;
+    }
 
     try {
       let error: string | null;
@@ -539,6 +552,52 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
                     setFormData({ ...formData, amount_paid_cents: parseFloat(e.target.value) * 100 })
                   }
                   placeholder="0"
+                />
+              </div>
+            </div>
+
+            {/* A discount is a fact about a price: the list price and the reason stay on the row. */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">List Value (PHP)</label>
+                <Input
+                  type="number"
+                  value={formData.list_value_cents == null ? "" : formData.list_value_cents / 100}
+                  onChange={(e) => {
+                    const list = e.target.value === "" ? null : Math.round(parseFloat(e.target.value) * 100);
+                    setFormData({
+                      ...formData,
+                      list_value_cents: list,
+                      discount_cents: list == null ? 0 : Math.max(0, list - formData.total_value_cents),
+                    });
+                  }}
+                  placeholder="Blank when no discount"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Discount (PHP)</label>
+                <Input
+                  type="number"
+                  value={formData.list_value_cents == null ? "" : formData.discount_cents / 100}
+                  disabled={formData.list_value_cents == null}
+                  onChange={(e) => {
+                    const discount = Math.max(0, Math.round((parseFloat(e.target.value) || 0) * 100));
+                    setFormData({
+                      ...formData,
+                      discount_cents: discount,
+                      total_value_cents: (formData.list_value_cents ?? 0) - discount,
+                    });
+                  }}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Discount reason</label>
+                <Input
+                  value={formData.discount_reason}
+                  disabled={formData.list_value_cents == null}
+                  onChange={(e) => setFormData({ ...formData, discount_reason: e.target.value })}
+                  placeholder="referral, early payment, bundle"
                 />
               </div>
             </div>

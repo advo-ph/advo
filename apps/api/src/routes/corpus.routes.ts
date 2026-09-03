@@ -11,7 +11,7 @@ import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
 import { HTTPException } from "hono/http-exception";
 import { requireAuth } from "../middleware/auth.js";
-import { requireTeam } from "../middleware/rbac.js";
+import { requireAdmin, requireTeam } from "../middleware/rbac.js";
 import type { Variables } from "../types/context.js";
 import { fetchPlaudShare, parseShareKey } from "../services/plaud.service.js";
 import { importPlaudMeeting, resolveInboxProjectId } from "../services/plaud-import.service.js";
@@ -21,6 +21,7 @@ import {
   TEMPLATE_KIND,
   checkClaim,
   corpusStat,
+  deleteSource,
   extract,
   getSource,
   getTemplate,
@@ -142,6 +143,7 @@ corpusRoutes.post(
           meta: { extractionMethod: extraction.method, meetingId: (meeting as { meetingId?: number }).meetingId ?? null },
         },
         fact: extraction.fact,
+        term: extraction.term,
         action: extraction.action,
       },
       user.userId,
@@ -183,6 +185,7 @@ corpusRoutes.post(
           meta: { extractionMethod: extraction.method, characterCount: input.text.length },
         },
         fact: extraction.fact,
+        term: extraction.term,
         action: extraction.action,
       },
       user.userId,
@@ -205,6 +208,13 @@ corpusRoutes.get("/source/:id", async (c) => {
   const row = await getSource(idParam(c.req.param("id")));
   if (!row) throw new HTTPException(404, { message: "No such source" });
   return c.json({ data: row, error: null });
+});
+
+/** Remove a source and everything it stated (a bad ingest, a bench). Admin only. */
+corpusRoutes.delete("/source/:id", requireAdmin, async (c) => {
+  const ok = await deleteSource(idParam(c.req.param("id")));
+  if (!ok) throw new HTTPException(404, { message: "No such source" });
+  return c.json({ data: { deleted: true }, error: null });
 });
 
 corpusRoutes.get("/fact", async (c) => {

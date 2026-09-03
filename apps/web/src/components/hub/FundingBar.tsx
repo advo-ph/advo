@@ -3,9 +3,13 @@ import { Panel } from "@/components/admin/_ui";
 interface FundingBarProps {
   totalCents: number;
   paidCents: number;
+  /** The price before a discount, when there was one; total is what is actually owed. */
+  listCents?: number | null;
+  discountCents?: number;
+  discountReason?: string | null;
 }
 
-const FundingBar = ({ totalCents, paidCents }: FundingBarProps) => {
+const FundingBar = ({ totalCents, paidCents, listCents = null, discountCents = 0, discountReason = null }: FundingBarProps) => {
   const percentage = totalCents > 0 ? Math.round((paidCents / totalCents) * 100) : 0;
 
   const formatCurrency = (cents: number) => {
@@ -30,6 +34,12 @@ const FundingBar = ({ totalCents, paidCents }: FundingBarProps) => {
             Total <span className="text-foreground tabular-nums">{formatCurrency(totalCents)}</span>
           </span>
         </div>
+        {listCents != null && discountCents > 0 && (
+          <p className="text-xs text-muted-foreground tabular-nums">
+            List {formatCurrency(listCents)} less {formatCurrency(discountCents)}
+            {discountReason ? ` (${discountReason})` : ""} discount
+          </p>
+        )}
       </div>
     </Panel>
   );

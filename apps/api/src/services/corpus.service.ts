@@ -279,7 +279,40 @@ export interface Extraction {
   method: "ai" | "heuristic";
   fact: IngestFact[];
   action: IngestAction[];
+  term: IngestTerm[];
   summary: string | null;
+}
+
+/** Term names a discount is written under; the supersede and fact-check passes read them. */
+export const DISCOUNT_TERM = ["discount_pct", "discount_cents", "discount_reason", "list_fee_cents"] as const;
+
+/**
+ * A discount is a fact about a price, not a new price. Whatever the extractor (AI or
+ * regex) makes of the sentences, the typed terms are read here, deterministically:
+ * "10% referral discount on the ₱200,000.00 fee" gives discount_pct 10, list_fee_cents
+ * 20000000 and discount_reason "referral". A peso discount ("less ₱20,000") gives
+ * discount_cents. Only the first discount in a text is typed; the rest stay facts.
+ */
+export function discountTermIn(text: string): IngestTerm[] {
+  const out: IngestTerm[] = [];
+  const pct = text.match(/(\d{1,2}(?:\.\d+)?)\s?(?:%|percent)\s+(?:([a-z-]+)\s+)?discount/i);
+  const peso = text.match(/(?:discount|less|waive[sd]?|deduct(?:ed|s)?)\s+(?:of\s+)?(?:₱|php|p)\s?(\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?/i);
+  if (pct) {
+    out.push({ name: "discount_pct", value: pct[1], unit: "%", quote: pct[0] });
+    if (pct[2] && !/^(?:a|an|the|flat|full|total)$/i.test(pct[2])) out.push({ name: "discount_reason", value: pct[2].toLowerCase(), unit: null, quote: pct[0] });
+  } else if (peso) {
+    out.push({ name: "discount_cents", value: String(Number(peso[1].replace(/,/g, "")) * 100), unit: "cents", quote: peso[0] });
+  }
+  if (out.length === 0) return out;
+  const reason = text.match(/discount\b[^.]*\bbecause\s+([^.]{4,80})/i);
+  if (reason && !out.some((t) => t.name === "discount_reason")) out.push({ name: "discount_reason", value: reason[1].trim(), unit: null, quote: reason[0] });
+  // The list price is the figure the discount is taken from: "on the ₱200,000.00 fee",
+  // "of the ₱200,000 contract", or the first money figure before the word discount.
+  const list =
+    text.match(/discount\s+(?:on|off|of|from)\s+(?:the\s+)?(?:₱|php|p)\s?(\d{1,3}(?:,\d{3})+|\d{4,})/i) ??
+    text.match(/(?:₱|php|p)\s?(\d{1,3}(?:,\d{3})+|\d{4,})(?:\.\d+)?[^.]{0,80}?\bdiscount/i);
+  if (list) out.push({ name: "list_fee_cents", value: String(Number(list[1].replace(/,/g, "")) * 100), unit: "cents", quote: list[0].slice(0, 200) });
+  return out;
 }
 
 const MONEY = /₱\s?[\d,]+(?:\.\d+)?|\b(?:php|pesos?)\s?[\d,]+/i;
@@ -287,7 +320,7 @@ const NUMBERISH = /\b\d{1,3}(?:,\d{3})+\b|\b\d+(?:\.\d+)?\s?%|\b\d{1,2}[:.]\d{2}
 const COMMIT = /\b(?:will|agreed?|must|shall|deadline|due|by (?:mon|tue|wed|thu|fri|sat|sun|next)|commit|deliver|send|follow ?up|kailangan|dapat|ipapadala|gagawin)\b/i;
 
 const guessCategory = (line: string): FactCategory => {
-  if (MONEY.test(line) || /\bfee|price|cost|invoice|payment|down ?payment\b/i.test(line)) return "pricing";
+  if (MONEY.test(line) || /\bfee|price|cost|invoice|payment|down ?payment|discount|waive/i.test(line)) return "pricing";
   if (/\bround|revision|deemed|penalt|terminat|ownership|warranty\b/i.test(line)) return "contract_term";
   if (/\bdeadline|week|month|timeline|launch|deliver(?:y|ed)?\b/i.test(line)) return "timeline";
   if (/\bscope|feature|page|module|system|app\b/i.test(line)) return "scope";
@@ -327,14 +360,15 @@ export function extractHeuristic(text: string, occurredAt?: string | Date | null
     });
     if (fact.length >= 60) break;
   }
-  return { method: "heuristic", fact, action: action.slice(0, 30), summary: null };
+  return { method: "heuristic", fact, action: action.slice(0, 30), term: discountTermIn(text), summary: null };
 }
 
 const AI_SYSTEM = `You extract a fact corpus from a transcript or document for ADVO, a Philippine software agency.
 Return ONLY JSON: {"summary": string, "fact": [...], "action": [...]}.
 fact item: {"claim": one declarative checkable sentence, "category": one of ${FACT_CATEGORY.join("|")}, "quote": verbatim passage <=300 chars, "locator": "m:ss" timestamp if the text has them else the heading, "speaker": label or null, "basis": "transcript" if the quote is in the text else "ai_note", "confidence": 0..1}
 action item: {"description": imperative one line, "ownerName": person or "ADVO" or "client" or null, "dueAt": ISO date or null, "locator": "m:ss" or null}
-Rules: prefer money, dates, scope, commitments, named contacts. Keep Taglish verbatim in quotes. Never invent a number that is not in the text. 8 to 40 facts.`;
+Rules: prefer money, dates, scope, commitments, named contacts. Keep Taglish verbatim in quotes. Never invent a number that is not in the text. 8 to 40 facts.
+A discount is a fact about a price, not a new price: when the text grants one, state the list price, the discount (percent or amount, and why) and the charged price as separate pricing claims.`;
 
 export async function extractWithAI(text: string, occurredAt?: string | Date | null): Promise<Extraction | null> {
   if (!process.env.ANTHROPIC_API_KEY) return null;
@@ -356,6 +390,7 @@ export async function extractWithAI(text: string, occurredAt?: string | Date | n
       summary: parsed.summary ?? null,
       fact: (parsed.fact ?? []).map((f) => ({ ...f, occurredAt: f.occurredAt ?? occurredAt ?? null })),
       action: parsed.action ?? [],
+      term: discountTermIn(text),
     };
   } catch (err) {
     console.error("[corpus] AI extraction failed; falling back to heuristic:", err);
@@ -540,7 +575,76 @@ export async function checkClaim(claim: string, limit = 10) {
     verdict === "supported" &&
     wanted.length > 0 &&
     live.some((m) => !m.sharesEveryNumber && carriesNumber(m) && m.rank >= topRank * 0.6);
-  return { claim: q, numberInClaim: wanted, verdict, isContested, match };
+  // A discount is a fact about a price. "Client pays ₱270,000" may appear in no
+  // sentence when the proposal says "₱300,000 with a 10% discount"; the arithmetic is
+  // the evidence, and it is shown as such.
+  let discount: CheckDiscount | null = null;
+  const figure = wanted.filter((n) => n.replace(/\D/g, "").length >= 4);
+  if (verdict !== "supported" && figure.length > 0) {
+    discount = await discountExplaining(figure, name);
+    if (discount) verdict = "supported";
+  }
+  return { claim: q, numberInClaim: wanted, verdict, isContested, match, discount };
+}
+
+export interface CheckDiscount {
+  corpusSourceId: number;
+  sourceTitle: string;
+  listCents: number;
+  discountPct: number | null;
+  discountCents: number;
+  derivedCents: number;
+  reason: string | null;
+  explanation: string;
+}
+
+/**
+ * Every source carrying a list price and a discount, narrowed to the names the claim
+ * uses, with list − discount worked out. The first whose derived figure is one the
+ * claim carries explains the claim.
+ */
+async function discountExplaining(figure: string[], name: string[]): Promise<CheckDiscount | null> {
+  const d = db();
+  const row = (await d.execute(sql`
+    select t.corpus_source_id, s.title, t.name, t.value
+    from corpus_term t
+    join corpus_source s on s.corpus_source_id = t.corpus_source_id
+    where t.name in ('list_fee_cents', 'discount_pct', 'discount_cents', 'discount_reason')
+  `)) as unknown as { corpus_source_id: number; title: string; name: string; value: string }[];
+  const bySource = new Map<number, { title: string; term: Record<string, string> }>();
+  for (const r of row) {
+    const id = Number(r.corpus_source_id);
+    const entry = bySource.get(id) ?? { title: r.title, term: {} };
+    entry.term[r.name] = r.value;
+    bySource.set(id, entry);
+  }
+  for (const [corpusSourceId, { title, term }] of bySource) {
+    const listCents = Number(term.list_fee_cents);
+    if (!Number.isFinite(listCents) || listCents <= 0) continue;
+    const discountPct = term.discount_pct != null ? Number(term.discount_pct) : null;
+    const discountCents = term.discount_cents != null ? Number(term.discount_cents) : discountPct != null ? Math.round((listCents * discountPct) / 100) : 0;
+    if (discountCents <= 0) continue;
+    const derivedCents = listCents - discountCents;
+    const derivedPeso = String(derivedCents / 100).replace(/\.0+$/, "");
+    if (!figure.includes(derivedPeso)) continue;
+    if (name.length > 0) {
+      const fact = (await d.execute(sql`select claim from corpus_fact where corpus_source_id = ${corpusSourceId}`)) as unknown as { claim: string }[];
+      const hay = `${title} ${fact.map((f) => f.claim).join(" ")}`.toLowerCase();
+      if (!name.some((n) => hay.includes(n))) continue;
+    }
+    const peso = (c: number) => `₱${(c / 100).toLocaleString("en-PH")}`;
+    return {
+      corpusSourceId,
+      sourceTitle: title,
+      listCents,
+      discountPct,
+      discountCents,
+      derivedCents,
+      reason: term.discount_reason ?? null,
+      explanation: `${peso(listCents)} less ${discountPct != null ? `${discountPct}%` : peso(discountCents)}${term.discount_reason ? ` (${term.discount_reason})` : ""} = ${peso(derivedCents)}, per ${title}`,
+    };
+  }
+  return null;
 }
 
 // ─── Reads and updates ───────────────────────────────
@@ -559,6 +663,18 @@ export async function listSource(filter: { kind?: string; projectId?: number } =
     order by s.occurred_at desc nulls last, s.corpus_source_id desc
   `);
   return row as unknown as Record<string, unknown>[];
+}
+
+export async function deleteSource(corpusSourceId: number): Promise<boolean> {
+  const d = db();
+  const [row] = await d.select({ id: corpusSource.corpusSourceId }).from(corpusSource).where(eq(corpusSource.corpusSourceId, corpusSourceId));
+  if (!row) return false;
+  await d.execute(sql`
+    update corpus_fact set superseded_by_fact_id = null
+    where superseded_by_fact_id in (select corpus_fact_id from corpus_fact where corpus_source_id = ${corpusSourceId})
+  `);
+  await d.delete(corpusSource).where(eq(corpusSource.corpusSourceId, corpusSourceId));
+  return true;
 }
 
 export async function getSource(corpusSourceId: number) {
@@ -784,8 +900,19 @@ export async function supersedeByNewerDocument(): Promise<{ supersededCount: num
       const peso = String(Number(value) / 100).replace(/\.0+$/, "");
       return [...new Set([...own, peso])];
     }
+    // A count ("5" rounds, "3" rounds) is a single digit numberIn() ignores in prose;
+    // as a term value it is the whole value, so it matches "5 rounds" in a fact.
+    if (/^\d+(?:\.\d+)?$/.test(value)) return [...new Set([...own, value])];
     return own;
   };
+  // A document that carries a discount term is pricing the same deal lower, not
+  // replacing the list price: its money terms do not supersede the older document's.
+  const discounted = new Set(
+    ((await d.execute(sql`
+      select distinct corpus_source_id from corpus_term
+      where name in ('discount_pct', 'discount_cents')
+    `)) as unknown as { corpus_source_id: number }[]).map((r) => Number(r.corpus_source_id)),
+  );
   const factOf = async (sourceId: number) =>
     (await d.execute(sql`
       select corpus_fact_id, claim, quote, superseded_by_fact_id from corpus_fact
@@ -807,6 +934,7 @@ export async function supersedeByNewerDocument(): Promise<{ supersededCount: num
     const newest = list[0];
     for (const older of list.slice(1)) {
       if (older.value === newest.value || older.corpus_source_id === newest.corpus_source_id) continue;
+      if (discounted.has(Number(newest.corpus_source_id)) && /_cents$/.test(newest.name)) continue;
       const olderDigit = termDigit(older.value, (older as { unit?: string | null }).unit ?? null);
       const newerDigit = termDigit(newest.value, (newest as { unit?: string | null }).unit ?? null);
       if (olderDigit.length === 0 || newerDigit.length === 0) continue;
