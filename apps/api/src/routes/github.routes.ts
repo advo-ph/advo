@@ -187,7 +187,71 @@ github.get("/repos/:name/commits", requireAuth, async (c) => {
 
 // ─── Repo Branches ────────────────────────────────────
 
-github.get("/repos/:name/branches", requireAuth, requireTeam, async (c) => {
+/**
+ * Backfill the commit cache from the GitHub API. The webhook only records pushes
+ * that happened after it was installed (2026-08-29), so a repository linked to a
+ * project later, or one quiet since then, showed an empty engineering feed to the
+ * client. This fetches the last 100 commits on the default branch and stores the
+ * ones the cache does not have, dated by the commit itself so history reads in
+ * order. Idempotent: a second call inserts nothing.
+ */
+github.post("/repos/:name/backfill", requireAuth, requireTeam, async (c) => {
+  const repoName = c.req.param("name");
+  const token = env().GITHUB_TOKEN;
+  if (!token) return c.json({ data: null, error: "GitHub token not configured" }, 503);
+  const headers = { Authorization: `Bearer ${token}`, Accept: "application/vnd.github.v3+json" };
+  const org = env().GITHUB_ORG;
+
+  const repoRes = await fetch(`https://api.github.com/repos/${org}/${repoName}`, { headers });
+  if (!repoRes.ok) return c.json({ data: null, error: `GitHub: repo ${repoName} → ${repoRes.status}` }, 502);
+  const repo = (await repoRes.json()) as { default_branch?: string };
+  const branch = repo.default_branch ?? "main";
+
+  const commitRes = await fetch(
+    `https://api.github.com/repos/${org}/${repoName}/commits?sha=${encodeURIComponent(branch)}&per_page=100`,
+    { headers },
+  );
+  if (!commitRes.ok) return c.json({ data: null, error: `GitHub: commits → ${commitRes.status}` }, 502);
+  const list = (await commitRes.json()) as {
+    sha: string;
+    html_url: string;
+    commit: { message: string; author?: { name?: string; date?: string } };
+    author?: { login?: string } | null;
+  }[];
+
+  const d = db();
+  const [proj] = await d.select({ projectId: project.projectId }).from(project).where(eq(project.repositoryName, repoName)).limit(1);
+  const known = new Set(
+    (await d.select({ commitSha: githubEvent.commitSha }).from(githubEvent).where(eq(githubEvent.repoName, repoName)))
+      .map((r) => r.commitSha)
+      .filter(Boolean),
+  );
+
+  let insertedCount = 0;
+  for (const item of list) {
+    if (known.has(item.sha)) continue;
+    const author = item.author?.login || item.commit.author?.name || null;
+    const timestamp = item.commit.author?.date ?? null;
+    await d.insert(githubEvent).values({
+      projectId: proj?.projectId ?? null,
+      eventType: "push",
+      payload: { id: item.sha, message: item.commit.message, url: item.html_url, author: { name: author, username: item.author?.login ?? null }, timestamp, isBackfilled: true },
+      repoName,
+      branch,
+      commitSha: item.sha,
+      author,
+      message: item.commit.message,
+      createdAt: timestamp ? new Date(timestamp) : new Date(),
+    });
+    insertedCount += 1;
+  }
+  log.info({ repoName, branch, insertedCount }, "Backfilled commit cache");
+  return c.json({ data: { repoName, branch, fetchedCount: list.length, insertedCount }, error: null });
+});
+
+// A client reads their project's branches too; names are not a secret and the
+// hub's branch switcher 403'd for every client before this.
+github.get("/repos/:name/branches", requireAuth, async (c) => {
   const repoName = c.req.param("name");
   const token = env().GITHUB_TOKEN;
 
