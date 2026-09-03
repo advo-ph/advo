@@ -18,13 +18,3 @@ export function projectFormMode(
   if (!isOpen) return "closed";
   return editingProject != null ? "edit" : "create";
 }
-
-export type ClientFormMode = "closed" | "create" | "edit";
-
-export function clientFormMode(
-  isOpen: boolean,
-  editingClient: unknown | null,
-): ClientFormMode {
-  if (!isOpen) return "closed";
-  return editingClient != null ? "edit" : "create";
-}

@@ -6,6 +6,7 @@
  */
 
 import { get, post, patch, del } from "@/lib/api";
+import { daysUntil } from "@/lib/manila-time";
 import { formatDistanceToNow } from "date-fns";
 import type { Project, Client, Lead, ProjectStatus, RecentActivity, UpcomingDeadline } from "@/types/admin";
 
@@ -320,8 +321,13 @@ export async function getUpcomingDeadlines(limit = 5): Promise<DbResult<Upcoming
   if (res.error) return { data: null, error: res.error };
 
   const deadlines: UpcomingDeadline[] = (res.data || []).map((d) => {
-    const dueDate = d.dueDate ? new Date(d.dueDate) : null;
-    const isUrgent = dueDate ? dueDate.getTime() - Date.now() < 3 * 24 * 60 * 60 * 1000 : false;
+    // Urgent = due within the next 3 days on the Manila calendar, and not already past.
+    //
+    // The old test was `due - now < 3 days` with no lower bound, so everything overdue
+    // satisfied it and a deliverable a year late read as "urgent" rather than as late.
+    // It also compared instants, which made a thing due today urgent from 08:00.
+    const days = daysUntil(d.dueDate);
+    const isUrgent = days !== null && days >= 0 && days <= 3;
     return {
       deliverable_id: d.deliverableId,
       title: d.title,
