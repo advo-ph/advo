@@ -117,7 +117,7 @@ export interface CheckResult {
 
 const KEY = ["corpus"];
 
-export function useCorpus(filter: { q?: string; projectId?: number | null; category?: string; status?: string } = {}) {
+export function useCorpus(filter: { q?: string; projectId?: number | null; category?: string; status?: string; verified?: boolean } = {}) {
   const { user } = useAuth();
   const enabled = Boolean(user);
   const qc = useQueryClient();
@@ -131,6 +131,8 @@ export function useCorpus(filter: { q?: string; projectId?: number | null; categ
   if (filter.q) search.set("q", filter.q);
   if (filter.projectId) search.set("projectId", String(filter.projectId));
   if (filter.category) search.set("category", filter.category);
+  if (filter.verified !== undefined) search.set("verified", String(filter.verified));
+  search.set("limit", "500");
   const factPath = `/api/corpus/fact${search.toString() ? `?${search}` : ""}`;
   const actionSearch = new URLSearchParams();
   if (filter.status) actionSearch.set("status", filter.status);
@@ -168,6 +170,18 @@ export function useCorpus(filter: { q?: string; projectId?: number | null; categ
       if (res.error) throw new Error(res.error);
     },
     onSuccess: invalidate,
+    onError: (e: Error) => toast({ title: "Not saved", description: e.message, variant: "destructive" }),
+  });
+  const verifyMany = useMutation({
+    mutationFn: async (input: { corpusFactId: number[]; isVerified: boolean }) => {
+      const res = await post<{ updated: number }>("/api/corpus/fact/verify", input);
+      if (res.error || !res.data) throw new Error(res.error || "Not saved");
+      return res.data;
+    },
+    onSuccess: (r) => {
+      invalidate();
+      toast({ title: r.updated === 1 ? "1 fact verified" : `${r.updated} facts verified`, description: "Marked as checked by a person." });
+    },
     onError: (e: Error) => toast({ title: "Not saved", description: e.message, variant: "destructive" }),
   });
   const deleteSource = useMutation({
@@ -225,6 +239,8 @@ export function useCorpus(filter: { q?: string; projectId?: number | null; categ
     checkResult: check.data ?? null,
     isChecking: check.isPending,
     verify: verify.mutate,
+    verifyMany: verifyMany.mutate,
+    isVerifyingMany: verifyMany.isPending,
     deleteSource: deleteSource.mutate,
     isDeletingSource: deleteSource.isPending,
     updateAction: updateAction.mutate,

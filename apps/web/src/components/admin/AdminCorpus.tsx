@@ -165,7 +165,8 @@ const AdminCorpus = () => {
   const [shareUrl, setShareUrl] = useState("");
   const [pasteTitle, setPasteTitle] = useState("");
   const [pasteText, setPasteText] = useState("");
-  const corpus = useCorpus({ q, category: category || undefined, status: status || undefined });
+  const [unverifiedOnly, setUnverifiedOnly] = useState(false);
+  const corpus = useCorpus({ q, category: category || undefined, status: status || undefined, verified: unverifiedOnly ? false : undefined });
 
   const categoryList = useMemo(() => Array.from(new Set(corpus.fact.map((f) => f.category))).sort(), [corpus.fact]);
   const s = corpus.stat;
@@ -309,6 +310,29 @@ const AdminCorpus = () => {
           meta={`${corpus.fact.length} shown`}
           action={
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setUnverifiedOnly((v) => !v)}
+                className={`h-8 rounded-md border px-2.5 text-xs ${unverifiedOnly ? "border-accent text-accent" : "border-border text-muted-foreground hover:text-foreground"}`}
+                title="Show only facts no person has verified yet"
+              >
+                Unverified only
+              </button>
+              {unverifiedOnly && corpus.fact.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 text-xs"
+                  disabled={corpus.isVerifyingMany}
+                  onClick={() => {
+                    if (window.confirm(`Verify all ${corpus.fact.length} facts shown? Only do this after reading them.`)) {
+                      corpus.verifyMany({ corpusFactId: corpus.fact.map((f) => f.corpus_fact_id), isVerified: true });
+                    }
+                  }}
+                >
+                  <ShieldCheck className="h-3 w-3" /> Verify all {corpus.fact.length} shown
+                </Button>
+              )}
               <select value={category} onChange={(e) => setCategory(e.target.value)} className="h-8 rounded-md border border-border bg-background px-2 text-xs">
                 <option value="">All categories</option>
                 {categoryList.map((c) => (

@@ -29,6 +29,7 @@
     "corpus:repo": "node scripts/corpus-from-case-study.mjs",
     "bench:corpus-gap": "node bench/roadmap/corpus-gap/scoring.mjs",
     "bench:discount": "node bench/roadmap/corpus-discount/scoring.mjs",
+    "bench:verify": "node bench/roadmap/corpus-verify/scoring.mjs",
     "db:local": "node scripts/db-local.mjs",
     "bench:drift": "node bench/roadmap/migration-drift/scoring.mjs",
     "bench:drawer": "node bench/roadmap/drawer-a11y/scoring.mjs",

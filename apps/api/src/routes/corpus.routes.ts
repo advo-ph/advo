@@ -37,6 +37,7 @@ import {
   updateAction,
   upsertTemplate,
   verifyFact,
+  verifyFactMany,
 } from "../services/corpus.service.js";
 
 export const corpusRoutes = new Hono<{ Variables: Variables }>();
@@ -220,16 +221,29 @@ corpusRoutes.delete("/source/:id", requireAdmin, async (c) => {
 corpusRoutes.get("/fact", async (c) => {
   const projectId = c.req.query("projectId");
   const limit = c.req.query("limit");
+  const verified = c.req.query("verified");
   return c.json({
     data: await listFact({
       q: c.req.query("q") || undefined,
       projectId: projectId ? Number(projectId) : undefined,
       category: c.req.query("category") || undefined,
+      verified: verified === undefined ? undefined : verified === "true",
       limit: limit ? Number(limit) : undefined,
     }),
     error: null,
   });
 });
+
+/** Verify or reject many facts in one pass. Team only. */
+corpusRoutes.post(
+  "/fact/verify",
+  zValidator("json", z.object({ corpusFactId: z.array(z.coerce.number().int().positive()).min(1).max(500), isVerified: z.boolean() })),
+  async (c) => {
+    const user = c.get("user");
+    const { corpusFactId, isVerified } = c.req.valid("json");
+    return c.json({ data: await verifyFactMany(corpusFactId, user.userId, isVerified), error: null });
+  },
+);
 
 corpusRoutes.patch(
   "/fact/:id/verify",

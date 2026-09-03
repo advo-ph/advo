@@ -19,7 +19,7 @@
  * never asserts truth the sources do not carry.
  */
 import Anthropic from "@anthropic-ai/sdk";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../db/connection.js";
 import {
   corpusAction,
@@ -691,12 +691,13 @@ export async function getSource(corpusSourceId: number) {
   return { ...source, fact, term, action };
 }
 
-export async function listFact(filter: { q?: string; projectId?: number; category?: string; limit?: number }) {
+export async function listFact(filter: { q?: string; projectId?: number; category?: string; verified?: boolean; limit?: number }) {
   const d = db();
   const limit = Math.min(filter.limit ?? 100, 500);
   const cond = [];
   if (filter.projectId) cond.push(sql`f.project_id = ${filter.projectId}`);
   if (filter.category) cond.push(sql`f.category = ${filter.category}`);
+  if (filter.verified !== undefined) cond.push(sql`f.is_verified = ${filter.verified}`);
   if (filter.q?.trim()) cond.push(sql`f.search @@ websearch_to_tsquery('english', ${filter.q.trim()})`);
   const row = await d.execute(sql`
     select f.*, s.kind as source_kind, s.title as source_title, s.url as source_url
@@ -720,6 +721,22 @@ export async function verifyFact(corpusFactId: number, userId: number, isVerifie
     .where(eq(corpusFact.corpusFactId, corpusFactId))
     .returning();
   return row ?? null;
+}
+
+/** Verify (or unverify) many facts at once — a review pass over pricing and terms. */
+export async function verifyFactMany(corpusFactId: number[], userId: number, isVerified: boolean): Promise<{ updated: number }> {
+  if (corpusFactId.length === 0) return { updated: 0 };
+  const d = db();
+  const row = await d
+    .update(corpusFact)
+    .set(
+      isVerified
+        ? { isVerified: true, verifiedBy: userId, verifiedAt: new Date() }
+        : { isVerified: false, verifiedBy: null, verifiedAt: null },
+    )
+    .where(inArray(corpusFact.corpusFactId, corpusFactId))
+    .returning({ corpusFactId: corpusFact.corpusFactId });
+  return { updated: row.length };
 }
 
 export async function supersedeFact(corpusFactId: number, byFactId: number) {
