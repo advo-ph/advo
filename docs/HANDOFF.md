@@ -15,6 +15,22 @@ Cross-links:
 
 ---
 
+## 2026-09-03 — discounts: a fact about a price, not a new price
+
+> Mar: _"sometimes we do provide discounts, etc."_ Until now a discounted deal had to choose between the list price (and look underpaid forever) and the charged price (and lose the list price), and a discounted addendum would have superseded the contract's figure as if the price had changed. Migration 028 gives the project row `list_value_cents`, `discount_cents` and `discount_reason` beside the charged `total_value_cents`, with list − discount = total refused by the form, the API and a DB CHECK. The corpus reads a discount out of any text as typed terms, keeps the list price live beside the addendum that discounted it, and answers "pays ₱270,000" from "₱300,000 with a 10% discount" with the arithmetic shown. Verifier first: `bench/roadmap/corpus-discount`, 9 checks against the running API, creating and deleting its own bench project and sources, 9/9 locally and on prod.
+
+**What changed in the passes.** `discountTermIn()` runs after both extractors, so the terms do not depend on what the model made of the sentences. `supersedeByNewerDocument()` skips money terms whose newer source carries a discount term, and now supersedes counts too: `termDigit` returns a term's whole value, so "5" matches "5 rounds", which `numberIn()` alone ignored as a lone digit. `checkClaim()` returns `discount` when list − discount equals a figure in the claim and nothing supported it outright. `DELETE /api/corpus/source/:id` (admin) exists so a bench, or a bad ingest, can be removed; facts that pointed at the deleted source's facts as successors go live again.
+
+**Honest open-items**
+
+- **No real discount is recorded yet.** The three fields are empty on every prod project; the corpus holds the referral discounts (20% for a referred meeting, 50% for a signed referral) and FourlinQ's free first year as prose only. Which discounts ADVO actually gives, and to whom, is Mar's to say.
+- **One discount per text.** `discountTermIn()` types the first discount it finds; a note that grants two different discounts keeps the second as a fact only.
+- **A discount on a recurring fee** (a waived first year) is still a fact, not a row: `recurring_fee` has no discount fields.
+- **The admin Corpus screen has no delete button.** The route exists; the screen does not call it yet.
+- As before: no facts verified by a person; the prod admin password is the seed default.
+
+---
+
 ## 2026-09-03 — the gaps: supersession, repository knowledge, and the data the contracts said should exist
 
 > A verifier first (`bench/roadmap/corpus-gap`, 8 checks against the running API), then the closures, then 8/8 on prod. `POST /api/corpus/supersede` points every fact an older contract stated at the newer contract's figure; fact-check stops counting a superseded fact as support. The case studies became corpus bundles, one per client repository, every feature cited by the file that proves it. VBE is linked to its real source outside the org and backfilled. Felici's three sister sites, the gelato site's value, and the three contracted recurring fees now exist as rows.
@@ -31,7 +47,7 @@ Cross-links:
 
 - **Recurring-fee start dates are placeholders.** Both monthly fees start on delivery of a system that is not delivered; the rows say so in their notes and must be re-dated at delivery.
 - **The four sister-site projects share one ₱200,000 contract.** Each carries ₱45,000; there is no row for the contract as a whole, and the ₱20,000 down payment sits on the gelato project only.
-- **Supersession covers money and commitments only.** Scope and process facts from an older document (revision rounds, feedback windows) stay live even when the newer document changes them; extend `supersedeByNewerDocument` to non-money terms when a case needs it.
+- ~~**Supersession covers money and commitments only.**~~ Closed the same day: a term's whole value is its digit now, so 5 rounds → 3 rounds supersedes; see the entry above.
 - **Repository knowledge is the case studies, not the code.** Facts come from `case-study.ts`; nothing reads the client repositories directly.
 - **No facts are verified by a person** and **the prod admin password is still the seed default**, as before.
 
