@@ -1,0 +1,119 @@
+{
+  "source": {
+    "kind": "local_file",
+    "externalId": "advo-ph/coffeerush",
+    "url": "https://github.com/advo-ph/coffeerush",
+    "title": "Coffee Rush Eastridge — what ADVO shipped, read from advo-ph/coffeerush",
+    "documentKind": "repository",
+    "occurredAt": null,
+    "summary": "A three-page site for the Angono cafe: a scroll-locked photographic intro through the drinks and the kitchen, a fully priced menu, and a browser-side order builder.",
+    "projectId": 9,
+    "leadName": null,
+    "meta": {
+      "slug": "coffee-rush-eastridge",
+      "liveUrl": "https://coffee-rush-one.vercel.app",
+      "sector": "Cafe · Angono, Rizal",
+      "featureCount": 5,
+      "provenance": "case-study.ts, each feature cites a file in the client repo"
+    }
+  },
+  "fact": [
+    {
+      "claim": "Coffee Rush Eastridge is a Cafe · Angono, Rizal build: A three-page site for the Angono cafe: a scroll-locked photographic intro through the drinks and the kitchen, a fully priced menu, and a browser-side order builder.",
+      "category": "product",
+      "quote": "A three-page site for the Angono cafe: a scroll-locked photographic intro through the drinks and the kitchen, a fully priced menu, and a browser-side order builder.",
+      "locator": "README",
+      "basis": "document",
+      "confidence": 0.85
+    },
+    {
+      "claim": "Coffee Rush Eastridge: Scroll-locked drink intro — Scrolling into the intro locks the page and steps through eight drink photographs by wheel, touch or arrow key. After the last one the cups morph into a ring around the logo and zoom out.",
+      "category": "product",
+      "quote": "Scrolling into the intro locks the page and steps through eight drink photographs by wheel, touch or arrow key. After the last one the cups morph into a ring around the logo and zoom out.",
+      "locator": "script.js",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "Coffee Rush Eastridge: Kitchen strip — A horizontal run of eight plated dishes tracks scroll position and releases the lock at the end. Scrolling back up re-enters the scene rather than skipping it.",
+      "category": "product",
+      "quote": "A horizontal run of eight plated dishes tracks scroll position and releases the lock at the end. Scrolling back up re-enters the scene rather than skipping it.",
+      "locator": "script.js",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "Coffee Rush Eastridge: Priced menu — Sixteen categories from Hot Coffee Classics to Open-Face Sandwiches, rendered from a catalogue in the page with real peso prices, plus Cloud Series cards listing each flavour.",
+      "category": "product",
+      "quote": "Sixteen categories from Hot Coffee Classics to Open-Face Sandwiches, rendered from a catalogue in the page with real peso prices, plus Cloud Series cards listing each flavour.",
+      "locator": "menu.html",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "Coffee Rush Eastridge: Order builder — Roughly 97 items across category tabs with quantity steppers, a sticky cart with line totals and subtotal, and a mobile bar that appears once the cart is not empty.",
+      "category": "product",
+      "quote": "Roughly 97 items across category tabs with quantity steppers, a sticky cart with line totals and subtotal, and a mobile bar that appears once the cart is not empty.",
+      "locator": "order.html",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "Coffee Rush Eastridge: Visit details — The cafe's own copy: Eastridge in Angono, Rizal, open 7AM to 2AM daily, with the Azotea VIP function room for private and corporate bookings.",
+      "category": "product",
+      "quote": "The cafe's own copy: Eastridge in Angono, Rizal, open 7AM to 2AM daily, with the Azotea VIP function room for private and corporate bookings.",
+      "locator": "index.html",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "Coffee Rush Eastridge runs on Vanilla HTML, CSS and JavaScript — no bundler, no framework.",
+      "category": "product",
+      "quote": "Vanilla HTML, CSS and JavaScript — no bundler, no framework",
+      "locator": "package.json",
+      "basis": "document",
+      "confidence": 0.85
+    },
+    {
+      "claim": "Coffee Rush Eastridge runs on Three static pages: index, menu, order.",
+      "category": "product",
+      "quote": "Three static pages: index, menu, order",
+      "locator": "package.json",
+      "basis": "document",
+      "confidence": 0.85
+    },
+    {
+      "claim": "Coffee Rush Eastridge runs on IntersectionObserver scroll reveals.",
+      "category": "product",
+      "quote": "IntersectionObserver scroll reveals",
+      "locator": "package.json",
+      "basis": "document",
+      "confidence": 0.85
+    },
+    {
+      "claim": "Coffee Rush Eastridge integrates: Google Fonts for Fraunces and Hanken Grotesk.",
+      "category": "product",
+      "quote": "Google Fonts for Fraunces and Hanken Grotesk",
+      "locator": "integration",
+      "basis": "document",
+      "confidence": 0.8
+    },
+    {
+      "claim": "Coffee Rush Eastridge integrates: Outbound Instagram profile links.",
+      "category": "product",
+      "quote": "Outbound Instagram profile links",
+      "locator": "integration",
+      "basis": "document",
+      "confidence": 0.8
+    }
+  ],
+  "term": [
+    {
+      "name": "feature_count",
+      "value": 5,
+      "unit": null,
+      "quote": null
+    }
+  ],
+  "action": []
+}

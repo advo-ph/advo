@@ -1,0 +1,167 @@
+{
+  "source": {
+    "kind": "local_file",
+    "externalId": "advo-ph/themedicalregistry",
+    "url": "https://github.com/advo-ph/themedicalregistry",
+    "title": "TMC Registry — what ADVO shipped, read from advo-ph/themedicalregistry",
+    "documentKind": "repository",
+    "occurredAt": null,
+    "summary": "A pituitary disease registry for The Medical City that enrols patients by scanning the printed Clinical Pathway form into 16 structured clinical sections, encrypts patient names, and publishes k-anonymity aggregates plus research CSV export.",
+    "projectId": 7,
+    "leadName": null,
+    "meta": {
+      "slug": "tmc-registry",
+      "liveUrl": "https://medicalregistry.ph",
+      "sector": "Hospital · Endocrinology",
+      "featureCount": 7,
+      "provenance": "case-study.ts, each feature cites a file in the client repo"
+    }
+  },
+  "fact": [
+    {
+      "claim": "TMC Registry is a Hospital · Endocrinology build: A pituitary disease registry for The Medical City that enrols patients by scanning the printed Clinical Pathway form into 16 structured clinical sections, encrypts patient names, and publishes k-anonymity aggregates plus research CSV export.",
+      "category": "product",
+      "quote": "A pituitary disease registry for The Medical City that enrols patients by scanning the printed Clinical Pathway form into 16 structured clinical sections, encrypts patient names, and publishes k-anonymity aggregates plus research CSV export.",
+      "locator": "README",
+      "basis": "document",
+      "confidence": 0.85
+    },
+    {
+      "claim": "TMC Registry: Paper form to structured record — Staff upload a photo, scan, PDF or DOCX of the Clinical Pathway for Pituitary Work-Up. The extractor takes the cheapest route that works: AcroForm fields via pdf-lib, DOCX table cells, born-digital PDF text, and only then optical mark recognition.",
+      "category": "product",
+      "quote": "Staff upload a photo, scan, PDF or DOCX of the Clinical Pathway for Pituitary Work-Up. The extractor takes the cheapest route that works: AcroForm fields via pdf-lib, DOCX table cells, born-digital PDF text, and only then optical mark recognition.",
+      "locator": "src/lib/template/scraper.ts",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "TMC Registry: Optical mark recognition for ballpen forms — For a hand-marked printed form: mupdf rasterises at 150 DPI, OpenCV applies grayscale and Otsu thresholding, Tesseract reads the row labels, then ink density decides each Yes/No and select box against the median empty ring.",
+      "category": "product",
+      "quote": "For a hand-marked printed form: mupdf rasterises at 150 DPI, OpenCV applies grayscale and Otsu thresholding, Tesseract reads the row labels, then ink density decides each Yes/No and select box against the median empty ring.",
+      "locator": "src/lib/template/omr.ts",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "TMC Registry: Eligibility decided on the server — Exclusion is derived server-side rather than trusted from the browser. An excluded enrolment is stored with demographics and eligibility only; an included one writes consent, diagnosis, baseline visit and every filled clinical child in a single transaction.",
+      "category": "product",
+      "quote": "Exclusion is derived server-side rather than trusted from the browser. An excluded enrolment is stored with demographics and eligibility only; an included one writes consent, diagnosis, baseline visit and every filled clinical child in a single transaction.",
+      "locator": "src/app/api/patients/process-enrollment/route.ts",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "TMC Registry: Encrypted patient names — First and last names are AES-256-GCM ciphertext stored as bytes, decrypted only for authorised users. Everywhere else the patient is a sequential registry number — TMC-PIT-0001 onward.",
+      "category": "product",
+      "quote": "First and last names are AES-256-GCM ciphertext stored as bytes, decrypted only for authorised users. Everywhere else the patient is a sequential registry number — TMC-PIT-0001 onward.",
+      "locator": "src/lib/encryption.ts",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "TMC Registry: k-anonymity statistics — Age, sex, ICD, tumour type, Knosp grade, surgical approach, resection extent and outcome distributions, with every cell below a count of five suppressed. The same computation serves the in-app dashboard and the public page.",
+      "category": "product",
+      "quote": "Age, sex, ICD, tumour type, Knosp grade, surgical approach, resection extent and outcome distributions, with every cell below a count of five suppressed. The same computation serves the in-app dashboard and the public page.",
+      "locator": "src/lib/statistics.ts",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "TMC Registry: Research CSV export, de-identified — Twelve selectable clinical domains with registry and date filters. Demographics export as registry ID and five-year age band, never names, and every export writes a DATA_EXPORTED row to the audit log.",
+      "category": "product",
+      "quote": "Twelve selectable clinical domains with registry and date filters. Demographics export as registry ID and five-year age band, never names, and every export writes a DATA_EXPORTED row to the audit log.",
+      "locator": "src/features/exports/actions/export-data.ts",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "TMC Registry: Role-gated portal and audit trail — Administrator, Doctor and Encoder roles gate the sidebar and the data. Enrolment, patient edits, document uploads, visit saves, role changes and exports all append to an audit log an administrator can page through.",
+      "category": "product",
+      "quote": "Administrator, Doctor and Encoder roles gate the sidebar and the data. Enrolment, patient edits, document uploads, visit saves, role changes and exports all append to an audit log an administrator can page through.",
+      "locator": "src/app/(dashboard)/admin/audit-log/page.tsx",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "TMC Registry runs on Next.js 16 App Router · React 19 · TypeScript.",
+      "category": "product",
+      "quote": "Next.js 16 App Router · React 19 · TypeScript",
+      "locator": "package.json",
+      "basis": "document",
+      "confidence": 0.85
+    },
+    {
+      "claim": "TMC Registry runs on PostgreSQL via Prisma 7 (@prisma/adapter-pg).",
+      "category": "product",
+      "quote": "PostgreSQL via Prisma 7 (@prisma/adapter-pg)",
+      "locator": "package.json",
+      "basis": "document",
+      "confidence": 0.85
+    },
+    {
+      "claim": "TMC Registry runs on Tailwind 4 · shadcn/ui · Zod 4 server-action validation.",
+      "category": "product",
+      "quote": "Tailwind 4 · shadcn/ui · Zod 4 server-action validation",
+      "locator": "package.json",
+      "basis": "document",
+      "confidence": 0.85
+    },
+    {
+      "claim": "TMC Registry runs on pdf-lib · pdf-parse · mupdf WASM · OpenCV.js · tesseract.js.",
+      "category": "product",
+      "quote": "pdf-lib · pdf-parse · mupdf WASM · OpenCV.js · tesseract.js",
+      "locator": "package.json",
+      "basis": "document",
+      "confidence": 0.85
+    },
+    {
+      "claim": "TMC Registry runs on AES-256-GCM field encryption · scrypt password hashes.",
+      "category": "product",
+      "quote": "AES-256-GCM field encryption · scrypt password hashes",
+      "locator": "package.json",
+      "basis": "document",
+      "confidence": 0.85
+    },
+    {
+      "claim": "TMC Registry integrates: PostgreSQL via Prisma, PgBouncer-oriented pooling.",
+      "category": "product",
+      "quote": "PostgreSQL via Prisma, PgBouncer-oriented pooling",
+      "locator": "integration",
+      "basis": "document",
+      "confidence": 0.8
+    },
+    {
+      "claim": "TMC Registry integrates: Optional Clerk auth, env-gated; custom scrypt + HMAC cookie otherwise.",
+      "category": "product",
+      "quote": "Optional Clerk auth, env-gated; custom scrypt + HMAC cookie otherwise",
+      "locator": "integration",
+      "basis": "document",
+      "confidence": 0.8
+    },
+    {
+      "claim": "TMC Registry integrates: Optional Supabase Storage for original uploads.",
+      "category": "product",
+      "quote": "Optional Supabase Storage for original uploads",
+      "locator": "integration",
+      "basis": "document",
+      "confidence": 0.8
+    },
+    {
+      "claim": "TMC Registry integrates: Optional Upstash Redis cache for aggregate statistics.",
+      "category": "product",
+      "quote": "Optional Upstash Redis cache for aggregate statistics",
+      "locator": "integration",
+      "basis": "document",
+      "confidence": 0.8
+    }
+  ],
+  "term": [
+    {
+      "name": "feature_count",
+      "value": 7,
+      "unit": null,
+      "quote": null
+    }
+  ],
+  "action": []
+}

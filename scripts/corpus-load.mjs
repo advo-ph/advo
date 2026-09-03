@@ -4,7 +4,7 @@
  *
  *   node scripts/corpus-load.mjs                       # http://127.0.0.1:6407, admin@advo.ph
  *   ADVO_API_URL=https://api.advo.ph ADVO_EMAIL=... ADVO_PASSWORD=... node scripts/corpus-load.mjs
- *   node scripts/corpus-load.mjs --only meeting       # or --only document
+ *   node scripts/corpus-load.mjs --only meeting       # or --only document | repo | template
  *   node scripts/corpus-load.mjs --dry-run            # validate and count, post nothing
  *
  * What it does, per file:
@@ -176,6 +176,26 @@ if (!only || only === "document") {
       } else {
         const r = await post(token, "/api/corpus/ingest/json", bundle);
         console.log(`document ${file}: source ${r.corpusSourceId}, ${r.factCount} fact, ${r.termCount} term, ${r.actionCount} action`);
+      }
+      report.loaded += 1;
+    } catch (e) {
+      report.skipped.push(`${file}: ${e.message}`);
+    }
+  }
+}
+
+if (!only || only === "repo") {
+  // Bundles written by scripts/corpus-from-case-study.mjs are already in the API's shape.
+  for (const file of listJson(dir("repo"))) {
+    const path = join(dir("repo"), file);
+    try {
+      const bundle = JSON.parse(readFileSync(path, "utf8"));
+      if (!bundle.source?.externalId || !bundle.source?.title) throw new Error("source.externalId and title are required");
+      if (isDryRun) {
+        console.log(`[dry] repo ${file}: ${(bundle.fact ?? []).length} fact`);
+      } else {
+        const r = await post(token, "/api/corpus/ingest/json", bundle);
+        console.log(`repo ${file}: source ${r.corpusSourceId}, ${r.factCount} fact, ${r.termCount} term`);
       }
       report.loaded += 1;
     } catch (e) {

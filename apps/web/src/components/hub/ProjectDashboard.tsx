@@ -279,7 +279,7 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           {project.repository_name && (
             <a
-              href={`https://github.com/advo-ph/${project.repository_name}`}
+              href={`https://github.com/${project.repository_name.includes("/") ? project.repository_name : `advo-ph/${project.repository_name}`}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-border text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors"

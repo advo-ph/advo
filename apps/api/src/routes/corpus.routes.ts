@@ -31,6 +31,7 @@ import {
   listTemplate,
   listTerm,
   renderTemplate,
+  supersedeByNewerDocument,
   supersedeFact,
   updateAction,
   upsertTemplate,
@@ -273,6 +274,9 @@ corpusRoutes.patch(
     return c.json({ data: row, error: null });
   },
 );
+
+/** Point every fact an older contract stated at the newer contract's figure. Idempotent. */
+corpusRoutes.post("/supersede", async (c) => c.json({ data: await supersedeByNewerDocument(), error: null }));
 
 // ─── Fact-check ──────────────────────────────────────
 

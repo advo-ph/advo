@@ -1,0 +1,191 @@
+{
+  "source": {
+    "kind": "local_file",
+    "externalId": "advo-ph/fourlinq",
+    "url": "https://github.com/advo-ph/fourlinq",
+    "title": "FourlinQ — what ADVO shipped, read from advo-ph/fourlinq",
+    "documentKind": "repository",
+    "occurredAt": null,
+    "summary": "A windows-and-doors platform for the Philippine market: a 21-system catalogue, a five-step configurator backed by real 3D models, a retrieval-grounded assistant that will not quote a number it cannot cite, and a staff CMS with a lead inbox behind it.",
+    "projectId": 3,
+    "leadName": null,
+    "meta": {
+      "slug": "fourlinq",
+      "liveUrl": "https://fourlinq.ph",
+      "sector": "Manufacturing · Windows & doors",
+      "featureCount": 8,
+      "provenance": "case-study.ts, each feature cites a file in the client repo"
+    }
+  },
+  "fact": [
+    {
+      "claim": "FourlinQ is a Manufacturing · Windows & doors build: A windows-and-doors platform for the Philippine market: a 21-system catalogue, a five-step configurator backed by real 3D models, a retrieval-grounded assistant that will not quote a number it cannot cite, and a staff CMS with a lead inbox behind it.",
+      "category": "product",
+      "quote": "A windows-and-doors platform for the Philippine market: a 21-system catalogue, a five-step configurator backed by real 3D models, a retrieval-grounded assistant that will not quote a number it cannot cite, and a staff CMS with a lead inbox behind it.",
+      "locator": "README",
+      "basis": "document",
+      "confidence": 0.85
+    },
+    {
+      "claim": "FourlinQ: Five-step design tool — Type, material, finish, glass and size from 400 to 3000 mm in 50 mm steps, with panel layouts for sliding doors. It saves to the API and always writes local storage as well, so a configuration survives an API failure rather than being lost.",
+      "category": "product",
+      "quote": "Type, material, finish, glass and size from 400 to 3000 mm in 50 mm steps, with panel layouts for sliding doors. It saves to the API and always writes local storage as well, so a configuration survives an API failure rather than being lost.",
+      "locator": "src/pages/DesignTool.tsx",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "FourlinQ: Interactive 3D system viewer — One owned GLB per system. The chosen finish is applied to the frame meshes only — hardware and glass keep their own materials — and the baked open/close animation plays on demand.",
+      "category": "product",
+      "quote": "One owned GLB per system. The chosen finish is applied to the frame meshes only — hardware and glass keep their own materials — and the baked open/close animation plays on demand.",
+      "locator": "src/components/3d/Window3D.tsx",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "FourlinQ: LinQ assistant, grounded in the catalogue — A streaming assistant that answers from retrieved catalogue content and accepts a photo of the visitor's wall. The prompt explicitly forbids inventing prices, U-values, decibel figures or warranty terms — the failure mode that matters most for a manufacturer.",
+      "category": "product",
+      "quote": "A streaming assistant that answers from retrieved catalogue content and accepts a photo of the visitor's wall. The prompt explicitly forbids inventing prices, U-values, decibel figures or warranty terms — the failure mode that matters most for a manufacturer.",
+      "locator": "src/components/chat/ChatPanel.tsx",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "FourlinQ: Scroll-pinned benefit sequence — A 186-frame window animation that advances by highlighted component rather than raw scroll position, so the explanation stays legible. Desktop pins the section; mobile switches to swipe.",
+      "category": "product",
+      "quote": "A 186-frame window animation that advances by highlighted component rather than raw scroll position, so the explanation stays legible. Desktop pins the section; mobile switches to swipe.",
+      "locator": "src/components/home/ScrollWindow.tsx",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "FourlinQ: Consent-gated analytics — Page views, scroll depth, clicks and configurator changes are first-party and only ever sent after the visitor accepts. Declining, or not answering, sends nothing at all.",
+      "category": "product",
+      "quote": "Page views, scroll depth, clicks and configurator changes are first-party and only ever sent after the visitor accepts. Declining, or not answering, sends nothing at all.",
+      "locator": "src/components/shared/CookieBanner.tsx",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "FourlinQ: Showroom maps and consultation booking — Three branches on MapLibre with directions links, sales numbers that open Viber on mobile, and a six-step qualifier covering project type, timeline, product interest, location and presentation mode.",
+      "category": "product",
+      "quote": "Three branches on MapLibre with directions links, sales numbers that open Viber on mobile, and a six-step qualifier covering project type, timeline, product interest, location and presentation mode.",
+      "locator": "src/pages/Brand.tsx",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "FourlinQ: Staff CMS and lead inbox — Role-gated admin over projects, news, products, aluminium systems, documents and media. Contact, quote and configuration enquiries land in one inbox and move through new, contacted, quoted, then won or lost.",
+      "category": "product",
+      "quote": "Role-gated admin over projects, news, products, aluminium systems, documents and media. Contact, quote and configuration enquiries land in one inbox and move through new, contacted, quoted, then won or lost.",
+      "locator": "src/pages/Admin.tsx",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "FourlinQ: Gallery that fails safe — The project gallery starts from the static catalogue and merges CMS rows over it, so a missing or broken CMS record can never delete a live gallery item. Admin cover art and ordering still win when present.",
+      "category": "product",
+      "quote": "The project gallery starts from the static catalogue and merges CMS rows over it, so a missing or broken CMS record can never delete a live gallery item. Admin cover art and ordering still win when present.",
+      "locator": "src/pages/Inspiration.tsx",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "FourlinQ runs on React 18 · TypeScript · Vite · React Router 6.",
+      "category": "product",
+      "quote": "React 18 · TypeScript · Vite · React Router 6",
+      "locator": "package.json",
+      "basis": "document",
+      "confidence": 0.85
+    },
+    {
+      "claim": "FourlinQ runs on Express 5 API · PostgreSQL via node-postgres.",
+      "category": "product",
+      "quote": "Express 5 API · PostgreSQL via node-postgres",
+      "locator": "package.json",
+      "basis": "document",
+      "confidence": 0.85
+    },
+    {
+      "claim": "FourlinQ runs on pgvector 768-d embeddings for retrieval.",
+      "category": "product",
+      "quote": "pgvector 768-d embeddings for retrieval",
+      "locator": "package.json",
+      "basis": "document",
+      "confidence": 0.85
+    },
+    {
+      "claim": "FourlinQ runs on Three.js · @react-three/fiber · drei.",
+      "category": "product",
+      "quote": "Three.js · @react-three/fiber · drei",
+      "locator": "package.json",
+      "basis": "document",
+      "confidence": 0.85
+    },
+    {
+      "claim": "FourlinQ runs on MapLibre GL · Tailwind 3 · shadcn/ui.",
+      "category": "product",
+      "quote": "MapLibre GL · Tailwind 3 · shadcn/ui",
+      "locator": "package.json",
+      "basis": "document",
+      "confidence": 0.85
+    },
+    {
+      "claim": "FourlinQ runs on PM2 cluster, CORS-locked to fourlinq.ph.",
+      "category": "product",
+      "quote": "PM2 cluster, CORS-locked to fourlinq.ph",
+      "locator": "package.json",
+      "basis": "document",
+      "confidence": 0.85
+    },
+    {
+      "claim": "FourlinQ integrates: PostgreSQL with pgvector cosine retrieval.",
+      "category": "product",
+      "quote": "PostgreSQL with pgvector cosine retrieval",
+      "locator": "integration",
+      "basis": "document",
+      "confidence": 0.8
+    },
+    {
+      "claim": "FourlinQ integrates: Nodemailer SMTP notifications; the enquiry still saves when mail is unconfigured.",
+      "category": "product",
+      "quote": "Nodemailer SMTP notifications; the enquiry still saves when mail is unconfigured",
+      "locator": "integration",
+      "basis": "document",
+      "confidence": 0.8
+    },
+    {
+      "claim": "FourlinQ integrates: MapLibre GL with keyless CARTO basemap tiles.",
+      "category": "product",
+      "quote": "MapLibre GL with keyless CARTO basemap tiles",
+      "locator": "integration",
+      "basis": "document",
+      "confidence": 0.8
+    },
+    {
+      "claim": "FourlinQ integrates: Multi-provider LLM chain, first configured key wins.",
+      "category": "product",
+      "quote": "Multi-provider LLM chain, first configured key wins",
+      "locator": "integration",
+      "basis": "document",
+      "confidence": 0.8
+    },
+    {
+      "claim": "FourlinQ integrates: Viber deep links and Google Maps directions.",
+      "category": "product",
+      "quote": "Viber deep links and Google Maps directions",
+      "locator": "integration",
+      "basis": "document",
+      "confidence": 0.8
+    }
+  ],
+  "term": [
+    {
+      "name": "feature_count",
+      "value": 8,
+      "unit": null,
+      "quote": null
+    }
+  ],
+  "action": []
+}

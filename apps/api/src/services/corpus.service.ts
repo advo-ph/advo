@@ -382,6 +382,8 @@ export interface CheckMatch {
   rank: number;
   source: { corpusSourceId: number; kind: string; title: string; url: string | null };
   sharesEveryNumber: boolean;
+  /** Pointed at a newer fact by supersession; shown, never counted as support. */
+  superseded: boolean;
 }
 
 /**
@@ -431,7 +433,7 @@ export async function checkClaim(claim: string, limit = 10) {
     join corpus_source s on s.corpus_source_id = f.corpus_source_id
     where f.search @@ ${tsquery}
     order by rank desc, f.confidence desc
-    limit ${limit}
+    limit ${limit * 5}
   `);
   let row: unknown = [];
   if (word.length > 0) {
@@ -439,10 +441,25 @@ export async function checkClaim(claim: string, limit = 10) {
     if ((row as unknown[]).length === 0) {
       const anyOf = word.map((w) => w.replace(/[^\p{L}\p{N}]/gu, "")).filter(Boolean).join(" | ");
       row = await select(sql`to_tsquery('english', ${anyOf})`);
+      // The any-word fallback is wide. If the claim names something — a client, a
+      // product, a person — keep only matches that name it too, so "Felici pays ..."
+      // is answered by Felici's sources and not by whichever fact shares the word
+      // "month". Names are read as capitalised words that are not sentence-initial
+      // stopwords; a claim with no names keeps the wide result.
+      const name = [...q.matchAll(/\b([A-Z][\p{L}\p{N}-]{2,})\b/gu)]
+        .map((m) => m[1].toLowerCase())
+        .filter((w) => !["the", "our", "their", "this", "that", "each", "every", "does", "will"].includes(w));
+      if (name.length > 0) {
+        const narrowed = (row as Record<string, unknown>[]).filter((r) => {
+          const hay = `${r.claim ?? ""} ${r.quote ?? ""} ${r.title ?? ""}`.toLowerCase();
+          return name.some((n) => hay.includes(n));
+        });
+        if (narrowed.length > 0) row = narrowed;
+      }
     }
   }
   const wanted = numberIn(q);
-  const match: CheckMatch[] = (row as unknown as Record<string, unknown>[]).map((r) => {
+  const match: CheckMatch[] = (row as unknown as Record<string, unknown>[]).slice(0, limit).map((r) => {
     const have = numberIn(`${r.claim ?? ""} ${r.quote ?? ""}`);
     return {
       corpusFactId: Number(r.corpus_fact_id),
@@ -462,6 +479,7 @@ export async function checkClaim(claim: string, limit = 10) {
         url: (r.url as string | null) ?? null,
       },
       sharesEveryNumber: wanted.length > 0 && wanted.every((n) => have.includes(n)),
+      superseded: r.superseded_by_fact_id != null,
     };
   });
   // A heuristic verdict, shown with its reasons. It is not a truth oracle: "supported"
@@ -470,15 +488,25 @@ export async function checkClaim(claim: string, limit = 10) {
   // compare against. Confidence and basis ride along so the reader can weigh them.
   let verdict: "supported" | "conflicting" | "unknown" = "unknown";
   const carriesNumber = (m: CheckMatch) => numberIn(`${m.claim} ${m.quote ?? ""}`).length > 0;
-  if (match.length > 0) {
+  const live = match.filter((m) => !m.superseded);
+  if (live.length > 0) {
     if (wanted.length === 0) verdict = "supported";
-    else if (match.some((m) => m.sharesEveryNumber)) verdict = "supported";
-    else if (match.some(carriesNumber)) verdict = "conflicting";
+    else if (live.some((m) => m.sharesEveryNumber)) verdict = "supported";
+    else if (live.some(carriesNumber)) verdict = "conflicting";
+  } else if (match.length > 0 && wanted.length > 0 && match.some((m) => m.sharesEveryNumber)) {
+    // Only a superseded fact agrees: the claim was true once and is not any more.
+    verdict = "conflicting";
   }
   // "Supported" by one source while another source carries a different number is the
   // shape a superseded contract takes (Felici: ₱3,000 in July, ₱4,000 in August). Say so,
   // and let the reader see both dates, rather than answering with the first hit.
-  const isContested = verdict === "supported" && wanted.length > 0 && match.some((m) => !m.sharesEveryNumber && carriesNumber(m));
+  // Only a strong match can contest: a weakly related fact that happens to carry a
+  // number (a site fee next to a total fee) is not a disagreement about this claim.
+  const topRank = live[0]?.rank ?? 0;
+  const isContested =
+    verdict === "supported" &&
+    wanted.length > 0 &&
+    live.some((m) => !m.sharesEveryNumber && carriesNumber(m) && m.rank >= topRank * 0.6);
   return { claim: q, numberInClaim: wanted, verdict, isContested, match };
 }
 
@@ -683,6 +711,107 @@ export async function upsertTemplate(
     })
     .returning();
   return { template: row, isNew: true };
+}
+
+/**
+ * Auto-supersession between documents of the same project.
+ *
+ * Two contracts for one project rarely agree on every number: Felici went from
+ * ₱48,000 and ₱3,000/month in July to ₱200,000 and ₱4,000/month in August. Both
+ * documents are in the corpus, both are true about their own date, and only one
+ * is the deal today. For every (project, term name) that appears in more than one
+ * contract/proposal/addendum with different values, the facts in the older source
+ * that carry the older value are pointed at a fact in the newest source that
+ * carries the newer value. Nothing is deleted; fact-check keeps showing the old
+ * line, marked superseded, and stops counting it as support.
+ */
+export async function supersedeByNewerDocument(): Promise<{ supersededCount: number; pair: { projectId: number; term: string; older: string; newer: string }[] }> {
+  const d = db();
+  const row = (await d.execute(sql`
+    select t.name, t.value, t.unit, t.corpus_source_id, s.project_id, s.occurred_at, s.title
+    from corpus_term t
+    join corpus_source s on s.corpus_source_id = t.corpus_source_id
+    where s.project_id is not null
+      and s.document_kind in ('contract', 'proposal', 'addendum')
+      and s.occurred_at is not null
+    order by s.project_id, t.name, s.occurred_at desc
+  `)) as unknown as { name: string; value: string; unit: string | null; corpus_source_id: number; project_id: number; occurred_at: string; title: string }[];
+
+  const group = new Map<string, typeof row>();
+  for (const r of row) {
+    const key = `${r.project_id}::${r.name}`;
+    group.set(key, [...(group.get(key) ?? []), r]);
+  }
+  // A term stored in centavos is written in pesos in the prose ("₱3,000.00" for
+  // 300000), so a cents term matches on either spelling. Anything else matches on
+  // its own digits.
+  const termDigit = (value: string, unit: string | null): string[] => {
+    const own = numberIn(value);
+    if (unit === "cents" && /^\d+$/.test(value)) {
+      const peso = String(Number(value) / 100).replace(/\.0+$/, "");
+      return [...new Set([...own, peso])];
+    }
+    return own;
+  };
+  const factOf = async (sourceId: number) =>
+    (await d.execute(sql`
+      select corpus_fact_id, claim, quote, superseded_by_fact_id from corpus_fact
+      where corpus_source_id = ${sourceId} order by corpus_fact_id
+    `)) as unknown as { corpus_fact_id: number; claim: string; quote: string | null; superseded_by_fact_id: number | null }[];
+  const carries = (f: { claim: string; quote: string | null }, digit: string[]) => {
+    const have = numberIn(`${f.claim} ${f.quote ?? ""}`);
+    return digit.some((n) => have.includes(n));
+  };
+
+  let supersededCount = 0;
+  const pair: { projectId: number; term: string; older: string; newer: string }[] = [];
+  const factCache = new Map<number, Awaited<ReturnType<typeof factOf>>>();
+  const cached = async (id: number) => {
+    if (!factCache.has(id)) factCache.set(id, await factOf(id));
+    return factCache.get(id)!;
+  };
+  for (const [, list] of group) {
+    const newest = list[0];
+    for (const older of list.slice(1)) {
+      if (older.value === newest.value || older.corpus_source_id === newest.corpus_source_id) continue;
+      const olderDigit = termDigit(older.value, (older as { unit?: string | null }).unit ?? null);
+      const newerDigit = termDigit(newest.value, (newest as { unit?: string | null }).unit ?? null);
+      if (olderDigit.length === 0 || newerDigit.length === 0) continue;
+      // Shared digits (a 15-day grace in both) are not a change of value.
+      if (olderDigit.some((n) => newerDigit.includes(n))) continue;
+      const successorFact = (await cached(newest.corpus_source_id)).find((f) => carries(f, newerDigit));
+      if (!successorFact) continue;
+      let hit = 0;
+      for (const f of await cached(older.corpus_source_id)) {
+        if (f.superseded_by_fact_id != null || !carries(f, olderDigit)) continue;
+        await d.execute(sql`update corpus_fact set superseded_by_fact_id = ${successorFact.corpus_fact_id} where corpus_fact_id = ${f.corpus_fact_id}`);
+        f.superseded_by_fact_id = successorFact.corpus_fact_id;
+        hit += 1;
+      }
+      // The same figure spoken on a recording before the newer contract is the same
+      // superseded deal: a consultation that priced the site at ₱3,000 a month is not a
+      // live source once the signed contract says ₱4,000. Only money and term facts, only
+      // on this project, only dated before the newer document.
+      const spoken = (await d.execute(sql`
+        select f.corpus_fact_id, f.claim, f.quote from corpus_fact f
+        join corpus_source s on s.corpus_source_id = f.corpus_source_id
+        where s.project_id = ${newest.project_id}
+          and s.corpus_source_id <> ${newest.corpus_source_id}
+          and s.corpus_source_id <> ${older.corpus_source_id}
+          and s.occurred_at < ${newest.occurred_at}
+          and f.category in ('pricing', 'contract_term', 'commitment', 'decision')
+          and f.superseded_by_fact_id is null
+      `)) as unknown as { corpus_fact_id: number; claim: string; quote: string | null }[];
+      for (const f of spoken) {
+        if (!carries(f, olderDigit)) continue;
+        await d.execute(sql`update corpus_fact set superseded_by_fact_id = ${successorFact.corpus_fact_id} where corpus_fact_id = ${f.corpus_fact_id}`);
+        hit += 1;
+      }
+      supersededCount += hit;
+      pair.push({ projectId: newest.project_id, term: newest.name, older: `${older.title} (${older.value})`, newer: `${newest.title} (${newest.value})` });
+    }
+  }
+  return { supersededCount, pair };
 }
 
 export async function corpusStat() {

@@ -1,0 +1,143 @@
+{
+  "source": {
+    "kind": "local_file",
+    "externalId": "advo-ph/felici-gelato2",
+    "url": "https://github.com/advo-ph/felici-gelato2",
+    "title": "Felici Artisan Gelato — what ADVO shipped, read from advo-ph/felici-gelato2",
+    "documentKind": "repository",
+    "occurredAt": null,
+    "summary": "A scroll-driven marketing site for the gelato brand of Reign Capunfuerza, built as a static React SPA: landing video, canvas word sequences, a 16-flavour selector, and two store locations.",
+    "projectId": 6,
+    "leadName": null,
+    "meta": {
+      "slug": "felici-artisan-gelato",
+      "liveUrl": "https://felicigelato.ph",
+      "sector": "Food & beverage · Rizal",
+      "featureCount": 6,
+      "provenance": "case-study.ts, each feature cites a file in the client repo"
+    }
+  },
+  "fact": [
+    {
+      "claim": "Felici Artisan Gelato is a Food & beverage · Rizal build: A scroll-driven marketing site for the gelato brand of Reign Capunfuerza, built as a static React SPA: landing video, canvas word sequences, a 16-flavour selector, and two store locations.",
+      "category": "product",
+      "quote": "A scroll-driven marketing site for the gelato brand of Reign Capunfuerza, built as a static React SPA: landing video, canvas word sequences, a 16-flavour selector, and two store locations.",
+      "locator": "README",
+      "basis": "document",
+      "confidence": 0.85
+    },
+    {
+      "claim": "Felici Artisan Gelato: Orientation-aware landing video — A full-viewport muted loop that swaps between landscape and portrait sources on orientation change, overlaid with film grain and a wordmark that fades out once the visitor scrolls past 80 pixels.",
+      "category": "product",
+      "quote": "A full-viewport muted loop that swaps between landscape and portrait sources on orientation change, overlaid with film grain and a wordmark that fades out once the visitor scrolls past 80 pixels.",
+      "locator": "src/sections/LandingVideo.jsx",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "Felici Artisan Gelato: Canvas word sequences — The hero plays a 177-frame sequence at 40fps and the story band a 151-frame one, decoded through createImageBitmap onto a 2D canvas rather than shipped as video, so the type stays crisp at any density.",
+      "category": "product",
+      "quote": "The hero plays a 177-frame sequence at 40fps and the story band a 151-frame one, decoded through createImageBitmap onto a 2D canvas rather than shipped as video, so the type stays crisp at any density.",
+      "locator": "src/sections/Hero.jsx",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "Felici Artisan Gelato: 16-flavour selector — A pinned section where cone buttons and a thumbnail grid swap the centre cup, the giant italic name and the stage colour. Flavours carry real status badges — Bestseller, New, Must Try, and Not Available for Asin Tibuok.",
+      "category": "product",
+      "quote": "A pinned section where cone buttons and a thumbnail grid swap the centre cup, the giant italic name and the stage colour. Flavours carry real status badges — Bestseller, New, Must Try, and Not Available for Asin Tibuok.",
+      "locator": "src/sections/FlavorStage.jsx",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "Felici Artisan Gelato: Two-store locator — Postcards for the Cainta cafe and the Angono gelato counter, each with its own opening hours, a muted loop that plays only once scrolled into view, and an outbound Google Maps link.",
+      "category": "product",
+      "quote": "Postcards for the Cainta cafe and the Angono gelato counter, each with its own opening hours, a muted loop that plays only once scrolled into view, and an outbound Google Maps link.",
+      "locator": "src/sections/Locations.jsx",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "Felici Artisan Gelato: Contact form with a mail fallback — Validated name, email, subject and message. It POSTs JSON when a contact endpoint is configured and otherwise opens a prefilled mailto, so the form still works with no backend deployed.",
+      "category": "product",
+      "quote": "Validated name, email, subject and message. It POSTs JSON when a contact endpoint is configured and otherwise opens a prefilled mailto, so the form still works with no backend deployed.",
+      "locator": "src/pages/Contact.jsx",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "Felici Artisan Gelato: Mobile memory and iOS viewport work — Not a visible feature, but the reason the site survives a phone: a frozen viewport unit so the iOS URL bar cannot resize full-screen sections, capped device pixel ratio, a 32-frame ring buffer, and ImageBitmaps closed after playback so the tab is not killed.",
+      "category": "product",
+      "quote": "Not a visible feature, but the reason the site survives a phone: a frozen viewport unit so the iOS URL bar cannot resize full-screen sections, capped device pixel ratio, a 32-frame ring buffer, and ImageBitmaps closed after playback so the tab is not killed.",
+      "locator": "src/components/FrameSequence.jsx",
+      "basis": "document",
+      "confidence": 0.9
+    },
+    {
+      "claim": "Felici Artisan Gelato runs on Vite 5 · React 18 SPA · react-router-dom 7.",
+      "category": "product",
+      "quote": "Vite 5 · React 18 SPA · react-router-dom 7",
+      "locator": "package.json",
+      "basis": "document",
+      "confidence": 0.85
+    },
+    {
+      "claim": "Felici Artisan Gelato runs on GSAP 3 + ScrollTrigger · Lenis smooth scroll.",
+      "category": "product",
+      "quote": "GSAP 3 + ScrollTrigger · Lenis smooth scroll",
+      "locator": "package.json",
+      "basis": "document",
+      "confidence": 0.85
+    },
+    {
+      "claim": "Felici Artisan Gelato runs on Canvas 2D image-sequence player via createImageBitmap.",
+      "category": "product",
+      "quote": "Canvas 2D image-sequence player via createImageBitmap",
+      "locator": "package.json",
+      "basis": "document",
+      "confidence": 0.85
+    },
+    {
+      "claim": "Felici Artisan Gelato runs on Self-hosted webfonts · static client-only build.",
+      "category": "product",
+      "quote": "Self-hosted webfonts · static client-only build",
+      "locator": "package.json",
+      "basis": "document",
+      "confidence": 0.85
+    },
+    {
+      "claim": "Felici Artisan Gelato integrates: Google Maps as outbound search links, not an embed.",
+      "category": "product",
+      "quote": "Google Maps as outbound search links, not an embed",
+      "locator": "integration",
+      "basis": "document",
+      "confidence": 0.8
+    },
+    {
+      "claim": "Felici Artisan Gelato integrates: Instagram and Facebook brand profiles.",
+      "category": "product",
+      "quote": "Instagram and Facebook brand profiles",
+      "locator": "integration",
+      "basis": "document",
+      "confidence": 0.8
+    },
+    {
+      "claim": "Felici Artisan Gelato integrates: mailto delivery by default, optional POST endpoint.",
+      "category": "product",
+      "quote": "mailto delivery by default, optional POST endpoint",
+      "locator": "integration",
+      "basis": "document",
+      "confidence": 0.8
+    }
+  ],
+  "term": [
+    {
+      "name": "feature_count",
+      "value": 6,
+      "unit": null,
+      "quote": null
+    }
+  ],
+  "action": []
+}

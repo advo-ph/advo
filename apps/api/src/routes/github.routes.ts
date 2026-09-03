@@ -10,6 +10,35 @@ import { createLogger } from "../utils/logger.js";
 import type { Variables } from "../types/context.js";
 
 const log = createLogger("github");
+
+/**
+ * A project's repositoryName is usually a bare name inside GITHUB_ORG. It may also be
+ * owner-qualified ("CelestialBrain/vbeeyecenter") for source that lives outside the
+ * org; the feed, the backfill and the branch list all resolve through here.
+ */
+export function repoRef(name: string): { owner: string; repo: string; full: string } {
+  const slash = name.indexOf("/");
+  if (slash > 0) {
+    const owner = name.slice(0, slash);
+    const repo = name.slice(slash + 1);
+    return { owner, repo, full: `${owner}/${repo}` };
+  }
+  return { owner: env().GITHUB_ORG, repo: name, full: `${env().GITHUB_ORG}/${name}` };
+}
+
+/** Match a webhook's repository to a project by full name first, bare name second. */
+async function projectForRepo(fullName: string | undefined, bareName: string | undefined) {
+  const d = db();
+  if (fullName) {
+    const [byFull] = await d.select().from(project).where(eq(project.repositoryName, fullName)).limit(1);
+    if (byFull) return byFull;
+  }
+  if (bareName) {
+    const [byBare] = await d.select().from(project).where(eq(project.repositoryName, bareName)).limit(1);
+    if (byBare) return byBare;
+  }
+  return null;
+}
 const github = new Hono<{ Variables: Variables }>();
 
 // ─── Webhook Receiver ─────────────────────────────────
@@ -38,16 +67,12 @@ github.post("/webhook", async (c) => {
   const d = db();
 
   if (event === "push") {
-    const repoName = payload.repository?.name;
     const branch = payload.ref?.replace("refs/heads/", "");
 
-    // Match repo to project
-    const [proj] = await d
-      .select()
-      .from(project)
-      .where(eq(project.repositoryName, repoName))
-      .limit(1);
-
+    // Match repo to project; the cache key is the name the project uses, so an
+    // owner-qualified project reads its own events back.
+    const proj = await projectForRepo(payload.repository?.full_name, payload.repository?.name);
+    const repoName = proj?.repositoryName ?? payload.repository?.name;
     const projectId = proj?.projectId || null;
 
     // Store each commit
@@ -71,12 +96,8 @@ github.post("/webhook", async (c) => {
   }
 
   if (event === "pull_request") {
-    const repoName = payload.repository?.name;
-    const [proj] = await d
-      .select()
-      .from(project)
-      .where(eq(project.repositoryName, repoName))
-      .limit(1);
+    const proj = await projectForRepo(payload.repository?.full_name, payload.repository?.name);
+    const repoName = proj?.repositoryName ?? payload.repository?.name;
 
     await d.insert(githubEvent).values({
       projectId: proj?.projectId || null,
@@ -98,12 +119,8 @@ github.post("/webhook", async (c) => {
   }
 
   if (event === "deployment_status") {
-    const repoName = payload.repository?.name;
-    const [proj] = await d
-      .select()
-      .from(project)
-      .where(eq(project.repositoryName, repoName))
-      .limit(1);
+    const proj = await projectForRepo(payload.repository?.full_name, payload.repository?.name);
+    const repoName = proj?.repositoryName ?? payload.repository?.name;
 
     await d.insert(githubEvent).values({
       projectId: proj?.projectId || null,
@@ -200,15 +217,15 @@ github.post("/repos/:name/backfill", requireAuth, requireTeam, async (c) => {
   const token = env().GITHUB_TOKEN;
   if (!token) return c.json({ data: null, error: "GitHub token not configured" }, 503);
   const headers = { Authorization: `Bearer ${token}`, Accept: "application/vnd.github.v3+json" };
-  const org = env().GITHUB_ORG;
+  const ref = repoRef(repoName);
 
-  const repoRes = await fetch(`https://api.github.com/repos/${org}/${repoName}`, { headers });
+  const repoRes = await fetch(`https://api.github.com/repos/${ref.full}`, { headers });
   if (!repoRes.ok) return c.json({ data: null, error: `GitHub: repo ${repoName} → ${repoRes.status}` }, 502);
   const repo = (await repoRes.json()) as { default_branch?: string };
   const branch = repo.default_branch ?? "main";
 
   const commitRes = await fetch(
-    `https://api.github.com/repos/${org}/${repoName}/commits?sha=${encodeURIComponent(branch)}&per_page=100`,
+    `https://api.github.com/repos/${ref.full}/commits?sha=${encodeURIComponent(branch)}&per_page=100`,
     { headers },
   );
   if (!commitRes.ok) return c.json({ data: null, error: `GitHub: commits → ${commitRes.status}` }, 502);
@@ -258,7 +275,7 @@ github.get("/repos/:name/branches", requireAuth, async (c) => {
   if (!token) return c.json({ data: [], error: "GitHub token not configured" });
 
   const res = await fetch(
-    `https://api.github.com/repos/${env().GITHUB_ORG}/${repoName}/branches`,
+    `https://api.github.com/repos/${repoRef(repoName).full}/branches`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
