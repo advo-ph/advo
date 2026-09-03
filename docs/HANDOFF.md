@@ -15,6 +15,26 @@ Cross-links:
 
 ---
 
+## 2026-09-03 — the output side: a verification pass and a proposal that refuses when the numbers disagree
+
+> After discounts, three tiers were on the table (verification, recurring-fee billing, proposals). Billing turned out to be already built — the generator, preview, suspend/resume and suspension view all exist, and first-year-free maintenance is representable by setting a fee's `startsOn` a year out, exactly how FourlinQ's website fee already is. So this session shipped the other two, verifier first.
+
+**Verification.** `GET /api/corpus/fact?verified=false&category=pricing` is the queue; `POST /api/corpus/fact/verify` marks many at once (ids come back from raw SQL as strings, so the validator coerces). The Corpus screen has an "Unverified only" toggle and a "Verify all shown" button behind a confirm. `bench/roadmap/corpus-verify` 6/6.
+
+**Proposal — the payoff of the corpus.** `POST /api/corpus/proposal` gathers a project's terms, keeps the value each source still asserts, and refuses to draft when two live sources disagree (listing the contest), applies the project's discount, fills a chosen template (cents term → peso alias), reports unfilled placeholders, and cites each source. The Draft tab drives it. `bench/roadmap/corpus-proposal` 6/6, driving contested → superseded → rendered.
+
+**Prod.** All four corpus benches green: proposal 6/6, verify 6/6, discount 9/9, gap 8/8.
+
+**Honest open-items**
+
+- **Recurring-fee billing needs data, not code.** The three fees still carry placeholder start dates; the first-year-free case is a `startsOn` a year out, which needs the real sign-off date.
+- **The proposal fills placeholders whose name matches a term or a peso alias.** A template placeholder the corpus has no term for is reported unfilled, not invented; the template author and the term vocabulary have to meet in the middle.
+- **No PDF.** The draft is markdown to copy, as templates always were.
+- **A pure-term source is trusted at face value.** A term with no backing fact cannot be contested; it is taken as-is. That is fine for typed contract terms, weaker for anything hand-entered.
+- As before: the discount policy is confirmed but no real discount is recorded; the prod admin password is the seed default.
+
+---
+
 ## 2026-09-03 — discounts: a fact about a price, not a new price
 
 > Mar: _"sometimes we do provide discounts, etc."_ Until now a discounted deal had to choose between the list price (and look underpaid forever) and the charged price (and lose the list price), and a discounted addendum would have superseded the contract's figure as if the price had changed. Migration 028 gives the project row `list_value_cents`, `discount_cents` and `discount_reason` beside the charged `total_value_cents`, with list − discount = total refused by the form, the API and a DB CHECK. The corpus reads a discount out of any text as typed terms, keeps the list price live beside the addendum that discounted it, and answers "pays ₱270,000" from "₱300,000 with a 10% discount" with the arithmetic shown. Verifier first: `bench/roadmap/corpus-discount`, 9 checks against the running API, creating and deleting its own bench project and sources, 9/9 locally and on prod.
