@@ -13,6 +13,14 @@
  * guard it against drifting back: no pricing, no process, no clipart, work
  * panels that fill a viewport, and a footer dot field faithful to the op.al
  * mechanism it was rebuilt from.
+ *
+ * Hero check retargeted 2026-09-03. `hero-is-type-only` asserted the headline
+ * "We digitalize it for you" on white and banned any hero image. The approved
+ * direction is now a full-bleed video of a working tower, so that check was
+ * asserting a design decision that had been reversed on purpose. It is replaced
+ * by `hero-headline-over-media-with-still-fallback`, which guards the thing the
+ * new hero can actually get wrong: the wrong sentence, missing media, or a blank
+ * first screen while the video downloads.
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -134,13 +142,34 @@ const checks = [
       "The landing renders no isometric clipart, service card art, or stock photography. Its only bitmap is the ADVO wordmark.",
   },
   {
-    id: "hero-is-type-only",
-    title: "Hero is type on white, not a photograph",
-    passed:
-      hasAll(copy.landingPage, ["landing-hero", "We digitalize it for you"]) &&
-      hasNone(copy.landingPage, ["landing-hero-frame", "landing-hero-shade", "hero\\.jpg"]),
+    id: "hero-headline-over-media-with-still-fallback",
+    title: "Hero is the approved headline over background media that is never blank",
+    passed: (() => {
+      // Read the h1 rather than grep the file: a grep for the sentence passes
+      // on a stray comment, and JSX wraps the copy across source lines.
+      const headline = /<h1>([\s\S]*?)<\/h1>/.exec(copy.landingPage)?.[1] ?? "";
+      return (
+        headline.replace(/\s+/g, " ").trim() ===
+          "Building the technological infrastructure for industries across the Philippines." &&
+        hasAll(copy.landingPage, [
+          "landing-hero-media",
+          "landing-hero-scrim",
+          "<video",
+          "/landing/hero-building\\.mp4",
+          // The still is the poster, so the video element is never a black box…
+          'poster="/landing/hero-building\\.jpg"',
+        ]) &&
+        // …and it is also the media layer's own background, which is what
+        // covers the reduced-motion mount: that one ships no <video> at all.
+        /\.landing-hero-media\s*\{[^}]*background-image:\s*url\("\/landing\/hero-building\.jpg"\)/.test(
+          files.landingCss,
+        ) &&
+        has("apps/web/public/landing/hero-building.mp4") &&
+        has("apps/web/public/landing/hero-building.jpg")
+      );
+    })(),
     expected:
-      "The hero is the headline, one line of copy, and two actions. The dim counter photograph and its scrim are retired.",
+      "The hero renders the approved headline verbatim in its h1 over a full-bleed video with a scrim, and the same JPG still is both the video poster and the CSS background, so no reader ever sees an empty first screen. Both assets exist under public/landing.",
   },
   {
     id: "work-is-full-viewport",

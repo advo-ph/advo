@@ -225,7 +225,7 @@ describe("Invoices", () => {
 
 // ─── Expense ledger ───────────────────────────────────
 // Admin Finance expenses tab: team-only list/create/delete.
-// is_reimbursable is derived from receipt_url (never stored).
+// Phase 8: receipt_url and isReimbursable removed. expenseType and expensePaidStatus added.
 
 describe("Expense ledger", () => {
   it("GET /api/expense requires auth", async () => {
@@ -236,7 +236,6 @@ describe("Expense ledger", () => {
   it("POST /api/expense requires auth", async () => {
     const { status } = await apiPost("/api/expense", {
       purpose: "Unauthed attempt",
-      authorizedBy: "Nobody",
       amountCents: 100,
     });
     expect(status).toBe(401);
@@ -249,16 +248,14 @@ describe("Expense ledger", () => {
     expect(body.error).toBeNull();
   });
 
-  it("POST + GET + DELETE expense lifecycle; isReimbursable derived from receipt", async () => {
+  it("POST + GET + DELETE expense lifecycle with expenseType and expensePaidStatus", async () => {
     const create = await apiPost(
       "/api/expense",
       {
         purpose: "Office supplies",
-        authorizedBy: "Admin",
         amountCents: 125050,
-        location: "Makati",
-        receiptUrl: "https://example.com/receipt.pdf",
-        category: "office",
+        expenseType: "general_expenses",
+        expensePaidStatus: "unpaid",
       },
       adminToken,
     );
@@ -266,23 +263,25 @@ describe("Expense ledger", () => {
     const expenseId = create.body.data.expenseId;
     expect(expenseId).toBeTruthy();
     expect(create.body.data.amountCents).toBe(125050);
-    expect(create.body.data.isReimbursable).toBe(true);
-    // Free-floating flag must not be stored — only derived.
-    expect(create.body.data).not.toHaveProperty("is_reimbursable");
+    expect(create.body.data.expenseType).toBe("general_expenses");
+    expect(create.body.data.expensePaidStatus).toBe("unpaid");
+    // receipt_url and isReimbursable must not be present.
+    expect(create.body.data).not.toHaveProperty("receiptUrl");
+    expect(create.body.data).not.toHaveProperty("isReimbursable");
 
-    const noReceipt = await apiPost(
+    const devExpense = await apiPost(
       "/api/expense",
       {
-        purpose: "Taxi without receipt",
-        authorizedBy: "Admin",
+        purpose: "AI image generation subscription",
         amountCents: 5000,
-        category: "travel",
+        expenseType: "development_expenses",
+        expensePaidStatus: "paid",
       },
       adminToken,
     );
-    expect(noReceipt.status).toBe(201);
-    expect(noReceipt.body.data.isReimbursable).toBe(false);
-    const noReceiptId = noReceipt.body.data.expenseId;
+    expect(devExpense.status).toBe(201);
+    expect(devExpense.body.data.expenseType).toBe("development_expenses");
+    const devExpenseId = devExpense.body.data.expenseId;
 
     const list = await apiGet("/api/expense", adminToken);
     expect(list.status).toBe(200);
@@ -295,18 +294,19 @@ describe("Expense ledger", () => {
     const delAgain = await apiDelete(`/api/expense/${expenseId}`, adminToken);
     expect(delAgain.status).toBe(404);
 
-    const delNoReceipt = await apiDelete(`/api/expense/${noReceiptId}`, adminToken);
-    expect(delNoReceipt.status).toBe(200);
+    const delDev = await apiDelete(`/api/expense/${devExpenseId}`, adminToken);
+    expect(delDev.status).toBe(200);
   });
 });
 
 // ─── Deliverables ─────────────────────────────────────
 
 describe("Deliverables", () => {
-  it("GET /api/deliverables returns array", async () => {
+  it("GET /api/deliverables returns deliverables and viewerTeamMemberId", async () => {
     const { status, body } = await apiGet("/api/deliverables", adminToken);
     expect(status).toBe(200);
-    expect(Array.isArray(body.data)).toBe(true);
+    expect(Array.isArray(body.data.deliverables)).toBe(true);
+    expect("viewerTeamMemberId" in body.data).toBe(true);
   });
 
   it("GET /api/deliverables/upcoming returns array", async () => {
@@ -807,7 +807,7 @@ describe("Authorization — cross-tenant data scoping", () => {
 
   it("S1: GET /api/deliverables does not leak another client's deliverables", async () => {
     const { body } = await apiGet("/api/deliverables", clientToken);
-    const ids = body.data.map((d: { deliverableId: number }) => d.deliverableId);
+    const ids = body.data.deliverables.map((d: { deliverableId: number }) => d.deliverableId);
     expect(ids).not.toContain(otherDeliverableId);
   });
 
@@ -1185,6 +1185,7 @@ describe("Operational health", () => {
 // only ever "documented", never exercised. This block actually calls them.
 
 describe("Project sign-off (016)", () => {
+  let clientId: number;
   let projectId: number;
   let signoffId: number;
 
@@ -1194,12 +1195,18 @@ describe("Project sign-off (016)", () => {
       { companyName: "Sign-off Co", contactEmail: `signoff-${Date.now()}@example.test` },
       adminToken,
     );
+    clientId = client.body.data.clientId;
     const project = await apiPost(
       "/api/projects",
-      { clientId: client.body.data.clientId, title: "Sign-off project", status: "in_progress" },
+      { clientId, title: "Sign-off project", status: "in_progress" },
       adminToken,
     );
     projectId = project.body.data.projectId;
+  });
+
+  afterAll(async () => {
+    // Cascades to the project and any sign-off rows (FK ON DELETE CASCADE).
+    if (clientId) await apiDelete(`/api/clients/${clientId}`, adminToken).catch(() => {});
   });
 
   it("requires auth", async () => {
@@ -1259,6 +1266,7 @@ describe("Project sign-off (016)", () => {
 });
 
 describe("Recurring infrastructure fee (017)", () => {
+  let clientId: number;
   let projectId: number;
   let feeId: number;
 
@@ -1268,12 +1276,19 @@ describe("Recurring infrastructure fee (017)", () => {
       { companyName: "Recurring Co", contactEmail: `recurring-${Date.now()}@example.test` },
       adminToken,
     );
+    clientId = client.body.data.clientId;
     const project = await apiPost(
       "/api/projects",
-      { clientId: client.body.data.clientId, title: "Hosted project", status: "in_progress" },
+      { clientId, title: "Hosted project", status: "in_progress" },
       adminToken,
     );
     projectId = project.body.data.projectId;
+  });
+
+  afterAll(async () => {
+    // Cascades to the project, recurring fees, and any generated invoices
+    // (FK ON DELETE CASCADE, migrations 016-017).
+    if (clientId) await apiDelete(`/api/clients/${clientId}`, adminToken).catch(() => {});
   });
 
   it("requires auth", async () => {
@@ -1329,6 +1344,7 @@ describe("Recurring infrastructure fee (017)", () => {
 });
 
 describe("Commission split (018)", () => {
+  let clientId: number;
   let projectId: number;
   let planId: number;
 
@@ -1338,12 +1354,18 @@ describe("Commission split (018)", () => {
       { companyName: "Commission Co", contactEmail: `commission-${Date.now()}@example.test` },
       adminToken,
     );
+    clientId = client.body.data.clientId;
     const project = await apiPost(
       "/api/projects",
-      { clientId: client.body.data.clientId, title: "Split project", status: "in_progress" },
+      { clientId, title: "Split project", status: "in_progress" },
       adminToken,
     );
     projectId = project.body.data.projectId;
+  });
+
+  afterAll(async () => {
+    // Cascades to the project and any commission plan rows (FK ON DELETE CASCADE, migration 018).
+    if (clientId) await apiDelete(`/api/clients/${clientId}`, adminToken).catch(() => {});
   });
 
   it("requires auth", async () => {
