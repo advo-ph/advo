@@ -56,6 +56,7 @@ interface RevealProps {
   /** Override viewport `amount` (0..1 visibility threshold). */
   amount?: number;
   className?: string;
+  id?: string;
   children?: ReactNode;
 }
 
@@ -77,13 +78,14 @@ export function Reveal({
   once,
   amount,
   className,
+  id,
   children,
 }: RevealProps): ReactElement {
   const reduced = useReducedMotion();
   const classes = cn("reveal-fallback", className);
 
   if (reduced) {
-    return createElement(as, { className: classes }, children);
+    return createElement(as, { className: classes, id }, children);
   }
 
   const Tag = motionTag(as);
@@ -98,6 +100,7 @@ export function Reveal({
   return (
     <Tag
       className={classes}
+      id={id}
       variants={variants}
       initial="hidden"
       whileInView="show"

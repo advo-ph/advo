@@ -361,7 +361,7 @@ describe("Deliverable completion notifies the client", () => {
   const title = `Thread deliverable ${Date.now()}`;
   let deliverableId: number;
 
-  it("PATCH status → completed creates a deliverable_completed notification", async () => {
+  it("PATCH status → finished creates a deliverable_completed notification", async () => {
     const created = await api(
       "POST",
       "/api/deliverables",
@@ -374,11 +374,11 @@ describe("Deliverable completion notifies the client", () => {
     const patched = await api(
       "PATCH",
       `/api/deliverables/${deliverableId}`,
-      { status: "completed" },
+      { status: "finished" },
       adminToken,
     );
     expect(patched.status).toBe(200);
-    expect(patched.body.data.status).toBe("completed");
+    expect(patched.body.data.status).toBe("finished");
 
     const row = await clientNotification();
     const hit = row.filter(
@@ -388,11 +388,11 @@ describe("Deliverable completion notifies the client", () => {
     expect(hit[0].type).toBe("deliverable_completed");
   });
 
-  it("re-saving an already-completed deliverable does not notify again", async () => {
+  it("re-saving an already-finished deliverable does not notify again", async () => {
     const patched = await api(
       "PATCH",
       `/api/deliverables/${deliverableId}`,
-      { status: "completed", description: "touched" },
+      { status: "finished", description: "touched" },
       adminToken,
     );
     expect(patched.status).toBe(200);

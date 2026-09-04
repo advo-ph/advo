@@ -86,7 +86,7 @@ const AdminDashboard = ({
         <Button
           asChild
           size="sm"
-          className="h-9 bg-accent text-accent-foreground hover:bg-accent/90 gap-1.5 shrink-0"
+          className="h-9 bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5 shrink-0"
         >
           <Link to="/start">
             <Plus className="h-4 w-4" /> New project
@@ -104,7 +104,7 @@ const AdminDashboard = ({
 
       {/* Pipeline + cash flow */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Panel className="lg:col-span-2" title="Pipeline" meta={`${projects.length} projects`}>
+        <Panel className="lg:col-span-2" title="Projects by stage" meta={`${projects.length} projects`}>
           <div className="p-4 space-y-2.5">
             {pipelineByStatus.map((stage) => (
               <div key={stage.status} className="flex items-center gap-3">
@@ -145,7 +145,7 @@ const AdminDashboard = ({
             </div>
             <div className="pt-3 mt-1 border-t border-border flex items-center justify-between">
               <span className="text-xs text-muted-foreground">Collection rate</span>
-              <span className="text-sm font-semibold text-accent tabular-nums">{collectionRate}%</span>
+              <span className="text-sm font-semibold text-accent-ink tabular-nums">{collectionRate}%</span>
             </div>
           </div>
         </Panel>
@@ -155,7 +155,7 @@ const AdminDashboard = ({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Panel title="Recent activity">
           {recentActivity.length === 0 ? (
-            <Empty text="No recent activity" />
+            <Empty text="No recent activity yet." />
           ) : (
             <div className="divide-y divide-border">
               {recentActivity.slice(0, 6).map((a, i) => (
@@ -175,7 +175,7 @@ const AdminDashboard = ({
 
         <Panel title="Upcoming">
           {upcomingDeadlines.length === 0 ? (
-            <Empty text="No upcoming deadlines" />
+            <Empty text="No upcoming deadlines." />
           ) : (
             <div className="divide-y divide-border">
               {upcomingDeadlines.slice(0, 6).map((d) => (
@@ -201,7 +201,7 @@ const AdminDashboard = ({
 
         <Panel title="Latest leads" cta={{ label: "View all", onClick: () => onNavigate?.("leads") }}>
           {leads.length === 0 ? (
-            <Empty text="No leads yet" />
+            <Empty text="No leads yet. New inquiries from your contact form will appear here." />
           ) : (
             <div className="divide-y divide-border">
               {leads.slice(0, 6).map((l, i) => (

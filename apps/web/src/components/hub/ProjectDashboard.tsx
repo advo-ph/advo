@@ -43,6 +43,7 @@ import StatusStepper from "./StatusStepper";
 import FundingBar from "./FundingBar";
 import SignoffCard from "./SignoffCard";
 import { Panel, Empty, Dot } from "@/components/admin/_ui";
+import { formatManilaDate, isPastDue } from "@/lib/manila-time";
 import { useGitHub } from "@/hooks/useGitHub";
 import { cloudflare, DeploymentStatus } from "@/lib/cloudflare";
 import { formatDistanceToNow } from "date-fns";
@@ -75,35 +76,29 @@ const statusConfig: Record<
   DeliverableStatus,
   { label: string; dot: string; icon: React.ElementType; iconColor: string }
 > = {
-  not_started: {
-    label: "Not started",
+  todo: {
+    label: "To do",
     dot: "bg-muted-foreground",
     icon: Circle,
     iconColor: "text-muted-foreground",
   },
-  in_progress: {
-    label: "In progress",
+  ongoing: {
+    label: "Ongoing",
     dot: "bg-blue-500",
     icon: Clock,
     iconColor: "text-blue-400",
   },
   review: {
-    label: "In review",
+    label: "For Review",
     dot: "bg-purple-500",
     icon: AlertCircle,
     iconColor: "text-purple-400",
   },
-  completed: {
-    label: "Completed",
+  finished: {
+    label: "Finished",
     dot: "bg-green-500",
     icon: CheckCircle2,
     iconColor: "text-green-400",
-  },
-  blocked: {
-    label: "Blocked",
-    dot: "bg-red-500",
-    icon: AlertCircle,
-    iconColor: "text-red-400",
   },
 };
 
@@ -245,7 +240,7 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
   // Deliverable stats
   const totalDeliverables = deliverables.length;
   const completedDeliverables = deliverables.filter(
-    (d) => d.status === "completed"
+    (d) => d.status === "finished"
   ).length;
 
   return (
@@ -480,10 +475,12 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
                 {deliverables.map((d) => {
                   const cfg = statusConfig[d.status];
                   const StatusIcon = cfg.icon;
-                  const isPastDue =
-                    d.due_date &&
-                    new Date(d.due_date) < new Date() &&
-                    d.status !== "completed";
+                  // This is the CLIENT's view of ADVO's work. Comparing instants marked
+                  // a deliverable overdue at 08:00 on the morning it was due, so clients
+                  // saw "Overdue" against work that still had the whole day to run. The
+                  // comparison is on Manila calendar dates, and the date is rendered in
+                  // Manila too, so a client abroad sees ADVO's dates and not their own.
+                  const overdue = isPastDue(d.due_date) && d.status !== "finished";
 
                   return (
                     <div
@@ -494,7 +491,7 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
                       <div className="flex-1 min-w-0">
                         <p
                           className={`text-sm truncate ${
-                            d.status === "completed"
+                            d.status === "finished"
                               ? "line-through text-muted-foreground"
                               : ""
                           }`}
@@ -520,14 +517,11 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
                           {d.due_date && (
                             <span
                               className={`text-xs ${
-                                isPastDue ? "text-red-400" : "text-muted-foreground"
+                                overdue ? "text-red-400" : "text-muted-foreground"
                               }`}
                             >
-                              {isPastDue ? "Overdue · " : ""}
-                              {new Date(d.due_date).toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                              })}
+                              {overdue ? "Overdue · " : ""}
+                              {formatManilaDate(d.due_date)}
                             </span>
                           )}
                         </div>
@@ -716,7 +710,7 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
               type="submit"
               size="sm"
               disabled={isFiling || !scope.trim() || !reason.trim()}
-              className="h-8 rounded-md bg-accent text-accent-foreground hover:bg-accent/90"
+              className="h-8 rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
             >
               {isFiling ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -773,7 +767,7 @@ const ProjectDashboard = ({ project }: ProjectDashboardProps) => {
         action={
           <Button
             size="sm"
-            className="h-8 rounded-md bg-accent text-accent-foreground hover:bg-accent/90"
+            className="h-8 rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
           >

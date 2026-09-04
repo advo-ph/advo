@@ -214,7 +214,7 @@ const AdminLeads = () => {
           onPressedChange={setOutdatedOnly}
           size="sm"
           variant="outline"
-          className="h-9 gap-1.5 px-3 text-xs data-[state=on]:bg-accent/15 data-[state=on]:text-accent data-[state=on]:border-accent/40"
+          className="h-9 gap-1.5 px-3 text-xs data-[state=on]:bg-accent/15 data-[state=on]:text-accent-ink data-[state=on]:border-accent/40"
           aria-label="Outdated only"
           title="Target: outdated systems only (no Shopify/Inventi/Squarespace, prefer zero/legacy)"
         >
@@ -265,7 +265,7 @@ const AdminLeads = () => {
           <p className="text-sm text-muted-foreground">
             {searchQuery || filterStatus !== "all" || outdatedOnly
               ? "No leads match your filters"
-              : "No leads yet"}
+              : "No leads yet. Inquiries from your contact form will show up here."}
           </p>
           {!searchQuery && filterStatus === "all" && !outdatedOnly && (
             <p className="text-xs text-muted-foreground mt-1.5">
@@ -285,9 +285,9 @@ const AdminLeads = () => {
       ) : (
         <div className="border border-border rounded-lg bg-card overflow-hidden">
           {/* Header row */}
-          <div className="flex items-center gap-3 px-3 h-9 border-b border-border text-[11px] uppercase tracking-wider text-muted-foreground/70">
+          <div className="flex items-center gap-3 px-3 h-9 border-b border-border text-[11px] uppercase tracking-wider text-muted-foreground">
             <button onClick={selectAll} className="shrink-0 text-muted-foreground hover:text-foreground" aria-label="Select all">
-              {allSelected ? <CheckSquare className="h-4 w-4 text-accent" /> : <Square className="h-4 w-4" />}
+              {allSelected ? <CheckSquare className="h-4 w-4 text-accent-ink" /> : <Square className="h-4 w-4" />}
             </button>
             <span className="flex-1 min-w-0">Name</span>
             <span className="hidden lg:block w-28 shrink-0">Type</span>
@@ -324,7 +324,7 @@ const AdminLeads = () => {
                       aria-label="Select lead"
                     >
                       {isSelected ? (
-                        <CheckSquare className="h-4 w-4 text-accent" />
+                        <CheckSquare className="h-4 w-4 text-accent-ink" />
                       ) : (
                         <Square className="h-4 w-4 text-muted-foreground" />
                       )}
@@ -340,7 +340,7 @@ const AdminLeads = () => {
                       )}
                       {showOutdatedBadge && (
                         <span
-                          className="hidden sm:inline-flex items-center gap-1 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-accent/15 text-accent border border-accent/30"
+                          className="hidden sm:inline-flex items-center gap-1 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium bg-accent/15 text-accent-ink border border-accent/30"
                           title={`Outreach priority ${priority} — zero/outdated systems`}
                         >
                           <Target className="h-2.5 w-2.5" />
@@ -395,7 +395,7 @@ const AdminLeads = () => {
 
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                         <div>
-                          <span className="eyebrow block mb-1">Status</span>
+                          <span className="text-xs text-muted-foreground block mb-1">Status</span>
                           <Select
                             value={lead.status}
                             onValueChange={(val) => updateStatus(lead.lead_id, val as LeadStatus)}
@@ -413,7 +413,7 @@ const AdminLeads = () => {
                           </Select>
                         </div>
                         <div>
-                          <span className="eyebrow block mb-1">Assigned to</span>
+                          <span className="text-xs text-muted-foreground block mb-1">Assigned to</span>
                           <Select
                             value={lead.assigned_to ? String(lead.assigned_to) : "unassigned"}
                             onValueChange={(val) =>
@@ -437,7 +437,7 @@ const AdminLeads = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="h-9 text-accent hover:bg-accent/10 gap-1.5"
+                            className="h-9 text-accent-ink hover:bg-accent/10 gap-1.5"
                             disabled={isConverting === lead.lead_id || lead.status === "closed_won"}
                             onClick={() => handleConvert(lead.lead_id)}
                           >
@@ -462,7 +462,7 @@ const AdminLeads = () => {
                       </div>
 
                       <div>
-                        <span className="eyebrow block mb-1">Notes</span>
+                        <span className="text-xs text-muted-foreground block mb-1">Notes</span>
                         <Textarea
                           placeholder="Add internal notes about this lead…"
                           value={notesDraft[lead.lead_id] ?? lead.notes ?? ""}

@@ -133,15 +133,23 @@ const AdminSocial = () => {
       scheduled_for: scheduledFor,
     };
 
-    setIsDialogOpen(false);
+    // The dialog used to close HERE, before the await below. That made
+    // `disabled={isSaving}` and the spinner in the footer unreachable code: the
+    // dialog was already gone by the time either could render. Worse, a failed
+    // save threw the user's typed caption away along with the dialog, leaving
+    // only an error toast and nothing to retry with.
+    //
+    // Close only once the server has taken it. On failure the dialog stays open
+    // with the text still in it, and the hook's onError provides the toast.
     try {
       if (selectedPost) {
         await updatePost(selectedPost.social_post_id, input);
       } else {
         await createPost(input);
       }
+      setIsDialogOpen(false);
     } catch {
-      // Hook surfaces the toast
+      // Hook surfaces the toast. The dialog deliberately stays open.
     }
   };
 
@@ -166,7 +174,7 @@ const AdminSocial = () => {
           <Button
             onClick={openCreateDialog}
             size="sm"
-            className="bg-accent text-accent-foreground hover:bg-accent/90 gap-1.5"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
           >
             <Plus className="h-4 w-4" />
             Create post
@@ -216,9 +224,9 @@ const AdminSocial = () => {
                 </div>
               ) : scheduledPosts.length === 0 ? (
                 <div className="px-4 py-10 text-center">
-                  <p className="text-sm text-muted-foreground">No scheduled posts yet</p>
-                  <Button variant="link" size="sm" className="text-accent" onClick={openCreateDialog}>
-                    Create your first post
+                  <p className="text-sm text-muted-foreground">No scheduled posts yet. Add one to get started.</p>
+                  <Button variant="link" size="sm" className="text-accent-ink" onClick={openCreateDialog}>
+                    Add a post
                   </Button>
                 </div>
               ) : (
@@ -323,15 +331,26 @@ const AdminSocial = () => {
                   )}
                 </div>
                 
-                {/* Actions */}
+                {/*
+                  Instagram's action row, drawn so the caption sits where it will
+                  on the real post. These are NOT controls. They had
+                  `cursor-pointer` and hover colours and no onClick, so they
+                  invited a click and then did nothing, which is a large part of
+                  "I press some buttons and it doesn't even work".
+
+                  ADVO does not post to Instagram from here, so there is nothing
+                  honest to wire them to. The affordance is removed instead: no
+                  pointer cursor, no hover state, muted, and hidden from
+                  assistive tech since they carry no information.
+                */}
                 <div className="p-3">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center justify-between mb-3" aria-hidden="true">
                     <div className="flex items-center gap-4">
-                      <Heart className="h-6 w-6 hover:text-red-500 cursor-pointer transition-colors" />
-                      <MessageCircle className="h-6 w-6 hover:text-primary cursor-pointer transition-colors" />
-                      <Share2 className="h-6 w-6 hover:text-primary cursor-pointer transition-colors" />
+                      <Heart className="h-6 w-6 text-muted-foreground/40" />
+                      <MessageCircle className="h-6 w-6 text-muted-foreground/40" />
+                      <Share2 className="h-6 w-6 text-muted-foreground/40" />
                     </div>
-                    <Bookmark className="h-6 w-6 hover:text-primary cursor-pointer transition-colors" />
+                    <Bookmark className="h-6 w-6 text-muted-foreground/40" />
                   </div>
                   <p className="text-sm">
                     <span className="font-semibold">advo_ph</span>{" "}
@@ -387,13 +406,18 @@ const AdminSocial = () => {
               </div>
             </div>
             
-            {/* Post Grid Tabs */}
+            {/*
+              A one-item header, not a tab strip. It was a <button> with no
+              onClick and no type, so it looked pressable, did nothing when
+              pressed, and (having no type) would have submitted any enclosing
+              form. There is only ever one grid here, so it is a label.
+            */}
             <div className="border-b border-border">
               <div className="flex justify-center">
-                <button className="flex items-center gap-2 px-6 py-3 border-t-2 border-foreground">
+                <div className="flex items-center gap-2 px-6 py-3 border-t-2 border-foreground text-muted-foreground">
                   <Grid3X3 className="h-4 w-4" />
                   <span className="text-xs uppercase tracking-wider font-medium">Posts</span>
-                </button>
+                </div>
               </div>
             </div>
             
@@ -426,16 +450,17 @@ const AdminSocial = () => {
                       Scheduled
                     </Badge>
                   </div>
-                  {/* Hover overlay */}
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                    <div className="flex items-center gap-1 text-white">
-                      <Heart className="h-5 w-5 fill-white" />
-                      <span className="font-semibold">0</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-white">
-                      <MessageCircle className="h-5 w-5 fill-white" />
-                      <span className="font-semibold">0</span>
-                    </div>
+                  {/*
+                    This overlay used to show a like count and a comment count,
+                    both hard-coded to 0. ADVO never reads engagement from
+                    Instagram, so those were not "no engagement yet", they were
+                    two numbers presented as data that no source stands behind.
+                    The tile's click sets the preview pane, so it says that.
+                  */}
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <span className="text-xs uppercase tracking-wider font-medium text-white">
+                      Preview
+                    </span>
                   </div>
                 </div>
               ))}

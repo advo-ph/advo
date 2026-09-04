@@ -1,4 +1,7 @@
 {
+  /* Solution-style root. "files": [] means `tsc -p tsconfig.json` checks ZERO files
+     and exits 0, so it is not a typecheck. Use `npm run typecheck`, which targets
+     tsconfig.app.json, the config that actually includes src. */
   "files": [],
   "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }],
   "compilerOptions": {

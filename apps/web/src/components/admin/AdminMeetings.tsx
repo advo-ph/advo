@@ -1,6 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useCallback } from "react";
 import {
-  Plus,
   Trash2,
   Mic,
   ChevronDown,
@@ -8,10 +7,14 @@ import {
   ExternalLink,
   Sparkles,
   Loader2,
+  Upload,
+  FileAudio,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Dialog,
   DialogContent,
@@ -36,8 +39,13 @@ import {
   type MeetingInput,
   type ProposeTaskResult,
 } from "@/hooks/useMeeting";
+
 import { plaudShareUrl } from "@/lib/plaud";
 import { MeetingTaskPreview } from "./MeetingTaskPreview";
+import { useRecordingActions, useRecordingList } from "@/hooks/useRecordings";
+import { startPolling } from "@/hooks/useJobPoller";
+import { post } from "@/lib/api";
+import ConfirmDeleteDialog from "./ConfirmDeleteDialog";
 
 interface ProjectOption {
   project_id: number;
@@ -46,11 +54,13 @@ interface ProjectOption {
 
 interface FormState {
   id: number | null;
-  projectId: string;
+  projectId: string;     // empty string = no project
   title: string;
-  recordedAt: string; // datetime-local
+  recordedAt: string;    // datetime-local — for past/transcript
+  startsAt: string;      // datetime-local — for scheduled
+  endsAt: string;        // datetime-local — optional end
+  location: string;
   transcript: string;
-  plaudShareKey: string;
 }
 
 const emptyForm = (): FormState => ({
@@ -58,8 +68,10 @@ const emptyForm = (): FormState => ({
   projectId: "",
   title: "",
   recordedAt: "",
+  startsAt: "",
+  endsAt: "",
+  location: "",
   transcript: "",
-  plaudShareKey: "",
 });
 
 /** ISO → datetime-local value (local wall clock). */
@@ -83,6 +95,7 @@ const fmtWhen = (iso: string) =>
   });
 
 const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
+  const { user } = useAuth();
   const {
     meeting,
     isLoading,
@@ -92,9 +105,12 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
     generateTask,
     proposeTask,
     importPlaudMeeting,
+    joinMeeting,
+    leaveMeeting,
     isSaving,
     isImporting,
     isGeneratingTask,
+    isJoining,
   } = useMeeting();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -111,6 +127,41 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
   const [proposal, setProposal] = useState<ProposeTaskResult | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
 
+  // Recording state
+  const audioInputRef = useRef<HTMLInputElement>(null);
+  const [uploadProjectId, setUploadProjectId] = useState<string>("");
+  const [uploadPickerOpen, setUploadPickerOpen] = useState(false);
+  const [expandedRecordingMeetingId, setExpandedRecordingMeetingId] = useState<number | null>(null);
+  const [deleteRecordingTarget, setDeleteRecordingTarget] = useState<{
+    recordingId: number;
+    meetingId: number | null;
+    fileName: string;
+  } | null>(null);
+  const [transcriptViewContent, setTranscriptViewContent] = useState<string | null>(null);
+
+  const { isUploading, uploadRecording, transcribeRecording, deleteRecording } =
+    useRecordingActions();
+
+  const { data: recordingsForExpanded = [] } = useRecordingList(expandedRecordingMeetingId);
+
+  const handleAudioFileSelected = useCallback(
+    async (file: File) => {
+      if (!uploadProjectId) return;
+      // Create a bare meeting row for this recording.
+      const res = await post<{ meetingId: number }>("/api/meeting", {
+        projectId: Number(uploadProjectId),
+        title: file.name.replace(/\.[^.]+$/, ""),
+        recordedAt: new Date().toISOString(),
+        transcript: "(transcript pending)",
+      });
+      const meetingId = res.data?.meetingId ?? null;
+      await uploadRecording(file, meetingId);
+      setUploadPickerOpen(false);
+      setUploadProjectId("");
+    },
+    [uploadProjectId, uploadRecording],
+  );
+
   const projectTitle = (id: number) =>
     projects.find((p) => p.project_id === id)?.title ?? `Project #${id}`;
 
@@ -118,6 +169,19 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
     () => meeting.filter((m) => m.plaudShareKey).length,
     [meeting],
   );
+
+  // Split meetings into upcoming (startsAt in future) and past buckets.
+  const { upcoming, past } = useMemo(() => {
+    const now = Date.now();
+    const u: Meeting[] = [];
+    const p: Meeting[] = [];
+    for (const m of meeting) {
+      if (m.startsAt && new Date(m.startsAt).getTime() > now) u.push(m);
+      else p.push(m);
+    }
+    u.sort((a, b) => new Date(a.startsAt!).getTime() - new Date(b.startsAt!).getTime());
+    return { upcoming: u, past: p };
+  }, [meeting]);
 
   const openCreate = () => {
     setForm(emptyForm());
@@ -127,25 +191,30 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
   const openEdit = (m: Meeting) => {
     setForm({
       id: m.meetingId,
-      projectId: String(m.projectId),
+      projectId: m.projectId ? String(m.projectId) : "",
       title: m.title,
       recordedAt: toLocalInput(m.recordedAt),
+      startsAt: m.startsAt ? toLocalInput(m.startsAt) : "",
+      endsAt: m.endsAt ? toLocalInput(m.endsAt) : "",
+      location: m.location ?? "",
       transcript: m.transcript,
-      plaudShareKey: m.plaudShareKey ?? "",
     });
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
-    if (!form.title.trim() || !form.projectId || !form.recordedAt || !form.transcript.trim()) {
+    // Title is always required. At least one date field must be set.
+    if (!form.title.trim() || (!form.startsAt && !form.recordedAt)) {
       return;
     }
     const input: MeetingInput = {
-      projectId: Number(form.projectId),
+      projectId: form.projectId ? Number(form.projectId) : null,
       title: form.title.trim(),
-      recordedAt: fromLocalInput(form.recordedAt),
+      recordedAt: form.recordedAt ? fromLocalInput(form.recordedAt) : undefined,
+      startsAt: form.startsAt ? fromLocalInput(form.startsAt) : null,
+      endsAt: form.endsAt ? fromLocalInput(form.endsAt) : null,
+      location: form.location.trim() || null,
       transcript: form.transcript.trim(),
-      plaudShareKey: form.plaudShareKey.trim() || null,
     };
     try {
       if (form.id) await updateMeeting(form.id, input);
@@ -211,11 +280,11 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
         meta={
           isLoading
             ? "loading…"
-            : `${meeting.length} MoM record${meeting.length === 1 ? "" : "s"}${
+            : `${meeting.length} meeting${meeting.length === 1 ? "" : "s"}${
                 plaudSync?.lastSyncAt
                   ? ` · folder ${plaudSync.isEnabled ? "watching" : "idle"}`
                   : plaudSync?.isEnabled
-                    ? " · watching Plaud ADVO"
+                    ? " · watching Transcriptions"
                     : ""
               }`
         }
@@ -234,21 +303,21 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
               }
             >
               {isSyncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-              Sync Plaud
+              Sync transcriptions
             </Button>
             <Dialog open={importOpen} onOpenChange={setImportOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" variant="outline" className="h-9 gap-1.5">
-                  Import from Plaud
+                  Import from Transcriptions
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                  <DialogTitle>Import from Plaud</DialogTitle>
+                  <DialogTitle>Import from Transcriptions</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-3">
                   <div>
-                    <span className="eyebrow block mb-1">Project</span>
+                    <span className="text-xs text-muted-foreground block mb-1">Project</span>
                     <Select
                       value={importProjectId || undefined}
                       onValueChange={setImportProjectId}
@@ -266,7 +335,7 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
                     </Select>
                   </div>
                   <Input
-                    placeholder="Plaud file id or share URL"
+                    placeholder="File id or share URL"
                     value={importRef}
                     onChange={(e) => setImportRef(e.target.value)}
                     className="h-9"
@@ -286,7 +355,7 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
                     <div className="max-h-56 overflow-y-auto rounded-md border border-border divide-y divide-border">
                       {isPlaudLoading ? (
                         <p className="flex items-center gap-2 p-3 text-sm text-muted-foreground">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading Plaud…
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
                         </p>
                       ) : plaudError ? (
                         <p className="p-3 text-sm text-destructive">
@@ -342,7 +411,7 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
                   </Button>
                   <Button
                     size="sm"
-                    className="h-9 bg-accent text-accent-foreground hover:bg-accent/90"
+                    className="h-9 bg-primary text-primary-foreground hover:bg-primary/90"
                     disabled={isImporting || !importProjectId || !importRef.trim()}
                     onClick={() => void runImport()}
                   >
@@ -353,48 +422,125 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
             </Dialog>
             <Button
               size="sm"
-              className="h-9 bg-accent text-accent-foreground hover:bg-accent/90 gap-1.5"
-              onClick={openCreate}
+              className="h-9 bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
+              onClick={() => setUploadPickerOpen(true)}
+              disabled={isUploading}
             >
-              <Plus className="h-4 w-4" /> New MoM
+              {isUploading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4" />
+              )}
+              Upload recording
             </Button>
           </div>
         }
       />
 
+      {/* Hidden audio file input */}
+      <input
+        ref={audioInputRef}
+        type="file"
+        accept=".mp3,.m4a,audio/mpeg,audio/mp4,audio/x-m4a,audio/mp3,audio/m4a"
+        className="hidden"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) void handleAudioFileSelected(f);
+          e.target.value = "";
+        }}
+      />
+
+      {/* Upload recording dialog — pick project then file */}
+      <Dialog open={uploadPickerOpen} onOpenChange={setUploadPickerOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Upload recording</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <span className="text-xs text-muted-foreground block mb-1">Project</span>
+              <Select value={uploadProjectId || undefined} onValueChange={setUploadProjectId}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Select project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((p) => (
+                    <SelectItem key={p.project_id} value={String(p.project_id)}>
+                      {p.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Accepts mp3 and m4a files up to 500 MB.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-9"
+              onClick={() => setUploadPickerOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              className="h-9 bg-primary text-primary-foreground hover:bg-primary/90"
+              disabled={!uploadProjectId}
+              onClick={() => audioInputRef.current?.click()}
+            >
+              Choose file
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <StatStrip cols={4}>
         <Stat label="Meetings" value={String(meeting.length)} />
-        <Stat label="Published" value={String(meeting.filter((m) => m.isVisibleClient).length)} />
-        <Stat label="With Plaud link" value={String(withPlaud)} />
         <Stat
-          label="Projects covered"
-          value={String(new Set(meeting.map((m) => m.projectId)).size)}
+          label="Upcoming"
+          value={String(meeting.filter((m) => m.startsAt && new Date(m.startsAt) > new Date()).length)}
         />
+        <Stat label="Published" value={String(meeting.filter((m) => m.isVisibleClient).length)} />
+        <Stat label="With transcription" value={String(withPlaud)} />
       </StatStrip>
 
       <Table>
         <THead>
           <span className="flex-1">Title</span>
           <span className="w-40 hidden md:block">Project</span>
-          <span className="w-40">Recorded</span>
-          <span className="w-16 text-right">MoM</span>
+          <span className="w-40">When</span>
+          <span className="w-24">Status</span>
+          <span className="w-16 text-right"></span>
         </THead>
         <TBody>
           {meeting.length === 0 ? (
             <Empty
-              text="No meeting minutes yet — import from Plaud or paste a transcript."
+              text="No meetings yet. Upload a recording or import from Transcriptions to get started."
               icon={Mic}
             />
           ) : (
-            meeting.map((m) => {
+            [...upcoming, ...past].map((m, idx) => {
               const isOpen = expandedId === m.meetingId;
               const share = plaudShareUrl(m.plaudShareKey);
+              const isUpcomingMeeting = m.startsAt && new Date(m.startsAt).getTime() > Date.now();
+              // Show divider before the first past meeting when both groups are non-empty.
+              const showDivider = upcoming.length > 0 && past.length > 0 && idx === upcoming.length;
               return (
                 <div key={m.meetingId}>
+                  {showDivider && (
+                    <div className="px-4 py-1 text-[10px] uppercase tracking-widest text-muted-foreground border-t border-border">
+                      Past meetings
+                    </div>
+                  )}
                   <TRow
-                    onClick={() =>
-                      setExpandedId(isOpen ? null : m.meetingId)
-                    }
+                    onClick={() => {
+                      const next = isOpen ? null : m.meetingId;
+                      setExpandedId(next);
+                      if (next) setExpandedRecordingMeetingId(next);
+                    }}
                   >
                     <span className="flex-1 min-w-0 truncate font-medium">
                       {m.title}
@@ -403,10 +549,21 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
                       </span>
                     </span>
                     <span className="w-40 truncate text-muted-foreground hidden md:block">
-                      {projectTitle(m.projectId)}
+                      {m.projectId ? projectTitle(m.projectId) : "No project"}
                     </span>
                     <span className="w-40 text-muted-foreground tabular-nums text-xs">
-                      {fmtWhen(m.recordedAt)}
+                      {isUpcomingMeeting
+                        ? fmtWhen(m.startsAt!)
+                        : fmtWhen(m.recordedAt)}
+                    </span>
+                    <span className="w-24">
+                      {isUpcomingMeeting ? (
+                        <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                          Upcoming
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Recorded</span>
+                      )}
                     </span>
                     <span className="w-16 flex justify-end text-muted-foreground">
                       {isOpen ? (
@@ -464,18 +621,71 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
                           >
-                            Plaud <ExternalLink className="h-3 w-3" />
+                            Transcription <ExternalLink className="h-3 w-3" />
                           </a>
                         )}
                       </div>
+
+                      {/* Join / Leave + attendee avatars */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8"
+                          disabled={isJoining}
+                          onClick={() => {
+                            const alreadyJoined = m.attendees.some((a) => a.userId === user?.userId);
+                            void (alreadyJoined ? leaveMeeting(m.meetingId) : joinMeeting(m.meetingId));
+                          }}
+                        >
+                          {m.attendees.some((a) => a.userId === user?.userId) ? "Leave" : "Join"}
+                        </Button>
+                        {m.attendees.length > 0 && (
+                          <div className="flex items-center gap-1">
+                            {m.attendees.slice(0, 5).map((a) => (
+                              <Avatar key={a.userId} className="h-6 w-6" title={a.name}>
+                                <AvatarImage src={a.avatarUrl ?? undefined} alt={a.name} />
+                                <AvatarFallback className="text-[10px]">
+                                  {a.name.slice(0, 2).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                            ))}
+                            {m.attendees.length > 5 && (
+                              <span className="text-xs text-muted-foreground">
+                                +{m.attendees.length - 5}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
                       {m.summary?.trim() && (
                         <div className="whitespace-pre-wrap text-sm text-foreground/90 max-h-40 overflow-y-auto rounded-md border border-border bg-card p-3">
                           {m.summary}
                         </div>
                       )}
-                      <pre className="whitespace-pre-wrap text-sm text-foreground/90 font-sans max-h-64 overflow-y-auto rounded-md border border-border bg-card p-3">
-                        {m.transcript}
-                      </pre>
+                      {m.transcript.trim() ? (
+                        <pre className="whitespace-pre-wrap text-sm text-foreground/90 font-sans max-h-64 overflow-y-auto rounded-md border border-border bg-card p-3">
+                          {m.transcript}
+                        </pre>
+                      ) : (
+                        <p className="text-sm text-muted-foreground italic">No transcript yet.</p>
+                      )}
+
+                      {/* Recordings for this meeting */}
+                      <RecordingList
+                        meetingId={m.meetingId}
+                        recordings={expandedRecordingMeetingId === m.meetingId ? recordingsForExpanded : []}
+                        onTranscribe={async (recId) => {
+                          const result = await transcribeRecording.mutateAsync(recId);
+                          startPolling();
+                          return result;
+                        }}
+                        onDelete={(recId, fileName) =>
+                          setDeleteRecordingTarget({ recordingId: recId, meetingId: m.meetingId, fileName })
+                        }
+                        onViewTranscript={(text) => setTranscriptViewContent(text)}
+                      />
                     </div>
                   )}
                 </div>
@@ -495,7 +705,7 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{form.id ? "Edit meeting" : "New meeting MoM"}</DialogTitle>
+            <DialogTitle>{form.id ? "Edit meeting" : "Schedule or record a meeting"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <Input
@@ -506,13 +716,13 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
             />
 
             <div>
-              <span className="eyebrow block mb-1">Project</span>
+              <span className="text-xs text-muted-foreground block mb-1">Project (optional)</span>
               <Select
-                value={form.projectId}
+                value={form.projectId || undefined}
                 onValueChange={(v) => setForm((f) => ({ ...f, projectId: v }))}
               >
                 <SelectTrigger className="h-9">
-                  <SelectValue placeholder="Select project" />
+                  <SelectValue placeholder="Select project (optional)" />
                 </SelectTrigger>
                 <SelectContent>
                   {projects.map((p) => (
@@ -525,7 +735,37 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
             </div>
 
             <div>
-              <span className="eyebrow block mb-1">Recorded at</span>
+              <span className="text-xs text-muted-foreground block mb-1">Date</span>
+              <Input
+                type="datetime-local"
+                value={form.startsAt}
+                onChange={(e) => setForm((f) => ({ ...f, startsAt: e.target.value }))}
+                className="h-9"
+              />
+            </div>
+
+            <div>
+              <span className="text-xs text-muted-foreground block mb-1">End time (optional)</span>
+              <Input
+                type="datetime-local"
+                value={form.endsAt}
+                onChange={(e) => setForm((f) => ({ ...f, endsAt: e.target.value }))}
+                className="h-9"
+              />
+            </div>
+
+            <div>
+              <span className="text-xs text-muted-foreground block mb-1">Location (optional)</span>
+              <Input
+                placeholder="e.g. Zoom, Office"
+                value={form.location}
+                onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+                className="h-9"
+              />
+            </div>
+
+            <div>
+              <span className="text-xs text-muted-foreground block mb-1">Recorded at (optional)</span>
               <Input
                 type="datetime-local"
                 value={form.recordedAt}
@@ -535,21 +775,15 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
             </div>
 
             <div>
-              <span className="eyebrow block mb-1">Transcript / MoM</span>
+              <span className="text-xs text-muted-foreground block mb-1">Transcript / notes (optional)</span>
               <Textarea
-                placeholder="Paste Plaud transcript or type minutes…"
+                placeholder="Paste transcript or type minutes…"
                 value={form.transcript}
                 onChange={(e) => setForm((f) => ({ ...f, transcript: e.target.value }))}
                 className="min-h-[160px] text-sm"
               />
             </div>
 
-            <Input
-              placeholder="Plaud share key (optional)"
-              value={form.plaudShareKey}
-              onChange={(e) => setForm((f) => ({ ...f, plaudShareKey: e.target.value }))}
-              className="h-9"
-            />
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0 sm:justify-between">
@@ -576,25 +810,142 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
               </Button>
               <Button
                 size="sm"
-                className="h-9 bg-accent text-accent-foreground hover:bg-accent/90"
+                className="h-9 bg-primary text-primary-foreground hover:bg-primary/90"
                 onClick={handleSave}
                 disabled={
                   isSaving ||
                   !form.title.trim() ||
-                  !form.projectId ||
-                  !form.recordedAt ||
-                  !form.transcript.trim()
+                  (!form.startsAt && !form.recordedAt)
                 }
               >
-                {isSaving ? "Saving…" : form.id ? "Save" : "Create"}
+                {isSaving ? "Saving…" : "Save"}
               </Button>
             </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
+      {/* Delete recording confirmation */}
+      <ConfirmDeleteDialog
+        open={deleteRecordingTarget != null}
+        onOpenChange={(v) => { if (!v) setDeleteRecordingTarget(null); }}
+        noun="recording"
+        name={deleteRecordingTarget?.fileName ?? ""}
+        onConfirm={() => {
+          if (!deleteRecordingTarget) return;
+          deleteRecording.mutate({
+            recordingId: deleteRecordingTarget.recordingId,
+            meetingId: deleteRecordingTarget.meetingId,
+          });
+          setDeleteRecordingTarget(null);
+        }}
+      />
+
+      {/* Transcript view dialog */}
+      <Dialog open={transcriptViewContent != null} onOpenChange={(v) => { if (!v) setTranscriptViewContent(null); }}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Transcript</DialogTitle>
+          </DialogHeader>
+          <pre className="whitespace-pre-wrap text-sm text-foreground/90 font-sans leading-relaxed">
+            {transcriptViewContent}
+          </pre>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 };
+
+// ─── Recording list sub-component ────────────────────
+
+interface RecordingListProps {
+  meetingId: number;
+  recordings: import("@/hooks/useRecordings").MeetingRecording[];
+  onTranscribe: (recordingId: number) => Promise<{ jobId: number }>;
+  onDelete: (recordingId: number, fileName: string) => void;
+  onViewTranscript: (text: string) => void;
+}
+
+function RecordingList({
+  recordings,
+  onTranscribe,
+  onDelete,
+  onViewTranscript,
+}: RecordingListProps) {
+  const [transcribingIds, setTranscribingIds] = useState<Set<number>>(new Set());
+
+  if (recordings.length === 0) return null;
+
+  return (
+    <div className="space-y-1.5">
+      <p className="text-xs font-medium text-muted-foreground">Recordings</p>
+      {recordings.map((rec) => {
+        const isRunning = transcribingIds.has(rec.recordingId);
+        return (
+          <div
+            key={rec.recordingId}
+            className="flex items-center gap-3 rounded-md border border-border bg-card px-3 py-2"
+          >
+            <FileAudio className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium">{rec.fileName}</p>
+              <p className="text-xs text-muted-foreground tabular-nums">
+                {new Date(rec.createdAt).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-1.5">
+              {rec.transcript ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => onViewTranscript(rec.transcript!)}
+                >
+                  View transcript
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  disabled={isRunning || rec.jobId != null}
+                  onClick={async () => {
+                    setTranscribingIds((prev) => new Set(prev).add(rec.recordingId));
+                    try {
+                      await onTranscribe(rec.recordingId);
+                    } finally {
+                      setTranscribingIds((prev) => {
+                        const next = new Set(prev);
+                        next.delete(rec.recordingId);
+                        return next;
+                      });
+                    }
+                  }}
+                >
+                  {isRunning ? (
+                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                  ) : null}
+                  {isRunning ? "Starting…" : "Transcribe"}
+                </Button>
+              )}
+              <button
+                className="rounded-md p-1 text-muted-foreground hover:text-destructive transition-colors"
+                aria-label="Delete recording"
+                onClick={() => onDelete(rec.recordingId, rec.fileName)}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default AdminMeetings;

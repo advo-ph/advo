@@ -120,6 +120,23 @@ export function useProjectSignoff(projectId?: number | null) {
     qc.invalidateQueries({ queryKey: ["client-data"] });
   };
 
+  /**
+   * Signing is not one write. Inside a single transaction the server inserts an
+   * INVOICE for the final payment, links it back onto the sign-off, and inserts
+   * a NOTIFICATION for the client (project-signoff.service.ts, the `/sign`
+   * path). Invalidating only the sign-off and client-data left two of those
+   * three tables stale: a client would sign off and the finance screen would
+   * keep showing no final-payment invoice, because nothing had told the
+   * invoices query it was out of date.
+   */
+  const invalidateAfterSign = () => {
+    invalidate();
+    qc.invalidateQueries({ queryKey: ["invoices"] });
+    qc.invalidateQueries({ queryKey: ["adminNotifications"] });
+    // Prefix match: the client key carries the user id as a second segment.
+    qc.invalidateQueries({ queryKey: ["clientNotifications"] });
+  };
+
   const fail = (e: Error) =>
     toast({ title: "Error", description: e.message, variant: "destructive" });
 
@@ -181,7 +198,7 @@ export function useProjectSignoff(projectId?: number | null) {
       return r.data;
     },
     onSuccess: (row) => {
-      invalidate();
+      invalidateAfterSign();
       toast({
         title: "Sign-off recorded",
         description: row?.derived?.paymentDueAt

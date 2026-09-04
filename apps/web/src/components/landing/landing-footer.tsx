@@ -12,6 +12,8 @@ import {
 } from "@tabler/icons-react";
 import { ChevronRight } from "lucide-react";
 import { get } from "@/lib/api";
+import { identityValue } from "@/lib/legal-identity";
+import AdvoDotField from "./AdvoDotField";
 
 interface SocialLink {
   icon: string;
@@ -91,10 +93,9 @@ const footerCol: { title: string; link: FooterLink[] }[] = [
   {
     title: "Keep it running",
     link: [
-      { label: "Retainer", href: "#engagement" },
-      { label: "Hourly support", href: "#engagement" },
-      { label: "Quotation", href: "#engagement" },
-      { label: "FAQs", href: "#faq" },
+      { label: "The work we shipped", href: "#work" },
+      { label: "How it ships", href: "#process" },
+      { label: "Request a quotation", href: "/start" },
     ],
   },
   {
@@ -180,11 +181,17 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
         ))}
       </div>
 
-      {/* The actual wordmark, not the name typed in the body face: the traced
-          letterforms from the lockup, set to exactly the width of the rule
-          above them. A CSS mask so it takes its colour from the footer, and
-          aria-hidden because the bar below says the name once already. */}
-      <div className="landing-footer-wordmark" data-viewport-check="footer-wordmark" aria-hidden="true" />
+      {/* The wordmark as an interactive pixel field — the ADVO letterforms
+          rendered as dots that react to the cursor and settle on their own.
+          The canvas is aria-hidden, so the name is set as text for a reader,
+          and the tagline sits under it at the wordmark's measure. */}
+      <div className="landing-footer-lockup" data-viewport-check="footer-wordmark">
+        <h2 className="landing-sr-only">ADVO</h2>
+        <div className="landing-footer-field">
+          <AdvoDotField />
+        </div>
+        <p className="landing-footer-tagline">We digitalize it for you</p>
+      </div>
 
       <nav className="landing-footer-legal" aria-label="Legal">
         {legalLink.map((link) => (
@@ -194,13 +201,28 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
         ))}
       </nav>
 
+      {/* The registered-business disclosure a DTI merchant is expected to publish.
+          Every field is read from data/legal-identity.json through identityValue,
+          which returns null for a "TBD" field — so address, registration number,
+          and phone appear the moment the paperwork is transcribed, and never as a
+          placeholder before then. Same source as bench:paymongo. */}
+      <div className="landing-footer-identity" data-viewport-check="footer-identity">
+        <p>
+          {identityValue("legal_name")}
+          {identityValue("registration_body") ? ` · Registered with the ${identityValue("registration_body")}` : ""}
+          {identityValue("registration_number") ? ` · Reg. No. ${identityValue("registration_number")}` : ""}
+        </p>
+        <p>
+          {identityValue("business_address") ? `${identityValue("business_address")} · ` : ""}
+          <a href={`mailto:${identityValue("support_email") ?? "contact@advo.ph"}`}>
+            {identityValue("support_email") ?? "contact@advo.ph"}
+          </a>
+          {identityValue("support_phone") ? ` · ${identityValue("support_phone")}` : ""}
+        </p>
+      </div>
+
       <div className="landing-footer-bar">
-        <div>
-          <img src="/advo-wordmark.svg" alt="ADVO" />
-          <p>
-            © 2026 ADVO / <Link to="/start">Contact</Link> / Built with care in the Philippines.
-          </p>
-        </div>
+        <p className="landing-footer-fine">© 2026 ADVO. All rights reserved.</p>
         <div className="landing-social">
           {socialLink.map((link) => {
             const Icon = socialIcon[link.icon] ?? IconWorld;

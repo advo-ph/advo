@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
-import { ArrowUpRight, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowUpRight, ChevronRight, UtensilsCrossed, Stethoscope, GraduationCap, CircleParking, Building2 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { getCaseStudy } from "@/data/case-study";
 import WorkMedia from "@/components/WorkMedia";
@@ -13,37 +14,78 @@ import LandingFooter from "./landing-footer";
 import "./landing-page.css";
 
 /**
- * The three software surfaces plus the hardware on the counter. One system,
- * shown the way it is used, with the cinematic stills doing the talking.
+ * What ADVO builds, by industry, each with the products we actually sell into it.
+ * Prince, 09-03: this reads to a restaurant or a clinic owner as "yes, they have
+ * built the thing I need", where "Strategy / Design / Development" never does.
  */
-const surface = [
+interface Offer {
+  name: string;
+  copy: string;
+}
+interface Industry {
+  key: string;
+  title: string;
+  icon: LucideIcon;
+  copy: string;
+  offer: Offer[];
+}
+const industry: Industry[] = [
   {
-    title: "Public site",
-    heading: "The front door your customers land on.",
-    desc: "On your domain, fast on a phone, and wired to the system behind it. Fourlinq is live at fourlinq.ph.",
-    still: "/landing/rw/story.jpg",
-    primary: { label: "Start a project", href: "/start" },
-    secondary: { label: "See Fourlinq", href: "https://fourlinq.ph" },
+    key: "food",
+    icon: UtensilsCrossed,
+    title: "Food",
+    copy: "Ordering, seating, and the kitchen behind both.",
+    offer: [
+      { name: "QR code ordering", copy: "Guests scan the table code and order from their own phone." },
+      { name: "Kiosk ordering", copy: "Self-serve terminals that take the order and the payment." },
+      { name: "Table management", copy: "A live floor plan with seating, waitlist, and turn times." },
+    ],
   },
   {
-    title: "Client Hub",
-    heading: "Scope, files, approvals, and invoices in one place.",
-    desc: "Your team and ours see the same status. Sign-off happens on the work itself, not in a chat thread.",
-    still: "/landing/rw/hero.jpg",
-    primary: { label: "Log in", href: "/login" },
-    secondary: { label: "How it ships", href: "#process" },
+    key: "medical",
+    icon: Stethoscope,
+    title: "Medical",
+    copy: "Clinics, hospitals, and the records that move between them.",
+    offer: [
+      { name: "Clinic management", copy: "Appointments, queueing, billing, and stock in one system." },
+      { name: "EMR for doctors", copy: "Patient records a doctor reads and updates between consults." },
+      { name: "Hospital integration", copy: "Clinic data to and from hospital systems, no fax machine." },
+    ],
   },
   {
-    title: "Admin console",
-    heading: "The back office your staff opens every morning.",
-    desc: "Projects, leads, capacity, and finance. The hardware floor is part of the install: tablet, printer, TV.",
-    still: "/landing/rw/deliver.jpg",
-    primary: { label: "Log in", href: "/login" },
-    secondary: { label: "Request a quotation", href: "#engagement" },
+    key: "education",
+    icon: GraduationCap,
+    title: "Education",
+    copy: "Campus security, grading, and the school's own portal.",
+    offer: [
+      { name: "ID authentication", copy: "Student IDs that tap in at the gate and log who is on campus." },
+      { name: "Automated monitoring", copy: "Attendance tracked without a teacher counting heads." },
+      { name: "Grading system", copy: "Marks entered once, computed to the school's own rules." },
+    ],
+  },
+  {
+    key: "parking",
+    icon: CircleParking,
+    title: "Parking",
+    copy: "A fully automated car park for drivers, managers, and owners.",
+    offer: [
+      { name: "Plate recognition", copy: "A camera reads the plate at the gate and the barrier opens." },
+      { name: "Self-service payment", copy: "Pay at a kiosk in cash with coin change, or by e-wallet." },
+      { name: "Runs offline", copy: "The internet drops and the lane keeps working." },
+    ],
+  },
+  {
+    key: "business",
+    icon: Building2,
+    title: "Businesses",
+    copy: "If it runs on spreadsheets and group chats, it can run on software.",
+    offer: [
+      { name: "Construction", copy: "Site progress, manpower, deliveries, and progress billing." },
+      { name: "Retail and services", copy: "Inventory, point of sale, scheduling, and customer records." },
+      { name: "Logistics", copy: "Fleet tracking, dispatch, and proof of delivery." },
+    ],
   },
 ];
-
-const stage = ["Inquiry", "Scope", "Build", "Review", "Launch"];
 
 const step = [
   {
@@ -84,46 +126,6 @@ const step = [
   },
 ];
 
-const engagement = [
-  { title: "Project", copy: "Fixed scope, timeline, and deliverables." },
-  { title: "Retainer", copy: "A dedicated team for ongoing work." },
-  { title: "Hourly", copy: "On-demand help when you need it." },
-  { title: "Enterprise", copy: "Custom systems for large teams." },
-];
-
-const faq = [
-  {
-    question: "Do I get a website, or a system?",
-    answer:
-      "Both, and they are the same build. The public site is the front door. Behind it sit the client hub your customer signs into, the admin console your staff runs the day on, and the hardware on the counter.",
-  },
-  {
-    question: "What is the client hub, and who sees it?",
-    answer:
-      "The signed-in workspace holding scope, files, milestones, approvals, and invoices for one project. You invite your team and your client by role, so everyone sees the same truth.",
-  },
-  {
-    question: "What does the admin console do?",
-    answer:
-      "It is the back office: projects, leads, tasks, capacity, approvals, and finance. The surface your studio opens every morning.",
-  },
-  {
-    question: "Where does it run, and do I own it?",
-    answer:
-      "On a self-hosted VPS stack we set up and operate: Postgres, Node, Nginx, TLS. No per-seat cloud tax. At handoff the whole stack moves into your name: server, domain, database, and repository.",
-  },
-  {
-    question: "Is the hardware on the floor your job too?",
-    answer:
-      "Yes. The tablet at the counter, the receipt printer, and the TV on the wall are part of the system we install, train on, and support.",
-  },
-  {
-    question: "What happens after launch?",
-    answer:
-      "A care plan or hourly support keeps it running: fixes, monitoring, and new work. The printer that dies at 8PM is covered that night.",
-  },
-];
-
 /**
  * Real client marks, lifted from each client's own repository. Keyed by the
  * portfolio slug so the strip stays driven by the live portfolio table: a
@@ -139,58 +141,14 @@ const clientLogo: Record<string, { src: string; filter?: string; wide?: boolean 
   "coffee-rush-eastridge": { src: "/landing/logo/coffee-rush.png", filter: "invert(1)" },
 };
 
-const tool = [
-  { name: "Gmail", asset: "/landing/integration/gmail.svg" },
-  { name: "Calendar", asset: "/landing/integration/google-calendar.svg" },
-  { name: "Notion", asset: "/landing/integration/notion.svg" },
-  { name: "Slack", asset: "/landing/integration/slack.svg" },
-  { name: "Trello", asset: "/landing/integration/trello.svg" },
-  { name: "Drive", asset: "/landing/integration/google-drive.svg" },
-  { name: "Zoom", asset: "/landing/integration/zoom.svg" },
-  { name: "Asana", asset: "/landing/integration/asana.svg" },
-  { name: "Teams", asset: "/landing/integration/microsoft-teams.svg" },
-];
-
 const heroCopy = {
   hidden: { opacity: 0, y: 18 },
   show: { opacity: 1, y: 0 },
 };
 
-/** In-page anchors stay `<a href>` so the browser owns the smooth scroll. */
-const Action = ({
-  href,
-  className,
-  children,
-}: {
-  href: string;
-  className: string;
-  children: React.ReactNode;
-}) => {
-  if (href.startsWith("http")) {
-    return (
-      <a className={className} href={href} target="_blank" rel="noopener noreferrer">
-        {children}
-      </a>
-    );
-  }
-  if (href.startsWith("#")) {
-    return (
-      <a className={className} href={href}>
-        {children}
-      </a>
-    );
-  }
-  return (
-    <Link className={className} to={href}>
-      {children}
-    </Link>
-  );
-};
-
 const LandingPage = () => {
   const reduceMotion = useReducedMotion();
   const [stepIndex, setStepIndex] = useState(0);
-  const [faqOpen, setFaqOpen] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
 
   // Prince, 08-21: "keep only the section for the websites that we've already
@@ -218,7 +176,20 @@ const LandingPage = () => {
             animate={{ scale: 1 }}
             transition={{ duration: 1.8, ease: EASE }}
           >
-            <img src="/landing/rw/hero.jpg" alt="" />
+            {reduceMotion ? (
+              <img src="/landing/hero-building.jpg" alt="" />
+            ) : (
+              <video
+                className="landing-hero-video"
+                src="/landing/hero-building.mp4"
+                poster="/landing/hero-building.jpg"
+                autoPlay
+                muted
+                loop
+                playsInline
+                aria-hidden="true"
+              />
+            )}
           </motion.div>
           <div className="landing-hero-shade" />
           <motion.div
@@ -271,60 +242,38 @@ const LandingPage = () => {
 
       <section className="landing-piece" id="showcase">
         <Reveal as="h2" className="landing-display">
-          Three pieces already exist. The system is the fourth.
+          What we build
         </Reveal>
         <Reveal className="landing-lede" delay={0.08}>
           <p>
-            Paper, Viber, tally sheets. We drop in the missing piece: software, plus the
-            tablet, printer, and TV already on the counter.
+            Paper, Viber, tally sheets. We drop in the missing piece: software for the
+            industries we already ship into, plus the tablet, printer, and TV on the counter.
           </p>
         </Reveal>
 
-        <RevealGroup className="landing-surface-grid" stagger={0.1}>
-          {surface.map((item) => (
-            <Reveal as="article" className="landing-surface-card" key={item.title}>
-              <h3>{item.title}</h3>
-              <div className="landing-still">
-                <img src={item.still} alt="" loading="lazy" />
+        <RevealGroup className="landing-industry-grid" stagger={0.08}>
+          {industry.map((item) => (
+            <Reveal as="article" className="landing-industry-card" key={item.key}>
+              <div className="landing-industry-head">
+                <item.icon size={20} strokeWidth={1.25} absoluteStrokeWidth />
+                <h3>{item.title}</h3>
               </div>
-              <h4>{item.heading}</h4>
-              <p>{item.desc}</p>
-              <div className="landing-surface-action">
-                <Action className="landing-button landing-button-primary landing-button-small" href={item.primary.href}>
-                  {item.primary.label}
-                </Action>
-                <Action className="landing-button landing-button-ghost landing-button-small" href={item.secondary.href}>
-                  {item.secondary.label}
-                  {item.secondary.href.startsWith("http") ? <ArrowUpRight size={14} strokeWidth={1} absoluteStrokeWidth /> : null}
-                </Action>
-              </div>
+              <p className="landing-industry-copy">{item.copy}</p>
+              <ul className="landing-industry-offer">
+                {item.offer.map((o) => (
+                  <li key={o.name}>
+                    <span className="landing-industry-offer-name">{o.name}</span>
+                    <span className="landing-industry-offer-copy">{o.copy}</span>
+                  </li>
+                ))}
+              </ul>
             </Reveal>
           ))}
         </RevealGroup>
 
-        <Reveal className="landing-tool-row" delay={0.05}>
-          <p>Fits the tools your floor already runs on</p>
-          <div>
-            {tool.map((item) => (
-              <span key={item.name}>
-                <img src={item.asset} alt="" loading="lazy" />
-                {item.name}
-              </span>
-            ))}
-          </div>
-        </Reveal>
       </section>
 
       <section className="landing-process" id="process">
-        <Reveal as="div" className="landing-workflow-section" id="workflow">
-          {stage.map((label, index) => (
-            <span key={label}>
-              {index > 0 ? <i aria-hidden="true" /> : null}
-              {label}
-            </span>
-          ))}
-        </Reveal>
-
         <Reveal className="landing-process-card" delay={0.1}>
           <div className="landing-process-tab" role="tablist" aria-orientation="vertical" aria-label="How it ships">
             {step.map((item, index) => (
@@ -371,39 +320,6 @@ const LandingPage = () => {
           </div>
         </Reveal>
       </section>
-
-      <section className="landing-band" id="engagement">
-        <div className="landing-band-frame">
-          <div className="landing-band-inner">
-            <Reveal className="landing-band-lede">
-              <h2>
-                To become the infrastructure of the technological layer for industries around
-                the Philippines. We will modernize the Philippines.
-              </h2>
-              <Link className="landing-button landing-button-outline" to="/start">
-                Start a project
-              </Link>
-            </Reveal>
-
-            <Reveal className="landing-band-list" delay={0.12}>
-              <p>
-                We do not publish rates. Tell us what the floor has to do and we send a
-                quotation built on your scope.
-              </p>
-              {engagement.map((item) => (
-                <Link key={item.title} to="/start" className="landing-band-row">
-                  <span>
-                    <strong>{item.title}</strong>
-                    <small>{item.copy}</small>
-                  </span>
-                  <ArrowUpRight size={16} strokeWidth={1} absoluteStrokeWidth />
-                </Link>
-              ))}
-            </Reveal>
-          </div>
-        </div>
-      </section>
-
       {shippedProject.length > 0 ? (
         <section className="landing-work" id="work">
           <Reveal as="h2" className="landing-display">
@@ -449,45 +365,6 @@ const LandingPage = () => {
           </RevealGroup>
         </section>
       ) : null}
-
-      <section className="landing-faq" id="faq">
-        <Reveal as="h2" className="landing-display">
-          Questions before we build
-        </Reveal>
-        <RevealGroup className="landing-faq-list" stagger={0.05}>
-          {faq.map(({ question, answer }, index) => {
-            const isOpen = faqOpen === index;
-            return (
-              <Reveal className={isOpen ? "landing-faq-item is-open" : "landing-faq-item"} key={question}>
-                <button
-                  type="button"
-                  onClick={() => setFaqOpen(isOpen ? -1 : index)}
-                  aria-expanded={isOpen}
-                  aria-controls={`faq-${index}`}
-                >
-                  <span>{question}</span>
-                  <ChevronDown size={16} strokeWidth={1} absoluteStrokeWidth />
-                </button>
-                <AnimatePresence initial={false}>
-                  {isOpen ? (
-                    <motion.div
-                      id={`faq-${index}`}
-                      className="landing-faq-answer"
-                      initial={reduceMotion ? false : { height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={reduceMotion ? undefined : { height: 0, opacity: 0 }}
-                      transition={{ duration: 0.32, ease: EASE }}
-                    >
-                      <p>{answer}</p>
-                    </motion.div>
-                  ) : null}
-                </AnimatePresence>
-              </Reveal>
-            );
-          })}
-        </RevealGroup>
-      </section>
-
       <LandingFooter />
     </main>
   );

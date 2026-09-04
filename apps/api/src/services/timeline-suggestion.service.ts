@@ -192,8 +192,8 @@ function complexityMultiplier(project: TimelineProjectInput, count: number): num
 function heuristicSuggest(input: SuggestTimelineInput): TimelineSuggestion {
   const { project, deliverable } = input;
   const open = deliverable.filter((d) => {
-    const s = (d.status ?? "not_started").toLowerCase();
-    return s !== "completed";
+    const s = (d.status ?? "todo").toLowerCase();
+    return s !== "finished";
   });
   const titles = (open.length ? open : deliverable).map((d) => d.title).filter(Boolean);
   const count = Math.max(titles.length, 1);

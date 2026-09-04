@@ -19,8 +19,9 @@ import {
 } from "@/components/ui/select";
 import { PageHeader } from "@/components/admin/_ui";
 import { useCalendar, manualEventId, type CalEvent, type NewEvent } from "@/hooks/useCalendar";
-import { useAdminAvailability } from "@/hooks/useAdminAvailability";
-import { useAdminTeam } from "@/hooks/useAdminTeam";
+import { useToast } from "@/hooks/use-toast";
+import { dayKey } from "@/lib/manila-time";
+import { ConfirmDeleteDialog } from "@/components/admin/ConfirmDeleteDialog";
 
 /* Category → colour + label. Manual categories first, then derived sources. */
 const CATEGORY: Record<string, { label: string; dot: string }> = {
@@ -41,16 +42,9 @@ const CATEGORY: Record<string, { label: string; dot: string }> = {
   contract_signed: { label: "Contract signed", dot: "bg-teal-500" },
   contract_expires: { label: "Contract expires", dot: "bg-rose-500" },
   compliance_deadline: { label: "Compliance", dot: "bg-amber-600" },
-  blackout: { label: "School blackout", dot: "bg-slate-400" },
+  scheduled_meeting: { label: "Meeting (scheduled)", dot: "bg-violet-500" },
 };
 
-const BLACKOUT_TYPE = new Set(["school", "unavailable"]);
-
-type BlackoutChip = {
-  key: string;
-  title: string;
-  startTime: string;
-};
 const cat = (k: string) => CATEGORY[k] ?? { label: k, dot: "bg-muted-foreground" };
 
 // Read-only detail hint: source → the page that owns the underlying record.
@@ -60,6 +54,7 @@ const SOURCE_NOUN: Record<string, string> = {
   project: "projects",
   social: "social posts",
   contract: "contracts",
+  meeting: "the meetings tab",
 };
 
 // Manual categories selectable in the dialog (must match the API enum).
@@ -72,8 +67,6 @@ const MONTHS = [
 ];
 
 const pad = (n: number) => String(n).padStart(2, "0");
-const dayKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-const todayKey = dayKey(new Date());
 
 interface FormState {
   id: number | null; // null = create
@@ -100,11 +93,18 @@ const emptyForm = (date: string): FormState => ({
 });
 
 const AdminCalendar = () => {
+  const { toast } = useToast();
   const [cursor, setCursor] = useState(() => new Date());
   const [hidden, setHidden] = useState<Set<string>>(new Set());
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState<FormState>(emptyForm(todayKey));
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [detail, setDetail] = useState<CalEvent | null>(null);
+
+  // Recomputed on every render rather than captured once at module load. As a
+  // module-level const this highlighted the wrong cell for anyone whose session was open
+  // across midnight, which for this team is most nights.
+  const todayKey = dayKey(new Date());
+  const [form, setForm] = useState<FormState>(() => emptyForm(dayKey(new Date())));
 
   // 6-week grid starting on the Sunday on/before the 1st.
   const cells = useMemo(() => {
@@ -129,48 +129,25 @@ const AdminCalendar = () => {
     rangeFrom,
     rangeTo,
   );
-  const { blocks } = useAdminAvailability();
-  const { activeMembers } = useAdminTeam();
-
-  const memberName = useMemo(() => {
-    const map = new Map<number, string>();
-    for (const m of activeMembers) map.set(m.team_member_id, m.name);
-    return map;
-  }, [activeMembers]);
-
-  // Recurring school/unavailable blocks → month-grid blackout layer.
-  const blackoutByDay = useMemo(() => {
-    const m: Record<string, BlackoutChip[]> = {};
-    for (const d of cells) {
-      const dow = d.getDay();
-      const k = dayKey(d);
-      for (const b of blocks) {
-        if (!BLACKOUT_TYPE.has(b.block_type)) continue;
-        if (b.day_of_week !== dow) continue;
-        const name = memberName.get(b.team_member_id) ?? "Team";
-        const label = b.label || (b.block_type === "school" ? "School" : "Unavailable");
-        (m[k] ||= []).push({
-          key: `${b.block_id}-${k}`,
-          title: `${name}: ${label}`,
-          startTime: b.start_time.slice(0, 5),
-        });
-      }
-    }
-    return m;
-  }, [blocks, cells, memberName]);
-
-  const blackoutCount = useMemo(
-    () => Object.values(blackoutByDay).reduce((n, list) => n + list.length, 0),
-    [blackoutByDay],
-  );
-  const showBlackout = !hidden.has("blackout");
-
+  // An event is bucketed onto every day it covers. Bucketing by start day alone made a
+  // three-day event visible on day one and invisible on days two and three, and made an
+  // event that began before the visible month disappear from it entirely.
   const byDay = useMemo(() => {
     const m: Record<string, CalEvent[]> = {};
     for (const e of events) {
       if (hidden.has(e.category)) continue;
-      const k = dayKey(new Date(e.start));
-      (m[k] ||= []).push(e);
+      const start = new Date(e.start);
+      if (Number.isNaN(start.getTime())) continue;
+      const end = e.end ? new Date(e.end) : start;
+      const last = !Number.isNaN(end.getTime()) && end > start ? end : start;
+
+      const cursorDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+      const lastDay = new Date(last.getFullYear(), last.getMonth(), last.getDate());
+      // Guard against a pathological range producing an unbounded loop.
+      for (let i = 0; cursorDay <= lastDay && i < 366; i++) {
+        (m[dayKey(cursorDay)] ||= []).push(e);
+        cursorDay.setDate(cursorDay.getDate() + 1);
+      }
     }
     return m;
   }, [events, hidden]);
@@ -178,10 +155,8 @@ const AdminCalendar = () => {
   const presentCategories = useMemo(() => {
     const seen = new Set<string>();
     for (const e of events) seen.add(e.category);
-    if (blackoutCount > 0) seen.add("blackout");
-    // stable order by the CATEGORY map
     return Object.keys(CATEGORY).filter((k) => seen.has(k));
-  }, [events, blackoutCount]);
+  }, [events]);
 
   const openCreate = (date: string) => {
     setForm(emptyForm(date));
@@ -205,28 +180,73 @@ const AdminCalendar = () => {
     setDialogOpen(true);
   };
 
-  const toIso = (date: string, time: string) => new Date(`${date}T${time}:00`).toISOString();
+  /** null rather than a throw. `new Date("").toISOString()` is a RangeError. */
+  const toIso = (date: string, time: string): string | null => {
+    if (!date) return null;
+    const at = new Date(`${date}T${time || "00:00"}:00`);
+    return Number.isNaN(at.getTime()) ? null : at.toISOString();
+  };
 
   const handleSave = async () => {
     if (!form.title.trim()) return;
+
+    // Clearing the date field and pressing Save used to call .toISOString() on an Invalid
+    // Date. The RangeError was unhandled, so the button looked dead: no save, no error,
+    // no closed dialog, nothing in the UI at all.
+    const startsAt = toIso(form.date, form.allDay ? "00:00" : form.startTime);
+    if (!startsAt) {
+      toast({
+        title: "Date required",
+        description: "Pick a valid date for this event.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    let endsAt: string | null = null;
+    if (!form.allDay && form.endTime) {
+      endsAt = toIso(form.date, form.endTime);
+      if (!endsAt) {
+        toast({ title: "Invalid end time", description: "Check the end time.", variant: "destructive" });
+        return;
+      }
+      if (new Date(endsAt) <= new Date(startsAt)) {
+        toast({
+          title: "Check the times",
+          description: "End time must be after the start time.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     const payload: NewEvent = {
       title: form.title.trim(),
       category: form.category,
       isAllDay: form.allDay,
-      startsAt: form.allDay ? toIso(form.date, "00:00") : toIso(form.date, form.startTime),
-      endsAt: form.allDay ? null : form.endTime ? toIso(form.date, form.endTime) : null,
+      startsAt,
+      endsAt,
       location: form.location.trim() || null,
       description: form.description.trim() || null,
     };
-    if (form.id) await updateEvent({ id: form.id, patch: payload });
-    else await createEvent(payload);
-    setDialogOpen(false);
+
+    try {
+      if (form.id) await updateEvent({ id: form.id, patch: payload });
+      else await createEvent(payload);
+      setDialogOpen(false);
+    } catch {
+      // useCalendar surfaces the toast; the dialog stays open with the entered values.
+    }
   };
 
   const handleDelete = async () => {
-    if (form.id) {
+    if (!form.id) return;
+    setConfirmDelete(false);
+    try {
       await deleteEvent(form.id);
       setDialogOpen(false);
+    } catch {
+      // useCalendar surfaces the toast.
     }
   };
 
@@ -241,7 +261,7 @@ const AdminCalendar = () => {
         meta={
           isLoading
             ? "loading…"
-            : `${events.length} this view${blackoutCount > 0 ? ` · ${blackoutCount} blackout` : ""}`
+            : `${events.length} this view`
         }
         action={
           <div className="flex items-center gap-1.5">
@@ -272,7 +292,7 @@ const AdminCalendar = () => {
             </span>
             <Button
               size="sm"
-              className="h-9 bg-accent text-accent-foreground hover:bg-accent/90 gap-1.5"
+              className="h-9 bg-primary text-primary-foreground hover:bg-primary/90 gap-1.5"
               onClick={() => openCreate(todayKey)}
             >
               <Plus className="h-4 w-4" /> Add event
@@ -284,9 +304,9 @@ const AdminCalendar = () => {
       {/* Mobile month label */}
       <div className="sm:hidden text-sm font-medium">{monthLabel}</div>
 
-      {/* Filter legend — always include the blackout layer so timelines can hide school blocks. */}
+      {/* Filter legend */}
       <div className="flex flex-wrap items-center gap-1.5">
-        {(presentCategories.length > 0 ? presentCategories : ["blackout"]).map((k) => {
+        {presentCategories.map((k) => {
           const off = hidden.has(k);
           return (
             <button
@@ -301,7 +321,7 @@ const AdminCalendar = () => {
               }
               className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors ${
                 off
-                  ? "border-border text-muted-foreground/50"
+                  ? "border-border text-muted-foreground"
                   : "border-border text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -315,10 +335,11 @@ const AdminCalendar = () => {
       {/* Month grid */}
       <div className="border border-border rounded-lg bg-card overflow-hidden">
         <div className="grid grid-cols-7 border-b border-border">
+          {/* Was text-muted-foreground/70 (~2.9:1 in light mode) — same fix as THead. */}
           {WEEKDAYS.map((w) => (
             <div
               key={w}
-              className="h-8 grid place-items-center text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/70"
+              className="h-8 grid place-items-center text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground"
             >
               {w}
             </div>
@@ -330,19 +351,15 @@ const AdminCalendar = () => {
             const inMonth = d.getMonth() === cursor.getMonth();
             const isToday = k === todayKey;
             const dayEvents = byDay[k] ?? [];
-            const dayBlackout = showBlackout ? (blackoutByDay[k] ?? []) : [];
-            const blackoutShown = Math.min(dayBlackout.length, 2);
-            const eventShown = Math.min(dayEvents.length, Math.max(0, 3 - blackoutShown));
-            const moreCount = dayBlackout.length - blackoutShown + dayEvents.length - eventShown;
+            const eventShown = Math.min(dayEvents.length, 3);
+            const moreCount = dayEvents.length - eventShown;
             return (
               <div
                 key={k}
                 onClick={() => openCreate(k)}
-                className={`group min-h-[104px] border-b border-r border-border p-1.5 cursor-pointer transition-colors hover:bg-secondary/30 [&:nth-child(7n)]:border-r-0 ${
+                className={`group min-h-[64px] sm:min-h-[104px] border-b border-r border-border p-1.5 cursor-pointer transition-colors hover:bg-secondary/30 [&:nth-child(7n)]:border-r-0 ${
                   inMonth ? "" : "bg-background/40"
-                } ${i >= 35 ? "border-b-0" : ""} ${
-                  dayBlackout.length > 0 ? "bg-slate-500/[0.06]" : ""
-                }`}
+                } ${i >= 35 ? "border-b-0" : ""}`}
               >
                 <div className="flex items-center justify-between">
                   <span
@@ -351,7 +368,9 @@ const AdminCalendar = () => {
                         ? "bg-accent text-accent-foreground font-semibold"
                         : inMonth
                           ? "text-foreground"
-                          : "text-muted-foreground/40"
+                          // Full-strength muted-foreground is ~5.37:1 in light / ~6.19:1
+                          // in dark. Prior /60 modifier dropped it to ~2.4:1 (fails AA).
+                          : "text-muted-foreground"
                     }`}
                   >
                     {d.getDate()}
@@ -359,19 +378,6 @@ const AdminCalendar = () => {
                   <Plus className="h-3 w-3 text-muted-foreground/0 group-hover:text-muted-foreground/50 transition-colors" />
                 </div>
                 <div className="mt-1 space-y-0.5">
-                  {dayBlackout.slice(0, 2).map((b) => (
-                    <div
-                      key={b.key}
-                      className="w-full flex items-center gap-1.5 px-1 py-0.5 rounded text-left bg-slate-500/10"
-                      title={`Blackout — do not promise timelines into ${b.title}`}
-                    >
-                      <span className="h-1.5 w-1.5 rounded-full shrink-0 bg-slate-400" />
-                      <span className="text-[11px] truncate text-muted-foreground">
-                        <span className="tabular-nums mr-1">{b.startTime}</span>
-                        {b.title}
-                      </span>
-                    </div>
-                  ))}
                   {dayEvents.slice(0, eventShown).map((e) => (
                     <button
                       key={e.id}
@@ -424,7 +430,7 @@ const AdminCalendar = () => {
             />
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <span className="eyebrow block mb-1">Category</span>
+                <span className="text-xs text-muted-foreground block mb-1">Category</span>
                 <Select value={form.category} onValueChange={(v) => setForm((f) => ({ ...f, category: v }))}>
                   <SelectTrigger className="h-9">
                     <SelectValue />
@@ -442,7 +448,7 @@ const AdminCalendar = () => {
                 </Select>
               </div>
               <div>
-                <span className="eyebrow block mb-1">Date</span>
+                <span className="text-xs text-muted-foreground block mb-1">Date</span>
                 <Input
                   type="date"
                   value={form.date}
@@ -465,7 +471,7 @@ const AdminCalendar = () => {
             {!form.allDay && (
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <span className="eyebrow block mb-1">Start</span>
+                  <span className="text-xs text-muted-foreground block mb-1">Start</span>
                   <Input
                     type="time"
                     value={form.startTime}
@@ -474,7 +480,7 @@ const AdminCalendar = () => {
                   />
                 </div>
                 <div>
-                  <span className="eyebrow block mb-1">End</span>
+                  <span className="text-xs text-muted-foreground block mb-1">End</span>
                   <Input
                     type="time"
                     value={form.endTime}
@@ -504,7 +510,7 @@ const AdminCalendar = () => {
                 variant="outline"
                 size="sm"
                 className="h-9 text-destructive hover:bg-destructive/10"
-                onClick={handleDelete}
+                onClick={() => setConfirmDelete(true)}
                 disabled={isMutating}
               >
                 <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete
@@ -518,7 +524,7 @@ const AdminCalendar = () => {
               </Button>
               <Button
                 size="sm"
-                className="h-9 bg-accent text-accent-foreground hover:bg-accent/90"
+                className="h-9 bg-primary text-primary-foreground hover:bg-primary/90"
                 onClick={handleSave}
                 disabled={isMutating || !form.title.trim()}
               >
@@ -572,6 +578,14 @@ const AdminCalendar = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <ConfirmDeleteDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        onConfirm={handleDelete}
+        noun="event"
+        name={form.title}
+      />
     </div>
   );
 };

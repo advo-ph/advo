@@ -1,14 +1,23 @@
-import { useState } from "react";
-import { Plus, Trash2, Loader2, Lock, Check, Sparkles, AlertTriangle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Plus, Trash2, Loader2, Lock, Check, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   useCommission,
   type CommissionPlan,
@@ -16,12 +25,14 @@ import {
   type CommissionShare,
 } from "@/hooks/useCommission";
 import { useAdminTeam } from "@/hooks/useAdminTeam";
-import { Empty, Dot } from "@/components/admin/_ui";
+import { Empty } from "@/components/admin/_ui";
+import { ConfirmDeleteDialog } from "@/components/admin/ConfirmDeleteDialog";
+import { get } from "@/lib/api";
 
 /**
  * /admin -> Finance -> Commission.
  *
- * The team-facing surface for the 60/25/15 split. Everything money-shaped on this screen
+ * The team-facing surface for the 55/35/10 split. Everything money-shaped on this screen
  * arrives already allocated from the server: this component divides by 100 to render
  * pesos and does no other arithmetic on anyone's pay. The finalize button is drawn
  * straight from `derived.blocker`, which the API re-derives in its own write path.
@@ -34,23 +45,47 @@ const formatPeso = (cents: number) =>
   })}`;
 
 const ROLE_LABEL: Record<CommissionRole, string> = {
-  main_developer: "Main developer",
-  assistant_developer: "Assistant developer",
-  referral: "Referral",
+  main_developer: "Main Developer",
+  assistant_developer: "Assistant Developer",
+  creatives_developer: "Creatives Developer",
+  lead_partnerships: "Lead Partnerships",
+  referral: "Lead Partnerships",
   marketing: "Marketing",
   accounting: "Accounting",
   management: "Management",
-  company: "Company reserve",
+  company: "Company Revenue",
 };
 
-const ASSIGNABLE_ROLE: CommissionRole[] = [
-  "main_developer",
-  "assistant_developer",
-  "referral",
-  "marketing",
-  "accounting",
-  "management",
+const ASSIGNABLE_ROLES: { value: CommissionRole; label: string }[] = [
+  { value: "main_developer", label: "Main Developer" },
+  { value: "assistant_developer", label: "Assistant Developer" },
+  { value: "creatives_developer", label: "Creatives Developer" },
+  { value: "lead_partnerships", label: "Lead Partnerships" },
+  { value: "marketing", label: "Marketing" },
+  { value: "accounting", label: "Accounting" },
+  { value: "management", label: "Management" },
 ];
+
+const TIER_OPTIONS = [
+  {
+    label: "Tier 1 (5%)",
+    tierLabel:
+      "Tier 1 Contribution (5% Allocation): Routine and Assisted Execution. Routine manual labor, basic data population, and simple AI image generation. Low complexity, and normally needs oversight or later clean-up by the Senior Developer.",
+    allocationBps: 500,
+  },
+  {
+    label: "Tier 2 (10%)",
+    tierLabel:
+      "Tier 2 Contribution (10% Allocation): Independent High-Volume Asset Creation. Independent execution and high-volume generation of quality AI image assets. Output must be consistently high quality and client-ready, needing zero manual correction, quality checking, or Senior Developer help before it is used.",
+    allocationBps: 1000,
+  },
+  {
+    label: "Tier 3 (15%)",
+    tierLabel:
+      "Tier 3 Contribution (15% Allocation): Advanced Media and Public-Ready Execution. Successful generation and delivery of complex AI video assets. Must be premium, public-facing quality, ready for immediate client presentation or live deployment with no further edits.",
+    allocationBps: 1500,
+  },
+] as const;
 
 const POOL_DOT: Record<CommissionShare["pool"], string> = {
   developer: "bg-accent",
@@ -58,66 +93,157 @@ const POOL_DOT: Record<CommissionShare["pool"], string> = {
   company: "bg-muted-foreground/50",
 };
 
+/** Quiet section heading inside a dropdown, matching the admin table header treatment. */
+const GROUP_LABEL =
+  "text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground";
+
+const isTierRole = (role: CommissionRole) =>
+  role === "assistant_developer" || role === "creatives_developer";
+
+interface ProjectMember {
+  assignmentId: number;
+  teamMemberId: number;
+  name: string;
+  projectRole: string;
+}
+
 interface ProjectSummary {
   project_id: number;
   title: string;
   total_value_cents: number;
 }
 
+/* ─── Sub-container ───────────────────────────────────────── */
+
+const SubContainer = ({ label }: { label: string }) => (
+  <div className="h-full flex items-center justify-center bg-secondary/30 border border-border rounded px-2 py-1.5 text-center">
+    <p className="text-[11px] text-muted-foreground leading-snug">{label}</p>
+  </div>
+);
+
+/**
+ * The three pools sit in a grid rather than a flex row so the columns stretch to a
+ * common height. Inside a column the sub-container strip is the flex-1 child, which
+ * pushes every tile — three words or twelve — to the same box.
+ */
+const PoolHeader = ({
+  label,
+  pct,
+  amount,
+  subContainers,
+}: {
+  label: string;
+  pct: number;
+  amount: number;
+  subContainers: string[];
+}) => (
+  <div className="flex flex-col min-w-0">
+    <div className="bg-card border border-border rounded-lg px-3 py-2">
+      <p className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
+        {label} {pct}%
+      </p>
+      <p className="text-sm font-medium tabular-nums">{formatPeso(amount)}</p>
+    </div>
+    <div
+      className="grid flex-1 gap-1 mt-1"
+      style={{ gridTemplateColumns: `repeat(${subContainers.length}, minmax(0, 1fr))` }}
+    >
+      {subContainers.map((s) => (
+        <SubContainer key={s} label={s} />
+      ))}
+    </div>
+  </div>
+);
+
 /* ─── One share row ───────────────────────────────────────── */
 
 const ShareRow = ({
   share,
   isFrozen,
-  onWeight,
+  onPercent,
   onAgree,
   onRemove,
+  onTier,
 }: {
   share: CommissionShare;
   isFrozen: boolean;
-  onWeight: (contributionBps: number) => void;
+  onPercent: (bps: number) => void;
   onAgree: (isAgreed: boolean) => void;
   onRemove: () => void;
+  onTier: (tierLabel: string) => void;
 }) => {
-  const [draftWeight, setDraftWeight] = useState(String(share.contributionBps));
+  const [draftPct, setDraftPct] = useState(String(share.contributionBps / 100));
   const isCompany = share.role === "company";
+  const isTier = isTierRole(share.role);
+
+  useEffect(() => {
+    setDraftPct(String(share.contributionBps / 100));
+  }, [share.contributionBps]);
 
   return (
     <div className="flex items-center gap-3 px-3 h-11 text-sm">
-      <span className="w-40 shrink-0 flex items-center gap-1.5">
-        <Dot className={POOL_DOT[share.pool]} />
-        <span className="text-xs text-muted-foreground truncate">{ROLE_LABEL[share.role]}</span>
+      <span className="w-2 shrink-0">
+        <span className={`block w-2 h-2 rounded-full ${POOL_DOT[share.pool]}`} />
       </span>
 
       <span className="flex-1 min-w-0 font-medium truncate">
-        {share.memberName ?? "ADVO — expenses & investment ROI"}
+        {isCompany ? "ADVO Revenue and Investment ROI" : (share.memberName ?? "—")}
       </span>
 
-      {/* Relative weight within this role's pool. The server turns it into pesos. */}
-      <span className="w-28 shrink-0 flex items-center justify-end gap-1">
+      <span className="w-36 shrink-0 text-xs text-muted-foreground truncate">
+        {ROLE_LABEL[share.role]}
+      </span>
+
+      {/* Tier picker and percentage box share one w-28 track so the column reads as a
+          single edge no matter which control a row happens to draw. The % sign sits
+          inside the input rather than beside it, which is what used to shorten it. */}
+      <span className="w-36 shrink-0 flex items-center justify-end">
         {isCompany ? (
-          <span className="text-xs text-muted-foreground tabular-nums">fixed</span>
-        ) : (
-          <Input
-            value={draftWeight}
-            onChange={(e) => setDraftWeight(e.target.value.replace(/[^0-9]/g, ""))}
-            onBlur={() => {
-              const next = Number(draftWeight || 0);
-              if (next !== share.contributionBps) onWeight(next);
-            }}
+          <span className="w-28 text-right text-xs text-muted-foreground tabular-nums">fixed</span>
+        ) : isTier ? (
+          <Select
+            value={
+              TIER_OPTIONS.find((t) => t.allocationBps === share.contributionBps)?.tierLabel ?? ""
+            }
+            onValueChange={(v) => onTier(v)}
             disabled={isFrozen}
-            className="h-7 w-20 text-xs text-right tabular-nums"
-            aria-label={`Contribution weight for ${share.memberName ?? "share"}`}
-          />
+          >
+            <SelectTrigger className="h-7 w-28 text-xs">
+              <SelectValue placeholder="Pick tier" />
+            </SelectTrigger>
+            <SelectContent>
+              {TIER_OPTIONS.map((t) => (
+                <SelectItem key={t.allocationBps} value={t.tierLabel}>
+                  {t.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <span className="relative w-28">
+            <Input
+              value={draftPct}
+              onChange={(e) => {
+                const v = e.target.value.replace(/[^0-9]/g, "");
+                const n = Number(v);
+                if (n <= 100) setDraftPct(v);
+              }}
+              onBlur={() => {
+                const pct = Math.min(100, Math.max(0, Number(draftPct || 0)));
+                const bps = pct * 100;
+                if (bps !== share.contributionBps) onPercent(bps);
+              }}
+              disabled={isFrozen}
+              className="h-7 w-full pr-6 text-xs text-right tabular-nums"
+              aria-label={`Percentage for ${share.memberName ?? "share"}`}
+            />
+            <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+              %
+            </span>
+          </span>
         )}
       </span>
 
-      <span className="w-28 shrink-0 text-right font-medium tabular-nums">
-        {formatPeso(share.computedAmountCents)}
-      </span>
-
-      {/* Prince: the split "must be mutually agreed on by the devs upon project
-          completion". Editing a weight resets this server-side. */}
       <span className="w-24 shrink-0 flex justify-end">
         {isCompany ? (
           <span className="text-xs text-muted-foreground">—</span>
@@ -129,10 +255,8 @@ const ShareRow = ({
             disabled={isFrozen}
             onClick={() => onAgree(!share.isAgreed)}
           >
-            {share.isAgreed ? <Check className="h-3 w-3" /> : null}
-            <span className={share.isAgreed ? "ml-1" : ""}>
-              {share.isAgreed ? "Agreed" : "Agree"}
-            </span>
+            {share.isAgreed ? <Check className="h-3 w-3 mr-1" /> : null}
+            {share.isAgreed ? "Agreed" : "Agree"}
           </Button>
         )}
       </span>
@@ -151,176 +275,210 @@ const ShareRow = ({
   );
 };
 
-/* ─── Add-a-person form ───────────────────────────────────── */
+/* ─── Add Member popup ────────────────────────────────────── */
 
-const AddShareForm = ({
-  member,
+const AddMemberDialog = ({
+  open,
+  onOpenChange,
+  projectMembers,
+  teamRoster,
   onAdd,
 }: {
-  member: { team_member_id: number; name: string }[];
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  projectMembers: ProjectMember[];
+  teamRoster: { teamMemberId: number; name: string }[];
   onAdd: (input: { teamMemberId: number; role: CommissionRole }) => void;
 }) => {
-  const [teamMemberId, setTeamMemberId] = useState("");
-  const [role, setRole] = useState<CommissionRole>("main_developer");
+  const [selectedMemberId, setSelectedMemberId] = useState("");
+  const [selectedRole, setSelectedRole] = useState<CommissionRole>("main_developer");
+
+  // A commission share is not limited to people already assigned to the project —
+  // the API only checks the team member exists. Listing project assignees alone left
+  // this dropdown empty on every project with no role assignments yet, which read as
+  // a broken control. Assignees are grouped first, then the rest of the roster.
+  //
+  // The grouping is a SelectLabel rather than a per-item badge because Radix renders
+  // the chosen item's children back into the trigger: a badge inside the item turned
+  // the closed control into "Angelo Revelonot on project".
+  const assignedIds = new Set(projectMembers.map((m) => m.teamMemberId));
+  const onProject = projectMembers.map((m) => ({ id: m.teamMemberId, name: m.name }));
+  const offProject = teamRoster
+    .filter((m) => !assignedIds.has(m.teamMemberId))
+    .map((m) => ({ id: m.teamMemberId, name: m.name }));
+  const optionCount = onProject.length + offProject.length;
+
+  const reset = () => {
+    setSelectedMemberId("");
+    setSelectedRole("main_developer");
+  };
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2 border-t border-border bg-secondary/20">
-      <Select value={teamMemberId} onValueChange={setTeamMemberId}>
-        <SelectTrigger className="h-8 flex-1 text-xs">
-          <SelectValue placeholder="Team member" />
-        </SelectTrigger>
-        <SelectContent>
-          {member.map((m) => (
-            <SelectItem key={m.team_member_id} value={String(m.team_member_id)}>
-              {m.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); onOpenChange(v); }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Add Member</DialogTitle>
+        </DialogHeader>
 
-      <Select value={role} onValueChange={(v) => setRole(v as CommissionRole)}>
-        <SelectTrigger className="h-8 w-44 text-xs">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {ASSIGNABLE_ROLE.map((r) => (
-            <SelectItem key={r} value={r}>
-              {ROLE_LABEL[r]}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        <div className="space-y-3 py-2">
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Team member</p>
+            <Select value={selectedMemberId} onValueChange={setSelectedMemberId}>
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue placeholder="Select a member" />
+              </SelectTrigger>
+              <SelectContent>
+                {onProject.length > 0 && (
+                  <SelectGroup>
+                    <SelectLabel className={GROUP_LABEL}>On this project</SelectLabel>
+                    {onProject.map((m) => (
+                      <SelectItem key={m.id} value={String(m.id)}>
+                        {m.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                )}
+                {offProject.length > 0 && (
+                  <SelectGroup>
+                    {onProject.length > 0 && (
+                      <SelectLabel className={GROUP_LABEL}>Rest of the team</SelectLabel>
+                    )}
+                    {offProject.map((m) => (
+                      <SelectItem key={m.id} value={String(m.id)}>
+                        {m.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                )}
+              </SelectContent>
+            </Select>
+            {optionCount === 0 && (
+              <p className="text-xs text-muted-foreground">
+                No team members exist yet. Add one under Team first.
+              </p>
+            )}
+          </div>
 
-      <Button
-        size="sm"
-        variant="outline"
-        className="h-8"
-        disabled={!teamMemberId}
-        onClick={() => {
-          onAdd({ teamMemberId: Number(teamMemberId), role });
-          setTeamMemberId("");
-        }}
-      >
-        <Plus className="h-3.5 w-3.5" />
-        <span className="ml-1">Add</span>
-      </Button>
-    </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Role</p>
+            <Select
+              value={selectedRole}
+              onValueChange={(v) => setSelectedRole(v as CommissionRole)}
+            >
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ASSIGNABLE_ROLES.map((r) => (
+                  <SelectItem key={r.value} value={r.value}>
+                    {r.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { reset(); onOpenChange(false); }}>
+            Cancel
+          </Button>
+          <Button
+            disabled={!selectedMemberId}
+            onClick={() => {
+              if (!selectedMemberId) return;
+              onAdd({ teamMemberId: Number(selectedMemberId), role: selectedRole });
+              reset();
+              onOpenChange(false);
+            }}
+          >
+            Confirm
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
 
-/* ─── One plan ────────────────────────────────────────────── */
+/* ─── One plan card ───────────────────────────────────────── */
 
 const PlanCard = ({
   plan,
-  member,
+  projectMembers,
+  teamRoster,
   api,
   isFinalizing,
 }: {
   plan: CommissionPlan;
-  member: { team_member_id: number; name: string }[];
+  projectMembers: ProjectMember[];
+  teamRoster: { teamMemberId: number; name: string }[];
   api: ReturnType<typeof useCommission>;
   isFinalizing: boolean;
 }) => {
-  const [draftBasis, setDraftBasis] = useState((plan.basisCents / 100).toFixed(2));
   const isFrozen = plan.status !== "draft";
   const d = plan.derived;
 
+  const [addOpen, setAddOpen] = useState(false);
+  const [deleteShareId, setDeleteShareId] = useState<number | null>(null);
+  const deleteShare = plan.share.find((s) => s.commissionShareId === deleteShareId);
+
   return (
     <div className="border border-border rounded-lg bg-card overflow-hidden">
+      {/* Header */}
       <div className="flex items-center gap-3 px-3 h-11 border-b border-border">
         <span className="flex-1 min-w-0 font-medium text-sm truncate">
           {plan.projectTitle ?? `Project ${plan.projectId}`}
         </span>
-
-        {isFrozen ? (
+        {isFrozen && (
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
             <Lock className="h-3 w-3" />
             {plan.status === "void" ? "Void" : "Finalized"}
           </span>
-        ) : (
-          <>
-            {/* Pesos in, cents out — multiplied by 100 exactly once, here. */}
-            <span className="flex items-center gap-1.5 shrink-0">
-              <span className="text-xs text-muted-foreground">Basis ₱</span>
-              <Input
-                value={draftBasis}
-                onChange={(e) => setDraftBasis(e.target.value.replace(/[^0-9.]/g, ""))}
-                onBlur={() => {
-                  const cents = Math.round(Number(draftBasis || 0) * 100);
-                  if (cents !== plan.basisCents) {
-                    api.updateCommissionPlan({
-                      commissionPlanId: plan.commissionPlanId,
-                      basisCents: cents,
-                    });
-                  }
-                }}
-                className="h-7 w-28 text-xs text-right tabular-nums"
-                aria-label="Split basis in pesos"
-              />
-            </span>
-
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 text-xs shrink-0"
-              onClick={() => api.seedFromProjectAccess(plan.commissionPlanId)}
-              title="Propose developer slots from who already has access to this project"
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              <span className="ml-1">Seed</span>
-            </Button>
-          </>
         )}
       </div>
 
-      {/* Pool summary. Every figure allocated server-side. */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-border">
-        <div className="bg-card px-3 py-2">
-          <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/70">
-            Developer {plan.developerBps / 100}%
-          </div>
-          <div className="text-sm font-medium tabular-nums">{formatPeso(d.developerPoolCents)}</div>
+      {/* Pool containers */}
+      <div className="p-3 space-y-2">
+        <div className="grid gap-3 md:grid-cols-3">
+          <PoolHeader
+            label="Developers"
+            pct={plan.developerBps / 100}
+            amount={d.developerPoolCents}
+            subContainers={["Main Developer 75–80%", "Assistant Developer 5–10%", "Creatives Developer 15%"]}
+          />
+          <PoolHeader
+            label="Staff"
+            pct={plan.staffBps / 100}
+            amount={d.staffPoolCents}
+            subContainers={["Lead Partnerships 20%", "Management 50%", "Marketing 20%", "Accounting 10%"]}
+          />
+          <PoolHeader
+            label="Company"
+            pct={plan.companyBps / 100}
+            amount={d.companyCents}
+            subContainers={[
+              "Company Revenue and Investment ROI",
+              "Development Expenses",
+              "General Expenses",
+            ]}
+          />
         </div>
-        <div className="bg-card px-3 py-2">
-          <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/70">
-            Staff {plan.staffBps / 100}%
-          </div>
-          <div className="text-sm font-medium tabular-nums">{formatPeso(d.staffPoolCents)}</div>
-        </div>
-        <div className="bg-card px-3 py-2">
-          <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/70">
-            Company {plan.companyBps / 100}%
-          </div>
-          <div className="text-sm font-medium tabular-nums">{formatPeso(d.companyCents)}</div>
-        </div>
-        <div className="bg-card px-3 py-2">
-          <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/70">
-            Allocated
-          </div>
-          <div className="text-sm font-medium tabular-nums">
-            {formatPeso(d.allocatedCents)}
-            <span className="text-xs text-muted-foreground"> / {formatPeso(d.basisCents)}</span>
-          </div>
-        </div>
+        <p className="text-[11px] text-muted-foreground">
+          Development Expenses are taken from the Total Developer Pool. General Expenses are taken from the Company Revenue.
+        </p>
       </div>
 
-      {/* Staff quarter, already sub-split 28/24/24/24 by the server. */}
-      <div className="px-3 py-1.5 border-t border-border text-xs text-muted-foreground">
-        Staff pool — referral {formatPeso(d.staffRolePoolCents.referral)} · marketing{" "}
-        {formatPeso(d.staffRolePoolCents.marketing)} · accounting{" "}
-        {formatPeso(d.staffRolePoolCents.accounting)} · management{" "}
-        {formatPeso(d.staffRolePoolCents.management)}
-      </div>
-
-      <div className="flex items-center gap-3 px-3 h-9 border-y border-border text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/70">
-        <span className="w-40 shrink-0">Role</span>
-        <span className="flex-1 min-w-0">Person</span>
-        <span className="w-28 shrink-0 text-right">Weight</span>
-        <span className="w-28 shrink-0 text-right">Amount</span>
+      {/* Column headers */}
+      <div className="flex items-center gap-3 px-3 h-9 border-y border-border text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+        <span className="w-2 shrink-0" />
+        <span className="flex-1 min-w-0">Name</span>
+        <span className="w-36 shrink-0">Role</span>
+        <span className="w-36 shrink-0 text-right">Percentage</span>
         <span className="w-24 shrink-0 text-right">Agreed</span>
         <span className="w-7 shrink-0" />
       </div>
 
+      {/* Share rows */}
       {plan.share.length === 0 ? (
         <Empty text="Nobody on this split yet" />
       ) : (
@@ -330,31 +488,46 @@ const PlanCard = ({
               key={share.commissionShareId}
               share={share}
               isFrozen={isFrozen}
-              onWeight={(contributionBps) =>
+              onPercent={(bps) =>
                 api.updateCommissionShare({
                   commissionShareId: share.commissionShareId,
-                  contributionBps,
+                  contributionBps: bps,
                 })
               }
               onAgree={(isAgreed) =>
-                api.updateCommissionShare({ commissionShareId: share.commissionShareId, isAgreed })
+                api.updateCommissionShare({
+                  commissionShareId: share.commissionShareId,
+                  isAgreed,
+                })
               }
-              onRemove={() => api.removeCommissionShare(share.commissionShareId)}
+              onRemove={() => setDeleteShareId(share.commissionShareId)}
+              onTier={(tierLabel) =>
+                api.setTier({
+                  commissionShareId: share.commissionShareId,
+                  tierLabel,
+                })
+              }
             />
           ))}
         </div>
       )}
 
+      {/* Add Member */}
       {!isFrozen && (
-        <AddShareForm
-          member={member}
-          onAdd={(input) =>
-            api.addCommissionShare({ commissionPlanId: plan.commissionPlanId, ...input })
-          }
-        />
+        <div className="px-3 py-2 border-t border-border">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 text-xs"
+            onClick={() => setAddOpen(true)}
+          >
+            <Plus className="h-3.5 w-3.5 mr-1" />
+            Add Member
+          </Button>
+        </div>
       )}
 
-      {/* The gate, quoted from the server. Finalize re-derives this same list. */}
+      {/* Finalize */}
       {!isFrozen && (
         <div className="flex items-start gap-3 px-3 py-2 border-t border-border">
           <div className="flex-1 min-w-0 text-xs text-muted-foreground">
@@ -377,11 +550,38 @@ const PlanCard = ({
             disabled={!d.isFinalizeReady || isFinalizing}
             onClick={() => api.finalizeCommissionPlan(plan.commissionPlanId)}
           >
-            {isFinalizing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Lock className="h-3.5 w-3.5" />}
+            {isFinalizing ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Lock className="h-3.5 w-3.5" />
+            )}
             <span className="ml-1.5">Finalize</span>
           </Button>
         </div>
       )}
+
+      <AddMemberDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        projectMembers={projectMembers}
+        teamRoster={teamRoster}
+        onAdd={(input) =>
+          api.addCommissionShare({ commissionPlanId: plan.commissionPlanId, ...input })
+        }
+      />
+
+      <ConfirmDeleteDialog
+        open={deleteShareId !== null}
+        onOpenChange={(v) => { if (!v) setDeleteShareId(null); }}
+        onConfirm={() => {
+          if (deleteShareId !== null) {
+            api.removeCommissionShare(deleteShareId);
+            setDeleteShareId(null);
+          }
+        }}
+        name={deleteShare?.memberName ?? "this member"}
+        noun="share"
+      />
     </div>
   );
 };
@@ -392,6 +592,12 @@ const AdminCommission = ({ projects }: { projects: ProjectSummary[] }) => {
   const api = useCommission();
   const { activeMembers } = useAdminTeam();
   const [newProjectId, setNewProjectId] = useState("");
+  const [projectMembersMap, setProjectMembersMap] = useState<Record<number, ProjectMember[]>>({});
+
+  const teamRoster = activeMembers.map((m) => ({
+    teamMemberId: m.team_member_id,
+    name: m.name,
+  }));
 
   const planned = new Set(
     api.commissionPlan.filter((p) => p.status !== "void").map((p) => p.projectId),
@@ -402,14 +608,29 @@ const AdminCommission = ({ projects }: { projects: ProjectSummary[] }) => {
     .filter((p) => p.status === "finalized")
     .reduce((sum, p) => sum + p.derived.allocatedCents, 0);
 
+  // Load project members for each plan's project.
+  useEffect(() => {
+    const projectIds = [...new Set(api.commissionPlan.map((p) => p.projectId))];
+    for (const pid of projectIds) {
+      if (projectMembersMap[pid] !== undefined) continue;
+      get<ProjectMember[]>(`/api/projects/${pid}/members`)
+        .then((res) => {
+          if (res.data) {
+            setProjectMembersMap((prev) => ({ ...prev, [pid]: res.data! }));
+          }
+        })
+        .catch(() => {});
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [api.commissionPlan]);
+
   return (
     <div className="space-y-2">
       <div className="flex items-end justify-between gap-3">
         <div>
           <h2 className="text-sm font-semibold tracking-tight">Commission</h2>
           <p className="text-xs text-muted-foreground">
-            60% developer · 25% staff (28/24/24/24 referral, marketing, accounting, management) ·
-            15% company reserve · {formatPeso(finalizedCents)} finalized
+            55% developer · 35% staff · 10% company revenue · {formatPeso(finalizedCents)} finalized
           </p>
         </div>
 
@@ -450,7 +671,7 @@ const AdminCommission = ({ projects }: { projects: ProjectSummary[] }) => {
 
       {api.commissionPlan.length === 0 ? (
         <div className="border border-border rounded-lg bg-card">
-          <Empty text="No commission plan drafted yet" />
+          <Empty text="No commission plan yet. Add one above to get started." />
         </div>
       ) : (
         <div className="space-y-3">
@@ -458,7 +679,8 @@ const AdminCommission = ({ projects }: { projects: ProjectSummary[] }) => {
             <PlanCard
               key={plan.commissionPlanId}
               plan={plan}
-              member={activeMembers}
+              projectMembers={projectMembersMap[plan.projectId] ?? []}
+              teamRoster={teamRoster}
               api={api}
               isFinalizing={api.isFinalizing}
             />

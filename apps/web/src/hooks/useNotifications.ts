@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { get, post, patch } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { errorText } from "@/lib/error-text";
 import { useAuth } from "@/hooks/useAuth";
 
 /* ─── Types ──────────────────────────────────────────────── */
@@ -28,6 +29,15 @@ interface ClientOption {
   client_id: number;
   company_name: string;
   contact_email: string;
+}
+
+/** Shape of POST /api/notifications/broadcast. Counts are per-client, not per-request. */
+interface BroadcastResult {
+  message: string;
+  attemptedCount: number;
+  deliveredCount: number;
+  failedCount: number;
+  emailFailedCount: number;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -113,19 +123,44 @@ export function useAdminNotifications() {
 
   const sendToAllMutation = useMutation({
     mutationFn: async (payload: { title: string; body: string }) => {
-      const res = await post("/api/notifications/broadcast", {
+      const res = await post<BroadcastResult>("/api/notifications/broadcast", {
         title: payload.title,
         body: payload.body,
         sendEmail: true,
       });
       if (res.error) throw new Error(res.error);
+      return res.data;
     },
-    onSuccess: () => {
+    // A broadcast is N independent writes and some of them can fail while the
+    // request as a whole succeeds. Reporting that as a flat "sent to all
+    // clients" is the lie this is here to stop.
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey });
-      toast({ title: "Broadcast sent to all clients" });
+      const failed = result?.failedCount ?? 0;
+      const emailFailed = result?.emailFailedCount ?? 0;
+
+      if (failed > 0) {
+        toast({
+          title: "Broadcast only partly sent",
+          description: `${result?.deliveredCount ?? 0} of ${result?.attemptedCount ?? 0} clients got it. ${failed} could not be saved. Check the server log, then resend to those clients.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      toast({
+        title: "Broadcast sent to all clients",
+        description:
+          emailFailed > 0
+            ? `${result?.deliveredCount ?? 0} notifications saved. ${emailFailed} emails did not go out, but those clients will still see it in their hub.`
+            : undefined,
+      });
     },
-    onError: () => {
-      toast({ title: "Error", description: "Failed to broadcast", variant: "destructive" });
+    onError: (err: Error) => {
+      toast({
+        title: "Broadcast not sent",
+        description: errorText(err, "Nothing was sent. Try again."),
+        variant: "destructive",
+      });
     },
   });
 
@@ -174,6 +209,11 @@ export function useClientNotifications() {
     onError: (_err, _vars, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(queryKey, ctx.prev);
     },
+    // Marking read is fire-and-forget from the UI's point of view, which is
+    // exactly why it needs this: nobody is watching the result, so without a
+    // re-read a failed mark-read leaves a badge count that disagrees with the
+    // database until the next full page load.
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
   });
 
   return {

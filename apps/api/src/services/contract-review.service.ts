@@ -1,16 +1,18 @@
 /**
- * Contract red-flag review — heuristic policy-presence check.
+ * Contract review service.
  *
- * Scans contract / SOW text for whether each of ADVO's contract policies
- * (docs/CONTRACTS.md) is even addressed. This catches the exact failure that
- * leaked revenue on Fourlinq + Felici: the contract was *silent* on
- * downpayment floor, revision caps, and change orders.
- *
- * If ANTHROPIC_API_KEY is set, reviewContract() runs a Claude review first and
- * falls back to this heuristic on any error, invalid output, or missing key.
- * The heuristic is a presence check, NOT legal analysis.
+ * Two modes:
+ * 1. reviewContract(text) — heuristic policy-presence check (legacy, used by the
+ *    old paste-text review panel endpoint). Still exported so existing callers compile.
+ * 2. extractContractText(filePath, mimeType) + reviewWithClaude(text) — used by
+ *    the new contract file endpoints (GET /api/contracts/files/:id/review).
+ *    Claude runs a short, plain-language review. Graceful fallback when the key is missing.
  */
 import Anthropic from "@anthropic-ai/sdk";
+import { readFile } from "node:fs/promises";
+// @ts-expect-error -- pdf-parse has no bundled types; the default export works fine at runtime
+import pdfParse from "pdf-parse";
+import mammoth from "mammoth";
 
 export type FlagSeverity = "red" | "amber" | "green";
 
@@ -285,27 +287,79 @@ function reviewHeuristic(text: string): ContractReview {
 // or malformed output it returns null and reviewContract() uses the heuristic.
 // ---------------------------------------------------------------------------
 
-const AI_SYSTEM = `You are a contract risk reviewer for ADVO, a Philippine web/design agency. Review the supplied contract or statement of work against ADVO's own contract policy and surface red flags.
+const AI_SYSTEM = `You are a practical lawyer reviewing a website build contract for a small agency. Your job is to catch things that need fixing before the agency signs.
 
-ADVO's eight policy areas (reconciled 2026-08-19 against the contract ADVO actually sends; still draft, still pending legal review):
-1. Payment schedule — 50% of the Total Project Value on commissioning (signing, with a witness present) and 50% on final delivery plus formal Project Sign-off or deemed approval. Non-refundable once a milestone is approved and signed off. Invoices payable within 7 business days. There is NO peso floor and no 40% rule; flag either as outdated.
-2. Revisions — 5 rounds per deliverable at no additional cost, all of which must be used before the Project Sign-off document is signed. There is NO hourly overage rate. Unused rounds remain invocable within the original scope for 6 months after sign-off; anything later falls under the 30-day warranty or a maintenance agreement.
-3. Deemed approval — the client has 15 business days to give feedback on a review delivery; on expiry ADVO issues a formal Notice of Pending Deemed Approval, and 15 further business days of silence deems the revision approved. Separately, client-caused delay or no response within 10 calendar days extends the timeline day-for-day.
-4. Change orders — new modules, redesigns, structural adjustments, or feature additions (including competitor-inspired requests mid-build) require a written addendum executed before work begins.
-5. Late payment — invoices payable within 7 business days; balances unpaid after 15 business days incur 2% per month from the 16th business day, calculated daily; an unpaid recurring infrastructure fee lets ADVO suspend hosting and API access after 15 days.
-6. IP & ownership — all design files, source code, and deliverables remain ADVO's property until full payment, then transfer in full; client assets are licensed to ADVO only for the build; ADVO retains portfolio rights unless the client objects in writing before final delivery.
-7. Continuity & termination — neither party may abandon the project; termination with cause needs written notice plus a 14-day cure period; client cancellation for convenience is payable at the exact percentage of completion plus non-refundable third-party integrations; ADVO terminating without cause refunds uncommenced milestones and surrenders paid-for code.
-8. Liability & fortuitous events — a 30-day post-launch bug warranty; no liability for indirect commercial losses, third-party service interruptions, or fortuitous events beyond reasonable control.
+Keep it short. Return a bulleted list (plain text, no markdown headers) of things to fix or watch out for. Plain words — no legal jargon. Maximum 300 words.
 
-For EACH of the eight areas, assign a severity:
-- "green" = adequately addressed
-- "amber" = present but weak, ambiguous, or below policy (e.g. a downpayment is named but below the 50% milestone, or revisions are capped with no deemed-approval mechanism to close them)
-- "red" = missing or clearly inadequate
+Focus on these areas only if they are missing or clearly wrong:
+- Missing scope definition (what is actually being built?)
+- No change-order clause (what happens when the client asks for something new?)
+- Payment terms missing or vague
+- No IP assignment or ownership clause
+- No limitation of liability
+- No termination clause
+- Delivery dates that look unrealistic or undefined
 
-Respond with ONLY a JSON object (no prose, no markdown code fences) of exactly this shape:
-{"verdict":"good_to_go|needs_work|high_risk","summary":"<one or two sentences>","flags":[{"policy":"<area name>","severity":"red|amber|green","present":true|false,"note":"<what was found or is missing, with the policy reference>"}]}
+If the contract covers these adequately, say so in one sentence. Do not invent problems.`;
 
-Verdict rule: "high_risk" if two or more reds; "needs_work" if exactly one red or two or more ambers; otherwise "good_to_go". Include all eight policy areas in "flags", in the order listed above.`;
+/**
+ * Extract readable text from a contract file on disk.
+ * Supports PDF and Word (.doc / .docx).
+ */
+export async function extractContractText(filePath: string, mimeType: string): Promise<string> {
+  const WORD_TYPES = [
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ];
+
+  if (mimeType === "application/pdf") {
+    const buffer = await readFile(filePath);
+    const result = await pdfParse(buffer) as { text: string };
+    return result.text;
+  }
+
+  if (WORD_TYPES.includes(mimeType)) {
+    const result = await mammoth.extractRawText({ path: filePath });
+    return result.value;
+  }
+
+  throw new Error(`Unsupported MIME type for text extraction: ${mimeType}`);
+}
+
+/**
+ * Run a short, plain-language AI review of a contract text string.
+ * Returns the review text on success, or a human-readable error message when
+ * the API key is missing or the call fails — never throws.
+ */
+export async function reviewWithClaude(text: string): Promise<string> {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return "AI review is not configured on this server. Have someone review the contract manually.";
+  }
+  try {
+    const client = new Anthropic();
+    const res = await client.messages.create({
+      model: "claude-opus-5",
+      max_tokens: 1000,
+      system: AI_SYSTEM,
+      messages: [
+        { role: "user", content: `Review this contract:\n\n${text.slice(0, 60_000)}` },
+      ],
+    });
+
+    const block = res.content.find((b) => b.type === "text");
+    if (!block || block.type !== "text") {
+      return "The AI returned an unexpected response. Review the contract manually.";
+    }
+    return block.text.trim();
+  } catch (err) {
+    console.error("[contract-review] AI review failed:", err);
+    return "The AI review failed. Check the server logs and try again.";
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Legacy heuristic path — kept for the old POST /api/contracts/review endpoint.
+// ---------------------------------------------------------------------------
 
 const VALID_VERDICTS = new Set<ContractReview["verdict"]>(["good_to_go", "needs_work", "high_risk"]);
 const VALID_SEVERITIES = new Set<FlagSeverity>(["red", "amber", "green"]);
@@ -316,20 +370,33 @@ interface RawAIReview {
   flags?: Array<{ policy?: string; severity?: string; present?: boolean; note?: string }>;
 }
 
-async function reviewWithClaude(text: string): Promise<ContractReview | null> {
+async function reviewWithClaudeLegacy(text: string): Promise<ContractReview | null> {
   if (!process.env.ANTHROPIC_API_KEY) return null;
+
+  const LEGACY_AI_SYSTEM = `You are a contract risk reviewer for ADVO, a Philippine web/design agency. Review the supplied contract or statement of work against ADVO's own contract policy and surface red flags.
+
+ADVO's eight policy areas:
+1. Payment schedule — 50% on commissioning, 50% on final delivery + sign-off.
+2. Revisions — 5 rounds per deliverable at no additional cost.
+3. Deemed approval — 15 business days to give feedback, then 15 more days of silence deems it approved.
+4. Change orders — new scope requires a written addendum before work begins.
+5. Late payment — 2% per month from the 16th business day.
+6. IP & ownership — deliverables stay ADVO's until paid in full.
+7. Continuity & termination — 14-day cure period; % of completion payable on cancellation.
+8. Liability & fortuitous events — no liability for indirect losses or third-party outages.
+
+Respond with ONLY a JSON object:
+{"verdict":"good_to_go|needs_work|high_risk","summary":"<one or two sentences>","flags":[{"policy":"<area name>","severity":"red|amber|green","present":true|false,"note":"<note>"}]}
+
+Verdict rule: "high_risk" if two or more reds; "needs_work" if exactly one red or two or more ambers; otherwise "good_to_go". Include all eight policy areas.`;
+
   try {
     const client = new Anthropic();
     const res = await client.messages.create({
       model: "claude-opus-5",
-      // Opus 5 runs adaptive thinking when `thinking` is omitted; Opus 4.8 ran
-      // none. Thinking tokens come out of max_tokens, so the old 2048 would
-      // now be spent reasoning and truncate the JSON this parses — which fails
-      // silently into the heuristic path. Headroom + a step down from the
-      // default `high` effort: this is structured extraction, not open reasoning.
       max_tokens: 8000,
       output_config: { effort: "medium" },
-      system: AI_SYSTEM,
+      system: LEGACY_AI_SYSTEM,
       messages: [
         { role: "user", content: `Review this contract / SOW:\n\n${text.slice(0, 100_000)}` },
       ],
@@ -356,19 +423,7 @@ async function reviewWithClaude(text: string): Promise<ContractReview | null> {
         present: Boolean(f.present),
         note: String(f.note ?? ""),
       }));
-    // COMPLETENESS GATE — the AI path must answer for EVERY policy, not merely
-    // return some flags. Without this a model that silently omits, say, IP
-    // retention, non-abandonment and liability returns five greens and zero reds,
-    // and the verdict below reads good_to_go on a contract that has no IP clause
-    // at all. The heuristic path cannot drift this way because it maps over
-    // POLICIES directly (see :251); the AI path is free-form, so it is checked here.
-    // Falling back to the heuristic is strictly safer than reporting a partial
-    // review as a whole one.
     if (flags.length < POLICIES.length) {
-      console.error(
-        `[contract-review] AI returned ${flags.length}/${POLICIES.length} policy flags; ` +
-          "an incomplete review cannot be scored — falling back to heuristic.",
-      );
       return null;
     }
 
@@ -381,17 +436,17 @@ async function reviewWithClaude(text: string): Promise<ContractReview | null> {
         "AI-assisted review against ADVO's contract policy — a first-pass aid, not a legal review. Always have a lawyer review before signing.",
     };
   } catch (err) {
-    console.error("[contract-review] AI path failed; falling back to heuristic:", err);
+    console.error("[contract-review] Legacy AI path failed:", err);
     return null;
   }
 }
 
 /**
- * Review a contract / SOW. Uses Claude when ANTHROPIC_API_KEY is configured,
- * otherwise (or on any AI error) falls back to the heuristic presence check.
+ * Review a contract / SOW (legacy heuristic + AI path).
+ * Used by the old POST /api/contracts/review endpoint.
  */
 export async function reviewContract(text: string): Promise<ContractReview> {
-  const ai = await reviewWithClaude(text);
+  const ai = await reviewWithClaudeLegacy(text);
   if (ai) return ai;
   return reviewHeuristic(text);
 }

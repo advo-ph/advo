@@ -191,10 +191,12 @@ describe("sheet contracts", () => {
     expect(service).toContain('"out_of_band"');
   });
 
-  it("the expense sheet DERIVES reimbursable, matching how 005 defines it", () => {
-    // Never a stored column, so the export must compute it the same way the app does.
-    expect(EXPENSE_HEADER).toContain("is_reimbursable");
-    expect(service).toContain("one.receiptUrl ? \"yes\" : \"no\"");
+  it("the expense sheet carries no receipt or reimbursable column", () => {
+    // Migration 039 (Prince's rework) removed receipt_url and the reimbursable
+    // flag from the expense model, so the sheet no longer exports them.
+    expect(EXPENSE_HEADER).not.toContain("is_reimbursable");
+    expect(EXPENSE_HEADER).not.toContain("receipt_reference");
+    expect(service).not.toContain("receiptUrl");
   });
 
   it("the commission sheet covers FINALIZED plans only", () => {

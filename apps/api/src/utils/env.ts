@@ -27,6 +27,9 @@ const envSchema = z.object({
   /** Seconds between Plaud ADVO-folder probes. 0 disables. Default 60. */
   PLAUD_POLL_SECOND: z.string().optional(),
 
+  /** OpenAI key for Whisper audio transcription (meeting recordings). Optional — if absent the Transcribe job fails with a clear error. */
+  OPENAI_API_KEY: z.string().optional(),
+
   /** Which preview-hosting adapter serves "Show Client Now". Default manual. */
   PREVIEW_HOST_PROVIDER: z.enum(["manual", "herenow", "cloudflare"]).default("manual"),
   CLOUDFLARE_ACCOUNT_ID: z.string().optional(),

@@ -29,9 +29,11 @@ const ProtectedRoute = ({
     );
   }
 
-  // Auth check — pass intended destination so login can redirect back
+  // Auth check — pass intended destination so login can redirect back.
+  // Admin-area destinations send to /members; everything else to /clients.
   if ((requireAuth || requireAdmin) && !user) {
-    return <Navigate to={`/login?redirectTo=${encodeURIComponent(location.pathname)}`} replace />;
+    const loginBase = location.pathname.startsWith("/admin") ? "/members" : "/clients";
+    return <Navigate to={`${loginBase}?redirectTo=${encodeURIComponent(location.pathname)}`} replace />;
   }
 
   // Admin check

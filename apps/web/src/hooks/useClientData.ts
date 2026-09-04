@@ -5,11 +5,10 @@ import { useAuth } from "@/hooks/useAuth";
 /* ─── Shared Types ───────────────────────────────────────── */
 
 export type DeliverableStatus =
-  | "not_started"
-  | "in_progress"
+  | "todo"
+  | "ongoing"
   | "review"
-  | "completed"
-  | "blocked";
+  | "finished";
 
 export type ClientInvoiceStatus = "unpaid" | "paid" | "overdue";
 
@@ -45,6 +44,9 @@ export interface ClientProject {
   contract_url?: string;
   total_value_cents: number;
   amount_paid_cents: number;
+  list_value_cents?: number | null;
+  discount_cents?: number;
+  discount_reason?: string | null;
   tech_stack: string[];
   repository_name?: string;
   created_at: string;
@@ -145,14 +147,14 @@ async function fetchClientData(): Promise<ClientProject[]> {
   // Fetch invoices and deliverables
   const [invoicesRes, deliverablesRes] = await Promise.all([
     get<unknown[]>("/api/invoices"),
-    get<unknown[]>("/api/deliverables"),
+    get<{ deliverables: unknown[]; viewerTeamMemberId: number | null }>("/api/deliverables"),
   ]);
 
   const projects = detailed.map(mapProject);
 
   // Attach invoices and deliverables to their projects
   const invoices = invoicesRes.data || [];
-  const deliverables = deliverablesRes.data || [];
+  const deliverables = deliverablesRes.data?.deliverables || [];
 
   for (const project of projects) {
     project.invoices = invoices

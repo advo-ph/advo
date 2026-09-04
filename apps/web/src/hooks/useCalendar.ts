@@ -9,7 +9,8 @@ export type CalSource =
   | "project"
   | "social"
   | "contract"
-  | "compliance";
+  | "compliance"
+  | "meeting";
 
 export interface CalEvent {
   id: string;

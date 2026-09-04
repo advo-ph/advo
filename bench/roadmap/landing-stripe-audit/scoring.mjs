@@ -49,6 +49,7 @@ const allowedLandingModule = new Set([
   "landing-shell.tsx", // /start /login /team /project/:slug /404
   "FloatingNav.tsx", // /hub
   "PortfolioCard.tsx", // proof-card unit under test
+  "AdvoDotField.tsx", // the footer wordmark pixel field, rendered by landing-footer
   "landing-page.css",
 ]);
 
@@ -66,15 +67,16 @@ const checks = [
   },
   {
     id: "product-surfaces",
-    title: "Services are ADVO product surfaces",
+    title: "Landing shows what ADVO builds, by industry",
     passed: hasAll(files.landingPage, [
-      "Client Hub",
-      "Admin",
-      "Public site",
-      "Hardware floor",
+      "What we build",
+      "Food",
+      "Medical",
+      "Parking",
+      "QR code ordering",
     ]),
     expected:
-      "The landing exposes Client Hub, Admin, public site, and hardware-floor surfaces instead of generic agency services.",
+      "The landing shows what ADVO builds by industry (Food, Medical, Education, Parking, Businesses) with concrete offers, not generic agency services. Superseded the abstract Public-site/Client-Hub/Admin surface cards (2026-09-04).",
   },
   {
     id: "hero-product-system-offer",
@@ -84,11 +86,11 @@ const checks = [
         "We digitalize it for you",
         "Philippine software agency and client workspace",
       ]) &&
-      // The missing-piece section carries the system framing under the hero.
-      hasAll(files.landingPage, ["landing-piece", "the system is the fourth"]) &&
+      // The section under the hero shows what ADVO builds, by industry.
+      hasAll(files.landingPage, ["landing-piece", "What we build"]) &&
       !/Build together|Ship with clarity/i.test(files.landingPage),
     expected:
-      "Hero headline and the section under it position ADVO as a website-plus-system builder, not a generic agency intro. The headline is the founder's mission line; the Stripe-era 'Build together. Ship with clarity.' is retired.",
+      "Hero headline is the founder's mission line, and the section under it shows what ADVO builds by industry. The Stripe-era 'Build together. Ship with clarity.' is retired. (2026-09-04: the abstract three-surface framing became the industry offers.)",
   },
   {
     id: "proof-metrics",
@@ -167,50 +169,36 @@ const checks = [
     id: "private-stack-narrative",
     title: "The stack handoff is on the page",
     passed:
-      hasAll(files.landingPage, ["landing-workflow-section", "Inquiry", "Scope", "Build", "Review", "Launch"]) &&
+      // The process section shows the discover→support steps; the abstract
+      // Inquiry/Scope/Build stage row was removed 2026-09-04 ("means nothing").
+      hasAll(files.landingPage, ["landing-process", "Discover", "Support"]) &&
       /VPS handoff/i.test(files.landingFooter),
     expected:
-      "The inquiry-to-floor sequence is a rendered section and the VPS handoff is named where the system story closes.",
+      "The delivery sequence is a rendered process section and the VPS handoff is named where the system story closes.",
   },
   {
     id: "why-system-not-generic-digital",
-    title: "The section under the hero explains the system, not digital-transformation",
+    title: "The section under the hero shows concrete offers, not digital-transformation",
     passed:
       hasAll(files.landingPage, [
-        "Three pieces already exist",
+        "What we build",
         "Paper, Viber, tally sheets",
       ]) &&
       !/Invest in Your Digital Future|24\/7 Online Presence|Scale Effortlessly|Better Customer Experience/.test(
         files.landingPage,
       ),
     expected:
-      "The first post-hero section names the concrete gap on the floor instead of generic digital-transformation benefits.",
+      "The first post-hero section names the concrete gap on the floor and what ADVO builds by industry, instead of generic digital-transformation benefits.",
   },
   {
     id: "integration-strip",
-    title: "Integration strip is quiet and locally served",
+    title: "Client-logo strip is quiet and locally served",
     passed:
       /landing-marquee/.test(files.landingPage) &&
-      /\/landing\/integration\//.test(files.landingPage) &&
+      /\/landing\/logo\//.test(files.landingPage) &&
       !/simpleicons|cdn\.simpleicons/.test(files.landingPage),
     expected:
-      "The integration strip serves its own marks and does not depend on an external logo CDN.",
-  },
-  {
-    id: "engagement-cta",
-    title: "Engagement section is a concrete conversion surface",
-    passed:
-      hasAll(files.landingPage, [
-        "Project",
-        "Retainer",
-        "Hourly",
-        "Enterprise",
-        "quotation",
-      ]) &&
-      !/₱|starting at/i.test(files.landingPage) &&
-      !/Ready to digitalize|Prepare your business for the future/.test(files.landingPage),
-    expected:
-      "The engagement surface names real engagement shapes and routes each one to a quotation request. No published rate, no aspirational CTA.",
+      "The client-logo marquee serves its own marks and does not depend on an external logo CDN. (2026-09-04: the separate integration-tool strip was removed to shorten the page; the marquee carries the locally-served proof.)",
   },
   {
     id: "process-system-sequence",
@@ -260,22 +248,10 @@ const checks = [
     expected:
       "A single footer component uses the product-system language, includes the project CTA and large wordmark, avoids generic service copy, and is shared by / and the shell routes.",
   },
-  {
-    id: "faq-product-system",
-    title: "FAQ answers product-system questions",
-    passed:
-      hasAll(files.landingPage, [
-        "Questions before we build",
-        "client hub",
-        "admin console",
-        "self-hosted VPS stack",
-      ]) &&
-      !/Common Questions|web applications, mobile solutions|flexible pricing|modern cloud platforms/.test(
-        files.landingPage,
-      ),
-    expected:
-      "FAQ defaults answer concrete website, hub, admin, hosting, and timeline questions instead of generic agency questions.",
-  },
+  // Retired 2026-09-04 (landing merge): the standalone engagement band and FAQ
+  // sections were removed to shorten the page toward the revised fork's length —
+  // the `engagement-cta` and `faq-product-system` checks that asserted their
+  // presence went with them. See ROADMAP "Landing merge" and bench:landing-merge.
 ];
 
 const passed = checks.every((check) => check.passed);

@@ -59,27 +59,96 @@ describe("Auth Flows", () => {
   it("team member can login", async () => {
     const { body } = await api("POST", "/api/auth/login", {
       email: "angelo.revelo@advo.ph",
-      password: "Advo2026!admin",
+      password: "changeme",
     });
     expect(body.data.user).toBeTruthy();
     teamToken = body.data.accessToken;
   });
 
-  it("refresh token rotation works (one-time use)", async () => {
+  it("refresh token rotation issues a new token", async () => {
     const login = await api("POST", "/api/auth/login", {
       email: "admin@advo.ph",
       password: "changeme",
     });
     const rt = login.body.data.refreshToken;
 
-    // First refresh should work
     const r1 = await api("POST", "/api/auth/refresh", { refreshToken: rt });
     expect(r1.status).toBe(200);
     expect(r1.body.data.refreshToken).not.toBe(rt);
+  });
 
-    // Second refresh with same token should fail (one-time use)
+  /**
+   * This used to assert that re-presenting a spent token returned 401, which is the textbook
+   * rule and was the direct cause of the app signing people out. Five parallel requests share
+   * one refresh token: one rotates it and the rest arrive holding a token that is now spent,
+   * and the client read those 401s as "your session is over" and deleted the credential the
+   * winner had just minted. Two browser tabs did it to each other permanently.
+   *
+   * Migration 022 gave every login a lineage, so a spent token inside the grace window is
+   * answered with that lineage's current live token instead. Convergence, not rejection.
+   */
+  it("a spent refresh token is answered with the live one, not a 401", async () => {
+    const login = await api("POST", "/api/auth/login", {
+      email: "admin@advo.ph",
+      password: "changeme",
+    });
+    const rt = login.body.data.refreshToken;
+
+    const r1 = await api("POST", "/api/auth/refresh", { refreshToken: rt });
+    expect(r1.status).toBe(200);
+
     const r2 = await api("POST", "/api/auth/refresh", { refreshToken: rt });
-    expect(r2.status).toBe(401);
+    expect(r2.status).toBe(200);
+    expect(r2.body.data.refreshToken).toBe(r1.body.data.refreshToken);
+  });
+
+  it("concurrent refreshes all succeed and converge on one token", async () => {
+    const login = await api("POST", "/api/auth/login", {
+      email: "admin@advo.ph",
+      password: "changeme",
+    });
+    const rt = login.body.data.refreshToken;
+
+    const results = await Promise.all(
+      Array.from({ length: 5 }, () => api("POST", "/api/auth/refresh", { refreshToken: rt }))
+    );
+
+    expect(results.map((r) => r.status)).toEqual([200, 200, 200, 200, 200]);
+    const issued = new Set(results.map((r) => r.body.data.refreshToken));
+    expect(issued.size).toBe(1);
+  });
+
+  it("an unknown refresh token is still rejected", async () => {
+    const { status } = await api("POST", "/api/auth/refresh", {
+      refreshToken: "not-a-real-token-0000000000000000000000000000",
+    });
+    expect(status).toBe(401);
+  });
+
+  it("logout ends the session and a spent token cannot revive it", async () => {
+    const login = await api("POST", "/api/auth/login", {
+      email: "admin@advo.ph",
+      password: "changeme",
+    });
+    const rt = login.body.data.refreshToken;
+
+    const r1 = await api("POST", "/api/auth/refresh", { refreshToken: rt });
+    expect(r1.status).toBe(200);
+
+    const out = await api("POST", "/api/auth/logout", {
+      refreshToken: r1.body.data.refreshToken,
+    });
+    expect(out.status).toBe(200);
+
+    // The grace window must not outlive an explicit logout: retiring the whole lineage is
+    // what stops the predecessor from resurrecting a session the user just ended.
+    const afterLive = await api("POST", "/api/auth/refresh", {
+      refreshToken: r1.body.data.refreshToken,
+    });
+    expect(afterLive.status).toBe(401);
+
+    const afterSpent = await api("POST", "/api/auth/refresh", { refreshToken: rt });
+    expect(afterSpent.status).toBe(401);
   });
 
   it("magic link request returns success (no email enumeration)", async () => {

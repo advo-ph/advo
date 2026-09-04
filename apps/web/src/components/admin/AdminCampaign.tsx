@@ -28,6 +28,12 @@ type Preview = {
   sample: { name: string; email: string; company: string | null }[];
 };
 
+type SendResult = {
+  sentCount: number;
+  failedCount: number;
+  skippedCount: number;
+};
+
 const STATUS_TONE: Record<string, string> = {
   draft: "bg-neutral-100 text-neutral-700",
   sending: "bg-blue-100 text-blue-700",
@@ -56,13 +62,22 @@ const AdminCampaign = () => {
     [isOutdatedOnly, limitCount],
   );
 
+  // Every helper in lib/api returns the { data, error } envelope and never throws.
+  // Unwrap it and check res.error, or the envelope object itself lands in state and
+  // the next .length / .map call takes the whole console down.
   const load = useCallback(async () => {
-    try {
-      setCampaign(await get<Campaign[]>("/api/campaign"));
-    } catch {
-      /* listing failure is non-fatal for the form */
+    const res = await get<Campaign[]>("/api/campaign");
+    if (res.error || !Array.isArray(res.data)) {
+      setCampaign([]);
+      toast({
+        title: "Could not load campaigns",
+        description: res.error || "The API did not return a campaign list. Reload to try again.",
+        variant: "destructive",
+      });
+      return;
     }
-  }, []);
+    setCampaign(res.data);
+  }, [toast]);
 
   useEffect(() => {
     void load();
@@ -72,12 +87,21 @@ const AdminCampaign = () => {
   const runPreview = async () => {
     setIsLoading(true);
     try {
-      setPreview(await post<Preview>("/api/campaign/preview", segment()));
-    } catch (err) {
-      toast({
-        title: "Preview failed",
-        description: err instanceof Error ? err.message : "Could not resolve the segment",
-        variant: "destructive",
+      const res = await post<Preview>("/api/campaign/preview", segment());
+      if (res.error || !res.data) {
+        setPreview(null);
+        toast({
+          title: "Preview failed",
+          description: res.error || "Could not resolve the segment. Check the cap and try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      // The transport banners below read isOutreachConfigured. A missing sample array
+      // would crash the render, so normalise it here at the boundary.
+      setPreview({
+        ...res.data,
+        sample: Array.isArray(res.data.sample) ? res.data.sample : [],
       });
     } finally {
       setIsLoading(false);
@@ -98,24 +122,40 @@ const AdminCampaign = () => {
         segment: segment(),
         ratePerHour: Number(ratePerHour) > 0 ? Number(ratePerHour) : 60,
       });
-      const queued = await post<{ recipientCount: number }>(
-        `/api/campaign/${created.campaignId}/materialize`,
+      if (created.error || !created.data) {
+        toast({
+          title: "Could not create the campaign",
+          description: created.error || "The API did not return the new campaign.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const queued = await post<{ campaignId: number; recipientCount: number }>(
+        `/api/campaign/${created.data.campaignId}/materialize`,
         {},
       );
+      if (queued.error || !queued.data) {
+        // The campaign row exists but has no recipient rows. Say that, because
+        // "queued" would be a lie and the operator needs to retry the queue step.
+        toast({
+          title: "Campaign created, but no recipient was queued",
+          description:
+            queued.error || "Materializing the segment failed. Queue it again to add recipients.",
+          variant: "destructive",
+        });
+        await load();
+        return;
+      }
+
       toast({
         title: "Campaign queued",
-        description: `${queued.recipientCount} recipient queued. Nothing has been sent yet.`,
+        description: `${queued.data.recipientCount} recipient queued. Nothing has been sent yet.`,
       });
       setName("");
       setSubject("");
       setBodyHtml("");
       await load();
-    } catch (err) {
-      toast({
-        title: "Could not queue the campaign",
-        description: err instanceof Error ? err.message : "Unknown error",
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
     }
@@ -124,21 +164,35 @@ const AdminCampaign = () => {
   const send = async (campaignId: number) => {
     setIsLoading(true);
     try {
-      const result = await post<{ sentCount: number; failedCount: number; skippedCount: number }>(
-        `/api/campaign/${campaignId}/send`,
-        {},
-      );
-      toast({
-        title: "Send pass complete",
-        description: `${result.sentCount} sent, ${result.failedCount} failed, ${result.skippedCount} skipped by suppression.`,
-      });
+      const res = await post<SendResult>(`/api/campaign/${campaignId}/send`, {});
+
+      // A refused send must never read as success. The API reports refusal through
+      // res.error, which is exactly the case that used to toast "Send pass complete".
+      if (res.error || !res.data) {
+        toast({
+          title: "Send refused. Nothing was sent.",
+          description: res.error || "The API did not report a send result. Nothing was sent.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { sentCount, failedCount, skippedCount } = res.data;
+      const detail = `${sentCount} sent, ${failedCount} failed, ${skippedCount} skipped by suppression.`;
+
+      if (sentCount === 0) {
+        toast({
+          title: "No email was sent.",
+          description: detail,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: failedCount > 0 ? "Send pass finished with failures" : "Send pass complete",
+          description: detail,
+        });
+      }
       await load();
-    } catch (err) {
-      toast({
-        title: "Send refused",
-        description: err instanceof Error ? err.message : "Unknown error",
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
     }

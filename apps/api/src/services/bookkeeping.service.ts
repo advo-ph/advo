@@ -217,8 +217,6 @@ export const EXPENSE_HEADER = [
   "authorized_by",
   "location",
   "amount_php",
-  "is_reimbursable",
-  "receipt_reference",
 ];
 
 export async function expenseSheet(period: ExportPeriod): Promise<string> {
@@ -232,7 +230,6 @@ export async function expenseSheet(period: ExportPeriod): Promise<string> {
       authorizedBy: expense.authorizedBy,
       amountCents: expense.amountCents,
       location: expense.location,
-      receiptUrl: expense.receiptUrl,
       category: expense.category,
       projectTitle: project.title,
     })
@@ -252,10 +249,8 @@ export async function expenseSheet(period: ExportPeriod): Promise<string> {
       one.authorizedBy,
       one.location,
       centsToDecimal(one.amountCents),
-      // DERIVED, exactly as 005 specifies — reimbursable IFF a receipt exists. Never a
-      // stored column, so the export must compute it the same way the app does.
-      one.receiptUrl ? "yes" : "no",
-      one.receiptUrl,
+      // Receipt/reimbursable dropped from the expense model (migration 039,
+      // Prince's rework), so the sheet no longer carries those two columns.
     ]),
   );
 }

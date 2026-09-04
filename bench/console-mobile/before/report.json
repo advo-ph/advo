@@ -1,0 +1,309 @@
+{
+  "tag": "before",
+  "base": "http://localhost:6448",
+  "urlAfterLogin": "http://localhost:6448/admin",
+  "deepLinks": {
+    "/admin/tasks": {
+      "landedUrl": "http://localhost:6448/admin/tasks",
+      "h1": "404"
+    },
+    "/admin/calendar": {
+      "landedUrl": "http://localhost:6448/admin/calendar",
+      "h1": "404"
+    },
+    "/admin/finance": {
+      "landedUrl": "http://localhost:6448/admin/finance",
+      "h1": "404"
+    }
+  },
+  "history": [
+    {
+      "step": "start",
+      "url": "http://localhost:6448/admin",
+      "h1": "Overview"
+    },
+    {
+      "step": "click Tasks",
+      "url": "http://localhost:6448/admin",
+      "h1": "Tasks"
+    },
+    {
+      "step": "click Clients",
+      "url": "http://localhost:6448/admin",
+      "h1": "Clients"
+    },
+    {
+      "step": "click Calendar",
+      "url": "http://localhost:6448/admin",
+      "h1": "Calendar"
+    },
+    {
+      "step": "back",
+      "url": "http://localhost:6448/admin/finance",
+      "h1": "404"
+    },
+    {
+      "step": "back",
+      "url": "http://localhost:6448/admin/calendar",
+      "h1": "404"
+    },
+    {
+      "step": "forward",
+      "url": "http://localhost:6448/admin/finance",
+      "h1": "404"
+    }
+  ],
+  "deepLinkProblems": [
+    "console.error: 404 Error: User attempted to access non-existent route: /admin/tasks",
+    "console.error: 404 Error: User attempted to access non-existent route: /admin/calendar",
+    "console.error: 404 Error: User attempted to access non-existent route: /admin/finance",
+    "console.error: 404 Error: User attempted to access non-existent route: /admin/finance",
+    "console.error: 404 Error: User attempted to access non-existent route: /admin/calendar",
+    "console.error: 404 Error: User attempted to access non-existent route: /admin/finance"
+  ],
+  "drawerOpen": {
+    "asideId": null,
+    "role": null,
+    "ariaModal": null,
+    "htmlOverflow": "hidden",
+    "bodyOverflow": "hidden",
+    "activeElementInDrawer": false,
+    "activeElementTag": "BUTTON",
+    "activeElementText": "",
+    "triggerHasAriaControls": false,
+    "hasCloseButton": false
+  },
+  "drawerScrollBehind": {
+    "before": 0,
+    "after": 0,
+    "scrolled": false
+  },
+  "drawerFocusTrap": {
+    "startsInside": false,
+    "stillInside": true,
+    "activeText": "Availability"
+  },
+  "drawerEscape": {
+    "closed": false,
+    "right": 240,
+    "htmlOverflow": "hidden",
+    "bodyOverflow": "hidden",
+    "focusReturnedToTrigger": false,
+    "activeLabel": null
+  },
+  "scheduleTable": {
+    "viewportWidth": 390,
+    "docScrollWidth": 390,
+    "docClientWidth": 390,
+    "docOverflowPx": 0,
+    "rowCount": 5,
+    "tableScrollWidth": 424,
+    "tableClientWidth": 356,
+    "tableOverflowPx": 68,
+    "tableOverflowXStyle": "hidden",
+    "firstRow": {
+      "rowScrollWidth": 424,
+      "rowClientWidth": 356,
+      "rowWidth": 356,
+      "cells": [
+        {
+          "text": "Homepage Design",
+          "w": 0,
+          "left": 29,
+          "right": 29,
+          "visible": false
+        },
+        {
+          "text": "VBE Eye Center Website",
+          "w": 0,
+          "left": 0,
+          "right": 0,
+          "visible": false
+        },
+        {
+          "text": "Completed",
+          "w": 128,
+          "left": 41,
+          "right": 169,
+          "visible": true
+        },
+        {
+          "text": "ARAngelo",
+          "w": 0,
+          "left": 0,
+          "right": 0,
+          "visible": false
+        },
+        {
+          "text": "",
+          "w": 48,
+          "left": 181,
+          "right": 229,
+          "visible": true
+        },
+        {
+          "text": "Feb 28",
+          "w": 64,
+          "left": 241,
+          "right": 305,
+          "visible": true
+        },
+        {
+          "text": "Verify",
+          "w": 80,
+          "left": 317,
+          "right": 397,
+          "visible": false
+        },
+        {
+          "text": "",
+          "w": 32,
+          "left": 409,
+          "right": 441,
+          "visible": false
+        }
+      ]
+    }
+  },
+  "scheduleReachable": [
+    {
+      "sel": "[aria-label=\"Verify deliverable\"]",
+      "w": 68,
+      "h": 28,
+      "left": 329,
+      "right": 397,
+      "insideViewport": false
+    },
+    {
+      "sel": "[aria-label=\"Verify deliverable\"]",
+      "w": 68,
+      "h": 28,
+      "left": 329,
+      "right": 397,
+      "insideViewport": false
+    },
+    {
+      "sel": "[aria-label=\"Verify deliverable\"]",
+      "w": 68,
+      "h": 28,
+      "left": 329,
+      "right": 397,
+      "insideViewport": false
+    },
+    {
+      "sel": "[aria-label=\"Verify deliverable\"]",
+      "w": 68,
+      "h": 28,
+      "left": 329,
+      "right": 397,
+      "insideViewport": false
+    },
+    {
+      "sel": "[aria-label=\"Verify deliverable\"]",
+      "w": 68,
+      "h": 28,
+      "left": 329,
+      "right": 397,
+      "insideViewport": false
+    },
+    {
+      "sel": "[aria-label=\"Edit deliverable\"]",
+      "w": 28,
+      "h": 28,
+      "left": 413,
+      "right": 441,
+      "insideViewport": false
+    }
+  ],
+  "dialog": {
+    "found": true,
+    "dialogTop": 60,
+    "dialogBottom": 784,
+    "dialogHeight": 724,
+    "dialogLeft": 0,
+    "dialogRight": 390,
+    "viewportHeight": 844,
+    "viewportWidth": 390,
+    "maxHeight": "none",
+    "overflowY": "visible",
+    "scrollHeight": 722,
+    "clientHeight": 722,
+    "saveFound": true,
+    "saveTop": 719,
+    "saveBottom": 759,
+    "saveInViewport": true
+  },
+  "dialogAfterScroll": {
+    "scrollTop": 0,
+    "saveInViewport": true,
+    "saveBottom": 759
+  },
+  "mobileProblems": [],
+  "collapsedOnDesktop": {
+    "width": 72
+  },
+  "collapseTrap": {
+    "drawerWidth": 72,
+    "visibleTextLabels": 0,
+    "expandButtonVisible": false
+  },
+  "tapTargets": {
+    "total": 22,
+    "under44": 22,
+    "minHeight": 19,
+    "sample": [
+      {
+        "label": "Dashboard",
+        "h": 36
+      },
+      {
+        "label": "Tasks",
+        "h": 36
+      },
+      {
+        "label": "Projects",
+        "h": 36
+      },
+      {
+        "label": "Clients",
+        "h": 36
+      },
+      {
+        "label": "Library",
+        "h": 36
+      },
+      {
+        "label": "Team",
+        "h": 36
+      },
+      {
+        "label": "Deliverables",
+        "h": 36
+      },
+      {
+        "label": "Calendar",
+        "h": 36
+      },
+      {
+        "label": "Availability",
+        "h": 36
+      },
+      {
+        "label": "Contracts",
+        "h": 36
+      }
+    ]
+  },
+  "headerTapTargets": [
+    {
+      "label": "Open menu",
+      "h": 36,
+      "w": 36
+    },
+    {
+      "label": "",
+      "h": 36,
+      "w": 40
+    }
+  ]
+}

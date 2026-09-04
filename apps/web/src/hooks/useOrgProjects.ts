@@ -14,6 +14,9 @@ export interface MergedProject {
   project_status: string;
   total_value_cents: number;
   amount_paid_cents: number;
+  list_value_cents?: number | null;
+  discount_cents?: number;
+  discount_reason?: string | null;
   tech_stack: string[];
   created_at: string;
   /** Assigned team members from project_access (singular collection key). */

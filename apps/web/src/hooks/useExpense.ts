@@ -1,44 +1,64 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { get, post, del } from "@/lib/api";
+import { get, post, patch, del } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
-// Mirrors /api/expense row (drizzle camelCase + derived isReimbursable).
+/**
+ * /api/expense — Phase 8 rework.
+ *
+ * receipt_url and isReimbursable are removed (migration 032).
+ * expenseType:        'development_expenses' | 'general_expenses'
+ * expensePaidStatus:  'paid' | 'unpaid'
+ * teamMemberId:       links an expense to a specific team member.
+ */
+
+export type ExpenseType = "development_expenses" | "general_expenses";
+export type ExpensePaidStatus = "paid" | "unpaid";
+
 export interface Expense {
   expenseId: number;
   projectId: number | null;
+  teamMemberId: number | null;
+  memberName: string | null;
   purpose: string;
-  authorizedBy: string;
   amountCents: number;
-  location: string | null;
-  receiptUrl: string | null;
+  expenseType: ExpenseType;
+  expensePaidStatus: ExpensePaidStatus;
   category: string;
   createdBy: number | null;
   createdAt: string;
   updatedAt: string;
-  /** Derived: receipt_url is not null — never a free-floating stored flag. */
-  isReimbursable: boolean;
 }
 
 export interface ExpenseInput {
   projectId?: number | null;
+  teamMemberId?: number | null;
   purpose: string;
-  authorizedBy: string;
   amountCents: number;
-  location?: string | null;
-  receiptUrl?: string | null;
-  category?: string;
+  expenseType?: ExpenseType;
+  expensePaidStatus?: ExpensePaidStatus;
+}
+
+export interface ExpenseUpdateInput {
+  purpose?: string;
+  amountCents?: number;
+  expenseType?: ExpenseType;
+  expensePaidStatus?: ExpensePaidStatus;
+  teamMemberId?: number | null;
 }
 
 const QUERY_KEY = ["expense"];
 
-export function useExpense() {
+export function useExpense(projectId?: number) {
   const qc = useQueryClient();
   const { toast } = useToast();
 
+  const queryKey = projectId !== undefined ? [...QUERY_KEY, projectId] : QUERY_KEY;
+
   const { data: expense = [], isLoading } = useQuery({
-    queryKey: QUERY_KEY,
+    queryKey,
     queryFn: async () => {
-      const res = await get<Expense[]>("/api/expense");
+      const url = projectId !== undefined ? `/api/expense?projectId=${projectId}` : "/api/expense";
+      const res = await get<Expense[]>(url);
       return res.data || [];
     },
     staleTime: 60 * 1000,
@@ -50,12 +70,25 @@ export function useExpense() {
 
   const createMutation = useMutation({
     mutationFn: async (input: ExpenseInput) => {
-      const r = await post("/api/expense", input);
+      const r = await post<Expense>("/api/expense", input);
       if (r.error) throw new Error(r.error);
+      return r.data;
     },
     onSuccess: () => {
       invalidate();
       toast({ title: "Expense logged" });
+    },
+    onError: onErr,
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ expenseId, ...input }: ExpenseUpdateInput & { expenseId: number }) => {
+      const r = await patch(`/api/expense/${expenseId}`, input);
+      if (r.error) throw new Error(r.error);
+    },
+    onSuccess: () => {
+      invalidate();
+      toast({ title: "Expense updated" });
     },
     onError: onErr,
   });
@@ -76,6 +109,7 @@ export function useExpense() {
     expense,
     isLoading,
     createExpense: createMutation.mutateAsync,
+    updateExpense: updateMutation.mutateAsync,
     deleteExpense: deleteMutation.mutateAsync,
     isCreating: createMutation.isPending,
   };

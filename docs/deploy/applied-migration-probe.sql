@@ -33,7 +33,12 @@ WITH marker(migration, kind, object, detail) AS (VALUES
   ('015_campaign',                     'table',  'campaign',        NULL),
   ('016_project_signoff',              'table',  'project_signoff', NULL),
   ('017_recurring_fee',                'table',  'recurring_fee',   NULL),
-  ('018_commission_split',             'table',  'commission_plan', NULL)
+  ('018_commission_split',             'table',  'commission_plan', NULL),
+  -- 024 is the FIRST migration for availability_block. The table itself predates it: it
+  -- arrived via drizzle-kit push, was never in the 019 backfill, and was therefore
+  -- invisible to this probe and to migration:drift. The marker is the column 024 adds,
+  -- because the table can be present on a box that has never seen the migration.
+  ('024_availability_block_bounds',    'column', 'availability_block', 'effective_to')
 )
 SELECT
   m.migration,
