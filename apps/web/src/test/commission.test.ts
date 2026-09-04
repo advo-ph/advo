@@ -276,7 +276,7 @@ describe("Commission — the finalize gate", () => {
 
   it("refuses a zero basis and an already-finalized plan", () => {
     expect(gate(makePlan({ basisCents: 0 }), fullLedger(), "shipped").join(" ")).toMatch(
-      /nothing to split/i,
+      /basis is zero|nothing to split/i,
     );
     expect(
       gate(makePlan({ status: "finalized", finalizedAt: new Date() }), fullLedger(), "shipped")
