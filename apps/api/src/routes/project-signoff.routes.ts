@@ -15,6 +15,8 @@ import { zValidator } from "@hono/zod-validator";
 import { HTTPException } from "hono/http-exception";
 import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin, requireTeam } from "../middleware/rbac.js";
+import { db } from "../db/connection.js";
+import { backgroundJob } from "../db/schema.js";
 import {
   SIGNOFF_METHOD,
   assertClientOwnsProject,
@@ -265,6 +267,42 @@ projectSignoffRoutes.post("/revision/:revisionId/deemed", requireAdmin, async (c
   const user = c.get("user");
   const updated = await recordDeemedApproval(parseId(c.req.param("revisionId")), user.userId);
   return c.json({ data: updated, error: null });
+});
+
+// ─── Generate Draft (background job) ─────────────────
+//
+// Creates a background_job of type 'signoff_draft'. The in-process runner picks it
+// up within 2 seconds. The browser widget polls /api/jobs/active to show progress.
+// Returns the job id so the widget can start polling immediately.
+
+projectSignoffRoutes.post("/:id/generate-draft", requireAdmin, async (c) => {
+  const user = c.get("user");
+
+  // The :id is the signoff id — but the draft generator works at the project level.
+  // Body must carry projectId so the handler can find the right contract files.
+  const body = (await c.req.json().catch(() => ({}))) as { projectId?: unknown };
+  const projectId = Number(body.projectId);
+  if (!projectId || Number.isNaN(projectId)) {
+    throw new HTTPException(400, { message: "projectId is required" });
+  }
+
+  const steps = [
+    { label: "Analyzing Contract Information", status: "pending" as const },
+    { label: "Analyzing Website Features", status: "pending" as const },
+  ];
+
+  const [created] = await db()
+    .insert(backgroundJob)
+    .values({
+      jobType: "signoff_draft",
+      projectId,
+      title: "Generating Draft",
+      steps,
+      createdBy: user.userId,
+    })
+    .returning({ jobId: backgroundJob.jobId });
+
+  return c.json({ data: { jobId: created.jobId }, error: null }, 201);
 });
 
 export default projectSignoffRoutes;

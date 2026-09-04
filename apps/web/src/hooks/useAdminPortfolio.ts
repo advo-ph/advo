@@ -139,6 +139,12 @@ export function useAdminPortfolio() {
       );
       toast({ title: "Updated", description: `${updated.title} updated` });
     },
+    // The onMutate patch above runs `mapPortfolio` over the API PAYLOAD, not
+    // over a server row, so fields the payload does not carry (created_at, a
+    // server-assigned display_order, a slug the API normalised) come out wrong
+    // until something re-reads. onSuccess only fixes the one row it was handed.
+    // This fixes the list.
+    onSettled: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
   });
 
   const deleteMutation = useMutation({
@@ -162,6 +168,7 @@ export function useAdminPortfolio() {
     onSuccess: (_data, _id, ctx) => {
       toast({ title: "Deleted", description: `${ctx?.removed?.title || "Project"} removed` });
     },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
   });
 
   return {

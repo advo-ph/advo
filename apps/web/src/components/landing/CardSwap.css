@@ -1,0 +1,33 @@
+/* React Bits' CardSwap stylesheet, with two changes.
+ *
+ * 1. Every rule is scoped under .card-swap-container. `.card` on its own is far
+ *    too common a class name to let loose in an app this size.
+ * 2. Upstream pins the container to the bottom-right of its parent and hangs it
+ *    off the edge. Here the stack is one half of a two-column stage, so
+ *    placement is the caller's business — this file only owns the perspective
+ *    and the card surface. See .work-cards in landing-page.css. */
+
+.card-swap-container {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  transform: translate(5%, 20%);
+  transform-origin: bottom right;
+
+  perspective: 900px;
+  overflow: visible;
+}
+
+.card-swap-container .card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 12px;
+  border: 1px solid #fff;
+  background: #000;
+
+  transform-style: preserve-3d;
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}

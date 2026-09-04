@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { get, del, post, upload } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { errorText } from "@/lib/error-text";
 
 export interface ProjectAsset {
   asset_id: number;
@@ -78,9 +79,15 @@ export function useProjectAssets(projectId: number) {
     },
     onError: (e: Error, _id, ctx) => {
       if (ctx?.prev) qc.setQueryData(queryKey, ctx.prev);
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+      toast({ title: "File not deleted", description: errorText(e, "The file is still there. Try again."), variant: "destructive" });
     },
     onSuccess: () => toast({ title: "Deleted", description: "File removed" }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey });
+      // The upload path already invalidates clientData because the Hub renders
+      // this same list. A delete changes it just as much.
+      qc.invalidateQueries({ queryKey: ["clientData"] });
+    },
   });
 
   return {

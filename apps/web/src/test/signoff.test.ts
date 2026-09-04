@@ -240,11 +240,14 @@ describe("Sign-off — money is integer cents end to end", () => {
     expect(route).toMatch(/finalPaymentCents: z\.number\(\)\.int\(\)\.min\(0\)/);
   });
 
-  it("multiplies pesos by 100 exactly once, in the admin form", () => {
+  it("AdminSignoff uses Generate Draft (background job) instead of a manual peso form", () => {
+    // Phase 6b replaced the manual title/scope/peso form with a background job that reads the
+    // signed contract and repository. The peso multiplication now lives in the API service only.
     const adminPanel = readSource("apps/web/src/components/admin/AdminSignoff.tsx");
-    const occurrence = adminPanel.match(/\* 100/g) ?? [];
-    expect(occurrence).toHaveLength(1);
-    expect(adminPanel).toMatch(/Math\.round\(peso \* 100\)/);
+    expect(adminPanel).toMatch(/Generate Draft/);
+    expect(adminPanel).toMatch(/generate-draft/);
+    // The old peso field is gone — the create endpoint guard still enforces integer cents.
+    expect(adminPanel).not.toMatch(/finalPaymentPeso/);
   });
 
   it("keeps the FourlinQ tiers representable as whole cents", () => {

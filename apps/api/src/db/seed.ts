@@ -71,6 +71,37 @@ async function ensureTeamMember(
 }
 
 /**
+ * Rename a roster row that is already in the database.
+ *
+ * ensureTeamMember matches on exact name and returns early when it finds one, so editing a
+ * name in rosterSeed does nothing to an environment that already holds the old spelling: it
+ * just stops matching and inserts a second row for the same person. This closes that gap.
+ *
+ * Skipped when the new name is already present, so it never creates a duplicate, and it is a
+ * no-op on every run after the first.
+ */
+async function renameTeamMember(from: string, to: string): Promise<void> {
+  const d = db();
+
+  const [alreadyRenamed] = await d
+    .select({ teamMemberId: teamMember.teamMemberId })
+    .from(teamMember)
+    .where(eq(teamMember.name, to))
+    .limit(1);
+  if (alreadyRenamed) return;
+
+  const renamed = await d
+    .update(teamMember)
+    .set({ name: to, updatedAt: new Date() })
+    .where(eq(teamMember.name, from))
+    .returning({ teamMemberId: teamMember.teamMemberId });
+
+  if (renamed.length > 0) {
+    console.log(`Renamed team member "${from}" to "${to}"`);
+  }
+}
+
+/**
  * Align the team_member id sequence with the highest existing id.
  *
  * The live roster was created by hand and sits at ids 100-105, but the sequence
@@ -177,7 +208,7 @@ async function seed() {
 
       await d
         .insert(deliverable)
-        .values({ projectId: projectRow.projectId, title: "Seed deliverable", status: "in_progress" });
+        .values({ projectId: projectRow.projectId, title: "Seed deliverable", status: "ongoing" });
 
       await d
         .insert(notification)
@@ -209,10 +240,14 @@ async function seed() {
     // Johann owns contract strategy (sign-off, standard agreements, renegotiation).
     // Placeholder initial tile, not an invented photo -- replace with a real
     // portrait when one exists, the way every other roster row carries one.
-    { name: "Johann", role: "Legal & Contracts", permissionRole: "manager", avatarUrl: "/team/johann.svg" },
+    { name: "Johann Endriga", role: "Legal & Contracts", permissionRole: "manager", avatarUrl: "/team/johann.svg" },
     // ROADMAP.md already lists Kenneth as one of the per-client junior devs.
     { name: "Kenneth Leo Dela Cruz", role: "Junior Developer", permissionRole: "developer", avatarUrl: "/team/kenneth-dela-cruz.svg" },
   ];
+
+  // He was seeded as "Johann" before his surname was known. Must run before the loop below,
+  // or the loop finds no "Johann Endriga" and inserts him a second time.
+  await renameTeamMember("Johann", "Johann Endriga");
 
   // Must run BEFORE the inserts, or a new row takes a low id and sorts above the founder.
   await alignTeamMemberSequence();

@@ -32,11 +32,24 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { del, get } from "@/lib/api";
-import { getAccessToken } from "@/lib/api";
+import { getAccessToken, ensureFreshAccessToken } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader, Panel, StatStrip, Stat, Empty } from "./_ui";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:6107";
+/**
+ * Must match `API_URL` in lib/api.ts exactly.
+ *
+ * It did not. This file hard-coded port 6107 while the API listens on 6407 and
+ * dev traffic is supposed to go through Vite's relative `/api` proxy, so the
+ * stream fetch below aimed at a port nothing was bound to. The refresh call
+ * that precedes it goes through lib/api.ts and so used the correct target,
+ * which made the failure look like an auth problem rather than a wrong address.
+ *
+ * Relative in dev, so Vite proxies it; explicit in a build.
+ */
+const API_URL = import.meta.env.DEV
+  ? ""
+  : (import.meta.env.VITE_API_URL || "http://localhost:6407");
 
 // Resolve image URLs — local uploads need API prefix, FB CDN URLs stay as-is
 function resolveImgUrl(url: string): string {
@@ -391,6 +404,7 @@ const AdminFacebookScraper = () => {
   const [scrollCount, setScrollCount] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
   const [history, setHistory] = useState<ScrapeHistoryItem[]>([]);
+  const [historyError, setHistoryError] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [expandedPost, setExpandedPost] = useState<string | null>(null);
   const postsEndRef = useRef<HTMLDivElement>(null);
@@ -401,25 +415,46 @@ const AdminFacebookScraper = () => {
   const [postFilter, setPostFilter] = useState("");
   const [postImagesOnly, setPostImagesOnly] = useState(false);
 
+  // `get` resolves with { data, error } and never rejects. A bare `if (res.data)`
+  // therefore turns every failure into silence.
   useEffect(() => {
     get<ScrapeHistoryItem[]>("/api/scrape/history?type=facebook").then((res) => {
-      if (res.data) setHistory(res.data);
+      if (res.error) {
+        setHistoryError(res.error);
+        return;
+      }
+      setHistoryError(null);
+      setHistory(res.data ?? []);
     });
   }, []);
 
   const loadFromHistory = async (id: number) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const res = await get<{ data: any }>(`/api/scrape/history/${id}`);
-    if (res.data) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const d = (res.data as any).data;
-      setPageInfo(d.pageInfo || null);
-      setPosts(d.posts || []);
-      setPostsCount(d.totalPosts || d.posts?.length || 0);
-      setIsComplete(true);
-      setShowHistory(false);
-      toast({ title: "Loaded from history" });
+    if (res.error) {
+      toast({
+        title: "Could not open that scrape",
+        description: res.error,
+        variant: "destructive",
+      });
+      return;
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const d = (res.data as any)?.data;
+    if (!d) {
+      toast({
+        title: "That scrape is empty",
+        description: "The record exists but holds no posts. Run the scrape again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setPageInfo(d.pageInfo || null);
+    setPosts(d.posts || []);
+    setPostsCount(d.totalPosts || d.posts?.length || 0);
+    setIsComplete(true);
+    setShowHistory(false);
+    toast({ title: "Loaded from history" });
   };
 
   const deleteFromHistory = async (id: number) => {
@@ -462,6 +497,45 @@ const AdminFacebookScraper = () => {
     abortRef.current = controller;
 
     try {
+      /**
+       * This is a raw `fetch`, not the `api()` wrapper, because the response is
+       * a Server-Sent Event stream that the wrapper would buffer into a string.
+       * The cost of stepping outside the wrapper is that none of its auth
+       * behaviour comes along: it used to read `getAccessToken()` once and send
+       * whatever was in the variable, with no refresh-on-401 behind it.
+       *
+       * That failed in the ordinary case. A Facebook scrape runs 30 to 60
+       * seconds and is usually started some minutes after the admin last did
+       * anything, which is exactly when an access token has gone stale. The
+       * scrape 401'd, and because the failure arrived as a plain HTTP status
+       * with no retry, the user saw "Error: HTTP 401" on a button that worked
+       * fine five minutes earlier.
+       *
+       * `ensureFreshAccessToken()` is the wrapper's own refresh path, exported
+       * for exactly this. It refreshes only when the token is actually stale,
+       * de-dupes against any refresh already in flight, and returns "rejected"
+       * only when the SERVER rejected the credential.
+       */
+      const auth = await ensureFreshAccessToken();
+      if (auth === "rejected") {
+        toast({
+          title: "Signed out",
+          description: "Your session has ended. Sign in again to run a scrape.",
+          variant: "destructive",
+        });
+        setIsStreaming(false);
+        return;
+      }
+      if (auth === "unavailable") {
+        toast({
+          title: "Cannot reach the server",
+          description: "Your session could not be checked. Check your connection and try again.",
+          variant: "destructive",
+        });
+        setIsStreaming(false);
+        return;
+      }
+
       const token = getAccessToken();
       const response = await fetch(`${API_URL}/api/scrape/facebook-stream`, {
         method: "POST",
@@ -474,12 +548,24 @@ const AdminFacebookScraper = () => {
       });
 
       if (!response.ok || !response.body) {
+        // 401 here means the token was fresh by its own `exp` and the server
+        // still refused it. Retrying would present the same token, so say what
+        // happened instead of looping.
+        if (response.status === 401 || response.status === 403) {
+          toast({
+            title: "Not authorised",
+            description: "Your session is no longer valid. Sign in again to run a scrape.",
+            variant: "destructive",
+          });
+          setIsStreaming(false);
+          return;
+        }
         const text = await response.text();
         try {
           const err = JSON.parse(text);
-          toast({ title: "Error", description: err.error || `HTTP ${response.status}`, variant: "destructive" });
+          toast({ title: "Scrape failed", description: err.error || `HTTP ${response.status}`, variant: "destructive" });
         } catch {
-          toast({ title: "Error", description: `HTTP ${response.status}`, variant: "destructive" });
+          toast({ title: "Scrape failed", description: `HTTP ${response.status}`, variant: "destructive" });
         }
         setIsStreaming(false);
         return;
@@ -538,7 +624,14 @@ const AdminFacebookScraper = () => {
                   setProgress(100);
                   setStatusText(`Done! ${data.totalPosts} posts, ${data.totalPhotos} photos`);
                   get<ScrapeHistoryItem[]>("/api/scrape/history?type=facebook").then((res) => {
-                    if (res.data) setHistory(res.data);
+                    // The scrape succeeded and is on screen; only the saved list
+                    // is stale. Report that narrowly.
+                    if (res.error) {
+                      setHistoryError(res.error);
+                      return;
+                    }
+                    setHistoryError(null);
+                    setHistory(res.data ?? []);
                   });
                   toast({ title: "Scrape complete", description: `${data.totalPosts} posts captured` });
                   break;
@@ -693,7 +786,7 @@ const AdminFacebookScraper = () => {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Facebook Scraper"
+        title="Facebook Research"
         meta="Posts, photos & company data from Facebook pages — live streaming"
       />
 
@@ -720,7 +813,7 @@ const AdminFacebookScraper = () => {
               <Button
                 onClick={startStream}
                 disabled={!url}
-                className="h-9 bg-accent text-accent-foreground hover:bg-accent/90 min-w-[120px]"
+                className="h-9 bg-primary text-primary-foreground hover:bg-primary/90 min-w-[120px]"
               >
                 <Radio className="h-4 w-4 mr-2" />
                 Live Scrape
@@ -729,6 +822,14 @@ const AdminFacebookScraper = () => {
           </div>
         </div>
       </Panel>
+
+      {/* An empty list and a list that failed to load look identical on screen.
+          Only one of them means "you have no saved scrapes". */}
+      {historyError && !isStreaming && (
+        <p className="text-xs text-destructive">
+          Saved scrapes could not be loaded: {historyError}. Reload the page to try again.
+        </p>
+      )}
 
       {/* History */}
       {history.length > 0 && !isStreaming && (
@@ -839,7 +940,7 @@ const AdminFacebookScraper = () => {
                     href={pageInfo.website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-accent hover:underline"
+                    className="flex items-center gap-1 text-accent-ink hover:underline"
                   >
                     <Globe className="h-3 w-3" /> {pageInfo.website}
                   </a>
@@ -1194,7 +1295,7 @@ const AdminFacebookScraper = () => {
                         {hasMore && (
                           <button
                             onClick={() => setExpandedPost(isExpanded ? null : post.postId)}
-                            className="text-[10px] text-accent hover:underline mt-1"
+                            className="text-[10px] text-accent-ink hover:underline mt-1"
                           >
                             {isExpanded ? "Show less" : "Show more"}
                           </button>
@@ -1281,7 +1382,7 @@ const AdminFacebookScraper = () => {
                         href={u.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-accent hover:underline truncate flex-1 mr-2"
+                        className="text-accent-ink hover:underline truncate flex-1 mr-2"
                       >
                         {u.url}
                       </a>

@@ -1,6 +1,6 @@
 {
   "benchmark": "landing-stripe-audit-viewport",
-  "baseUrl": "http://127.0.0.1:6447/",
+  "baseUrl": "http://127.0.0.1:6100/",
   "date": "2026-09-02",
   "passed": true,
   "counts": {
@@ -8,7 +8,7 @@
     "failed": 0,
     "total": 24
   },
-  "screenshots": "bench\\roadmap\\landing-stripe-audit\\screenshots\\2026-09-02",
+  "screenshots": "bench/roadmap/landing-stripe-audit/screenshots/2026-09-02",
   "results": [
     {
       "viewport": {
@@ -30,7 +30,7 @@
           "id": "document-scrolls-full-landing",
           "passed": true,
           "details": {
-            "maxScrollHeight": 11361,
+            "maxScrollHeight": 7034,
             "viewportHeight": 780
           }
         },
@@ -64,17 +64,12 @@
               "left": 14,
               "right": 346,
               "top": 64,
-              "bottom": 368,
+              "bottom": 242,
               "width": 332,
-              "height": 304
+              "height": 178
             },
             "startRect": null,
-            "hubRect": {
-              "top": 10745.578125,
-              "bottom": 10765.828125,
-              "width": 74.171875,
-              "height": 20.25
-            }
+            "hubRect": null
           }
         },
         {
@@ -87,17 +82,12 @@
               "left": 14,
               "right": 346,
               "top": 64,
-              "bottom": 368,
+              "bottom": 242,
               "width": 332,
-              "height": 304
+              "height": 178
             },
             "startRect": null,
-            "hubRect": {
-              "top": 10745.578125,
-              "bottom": 10765.828125,
-              "width": 74.171875,
-              "height": 20.25
-            }
+            "hubRect": null
           }
         }
       ]
@@ -122,7 +112,7 @@
           "id": "document-scrolls-full-landing",
           "passed": true,
           "details": {
-            "maxScrollHeight": 11380,
+            "maxScrollHeight": 7389,
             "viewportHeight": 844
           }
         },
@@ -156,17 +146,12 @@
               "left": 14,
               "right": 376,
               "top": 64,
-              "bottom": 368,
+              "bottom": 242,
               "width": 362,
-              "height": 304
+              "height": 178
             },
             "startRect": null,
-            "hubRect": {
-              "top": 10785.34375,
-              "bottom": 10805.59375,
-              "width": 74.171875,
-              "height": 20.25
-            }
+            "hubRect": null
           }
         },
         {
@@ -179,17 +164,12 @@
               "left": 14,
               "right": 376,
               "top": 64,
-              "bottom": 368,
+              "bottom": 242,
               "width": 362,
-              "height": 304
+              "height": 178
             },
             "startRect": null,
-            "hubRect": {
-              "top": 10785.34375,
-              "bottom": 10805.59375,
-              "width": 74.171875,
-              "height": 20.25
-            }
+            "hubRect": null
           }
         }
       ]
@@ -214,7 +194,7 @@
           "id": "document-scrolls-full-landing",
           "passed": true,
           "details": {
-            "maxScrollHeight": 9022,
+            "maxScrollHeight": 7531,
             "viewportHeight": 900
           }
         },
@@ -260,7 +240,7 @@
           "id": "document-scrolls-full-landing",
           "passed": true,
           "details": {
-            "maxScrollHeight": 7972,
+            "maxScrollHeight": 7674,
             "viewportHeight": 900
           }
         },
@@ -306,7 +286,7 @@
           "id": "document-scrolls-full-landing",
           "passed": true,
           "details": {
-            "maxScrollHeight": 8242,
+            "maxScrollHeight": 8167,
             "viewportHeight": 960
           }
         },

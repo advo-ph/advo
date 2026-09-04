@@ -27,23 +27,23 @@ const BUDGET_RANGES = [
   { value: "50k-100k", label: "₱50,000 – ₱100,000" },
   { value: "100k-250k", label: "₱100,000 – ₱250,000" },
   { value: "250k-500k", label: "₱250,000 – ₱500,000" },
-  { value: "500k-plus", label: "₱500,000+" },
+  { value: "500k-1m", label: "₱500,000 – ₱1,000,000" },
+  { value: "1m-plus", label: "₱1,000,000+" },
   { value: "not-sure", label: "Not sure yet" },
 ];
 
 const PROJECT_TYPES = [
-  "Web Application",
-  "Mobile App",
+  "Landing Page",
   "E-commerce",
   "SaaS Platform",
-  "Landing Page",
-  "Custom Software",
-  "Other",
+  "Web Application",
+  "Mobile App",
+  "Software and Hardware",
 ];
 
 const PERKS = [
   "Scope, timeline, and price in 24h",
-  "Optional 30-min discovery call",
+  "Online or onsite meeting",
   "No commitment. No pressure.",
 ];
 
@@ -147,8 +147,8 @@ const Start = () => {
 
   return (
     <LandingShell>
-      <main className="landing-shell-main">
-        <div className="max-w-6xl mx-auto">
+      <main className="landing-shell-main lg:min-h-[calc(100vh-64px)] lg:flex lg:items-center">
+        <div className="max-w-6xl mx-auto w-full">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-20">
             {/* Left — Info */}
             <div className="lg:col-span-2">
@@ -159,10 +159,6 @@ const Start = () => {
               <h1 className="text-4xl md:text-5xl font-semibold tracking-tight leading-[1.05] mb-6 text-balance">
                 Tell us what you're building.
               </h1>
-
-              <p className="text-muted-foreground text-lg mb-10 leading-relaxed">
-                Sketch, napkin, bullet points. All welcome.
-              </p>
 
               {/* What you get */}
               <div className="space-y-3 mb-10">

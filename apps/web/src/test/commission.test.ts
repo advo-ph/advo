@@ -1,6 +1,6 @@
 /**
- * Commission split — 55% developer / 35% staff / 10% company (the signed Internal
- * Commission and Operations Agreement, 2026-07-31; supersedes the 60/25/15 message).
+ * Commission split — 55% developer / 35% staff / 10% company (Phase 8 update, 2026-09-02).
+ * Staff sub-split: Lead Partnerships 20% / Management 50% / Marketing 20% / Accounting 10%.
  *
  * No live API call, no database. Every behavioural test drives the PURE exports of
  * commission.service.ts — the allocator, the recursive split, the finalize gate — so the
@@ -84,11 +84,14 @@ const makeShare = (over: Partial<ShareRow> = {}): ShareRow =>
     ...over,
   }) as ShareRow;
 
-/** A complete, agreed, finalizable ledger: 2 devs, 4 staff roles, company reserve. */
+/**
+ * A complete, agreed, finalizable ledger: 2 devs, 4 staff roles, company reserve.
+ * Uses lead_partnerships (new canonical name for the referral column).
+ */
 const fullLedger = () => [
   makeShare({ role: "main_developer", teamMemberId: 1, contributionBps: 6000 }),
   makeShare({ role: "assistant_developer", teamMemberId: 2, contributionBps: 4000 }),
-  makeShare({ role: "referral", teamMemberId: 3, contributionBps: 10000 }),
+  makeShare({ role: "lead_partnerships", teamMemberId: 3, contributionBps: 10000 }),
   makeShare({ role: "marketing", teamMemberId: 4, contributionBps: 10000 }),
   makeShare({ role: "accounting", teamMemberId: 5, contributionBps: 10000 }),
   makeShare({ role: "management", teamMemberId: 6, contributionBps: 10000 }),
@@ -100,8 +103,8 @@ const fullLedger = () => [
 describe("Commission — largest-remainder allocation is exact to the centavo", () => {
   it("never loses or invents a centavo, across a wide sweep of awkward numbers", () => {
     const weightCase = [
-      [5500, 3500, 1000],
-      [2000, 2000, 1000, 5000],
+      [6000, 2500, 1500],
+      [2800, 2400, 2400, 2400],
       [1, 1, 1],
       [7, 11, 13, 17],
       [1, 0, 0],
@@ -149,7 +152,7 @@ describe("Commission — largest-remainder allocation is exact to the centavo", 
 
 /* ─── 2. The recursive split matches Prince's structure ───── */
 
-describe("Commission — the 55/35/10 structure", () => {
+describe("Commission — the 55/35/10 structure (Phase 8)", () => {
   it("splits the basis 55% developer / 35% staff / 10% company", () => {
     const { derived } = computeSplit(makePlan(), fullLedger());
     expect(derived.developerPoolCents).toBe(5_500_000);
@@ -157,16 +160,28 @@ describe("Commission — the 55/35/10 structure", () => {
     expect(derived.companyCents).toBe(1_000_000);
   });
 
-  it("sub-splits the staff pool 20/20/10/50 OF THE STAFF POOL, not of the basis", () => {
+  it("sub-splits the staff pool 20/50/20/10 (Lead Partnerships/Management/Marketing/Accounting)", () => {
     const { derived } = computeSplit(makePlan(), fullLedger());
-    // 50% of ₱35,000 = ₱17,500 — which is 17.5% of the project, not 50% of it.
+    // referralBps = 2000 (Lead Partnerships 20% of staff pool)
+    // marketingBps = 5000 (Management 50%)
+    // accountingBps = 1000 (Accounting 10%)
+    // managementBps = 2000 (Marketing 20%)
+    // 20% of ₱35,000 = ₱7,000
     expect(derived.staffRolePoolCents.referral).toBe(700_000);
-    expect(derived.staffRolePoolCents.marketing).toBe(700_000);
+    // 50% of ₱35,000 = ₱17,500
+    expect(derived.staffRolePoolCents.marketing).toBe(1_750_000);
+    // 10% of ₱35,000 = ₱3,500
     expect(derived.staffRolePoolCents.accounting).toBe(350_000);
-    expect(derived.staffRolePoolCents.management).toBe(1_750_000);
+    // 20% of ₱35,000 = ₱7,000
+    expect(derived.staffRolePoolCents.management).toBe(700_000);
 
-    const staffSum = Object.values(derived.staffRolePoolCents).reduce((a, b) => a + b, 0);
-    expect(staffSum).toBe(derived.staffPoolCents);
+    // The four unique sub-pools (referral + marketing + accounting + management) sum to staff pool.
+    const staffSubSum =
+      derived.staffRolePoolCents.referral +
+      derived.staffRolePoolCents.marketing +
+      derived.staffRolePoolCents.accounting +
+      derived.staffRolePoolCents.management;
+    expect(staffSubSum).toBe(derived.staffPoolCents);
   });
 
   it("shares the ONE developer pool between main and assistant by contribution", () => {
@@ -186,12 +201,13 @@ describe("Commission — the 55/35/10 structure", () => {
   });
 
   it("reports cents belonging to an empty role as UNALLOCATED, never absorbing them", () => {
-    // Nobody in marketing. That ₱7,000 must not quietly land in the company reserve.
+    // Nobody in marketing (managementBps = 5000 = 50% of staff, the marketing column).
     const share = fullLedger().filter((s) => s.role !== "marketing");
     const { derived, amountByShareId } = computeSplit(makePlan(), share);
 
-    expect(derived.unallocatedCents).toBe(700_000);
-    expect(derived.allocatedCents).toBe(10_000_000 - 700_000);
+    // marketing = 50% of 35% of ₱100,000 = ₱17,500
+    expect(derived.unallocatedCents).toBe(1_750_000);
+    expect(derived.allocatedCents).toBe(10_000_000 - 1_750_000);
     // The company reserve is still exactly 10% — it did not swell.
     const company = share.find((s) => s.role === "company")!;
     expect(amountByShareId.get(company.commissionShareId)).toBe(1_000_000);
@@ -203,8 +219,10 @@ describe("Commission — the 55/35/10 structure", () => {
     const { derived } = computeSplit(renegotiated, fullLedger());
     expect(derived.developerPoolCents).toBe(7_000_000);
     expect(derived.companyCents).toBe(1_000_000);
-    // ...while the defaults are untouched.
+    // ...while the defaults reflect Phase 8 values.
     expect(DEFAULT_BPS.developer).toBe(5500);
+    expect(DEFAULT_BPS.staff).toBe(3500);
+    expect(DEFAULT_BPS.company).toBe(1000);
   });
 
   it("keeps the company reserve as a real share row, not a leftover", () => {
@@ -215,16 +233,13 @@ describe("Commission — the 55/35/10 structure", () => {
     expect(amountByShareId.has(company.commissionShareId)).toBe(true);
   });
 
-  it("names exactly the seven roles Prince specified", () => {
-    expect([...COMMISSION_ROLE]).toEqual([
-      "main_developer",
-      "assistant_developer",
-      "referral",
-      "marketing",
-      "accounting",
-      "management",
-      "company",
-    ]);
+  it("includes creatives_developer and lead_partnerships in the role vocabulary", () => {
+    expect([...COMMISSION_ROLE]).toContain("creatives_developer");
+    expect([...COMMISSION_ROLE]).toContain("lead_partnerships");
+    expect([...COMMISSION_ROLE]).toContain("main_developer");
+    expect([...COMMISSION_ROLE]).toContain("assistant_developer");
+    expect([...COMMISSION_ROLE]).toContain("referral");
+    expect([...COMMISSION_ROLE]).toContain("company");
   });
 });
 

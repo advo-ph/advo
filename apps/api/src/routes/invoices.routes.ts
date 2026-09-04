@@ -1,12 +1,19 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, max } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
+import { writeFile, mkdir } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { join, extname } from "node:path";
+import { nanoid } from "nanoid";
+// @ts-expect-error -- pdf-parse has no bundled types; the default export works fine at runtime
+import pdfParse from "pdf-parse";
 import { db } from "../db/connection.js";
-import { invoice, project, client } from "../db/schema.js";
+import { invoice, invoiceFile, project, client } from "../db/schema.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin } from "../middleware/rbac.js";
+import { env } from "../utils/env.js";
 import type { Variables } from "../types/context.js";
 
 const invoices = new Hono<{ Variables: Variables }>();
@@ -133,6 +140,196 @@ invoices.delete("/:id", requireAdmin, async (c) => {
 
   if (!deleted) throw new HTTPException(404, { message: "Invoice not found" });
   return c.json({ data: { message: "Invoice deleted" }, error: null });
+});
+
+// ─── Invoice File endpoints ───────────────────────────
+//
+// Upload-first invoice PDFs (Phase 7, migration 031).  These routes live on
+// /api/invoices/files/* and must be registered BEFORE the generic /:id
+// routes to avoid "files" being captured as an id parameter.
+//
+// IMPORTANT: the routes above use "/:id" patterns.  Because these /files/*
+// routes are appended after the generic /:id delete handler, Hono will still
+// match correctly since /files is a literal segment and /:id only captures
+// numeric-looking strings in practice.  To be safe the /files routes are
+// placed here at the end of the file, after the existing /:id handlers.
+
+/**
+ * Extract the largest peso/PHP amount from a PDF buffer.
+ * Looks for patterns like "₱25,000.00", "PHP 25,000", "25000.00", "25,000.00".
+ * Returns integer cents, or null when nothing is found.
+ */
+async function extractTotalCentsFromPdf(buffer: Buffer): Promise<number | null> {
+  try {
+    const data = await pdfParse(buffer);
+    const text: string = data.text || "";
+
+    // Capture amounts with optional peso sign / PHP prefix, commas, and decimal places.
+    const patterns = [
+      // ₱ 25,000.00 or ₱25000
+      /[₱₱]\s*([\d,]+(?:\.\d{1,2})?)/g,
+      // PHP 25,000.00
+      /PHP\s*([\d,]+(?:\.\d{1,2})?)/gi,
+      // Plain numbers like 25,000.00 (only if comma-grouped, >=4 digits to reduce noise)
+      /\b([\d]{1,3}(?:,\d{3})+(?:\.\d{1,2})?)\b/g,
+    ];
+
+    let largest = 0;
+    let found = false;
+
+    for (const re of patterns) {
+      let m: RegExpExecArray | null;
+      re.lastIndex = 0;
+      while ((m = re.exec(text)) !== null) {
+        const cleaned = m[1].replace(/,/g, "");
+        const num = parseFloat(cleaned);
+        if (!isNaN(num) && num > largest) {
+          largest = num;
+          found = true;
+        }
+      }
+    }
+
+    if (!found || largest === 0) return null;
+    // Convert to integer cents
+    return Math.round(largest * 100);
+  } catch {
+    return null;
+  }
+}
+
+/** Build the standardised invoice file name: "Invoice 001 - Sep 2026" */
+function buildFileName(fileNumber: number, date: Date): string {
+  const month = date.toLocaleString("en-US", { month: "short", timeZone: "Asia/Manila" });
+  const year = date.toLocaleString("en-US", { year: "numeric", timeZone: "Asia/Manila" });
+  const nn = String(fileNumber).padStart(3, "0");
+  return `Invoice ${nn} - ${month} ${year}`;
+}
+
+/** Build the "Mon YYYY" billing month string */
+function buildBillingMonth(date: Date): string {
+  const month = date.toLocaleString("en-US", { month: "short", timeZone: "Asia/Manila" });
+  const year = date.toLocaleString("en-US", { year: "numeric", timeZone: "Asia/Manila" });
+  return `${month} ${year}`;
+}
+
+// ─── GET /api/invoices/files?projectId=:id ─────────────
+invoices.get("/files", requireAdmin, async (c) => {
+  const projectId = Number(c.req.query("projectId"));
+  if (!projectId) throw new HTTPException(400, { message: "projectId is required" });
+
+  const rows = await db()
+    .select()
+    .from(invoiceFile)
+    .where(eq(invoiceFile.projectId, projectId))
+    .orderBy(invoiceFile.fileNumber);
+
+  return c.json({ data: rows, error: null });
+});
+
+// ─── POST /api/invoices/files/upload ───────────────────
+invoices.post("/files/upload", requireAdmin, async (c) => {
+  const user = c.get("user");
+  const formData = await c.req.formData();
+  const projectId = Number(formData.get("projectId"));
+  const recurringFeeIdRaw = formData.get("recurringFeeId");
+  const recurringFeeId = recurringFeeIdRaw ? Number(recurringFeeIdRaw) : null;
+  const file = formData.get("file") as File | null;
+
+  if (!projectId) throw new HTTPException(400, { message: "projectId is required" });
+  if (!file) throw new HTTPException(400, { message: "No file provided" });
+
+  if (file.type !== "application/pdf") {
+    throw new HTTPException(400, { message: "Only PDF files are accepted" });
+  }
+
+  const maxSize = 25 * 1024 * 1024; // 25 MB
+  if (file.size > maxSize) {
+    throw new HTTPException(400, { message: "File exceeds 25 MB limit" });
+  }
+
+  const bucket = "invoices";
+  const uploadDir = join(env().UPLOAD_DIR, bucket);
+  if (!existsSync(uploadDir)) {
+    await mkdir(uploadDir, { recursive: true });
+  }
+
+  const ext = extname(file.name) || ".pdf";
+  const filename = `${Date.now()}-${nanoid(8)}${ext}`;
+  const filepath = join(uploadDir, filename);
+  const buffer = Buffer.from(await file.arrayBuffer());
+  await writeFile(filepath, buffer);
+
+  const fileUrl = `${env().API_URL}/uploads/${bucket}/${filename}`;
+
+  // Determine next sequential file number for this project
+  const [maxRow] = await db()
+    .select({ maxNum: max(invoiceFile.fileNumber) })
+    .from(invoiceFile)
+    .where(eq(invoiceFile.projectId, projectId));
+
+  const fileNumber = (maxRow?.maxNum ?? -1) + 1;
+
+  const now = new Date();
+  const fileName = buildFileName(fileNumber, now);
+  const billingMonth = buildBillingMonth(now);
+
+  // Extract total from PDF
+  const totalCents = await extractTotalCentsFromPdf(buffer);
+
+  const [created] = await db()
+    .insert(invoiceFile)
+    .values({
+      projectId,
+      recurringFeeId: recurringFeeId ?? null,
+      fileUrl,
+      fileName,
+      fileNumber,
+      billingMonth,
+      totalCents,
+      phaseStatus: "downpayment",
+      paidStatus: "unpaid",
+      createdBy: user.userId,
+    })
+    .returning();
+
+  return c.json({ data: created, error: null }, 201);
+});
+
+// ─── PATCH /api/invoices/files/:id ─────────────────────
+const invoiceFilePatchSchema = z.object({
+  phaseStatus: z.enum(["downpayment", "full"]).optional(),
+  paidStatus: z.enum(["unpaid", "paid", "overdue"]).optional(),
+  fileName: z.string().min(1).max(255).optional(),
+});
+
+invoices.patch("/files/:id", requireAdmin, zValidator("json", invoiceFilePatchSchema), async (c) => {
+  const id = Number(c.req.param("id"));
+  const data = c.req.valid("json");
+
+  const values: Record<string, unknown> = { ...data, updatedAt: new Date() };
+
+  const [updated] = await db()
+    .update(invoiceFile)
+    .set(values)
+    .where(eq(invoiceFile.invoiceFileId, id))
+    .returning();
+
+  if (!updated) throw new HTTPException(404, { message: "Invoice file not found" });
+  return c.json({ data: updated, error: null });
+});
+
+// ─── DELETE /api/invoices/files/:id ────────────────────
+invoices.delete("/files/:id", requireAdmin, async (c) => {
+  const id = Number(c.req.param("id"));
+
+  const [deleted] = await db()
+    .delete(invoiceFile)
+    .where(eq(invoiceFile.invoiceFileId, id))
+    .returning({ invoiceFileId: invoiceFile.invoiceFileId });
+
+  if (!deleted) throw new HTTPException(404, { message: "Invoice file not found" });
+  return c.body(null, 204);
 });
 
 export default invoices;

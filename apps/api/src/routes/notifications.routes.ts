@@ -4,12 +4,37 @@ import { zValidator } from "@hono/zod-validator";
 import { eq, desc, and } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { db } from "../db/connection.js";
-import { notification, client } from "../db/schema.js";
+import { notification, client, siteContent } from "../db/schema.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin } from "../middleware/rbac.js";
 import { sendNotificationEmail } from "../services/email.service.js";
 import { notifyClient } from "../services/notify.service.js";
+import { createLogger } from "../utils/logger.js";
+import { describeDbError } from "../utils/db-error.js";
 import type { Variables } from "../types/context.js";
+
+const log = createLogger("notifications");
+
+/** Read auto-rule toggles from site_content.client_dashboard before send. */
+async function isAutoRuleEnabled(type: string): Promise<boolean> {
+  const key =
+    type === "progress_update"
+      ? "notify_on_progress_update"
+      : type === "invoice_issued"
+        ? "notify_on_invoice"
+        : type === "deliverable_completed"
+          ? "notify_on_deliverable_complete"
+          : null;
+  if (!key) return true;
+
+  const [row] = await db()
+    .select()
+    .from(siteContent)
+    .where(eq(siteContent.sectionId, "client_dashboard"))
+    .limit(1);
+  const content = (row?.content ?? {}) as Record<string, unknown>;
+  return content[key] !== false;
+}
 
 const notifications = new Hono<{ Variables: Variables }>();
 
@@ -108,6 +133,20 @@ notifications.post(
     const allClients = await d.select().from(client);
     const created = [];
 
+    /**
+     * A broadcast is a loop of independent writes, so one bad row must not take
+     * down the other 40. But "must not throw" was previously implemented as
+     * "must not be recorded either": every insert failure was swallowed whole,
+     * so a broadcast that persisted 3 of 40 still answered 200 with no hint that
+     * 37 people will never see it.
+     *
+     * Failures are now counted, logged with their constraint, and reported back
+     * in the response. A broadcast where nothing landed is an error, not a
+     * success with a zero in it.
+     */
+    const failedClientId: number[] = [];
+    const emailFailedClientId: number[] = [];
+
     for (const cl of allClients) {
       try {
         const [n] = await d
@@ -121,20 +160,51 @@ notifications.post(
           .returning();
 
         created.push(n);
-
-        if (data.sendEmail && cl.contactEmail) {
-          await sendNotificationEmail(cl.contactEmail, data.title, data.body || "").catch(
-            () => {},
-          );
-        }
-      } catch {
+      } catch (err) {
         // A client may have been deleted between the select-all above and this
-        // insert (FK violation) — skip it rather than 500 the whole broadcast.
+        // insert (FK violation). Skip it rather than 500 the whole broadcast,
+        // but never skip it silently.
+        failedClientId.push(cl.clientId);
+        log.error(
+          { clientId: cl.clientId, db: describeDbError(err), err },
+          "Broadcast notification insert failed",
+        );
+        continue;
+      }
+
+      if (data.sendEmail && cl.contactEmail) {
+        try {
+          await sendNotificationEmail(cl.contactEmail, data.title, data.body || "");
+        } catch (err) {
+          // The notification row is committed, so the client will still see it
+          // in the hub. Only the email leg failed.
+          emailFailedClientId.push(cl.clientId);
+          log.error({ clientId: cl.clientId, err }, "Broadcast notification email failed");
+        }
       }
     }
 
+    // Nothing persisted. That is a failed broadcast, not a successful empty one.
+    if (allClients.length > 0 && created.length === 0) {
+      throw new HTTPException(500, {
+        message: "The broadcast could not be saved for any client. Nothing was sent.",
+      });
+    }
+
+    const message =
+      failedClientId.length > 0
+        ? `Sent to ${created.length} of ${allClients.length} clients. ${failedClientId.length} could not be saved.`
+        : `Sent to ${created.length} clients`;
+
     return c.json({
-      data: { message: `Sent to ${created.length} clients`, notifications: created },
+      data: {
+        message,
+        notifications: created,
+        attemptedCount: allClients.length,
+        deliveredCount: created.length,
+        failedCount: failedClientId.length,
+        emailFailedCount: emailFailedClientId.length,
+      },
       error: null,
     });
   }

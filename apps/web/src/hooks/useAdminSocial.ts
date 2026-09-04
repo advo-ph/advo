@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { get, post, patch, del } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { errorText } from "@/lib/error-text";
 
 export interface SocialPost {
   social_post_id: number;
@@ -112,9 +113,13 @@ export function useAdminSocial() {
     },
     onError: (err: Error, _id, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(QUERY_KEY, ctx.prev);
-      toast({ title: "Error", description: err.message, variant: "destructive" });
+      toast({ title: "Post not deleted", description: errorText(err, "The post is still there. Try again."), variant: "destructive" });
     },
     onSuccess: () => toast({ title: "Deleted", description: "Post removed" }),
+    // The row was removed from the cache before the server agreed to it.
+    // Re-read either way, so a rollback shows the real list rather than a
+    // reconstructed one.
+    onSettled: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
   });
 
   return {

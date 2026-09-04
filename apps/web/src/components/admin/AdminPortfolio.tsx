@@ -364,7 +364,7 @@ const AdminPortfolio = () => {
           <Button
             onClick={openCreateDialog}
             size="sm"
-            className="h-9 bg-accent text-accent-foreground hover:bg-accent/90"
+            className="h-9 bg-primary text-primary-foreground hover:bg-primary/90"
           >
             <Plus className="h-4 w-4 mr-2" />
             Add project
@@ -410,7 +410,7 @@ const AdminPortfolio = () => {
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-sm truncate">{project.title}</p>
                     {project.is_featured && (
-                      <Badge className="text-[10px] bg-accent/10 text-accent border-accent/30 gap-1 shrink-0">
+                      <Badge className="text-[10px] bg-accent/10 text-accent-ink border-accent/30 gap-1 shrink-0">
                         <Star className="h-2.5 w-2.5" />
                         Featured
                       </Badge>
@@ -444,7 +444,7 @@ const AdminPortfolio = () => {
                         href={project.preview_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-xs text-accent hover:underline"
+                        className="flex items-center gap-1 text-xs text-accent-ink hover:underline"
                       >
                         <ExternalLink className="h-3 w-3" />
                         Preview

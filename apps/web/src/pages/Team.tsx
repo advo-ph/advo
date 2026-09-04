@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Linkedin, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import LandingShell from "@/components/landing/landing-shell";
+import TeamMemberCard from "@/components/TeamMemberCard";
 import { get } from "@/lib/api";
 
 interface TeamMember {
@@ -10,6 +11,7 @@ interface TeamMember {
   role: string;
   bio: string | null;
   avatar_url: string | null;
+  preview_image_url: string | null;
   email: string | null;
   linkedin_url: string | null;
 }
@@ -28,6 +30,7 @@ const Team = () => {
           role: m.role as string,
           bio: (m.bio as string) || null,
           avatar_url: (m.avatarUrl ?? m.avatar_url) as string | null,
+          preview_image_url: (m.previewImageUrl ?? m.preview_image_url ?? null) as string | null,
           email: (m.email as string) || null,
           linkedin_url: (m.linkedinUrl ?? m.linkedin_url) as string | null,
         })),
@@ -63,57 +66,13 @@ const Team = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {members.map((member) => (
-                <div
+                <TeamMemberCard
                   key={member.team_member_id}
-                  className="group relative overflow-hidden rounded-2xl border border-border bg-card aspect-[3/4]"
-                >
-                  {/* Full-bleed image */}
-                  <div className="absolute inset-0">
-                    {member.avatar_url ? (
-                      <img
-                        src={member.avatar_url}
-                        alt={member.name}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-7xl font-semibold text-muted-foreground/10 bg-secondary">
-                        {member.name.charAt(0)}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Gradient fade — concentrated at the bottom, fading upward */}
-                  <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-card via-card/90 via-30% to-transparent" />
-
-                  {/* Content overlaid at bottom */}
-                  <div className="absolute inset-x-0 bottom-0 px-6 pb-5 pt-6">
-                    <h3 className="text-xl font-semibold tracking-tight mb-1">
-                      {member.name}
-                    </h3>
-                    <p className="text-[11px] font-mono uppercase tracking-[0.15em] text-accent mb-4">
-                      {member.role}
-                    </p>
-
-                    {member.bio && (
-                      <p className="text-sm text-muted-foreground leading-relaxed mb-4 opacity-90">
-                        {member.bio}
-                      </p>
-                    )}
-
-                    <div className="flex items-center gap-1">
-                      {member.linkedin_url && (
-                        <a
-                          href={member.linkedin_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-2 -ml-2 text-muted-foreground hover:text-foreground transition-colors"
-                        >
-                          <Linkedin className="h-4 w-4" />
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                  name={member.name}
+                  role={member.role}
+                  avatar_url={member.avatar_url}
+                  preview_image_url={member.preview_image_url}
+                />
               ))}
             </div>
           )}

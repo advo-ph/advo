@@ -34,6 +34,9 @@ audits/**/*.jpg
 bench/**/*.png
 bench/**/*.jpg
 
+# Screenshot output from scripts/verify-install-prompt.mjs
+.verify-shots/
+
 # Logs
 *.log
 npm-debug.log*
@@ -44,3 +47,5 @@ bench/roadmap/drawer-a11y/runs/
 bench/roadmap/payment-rail/runs/
 bench/roadmap/message-channel/runs/
 bench/roadmap/scroll-reset/runs/
+# npm is the package manager here; a stray pnpm install must not land
+pnpm-lock.yaml

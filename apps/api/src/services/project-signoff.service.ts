@@ -742,7 +742,7 @@ export async function recordRevision(
         projectId: row.projectId,
         title: "Client revision",
         description,
-        status: "not_started",
+        status: "todo",
         priority: 0,
       })
       .returning();

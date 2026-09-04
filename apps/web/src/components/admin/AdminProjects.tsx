@@ -1,26 +1,19 @@
 import { useState } from "react";
 import {
   Plus,
-  Pencil,
-  Trash2,
   Save,
   X,
-  GitBranch,
-  ExternalLink,
   Loader2,
   MessageSquarePlus,
-  GitCommitHorizontal,
-  GitPullRequest,
-  Clock,
   FolderKanban,
-  LayoutDashboard,
-  UserPlus,
   ArrowLeft,
+  ExternalLink,
+  LayoutDashboard,
 } from "lucide-react";
+import { useDeleteProject } from "@/hooks/useDeleteProject";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -51,17 +44,9 @@ import { useToast } from "@/hooks/use-toast";
 import type { Client, ProjectStatus } from "@/types/admin";
 import { STATUS_OPTIONS, formatCurrency } from "@/types/admin";
 import type { MergedProject } from "@/hooks/useOrgProjects";
-import { useAdminTeam } from "@/hooks/useAdminTeam";
 import ProjectCommandCenter from "./ProjectCommandCenter";
-import { PageHeader, StatStrip, Stat, Dot, Empty } from "./_ui";
+import { PageHeader, StatStrip, Stat, Empty } from "./_ui";
 
-const STATUS_DOT: Record<string, string> = {
-  discovery: "bg-blue-500",
-  architecture: "bg-purple-500",
-  development: "bg-orange-500",
-  testing: "bg-yellow-500",
-  shipped: "bg-green-500",
-};
 
 interface AdminProjectsProps {
   projects: MergedProject[];
@@ -72,18 +57,15 @@ interface AdminProjectsProps {
 
 const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProjectsProps) => {
   const { toast } = useToast();
-  const { activeMembers: teamMember } = useAdminTeam();
 
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [assigningProject, setAssigningProject] = useState<MergedProject | null>(null);
   const [editingProject, setEditingProject] = useState<MergedProject | null>(null);
   const [deletingProject, setDeletingProject] = useState<MergedProject | null>(null);
   const [updatingProject, setUpdatingProject] = useState<MergedProject | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [assignMemberId, setAssignMemberId] = useState("");
   const [assetType, setAssetType] = useState<"progress_photo" | "completion_photo" | "document">(
     "progress_photo",
   );
@@ -266,104 +248,31 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
     }
   };
 
-  const handleDelete = async () => {
+  const { handleDelete: doDelete } = useDeleteProject(() => {
+    toast({ title: "Deleted", description: "Project deleted" });
+    setIsDeleteDialogOpen(false);
+    setDeletingProject(null);
+    onRefresh();
+  });
+
+  const handleDelete = () => {
     if (!deletingProject) return;
-
-    try {
-      const { error } = await db.deleteProject(deletingProject.project_id);
-
-      if (error) {
-        toast({ title: "Error", description: error, variant: "destructive" });
-      } else {
-        toast({ title: "Deleted", description: "Project deleted" });
-        setIsDeleteDialogOpen(false);
-        setDeletingProject(null);
-        onRefresh();
-      }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : "Unable to delete project",
-        variant: "destructive",
-      });
-    }
+    void doDelete(deletingProject.project_id);
   };
 
-  const memberName = (id: number) =>
-    teamMember.find((m) => m.team_member_id === id)?.name ?? `Member ${id}`;
-
-  const handleGrantAccess = async () => {
-    if (!assigningProject || !assignMemberId) {
-      toast({ title: "Error", description: "Select a team member", variant: "destructive" });
-      return;
-    }
-    setIsSaving(true);
-    try {
-      const { error } = await db.grantProjectAccess(
-        assigningProject.project_id,
-        parseInt(assignMemberId, 10),
-      );
-      if (error) {
-        toast({ title: "Error", description: error, variant: "destructive" });
-      } else {
-        toast({ title: "Assigned", description: "Team member added to project" });
-        setAssignMemberId("");
-        onRefresh();
-        // Keep dialog open; refresh parent list will update assigningProject via re-open below
-        setAssigningProject((prev) =>
-          prev
-            ? {
-                ...prev,
-                team_member_id: [
-                  ...new Set([...(prev.team_member_id ?? []), parseInt(assignMemberId, 10)]),
-                ],
-              }
-            : null,
-        );
-      }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : "Unable to assign member",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleRevokeAccess = async (teamMemberId: number) => {
-    if (!assigningProject) return;
-    setIsSaving(true);
-    try {
-      const { error } = await db.revokeProjectAccess(assigningProject.project_id, teamMemberId);
-      if (error) {
-        toast({ title: "Error", description: error, variant: "destructive" });
-      } else {
-        toast({ title: "Removed", description: "Team member removed from project" });
-        setAssigningProject((prev) =>
-          prev
-            ? {
-                ...prev,
-                team_member_id: (prev.team_member_id ?? []).filter((id) => id !== teamMemberId),
-              }
-            : null,
-        );
-        onRefresh();
-      }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : "Unable to revoke access",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
   if (openProject) {
-    return <ProjectCommandCenter project={openProject} onBack={() => setOpenProjectId(null)} />;
+    return (
+      <ProjectCommandCenter
+        project={openProject}
+        onBack={() => setOpenProjectId(null)}
+        onProjectDeleted={() => {
+          setOpenProjectId(null);
+          onRefresh();
+        }}
+        onProjectSaved={onRefresh}
+      />
+    );
   }
 
   const formMode = projectFormMode(isDialogOpen, editingProject);
@@ -424,7 +333,7 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
                 </Button>
                 <Button
                   size="sm"
-                  className="h-9 bg-accent text-accent-foreground hover:bg-accent/90"
+                  className="h-9 bg-primary text-primary-foreground hover:bg-primary/90"
                   onClick={handleSave}
                   disabled={isSaving}
                 >
@@ -667,7 +576,7 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
           <Button
             onClick={openCreateDialog}
             size="sm"
-            className="h-9 bg-accent text-accent-foreground hover:bg-accent/90"
+            className="h-9 bg-primary text-primary-foreground hover:bg-primary/90"
           >
             <Plus className="h-4 w-4 mr-1.5" />
             New project
@@ -689,12 +598,12 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
         </div>
       ) : projects.length === 0 ? (
         <div className="border border-border rounded-lg bg-card">
-          <Empty text="No projects yet" icon={FolderKanban} />
+          <Empty text="No projects yet. Add your first one to get started." icon={FolderKanban} />
           <div className="flex justify-center pb-8">
             <Button
               onClick={openCreateDialog}
               size="sm"
-              className="h-9 bg-accent text-accent-foreground hover:bg-accent/90"
+              className="h-9 bg-primary text-primary-foreground hover:bg-primary/90"
             >
               <Plus className="h-4 w-4 mr-1.5" />
               New project
@@ -706,149 +615,68 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
           {projects.map((project) => (
             <div
               key={project.project_id}
-              className="border border-border rounded-lg bg-card p-4 hover:bg-secondary/30 transition-colors"
+              role="button"
+              tabIndex={0}
+              aria-label={`Open ${project.title}`}
+              onClick={() => setOpenProjectId(project.project_id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setOpenProjectId(project.project_id);
+                }
+              }}
+              className="border border-border rounded-lg bg-card p-4 cursor-pointer hover:bg-secondary/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2.5 mb-1.5">
-                    <Dot className={STATUS_DOT[project.project_status] ?? "bg-muted-foreground"} />
                     <h3 className="font-medium truncate">{project.title}</h3>
-                    <span
-                      className={`text-xs capitalize ${
-                        project.project_status === "shipped" ? "text-accent" : "text-muted-foreground"
-                      }`}
-                    >
-                      {project.project_status}
-                    </span>
                   </div>
 
-                  <p className="text-xs text-muted-foreground mb-3 truncate">
+                  <span className="text-xs text-muted-foreground capitalize">
+                    {project.project_status}
+                  </span>
+
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
                     {project.client?.company_name || project.client?.contact_email || "No client"}
                   </p>
 
-                  <div className="flex items-center gap-4 text-sm">
+                  <div className="flex items-center gap-4 text-sm mt-2">
                     <span className="text-muted-foreground tabular-nums">
-                      <span className="text-accent">{formatCurrency(project.amount_paid_cents)}</span>
+                      <span className="text-accent-ink">{formatCurrency(project.amount_paid_cents)}</span>
                       {" / "}
                       {formatCurrency(project.total_value_cents)}
                     </span>
-
-                    {project.repository_name && (
-                      <span className="flex items-center gap-1 text-muted-foreground">
-                        <GitBranch className="h-3 w-3" />
-                        {project.repository_name}
-                      </span>
-                    )}
-
-                    {project.preview_url && (
-                      <a
-                        href={project.preview_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-accent hover:underline"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                        Preview
-                      </a>
-                    )}
-
-                    <span className="text-xs text-muted-foreground tabular-nums">
-                      {(project.team_member_id ?? []).length} assigned
-                    </span>
                   </div>
-
-                  {(project.team_member_id ?? []).length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {(project.team_member_id ?? []).map((id) => (
-                        <Badge
-                          key={id}
-                          variant="secondary"
-                          className="text-[10px] px-1.5 py-0 rounded-md font-normal"
-                        >
-                          {memberName(id)}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* GitHub enrichment row */}
-                  {project.githubRepo && (
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
-                      <span className="flex items-center gap-1 tabular-nums">
-                        <GitCommitHorizontal className="h-3 w-3" />
-                        {project.commits.length} recent commits
-                      </span>
-                      <span className="flex items-center gap-1 tabular-nums">
-                        <GitPullRequest className="h-3 w-3" />
-                        {project.openPRs} open PRs
-                      </span>
-                      {project.lastPush && (
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          Last push {new Date(project.lastPush).toLocaleDateString()}
-                        </span>
-                      )}
-                      {project.detectedTechStack.length > 0 && (
-                        <div className="flex items-center gap-1 flex-wrap">
-                          {project.detectedTechStack.slice(0, 4).map((t) => (
-                            <Badge key={t.name} variant="secondary" className="text-[10px] px-1.5 py-0 rounded-md">
-                              {t.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
 
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="hidden sm:flex items-center gap-2 shrink-0">
                   <Button
                     size="sm"
-                    className="h-8 bg-accent text-accent-foreground hover:bg-accent/90"
-                    onClick={() => setOpenProjectId(project.project_id)}
+                    className="h-8 bg-primary text-primary-foreground hover:bg-primary/90"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenProjectId(project.project_id);
+                    }}
                   >
-                    <LayoutDashboard className="h-4 w-4 mr-1.5" />
-                    Open
+                    <LayoutDashboard className="h-3.5 w-3.5 mr-1.5" />
+                    View project
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     className="h-8"
-                    onClick={() => {
-                      setAssigningProject(project);
-                      setAssignMemberId("");
+                    disabled={!project.preview_url}
+                    aria-disabled={!project.preview_url}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (project.preview_url) {
+                        window.open(project.preview_url, "_blank", "noopener,noreferrer");
+                      }
                     }}
                   >
-                    <UserPlus className="h-4 w-4 mr-1.5" />
-                    Assign
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8"
-                    onClick={() => openUpdateDialog(project)}
-                  >
-                    <MessageSquarePlus className="h-4 w-4 mr-1.5" />
-                    Post update
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={() => openEditDialog(project)}
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={() => {
-                      setDeletingProject(project);
-                      setIsDeleteDialogOpen(true);
-                    }}
-                  >
-                    <Trash2 className="h-4 w-4 text-destructive" />
+                    <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+                    View site
                   </Button>
                 </div>
               </div>
@@ -908,107 +736,6 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
                 <MessageSquarePlus className="h-4 w-4 mr-2" />
               )}
               Post Update
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Assign team member to project */}
-      <Dialog
-        open={!!assigningProject}
-        onOpenChange={(open) => {
-          if (!open) {
-            setAssigningProject(null);
-            setAssignMemberId("");
-          }
-        }}
-      >
-        <DialogContent className="bg-card border-border max-w-md rounded-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <UserPlus className="h-4 w-4" />
-              Assign team — {assigningProject?.title}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="grid gap-4 py-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Current team</label>
-              {(assigningProject?.team_member_id ?? []).length === 0 ? (
-                <p className="text-sm text-muted-foreground">No one assigned yet.</p>
-              ) : (
-                <div className="flex flex-wrap gap-1.5">
-                  {(assigningProject?.team_member_id ?? []).map((id) => (
-                    <Badge
-                      key={id}
-                      variant="secondary"
-                      className="text-xs px-2 py-0.5 rounded-md font-normal gap-1"
-                    >
-                      {memberName(id)}
-                      <button
-                        type="button"
-                        className="ml-0.5 text-muted-foreground hover:text-destructive"
-                        disabled={isSaving}
-                        onClick={() => handleRevokeAccess(id)}
-                        aria-label={`Remove ${memberName(id)}`}
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Add member</label>
-              <div className="flex gap-2">
-                <Select value={assignMemberId} onValueChange={setAssignMemberId}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select team member" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {teamMember
-                      .filter(
-                        (m) =>
-                          !(assigningProject?.team_member_id ?? []).includes(m.team_member_id),
-                      )
-                      .map((m) => (
-                        <SelectItem key={m.team_member_id} value={m.team_member_id.toString()}>
-                          {m.name}
-                          {m.role ? ` · ${m.role}` : ""}
-                        </SelectItem>
-                      ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  size="sm"
-                  className="h-10 bg-accent text-accent-foreground hover:bg-accent/90"
-                  onClick={handleGrantAccess}
-                  disabled={isSaving || !assignMemberId}
-                >
-                  {isSaving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <>
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setAssigningProject(null);
-                setAssignMemberId("");
-              }}
-            >
-              Done
             </Button>
           </DialogFooter>
         </DialogContent>

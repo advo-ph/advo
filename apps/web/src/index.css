@@ -29,8 +29,16 @@
     --muted: 213 7% 14%;            /* surface-3 */
     --muted-foreground: 216 6% 58%; /* #8a8f98 — Linear muted text */
 
-    --accent: 19 77% 56%;           /* #E67A3A ADVO orange — accent + focus */
+    --accent: 19 77% 56%;           /* #E67A3A ADVO orange — fills, borders, rings */
     --accent-foreground: 0 0% 100%;
+    --accent-ink: 19 77% 56%;       /* TEXT on light/neutral bg — same hue, dark passes on near-black canvas */
+
+    /* Semantic status colours — dark mode (near-black canvas).
+       -500 variants: green ~8.4:1, yellow ~10:1, red ~5.1:1 — all clear AA.
+       Border tint is applied via Tailwind opacity modifier: border-success/40. */
+    --success: 142 71% 45%;         /* green-500 equivalent */
+    --warning: 48 96% 53%;          /* yellow-500 equivalent */
+    --danger: 0 84% 60%;            /* red-500 equivalent */
 
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 98%;
@@ -84,8 +92,23 @@
     --muted: 220 14% 95%;
     --muted-foreground: 220 9% 42%;
 
-    --accent: 19 77% 56%;
-    --accent-foreground: 0 0% 100%;
+    /* Restore brand orange (#E67A3A / 19 77% 56%) for fills (bg-accent, border-accent,
+       rings). This hue at 56% lightness puts white label text at ~2.8:1 on near-white
+       which fails AA. Role-split: fills keep the brand orange; text uses --accent-ink
+       at 36% lightness (~5.45:1 on the accent/10 tint, 5.52:1 on white).
+       --accent-foreground targets label text ON the orange fill → 5.52:1 with dark ink. */
+    --accent: 19 77% 56%;           /* brand orange fills — bg-accent, border-accent, ring */
+    --accent-foreground: 222 18% 11%; /* dark ink ON the orange fill → 5.52:1 */
+    --accent-ink: 222 18% 11%;      /* neutral ink in light mode — orange text looked muddy on white */
+
+    /* Semantic status colours — light mode (near-white canvas).
+       -700 variants: green ~5.4:1, yellow ~4.7:1, red ~5.8:1 — all clear AA.
+       Dark mode uses -500 variants (defined in :root above).
+       Border tint applied via Tailwind opacity modifier: border-success/40. */
+    --success: 142 71% 29%;         /* green-700 equivalent */
+    --warning: 41 92% 33%;          /* true yellow-700 → 4.75:1. Amber (26°) sat too close to
+                                       --accent-ink and read as a brand badge, not a caution. */
+    --danger: 0 74% 42%;            /* red-700 equivalent */
 
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 98%;
@@ -125,6 +148,18 @@
     height: 100dvh;
     overflow-y: auto;
     overflow-x: hidden;
+  }
+
+  /* Installed on a phone, the web view spans the whole screen: viewport-fit=cover
+   * in index.html plus apple-mobile-web-app-status-bar-style=black-translucent
+   * means iOS draws us under the notch and under the home indicator. Inset the
+   * scroll container so content clears both. In a browser tab every inset is 0,
+   * so this rule costs nothing there. */
+  @media (display-mode: standalone) {
+    #root {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
   }
 
   body {

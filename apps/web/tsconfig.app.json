@@ -28,5 +28,13 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+
+  /* This is the config `npm run typecheck` uses, and typecheck gates `build`.
+     src/test holds cross-workspace suites that import apps/api sources directly
+     (e.g. "../../../api/src/services/email.service.js"). Including them here pulls
+     the whole API into the web program and fails this gate on ~59 pre-existing
+     Drizzle errors the web app does not own. Vitest resolves its own files through
+     vitest.config.ts, so excluding them here does not affect the test run. */
+  "exclude": ["src/test"]
 }

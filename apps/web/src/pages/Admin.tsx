@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,14 +9,17 @@ import { useAdminTeam } from "@/hooks/useAdminTeam";
 import { useTheme } from "@/hooks/useTheme";
 import { formatCurrency } from "@/types/admin";
 
+import ErrorBoundary from "@/components/ErrorBoundary";
+
 // Admin Components
-import AdminSidebar, { type AdminSection } from "@/components/admin/AdminSidebar";
+import AdminSidebar, { ADMIN_DRAWER_ID, type AdminSection } from "@/components/admin/AdminSidebar";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import AdminRiskPanel from "@/components/admin/AdminRiskPanel";
 import AdminCommandPalette from "@/components/admin/AdminCommandPalette";
 import AdminProjects from "@/components/admin/AdminProjects";
 import AdminClients from "@/components/admin/AdminClients";
 import AdminTeam from "@/components/admin/AdminTeam";
+import AdminTasks from "@/components/admin/AdminTasks";
 import AdminSchedule from "@/components/admin/AdminSchedule";
 import AdminCalendar from "@/components/admin/AdminCalendar";
 import AdminContracts from "@/components/admin/AdminContracts";
@@ -26,7 +29,6 @@ import AdminCorpus from "@/components/admin/AdminCorpus";
 import AdminTime from "@/components/admin/AdminTime";
 import AdminSocial from "@/components/admin/AdminSocial";
 import AdminAvailability from "@/components/admin/AdminAvailability";
-import AdminContentStudio from "@/components/admin/AdminContentStudio";
 import AdminPortfolio from "@/components/admin/AdminPortfolio";
 import AdminFinance from "@/components/admin/AdminFinance";
 import AdminNotifications from "@/components/admin/AdminNotifications";
@@ -38,15 +40,64 @@ import AdminBrandScraper from "@/components/admin/AdminBrandScraper";
 import AdminFacebookScraper from "@/components/admin/AdminFacebookScraper";
 import AdminLibrary from "@/components/admin/AdminLibrary";
 
+/**
+ * Names each section for the error boundary heading, so a crash says which page
+ * broke. Typed as a full Record, so adding a section to AdminSection without a
+ * label here is a compile error rather than a silent blank.
+ */
+const SECTION_LABEL: Record<AdminSection, string> = {
+  dashboard: "Dashboard",
+  projects: "Projects",
+  clients: "Clients",
+  team: "Team",
+  tasks: "Tasks",
+  schedule: "Work Items",
+  calendar: "Calendar",
+  availability: "Availability",
+  contracts: "Contracts",
+  meetings: "Meetings",
+  social: "Social",
+  portfolio: "Portfolio",
+  finance: "Finance",
+  notifications: "Notifications",
+  leads: "Leads",
+  proposals: "Proposals",
+  campaign: "Campaigns",
+  library: "Library",
+  "brand-scraper": "Brand Scraper",
+  "fb-scraper": "FB Scraper",
+  settings: "Settings",
+};
+
+/**
+ * The URL is user input, so a path segment is only a section if it is one of the
+ * keys above. SECTION_LABEL is the single list, which means a new section cannot
+ * be routable without also being nameable.
+ */
+function isAdminSection(value: string | undefined): value is AdminSection {
+  return !!value && Object.prototype.hasOwnProperty.call(SECTION_LABEL, value);
+}
+
 const Admin = () => {
   const { user, isLoading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
   const { theme, toggle: toggleTheme } = useTheme(user?.userId);
 
-  // Layout state
-  const [activeSection, setActiveSection] = useState<AdminSection>("dashboard");
+  // The section lives in the URL, not in state. Before this it was useState, so
+  // the whole console was one address: no deep link to a page, no bookmark, and
+  // no browser back. Back matters most on a phone, where it is a system gesture.
+  const { section } = useParams<{ section: string }>();
+  const activeSection: AdminSection = isAdminSection(section) ? section : "dashboard";
+  const setActiveSection = (next: AdminSection) => navigate(`/admin/${next}`);
+
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // An unknown or missing section settles on the dashboard, and rewrites the
+  // address so a stale bookmark repairs itself instead of lingering.
+  useEffect(() => {
+    if (!isAdminSection(section)) navigate("/admin/dashboard", { replace: true });
+  }, [section, navigate]);
 
   // Centralized data
   const {
@@ -87,7 +138,11 @@ const Admin = () => {
             {/* Mobile menu toggle */}
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="lg:hidden p-2 -ml-2 text-foreground hover:bg-secondary/60 rounded-lg transition-colors"
+              // useDrawerLock finds this by aria-controls to hand focus back
+              // when the drawer closes.
+              aria-controls={ADMIN_DRAWER_ID}
+              aria-expanded={isMobileMenuOpen}
+              className="lg:hidden min-h-11 min-w-11 p-2 -ml-2 flex items-center justify-center text-foreground hover:bg-secondary/60 rounded-lg transition-colors"
               aria-label="Open menu"
             >
               <Menu className="h-5 w-5" />
@@ -101,7 +156,7 @@ const Admin = () => {
               />
             </Link>
             <span className="hidden sm:block h-3.5 w-px bg-border" />
-            <span className="hidden sm:block text-sm text-muted-foreground">Console</span>
+            <span className="hidden sm:block text-sm text-muted-foreground">Members</span>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
@@ -143,20 +198,29 @@ const Admin = () => {
         style={{ ["--sidebar-w" as string]: `${sidebarWidth}px` }}
       >
         <div className="max-w-6xl mx-auto">
-          {activeSection === "dashboard" && (
-            <>
-              {/* Above the pipeline, deliberately. Coffee Rush went into development
-                  with no signed contract and nothing on this screen said so, even
-                  though every fact needed to say it was already in the database.
-                  The panel renders NOTHING when there is nothing to report — a
-                  permanent "0 issues" tile is furniture, and furniture is invisible
-                  by the time it finally has something on it. */}
-              <div className="mb-5">
-                <AdminRiskPanel
-                  formatCurrency={formatCurrency}
-                  onOpenProject={() => setActiveSection("projects")}
-                />
-              </div>
+          {/* One boundary per section, keyed on the section id. A crash in one
+              section leaves the header and sidebar mounted, so the user can
+              always navigate away, and switching sections remounts the boundary
+              and clears the error. */}
+          <ErrorBoundary
+            key={activeSection}
+            label={SECTION_LABEL[activeSection]}
+            hint="Pick another section from the sidebar, or try again."
+          >
+            {activeSection === "dashboard" && (
+              <>
+                {/* Above the pipeline, deliberately. Coffee Rush went into development
+                    with no signed contract and nothing on this screen said so, even
+                    though every fact needed to say it was already in the database.
+                    The panel renders NOTHING when there is nothing to report — a
+                    permanent "0 issues" tile is furniture, and furniture is invisible
+                    by the time it finally has something on it. */}
+                <div className="mb-5">
+                  <AdminRiskPanel
+                    formatCurrency={formatCurrency}
+                    onOpenProject={() => setActiveSection("projects")}
+                  />
+                </div>
               <AdminDashboard
                 projects={projects}
                 clients={clients}
@@ -167,68 +231,70 @@ const Admin = () => {
                 userName={user?.email}
                 onNavigate={setActiveSection}
               />
-            </>
-          )}
+              </>
+            )}
 
-          {activeSection === "projects" && (
-            <AdminProjects
-              projects={orgProjects}
-              clients={clients}
-              isLoading={orgLoading}
-              onRefresh={orgRefetch}
-            />
-          )}
+            {activeSection === "projects" && (
+              <AdminProjects
+                projects={orgProjects}
+                clients={clients}
+                isLoading={orgLoading}
+                onRefresh={orgRefetch}
+              />
+            )}
 
-          {activeSection === "clients" && (
-            <AdminClients
-              clients={clients}
-              isLoading={isLoading}
-              onRefresh={refetch}
-            />
-          )}
+            {activeSection === "clients" && (
+              <AdminClients
+                clients={clients}
+                isLoading={isLoading}
+                onRefresh={refetch}
+              />
+            )}
 
-          {activeSection === "team" && <AdminTeam />}
+            {activeSection === "team" && <AdminTeam />}
 
-          {activeSection === "schedule" && <AdminSchedule />}
+            {activeSection === "tasks" && <AdminTasks />}
 
-          {activeSection === "calendar" && <AdminCalendar />}
+            {activeSection === "schedule" && <AdminSchedule />}
 
-          {activeSection === "availability" && <AdminAvailability />}
+            {activeSection === "calendar" && <AdminCalendar />}
 
-          {activeSection === "contracts" && <AdminContracts clients={clients} />}
+            {activeSection === "availability" && <AdminAvailability />}
 
-          {activeSection === "meetings" && <AdminMeetings projects={projects} />}
+            {activeSection === "contracts" && <AdminContracts clients={clients} />}
 
-          {activeSection === "messages" && <AdminMessages />}
-          {activeSection === "corpus" && <AdminCorpus />}
+            {activeSection === "messages" && <AdminMessages />}
+            {activeSection === "corpus" && <AdminCorpus />}
 
-          {/* Team comes from useAdminTeam so the load bars can name people rather than
-              printing member ids -- a capacity view that says "Member 7 is over" is one
-              nobody acts on. */}
-          {activeSection === "time" && <AdminTime projects={projects} team={activeMembers} />}
+            {/* Team comes from useAdminTeam so the load bars can name people rather than
+                printing member ids -- a capacity view that says "Member 7 is over" is one
+                nobody acts on. */}
+            {activeSection === "time" && <AdminTime projects={projects} team={activeMembers} />}
 
-          {activeSection === "social" && <AdminSocial />}
+            {activeSection === "meetings" && <AdminMeetings projects={projects} />}
 
-          {activeSection === "content" && <AdminContentStudio />}
+            {activeSection === "social" && <AdminSocial />}
 
-          {activeSection === "portfolio" && <AdminPortfolio />}
+            {activeSection === "portfolio" && <AdminPortfolio />}
 
-          {activeSection === "finance" && <AdminFinance projects={projects} />}
+            {activeSection === "finance" && <AdminFinance projects={projects} />}
 
-          {activeSection === "notifications" && <AdminNotifications />}
+            {activeSection === "notifications" && <AdminNotifications />}
 
-          {activeSection === "leads" && <AdminLeads />}
+            {activeSection === "leads" && <AdminLeads />}
 
-          {activeSection === "proposals" && <AdminProposals />}
-          {activeSection === "campaign" && <AdminCampaign />}
+            {activeSection === "proposals" && <AdminProposals />}
 
-          {activeSection === "library" && <AdminLibrary />}
+            {activeSection === "campaign" && <AdminCampaign />}
 
-          {activeSection === "brand-scraper" && <AdminBrandScraper />}
+            {activeSection === "library" && <AdminLibrary />}
 
-          {activeSection === "fb-scraper" && <AdminFacebookScraper />}
+            {activeSection === "brand-scraper" && <AdminBrandScraper />}
 
-          {activeSection === "settings" && <AdminSettings />}
+            {activeSection === "fb-scraper" && <AdminFacebookScraper />}
+
+            {activeSection === "settings" && <AdminSettings />}
+          </ErrorBoundary>
         </div>
       </main>
     </div>

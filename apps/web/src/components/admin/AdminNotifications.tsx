@@ -120,7 +120,7 @@ const AdminNotifications = () => {
           <Button
             size="sm"
             onClick={() => setComposeOpen(!composeOpen)}
-            className="h-9 bg-accent text-accent-foreground hover:bg-accent/90"
+            className="h-9 bg-primary text-primary-foreground hover:bg-primary/90"
           >
             <Send className="h-4 w-4 mr-2" />
             Compose
@@ -128,13 +128,23 @@ const AdminNotifications = () => {
         }
       />
 
-      {/* Auto-Notification Toggles */}
+      {/*
+        This panel used to say the rules were "Inactive, not yet applied to
+        event sends". That was true once and had stopped being true:
+        notifications.routes.ts defines `isAutoRuleEnabled` and checks it on
+        every send. The toggles have been live and the label was telling admins
+        to ignore switches that were changing what clients received.
+
+        What they actually gate is the EMAIL. The in-app row is always written,
+        so a client never loses the record, only the message to their inbox.
+        The copy now says exactly that.
+      */}
       <Panel
         title="Auto-notification rules"
-        meta="Inactive — not yet applied to event sends"
+        meta="Active for automatic emails"
       >
         <div className="px-4 py-2 text-xs text-muted-foreground border-b border-border">
-          Toggles persist, but event triggers (progress / invoice / deliverable) do not read them yet.
+          Turn one off and that event stops emailing clients. It still appears in their hub.
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border">
           {[
@@ -173,7 +183,7 @@ const AdminNotifications = () => {
           <div className="p-4 space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="eyebrow block mb-1">Recipient</label>
+                <label className="text-xs text-muted-foreground block mb-1">Recipient</label>
                 <Select value={targetClient} onValueChange={setTargetClient}>
                   <SelectTrigger className="h-9">
                     <SelectValue />
@@ -194,7 +204,7 @@ const AdminNotifications = () => {
               </div>
 
               <div>
-                <label className="eyebrow block mb-1">Title</label>
+                <label className="text-xs text-muted-foreground block mb-1">Title</label>
                 <Input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
@@ -205,7 +215,7 @@ const AdminNotifications = () => {
             </div>
 
             <div>
-              <label className="eyebrow block mb-1">Body</label>
+              <label className="text-xs text-muted-foreground block mb-1">Message</label>
               <Textarea
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
@@ -227,7 +237,7 @@ const AdminNotifications = () => {
                 size="sm"
                 onClick={handleSend}
                 disabled={!title.trim() || !body.trim() || isSending}
-                className="h-9 bg-accent text-accent-foreground hover:bg-accent/90"
+                className="h-9 bg-primary text-primary-foreground hover:bg-primary/90"
               >
                 {isSending ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-1" />
@@ -244,7 +254,7 @@ const AdminNotifications = () => {
       {/* Sent Notifications (grouped by client) */}
       {notifications.length === 0 ? (
         <Panel>
-          <Empty text="No notifications sent yet" icon={Bell} />
+          <Empty text="No notifications sent yet. Use Compose to send one." icon={Bell} />
         </Panel>
       ) : (
         <div className="space-y-3">

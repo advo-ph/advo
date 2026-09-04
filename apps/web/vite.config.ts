@@ -50,6 +50,7 @@ export default defineConfig({
         "favicon.ico",
         "favicon.svg",
         "favicon.png",
+        "favicon-32.png",
         "og-image.png",
         "advo-logo-black.png",
         "icon-192.png",

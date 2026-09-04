@@ -31,9 +31,14 @@ export const PageHeader = ({
 /** One bordered row of inline metrics, hairline-separated. Put <Stat/> children inside. */
 export const StatStrip = ({ children, cols = 4 }: { children: ReactNode; cols?: 2 | 3 | 4 }) => (
   <div
-    className={`grid grid-cols-2 ${
-      cols === 3 ? "lg:grid-cols-3" : cols === 2 ? "" : "lg:grid-cols-4"
-    } gap-px bg-border rounded-lg border border-border overflow-hidden`}
+    className={`grid gap-px bg-border rounded-lg border border-border overflow-hidden ${
+      cols === 3
+        ? // 3-up on every width; shrink cell padding + value size on mobile so currency fits in one row.
+          "grid-cols-3 [&_.stat-cell]:px-2 sm:[&_.stat-cell]:px-4 [&_.stat-value]:text-base sm:[&_.stat-value]:text-2xl"
+        : cols === 2
+          ? "grid-cols-2"
+          : "grid-cols-2 lg:grid-cols-4"
+    }`}
   >
     {children}
   </div>
@@ -50,9 +55,9 @@ export const Stat = ({
   sub?: string;
   accent?: boolean;
 }) => (
-  <div className="bg-card px-4 py-3">
+  <div className="stat-cell bg-card px-4 py-3">
     <p className="text-xs text-muted-foreground mb-1.5">{label}</p>
-    <p className={`text-2xl font-semibold tracking-tight tabular-nums ${accent ? "text-accent" : ""}`}>
+    <p className={`stat-value text-2xl font-semibold tracking-tight tabular-nums ${accent ? "text-accent-ink" : ""}`}>
       {value}
     </p>
     {sub && <p className="text-xs text-muted-foreground mt-0.5 truncate">{sub}</p>}
@@ -77,7 +82,7 @@ export const Panel = ({
 }) => (
   <div className={`border border-border rounded-lg bg-card ${className ?? ""}`}>
     {(title || action) && (
-      <div className="flex items-center justify-between gap-3 px-4 h-11 border-b border-border">
+      <div className="flex items-center justify-between gap-3 pl-4 pr-3 h-11 border-b border-border">
         {title && <h2 className="text-sm font-medium">{title}</h2>}
         <div className="flex items-center gap-3">
           {meta && <span className="text-xs text-muted-foreground">{meta}</span>}
@@ -105,13 +110,34 @@ export const Dot = ({ className }: { className?: string }) => (
 /**
  * Dense table scaffold. Use <THead> for the header row and <TRow> for body rows
  * inside a <Table>. Lay columns out with flex + fixed widths (see AdminLeads).
+ *
+ * `minWidth` opts a table into horizontal scrolling on narrow screens. Pass it
+ * when the fixed columns cannot fit a phone, otherwise the wrapper's clipping
+ * silently swallows the right-hand columns and the row's controls become
+ * unreachable rather than merely off-screen. Most tables do not need it because
+ * they drop columns with `hidden md:block` instead; adding a minWidth to those
+ * would only invent a scrollbar for content that already fits.
  */
-export const Table = ({ children, className }: { children: ReactNode; className?: string }) => (
-  <div className={`border border-border rounded-lg bg-card overflow-hidden ${className ?? ""}`}>{children}</div>
+export const Table = ({
+  children,
+  className,
+  minWidth,
+}: {
+  children: ReactNode;
+  className?: string;
+  minWidth?: string;
+}) => (
+  <div
+    className={`border border-border rounded-lg bg-card ${minWidth ? "overflow-x-auto" : "overflow-hidden"} ${className ?? ""}`}
+  >
+    {minWidth ? <div style={{ minWidth }}>{children}</div> : children}
+  </div>
 );
 
 export const THead = ({ children }: { children: ReactNode }) => (
-  <div className="flex items-center gap-3 px-3 h-9 border-b border-border text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground/70">
+  // Was text-muted-foreground/70 (~2.9:1 in light mode). Full strength is ~5.3:1 on both
+  // light and dark backgrounds, so no dark-mode regression.
+  <div className="flex items-center gap-3 px-3 h-9 border-b border-border text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
     {children}
   </div>
 );
