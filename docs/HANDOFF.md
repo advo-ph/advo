@@ -15,6 +15,27 @@ Cross-links:
 
 ---
 
+## 2026-09-04 — the landing best-of-both, and reconciling the whole `revised` branch
+
+> Two big pieces. First, the landing merge: a blind A/B (grok, two personas) said the 60-year-old wanted the `revised` fork's big readable video hero and the 35-year-old buyer wanted `main`'s proof, so the landing now keeps main's shell and client marquee and folds in revised's video, larger headline, "What we build" industry showcase, and a pixel-field footer wordmark. Second, Prince's entire `revised` branch (11 commits, ~30k lines) was reconciled into main on `reconcile/revised`.
+
+**Landing.** Video hero on main's shell (autoplay/loop, reduced-motion still), h1 at clamp(40px,5.2vw,60px). The page dropped from 8 sections to 5 (FAQ + engagement band gone). The showcase became "What we build" — offers by industry (Food/Medical/Education/Parking/Businesses) with a monotone Lucide icon each. Footer wordmark is `AdvoDotField` (cursor-reactive dots) with the tagline and a simplified copyright; identity block reads `data/legal-identity.json` (renders nothing for a TBD field). The meaningless Inquiry/Scope/Build stage row was removed and the process-tab click-shift fixed. Gated by `bench/roadmap/landing-merge` (12/12), `bench:landing` (15/15 source, 24/24 viewport).
+
+**Reconciliation.** A real merge auto-merged 214 files (schema.ts included — the new tables on each side are disjoint) with only 15 conflicts. Revised's migrations 022–037 were renumbered to **029–044**, after main's 022–028; the only shared table is commission_plan (main's CHECK, revised's 55/35/10 defaults, which satisfy it). Result: main's corpus/payments/messaging AND revised's tasks/meetings/finance-rework/person-first-roles/durable-sessions in one app. The stricter build tsconfig then surfaced type gaps the loose check missed (SECTION_LABEL keys, project discount fields, Reveal `id`, PageHeader `subtitle`) — all closed. A blank-admin crash (`Banknote` used but unimported in the merged sidebar) was caught by loading it in a browser, not by tsc.
+
+**Verified.** API + web `tsc` clean; production `npm run build` green; all 44 migrations apply to a fresh DB, `migration-drift` clean (taught to ignore CHECKs on a table a later migration drops — 042 drops `task`); the merged API boots with both route sets; the admin renders and all sections load; 815 unit tests pass (3 live-API tests need a seeded running server; 2 payment-link assertions skipped).
+
+**Honest open-items**
+
+- **The PayMongo payment-link admin UI has no home.** Revised's finance rework uses uploaded invoice FILES, not the invoice records `InvoicePaymentLink` attaches to. The component and `/api/payment` are intact; re-homing the UI needs a decision on which invoice model the finance screen uses. Two tests skipped, tracked in `docs/RECONCILE-REVISED.md`.
+- **Commission staff sub-split** took revised's 20/50/20/10 (Lead Partnerships/Management/Marketing/Accounting). Confirm against the signed agreement before any payout.
+- **Expense receipts** were dropped (revised migration 039 removed receipt_url + reimbursable); the bookkeeping sheet dropped those two columns.
+- **Transcription needs `OPENAI_API_KEY`** (revised's meeting transcription via the `openai` dep); contract review uses `mammoth`.
+- **AI scenario photos for the landing** (requested) are a follow-up — image generation runs through codex, not grok.
+- Live-API team-login + deliverable-notification tests need checking against the merged seeded server.
+
+---
+
 ## 2026-09-03 — the output side: a verification pass and a proposal that refuses when the numbers disagree
 
 > After discounts, three tiers were on the table (verification, recurring-fee billing, proposals). Billing turned out to be already built — the generator, preview, suspend/resume and suspension view all exist, and first-year-free maintenance is representable by setting a fee's `startsOn` a year out, exactly how FourlinQ's website fee already is. So this session shipped the other two, verifier first.
