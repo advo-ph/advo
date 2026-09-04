@@ -404,7 +404,8 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   color: var(--landing-ground);
 }
 .landing-hero-media { position: absolute; inset: -8% 0; will-change: transform; }
-.landing-hero-media img { width: 100%; height: 100%; object-fit: cover; }
+.landing-hero-media img,
+.landing-hero-media video { width: 100%; height: 100%; object-fit: cover; }
 .landing-hero-shade { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.26); }
 .landing-hero-copy {
   position: absolute;
@@ -420,8 +421,10 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 }
 .landing-hero h1 {
   max-width: 14ch;
-  font-size: var(--landing-text-display);
-  line-height: 1.05;
+  /* The hero headline runs larger than the shared display size — the first
+     impression, and big enough to read at arm's length (the A/B 60-year-old). */
+  font-size: clamp(40px, 5.2vw, 60px);
+  line-height: 1.03;
   letter-spacing: -0.025em;
 }
 .landing-hero-copy > p { max-width: 46ch; font-size: var(--landing-text-lead); line-height: 1.5; color: rgba(255, 255, 255, 0.92); }
@@ -806,6 +809,10 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 }
 .landing-footer-legal a { color: rgba(255, 255, 255, 0.55); font-size: var(--landing-text-micro); transition: color 0.15s var(--landing-ease); }
 .landing-footer-legal a:hover { color: var(--landing-ground); text-decoration: underline; }
+.landing-footer-identity { margin-top: 14px; display: flex; flex-direction: column; gap: 3px; }
+.landing-footer-identity p { color: rgba(255, 255, 255, 0.45); font-size: var(--landing-text-micro); }
+.landing-footer-identity a { color: rgba(255, 255, 255, 0.6); }
+.landing-footer-identity a:hover { color: var(--landing-ground); text-decoration: underline; }
 
 .landing-footer-bar {
   width: min(1440px, 100%);

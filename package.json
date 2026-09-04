@@ -16,6 +16,7 @@
     "test": "npm --workspace apps/web run test",
     "test:local": "bash scripts/test-local.sh",
     "outreach:preflight": "node scripts/outreach-preflight.mjs",
+    "bench:landing-merge": "node bench/roadmap/landing-merge/scoring.mjs",
     "bench:landing": "node bench/roadmap/landing-stripe-audit/scoring.mjs && node bench/roadmap/landing-stripe-audit/viewport-check.mjs",
     "bench:landing-follow": "node bench/roadmap/landing-follow/scoring.mjs",
     "bench:roadmap-remain": "node bench/roadmap/roadmap-remain/scoring.mjs",

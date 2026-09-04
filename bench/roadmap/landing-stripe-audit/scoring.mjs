@@ -197,22 +197,6 @@ const checks = [
       "The integration strip serves its own marks and does not depend on an external logo CDN.",
   },
   {
-    id: "engagement-cta",
-    title: "Engagement section is a concrete conversion surface",
-    passed:
-      hasAll(files.landingPage, [
-        "Project",
-        "Retainer",
-        "Hourly",
-        "Enterprise",
-        "quotation",
-      ]) &&
-      !/₱|starting at/i.test(files.landingPage) &&
-      !/Ready to digitalize|Prepare your business for the future/.test(files.landingPage),
-    expected:
-      "The engagement surface names real engagement shapes and routes each one to a quotation request. No published rate, no aspirational CTA.",
-  },
-  {
     id: "process-system-sequence",
     title: "Process section is a product-system sequence",
     passed:
@@ -260,22 +244,10 @@ const checks = [
     expected:
       "A single footer component uses the product-system language, includes the project CTA and large wordmark, avoids generic service copy, and is shared by / and the shell routes.",
   },
-  {
-    id: "faq-product-system",
-    title: "FAQ answers product-system questions",
-    passed:
-      hasAll(files.landingPage, [
-        "Questions before we build",
-        "client hub",
-        "admin console",
-        "self-hosted VPS stack",
-      ]) &&
-      !/Common Questions|web applications, mobile solutions|flexible pricing|modern cloud platforms/.test(
-        files.landingPage,
-      ),
-    expected:
-      "FAQ defaults answer concrete website, hub, admin, hosting, and timeline questions instead of generic agency questions.",
-  },
+  // Retired 2026-09-04 (landing merge): the standalone engagement band and FAQ
+  // sections were removed to shorten the page toward the revised fork's length —
+  // the `engagement-cta` and `faq-product-system` checks that asserted their
+  // presence went with them. See ROADMAP "Landing merge" and bench:landing-merge.
 ];
 
 const passed = checks.every((check) => check.passed);

@@ -12,6 +12,7 @@ import {
 } from "@tabler/icons-react";
 import { ChevronRight } from "lucide-react";
 import { get } from "@/lib/api";
+import { identityValue } from "@/lib/legal-identity";
 
 interface SocialLink {
   icon: string;
@@ -91,10 +92,9 @@ const footerCol: { title: string; link: FooterLink[] }[] = [
   {
     title: "Keep it running",
     link: [
-      { label: "Retainer", href: "#engagement" },
-      { label: "Hourly support", href: "#engagement" },
-      { label: "Quotation", href: "#engagement" },
-      { label: "FAQs", href: "#faq" },
+      { label: "The work we shipped", href: "#work" },
+      { label: "How it ships", href: "#process" },
+      { label: "Request a quotation", href: "/start" },
     ],
   },
   {
@@ -193,6 +193,26 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
           </Link>
         ))}
       </nav>
+
+      {/* The registered-business disclosure a DTI merchant is expected to publish.
+          Every field is read from data/legal-identity.json through identityValue,
+          which returns null for a "TBD" field — so address, registration number,
+          and phone appear the moment the paperwork is transcribed, and never as a
+          placeholder before then. Same source as bench:paymongo. */}
+      <div className="landing-footer-identity" data-viewport-check="footer-identity">
+        <p>
+          {identityValue("legal_name")}
+          {identityValue("registration_body") ? ` · Registered with the ${identityValue("registration_body")}` : ""}
+          {identityValue("registration_number") ? ` · Reg. No. ${identityValue("registration_number")}` : ""}
+        </p>
+        <p>
+          {identityValue("business_address") ? `${identityValue("business_address")} · ` : ""}
+          <a href={`mailto:${identityValue("support_email") ?? "contact@advo.ph"}`}>
+            {identityValue("support_email") ?? "contact@advo.ph"}
+          </a>
+          {identityValue("support_phone") ? ` · ${identityValue("support_phone")}` : ""}
+        </p>
+      </div>
 
       <div className="landing-footer-bar">
         <div>

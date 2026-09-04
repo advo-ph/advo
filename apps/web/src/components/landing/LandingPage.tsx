@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
-import { ArrowUpRight, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowUpRight, ChevronRight } from "lucide-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { getCaseStudy } from "@/data/case-study";
 import WorkMedia from "@/components/WorkMedia";
@@ -39,7 +39,7 @@ const surface = [
     desc: "Projects, leads, capacity, and finance. The hardware floor is part of the install: tablet, printer, TV.",
     still: "/landing/rw/deliver.jpg",
     primary: { label: "Log in", href: "/login" },
-    secondary: { label: "Request a quotation", href: "#engagement" },
+    secondary: { label: "Request a quotation", href: "#work" },
   },
 ];
 
@@ -81,46 +81,6 @@ const step = [
     heading: "Stay after launch, because uptime is the product",
     copy: "A care plan or hourly support covers the printer that dies at 8PM, not a ticket that waits until Monday.",
     still: "/landing/rw/hero.jpg",
-  },
-];
-
-const engagement = [
-  { title: "Project", copy: "Fixed scope, timeline, and deliverables." },
-  { title: "Retainer", copy: "A dedicated team for ongoing work." },
-  { title: "Hourly", copy: "On-demand help when you need it." },
-  { title: "Enterprise", copy: "Custom systems for large teams." },
-];
-
-const faq = [
-  {
-    question: "Do I get a website, or a system?",
-    answer:
-      "Both, and they are the same build. The public site is the front door. Behind it sit the client hub your customer signs into, the admin console your staff runs the day on, and the hardware on the counter.",
-  },
-  {
-    question: "What is the client hub, and who sees it?",
-    answer:
-      "The signed-in workspace holding scope, files, milestones, approvals, and invoices for one project. You invite your team and your client by role, so everyone sees the same truth.",
-  },
-  {
-    question: "What does the admin console do?",
-    answer:
-      "It is the back office: projects, leads, tasks, capacity, approvals, and finance. The surface your studio opens every morning.",
-  },
-  {
-    question: "Where does it run, and do I own it?",
-    answer:
-      "On a self-hosted VPS stack we set up and operate: Postgres, Node, Nginx, TLS. No per-seat cloud tax. At handoff the whole stack moves into your name: server, domain, database, and repository.",
-  },
-  {
-    question: "Is the hardware on the floor your job too?",
-    answer:
-      "Yes. The tablet at the counter, the receipt printer, and the TV on the wall are part of the system we install, train on, and support.",
-  },
-  {
-    question: "What happens after launch?",
-    answer:
-      "A care plan or hourly support keeps it running: fixes, monitoring, and new work. The printer that dies at 8PM is covered that night.",
   },
 ];
 
@@ -190,7 +150,6 @@ const Action = ({
 const LandingPage = () => {
   const reduceMotion = useReducedMotion();
   const [stepIndex, setStepIndex] = useState(0);
-  const [faqOpen, setFaqOpen] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
 
   // Prince, 08-21: "keep only the section for the websites that we've already
@@ -218,7 +177,20 @@ const LandingPage = () => {
             animate={{ scale: 1 }}
             transition={{ duration: 1.8, ease: EASE }}
           >
-            <img src="/landing/rw/hero.jpg" alt="" />
+            {reduceMotion ? (
+              <img src="/landing/hero-building.jpg" alt="" />
+            ) : (
+              <video
+                className="landing-hero-video"
+                src="/landing/hero-building.mp4"
+                poster="/landing/hero-building.jpg"
+                autoPlay
+                muted
+                loop
+                playsInline
+                aria-hidden="true"
+              />
+            )}
           </motion.div>
           <div className="landing-hero-shade" />
           <motion.div
@@ -371,39 +343,6 @@ const LandingPage = () => {
           </div>
         </Reveal>
       </section>
-
-      <section className="landing-band" id="engagement">
-        <div className="landing-band-frame">
-          <div className="landing-band-inner">
-            <Reveal className="landing-band-lede">
-              <h2>
-                To become the infrastructure of the technological layer for industries around
-                the Philippines. We will modernize the Philippines.
-              </h2>
-              <Link className="landing-button landing-button-outline" to="/start">
-                Start a project
-              </Link>
-            </Reveal>
-
-            <Reveal className="landing-band-list" delay={0.12}>
-              <p>
-                We do not publish rates. Tell us what the floor has to do and we send a
-                quotation built on your scope.
-              </p>
-              {engagement.map((item) => (
-                <Link key={item.title} to="/start" className="landing-band-row">
-                  <span>
-                    <strong>{item.title}</strong>
-                    <small>{item.copy}</small>
-                  </span>
-                  <ArrowUpRight size={16} strokeWidth={1} absoluteStrokeWidth />
-                </Link>
-              ))}
-            </Reveal>
-          </div>
-        </div>
-      </section>
-
       {shippedProject.length > 0 ? (
         <section className="landing-work" id="work">
           <Reveal as="h2" className="landing-display">
@@ -449,45 +388,6 @@ const LandingPage = () => {
           </RevealGroup>
         </section>
       ) : null}
-
-      <section className="landing-faq" id="faq">
-        <Reveal as="h2" className="landing-display">
-          Questions before we build
-        </Reveal>
-        <RevealGroup className="landing-faq-list" stagger={0.05}>
-          {faq.map(({ question, answer }, index) => {
-            const isOpen = faqOpen === index;
-            return (
-              <Reveal className={isOpen ? "landing-faq-item is-open" : "landing-faq-item"} key={question}>
-                <button
-                  type="button"
-                  onClick={() => setFaqOpen(isOpen ? -1 : index)}
-                  aria-expanded={isOpen}
-                  aria-controls={`faq-${index}`}
-                >
-                  <span>{question}</span>
-                  <ChevronDown size={16} strokeWidth={1} absoluteStrokeWidth />
-                </button>
-                <AnimatePresence initial={false}>
-                  {isOpen ? (
-                    <motion.div
-                      id={`faq-${index}`}
-                      className="landing-faq-answer"
-                      initial={reduceMotion ? false : { height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={reduceMotion ? undefined : { height: 0, opacity: 0 }}
-                      transition={{ duration: 0.32, ease: EASE }}
-                    >
-                      <p>{answer}</p>
-                    </motion.div>
-                  ) : null}
-                </AnimatePresence>
-              </Reveal>
-            );
-          })}
-        </RevealGroup>
-      </section>
-
       <LandingFooter />
     </main>
   );
