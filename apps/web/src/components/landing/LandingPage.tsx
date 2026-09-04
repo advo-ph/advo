@@ -104,19 +104,19 @@ const step = [
     title: "Design",
     heading: "Make the system visible before we build it",
     copy: "Screens, hardware, and handoffs are specified together, so the counter staff and the admin see the same plan.",
-    still: "/landing/rw/story.jpg",
+    still: "/landing/rw/plan.jpg",
   },
   {
     title: "Build",
     heading: "Ship in the shared workspace, not in email",
     copy: "Design, development, and integration happen in one place. You see progress the week it happens.",
-    still: "/landing/rw/hero.jpg",
+    still: "/landing/rw/create.jpg",
   },
   {
     title: "Review",
     heading: "Approve what is true, not what was attached",
     copy: "Feedback and sign-off live on the work itself. No lost versions, no mystery last file.",
-    still: "/landing/rw/story.jpg",
+    still: "/landing/rw/approve.jpg",
   },
   {
     title: "Launch",
@@ -128,7 +128,7 @@ const step = [
     title: "Support",
     heading: "Stay after launch, because uptime is the product",
     copy: "A care plan or hourly support covers the printer that dies at 8PM, not a ticket that waits until Monday.",
-    still: "/landing/rw/hero.jpg",
+    still: "/landing/rw/after.jpg",
   },
 ];
 
