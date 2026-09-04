@@ -87,8 +87,6 @@ const industry: Industry[] = [
   },
 ];
 
-const stage = ["Inquiry", "Scope", "Build", "Review", "Launch"];
-
 const step = [
   {
     title: "Discover",
@@ -276,15 +274,6 @@ const LandingPage = () => {
       </section>
 
       <section className="landing-process" id="process">
-        <Reveal as="div" className="landing-workflow-section" id="workflow">
-          {stage.map((label, index) => (
-            <span key={label}>
-              {index > 0 ? <i aria-hidden="true" /> : null}
-              {label}
-            </span>
-          ))}
-        </Reveal>
-
         <Reveal className="landing-process-card" delay={0.1}>
           <div className="landing-process-tab" role="tablist" aria-orientation="vertical" aria-label="How it ships">
             {step.map((item, index) => (

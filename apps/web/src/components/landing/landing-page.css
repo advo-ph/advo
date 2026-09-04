@@ -603,7 +603,9 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   transition: opacity 0.2s var(--landing-ease), transform 0.2s var(--landing-ease);
 }
 .landing-process-tab button:hover { opacity: 0.6; }
-.landing-process-tab button.is-active { opacity: 1; transform: translateX(4px); }
+.landing-process-tab button.is-active { opacity: 1; font-weight: 500; }
+/* No focus box on a mouse click (keeps the keyboard ring). */
+.landing-process-tab button:focus:not(:focus-visible) { outline: none; }
 .landing-process-panel { min-width: 0; }
 .landing-process-still { aspect-ratio: 16 / 9; }
 .landing-process-copy { margin-top: 20px; }

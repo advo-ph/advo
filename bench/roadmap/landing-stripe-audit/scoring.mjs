@@ -169,10 +169,12 @@ const checks = [
     id: "private-stack-narrative",
     title: "The stack handoff is on the page",
     passed:
-      hasAll(files.landingPage, ["landing-workflow-section", "Inquiry", "Scope", "Build", "Review", "Launch"]) &&
+      // The process section shows the discover→support steps; the abstract
+      // Inquiry/Scope/Build stage row was removed 2026-09-04 ("means nothing").
+      hasAll(files.landingPage, ["landing-process", "Discover", "Support"]) &&
       /VPS handoff/i.test(files.landingFooter),
     expected:
-      "The inquiry-to-floor sequence is a rendered section and the VPS handoff is named where the system story closes.",
+      "The delivery sequence is a rendered process section and the VPS handoff is named where the system story closes.",
   },
   {
     id: "why-system-not-generic-digital",
