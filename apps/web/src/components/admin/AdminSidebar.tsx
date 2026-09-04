@@ -27,6 +27,7 @@ import {
   Moon,
   Send,
   BookOpenCheck,
+  Banknote,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDrawerLock } from "@/hooks/useDrawerLock";
