@@ -24,3 +24,7 @@ CREATE TABLE contract_file (
 
 CREATE INDEX idx_contract_file_project    ON contract_file(project_id);
 CREATE INDEX idx_contract_file_created_at ON contract_file(created_at);
+
+INSERT INTO schema_migration (filename, is_backfilled)
+VALUES ('034_contract_files.sql', false)
+ON CONFLICT (filename) DO NOTHING;

@@ -33,3 +33,7 @@ CREATE INDEX idx_invoice_file_project
 CREATE INDEX idx_invoice_file_recurring
   ON invoice_file (recurring_fee_id)
   WHERE recurring_fee_id IS NOT NULL;
+
+INSERT INTO schema_migration (filename, is_backfilled)
+VALUES ('038_invoice_file.sql', false)
+ON CONFLICT (filename) DO NOTHING;
