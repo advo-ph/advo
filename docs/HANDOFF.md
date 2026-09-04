@@ -15,6 +15,22 @@ Cross-links:
 
 ---
 
+## 2026-09-04 (later) — the landing gets its photographs, and the DTI paperwork lands
+
+> The What-we-build cards and the process section now carry real photographs, and the footer's business disclosure is filled from ADVO's actual registration documents.
+
+**Photography.** Each industry card leads with a scenario photo of the software in a real Philippine business — QR ordering at a restaurant and a clinic dashboard from the `revised` fork, plus campus ID-tap, automated parking plate-recognition, and a construction project dashboard generated via codex to match the style. The six process steps (Discover→Support) each got a distinct codex photo too, replacing stock stills that were looping. The photo bleeds in from the right edge of each card on an angled, multi-stop soft fade at reduced opacity, so the card keeps its text-first look; cards are equal height so a short description never shifts the row. codex, not grok, drew these — grok's image_gen is the weaker one here (it drew 8 arcs for 4 in the measured 1v1 and writes JPEGs as .png).
+
+**DTI compliance.** `data/legal-identity.json` was TBD until the paperwork arrived. It now carries the real values, read from the documents: DTI Business Name No. **7875506** (BNRS Certificate, ADVO Web Development Services, National, valid 2026-02-01 to 2031-02-01) and the BIR-registered address (Form 2303, TIN 694-687-979-00000, RDO 042): CC-1-A Greenhills Heights, 136 Pinaglabanan St., Pedro Cruz, San Juan City 1500. The footer shows the full disclosure — registered name, DTI body, registration number, address, email — plus the four policy links. `bench:paymongo` is 7/7; the phone stays TBD (optional when email is present, and the footer renders nothing for a blank field).
+
+**Honest open-items**
+
+- **support_phone is still blank.** No business line was supplied; email + address is the customer-service contact. Fill it when there is one.
+- **BIR Registration Seal Badge.** The BIR certificate says online businesses should display the seal badge on their site. Not added yet — needs the badge image.
+- The PayMongo payment-link admin UI and the commission staff-split confirmation from the reconciliation still stand (see the earlier 2026-09-04 entry and RECONCILE-REVISED.md).
+
+---
+
 ## 2026-09-04 — the landing best-of-both, and reconciling the whole `revised` branch
 
 > Two big pieces. First, the landing merge: a blind A/B (grok, two personas) said the 60-year-old wanted the `revised` fork's big readable video hero and the 35-year-old buyer wanted `main`'s proof, so the landing now keeps main's shell and client marquee and folds in revised's video, larger headline, "What we build" industry showcase, and a pixel-field footer wordmark. Second, Prince's entire `revised` branch (11 commits, ~30k lines) was reconciled into main on `reconcile/revised`.
