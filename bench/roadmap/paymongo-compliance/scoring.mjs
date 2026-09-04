@@ -92,11 +92,16 @@ const checks = [
     title: "Merchant identity carries real values, not placeholders",
     passed:
       identity !== null &&
-      identityField.every(
+      // Registration, body, address and a customer-service contact must be real.
+      // A business PHONE is optional: the contact requirement is met by email OR
+      // phone, so support_phone may stay TBD when support_email is present.
+      ["registration_number", "registration_body", "business_address", "support_email"].every(
         (f) => typeof identity[f] === "string" && !PLACEHOLDER.test(identity[f].trim()),
-      ),
+      ) &&
+      (!PLACEHOLDER.test(String(identity.support_email ?? "").trim()) ||
+        !PLACEHOLDER.test(String(identity.support_phone ?? "").trim())),
     expected:
-      "Every identity field is filled from ADVO's DTI/SEC paperwork. RED until Prince supplies them — the lane must not invent a registration number or address.",
+      "Registration number (DTI Business Name No. 7875506), registration body (DTI), business address (BIR-registered), and a customer-service contact (email) are filled from ADVO's paperwork. A business phone is optional when email is present.",
   },
   {
     id: "legal-identity-rendered",

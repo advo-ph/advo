@@ -1,10 +1,10 @@
 {
-  "_note": "Merchant identity for the PayMongo review surfaces. legal_name and registration_body are quoted from the signed Internal Commission and Operations Agreement (Drive, 2026-07-31), which names 'ADVO Web Development Services, the official legal entity registered with the Department of Trade and Industry (DTI)', owner Prince Alpherson A. Wagan. The registration number, business address and support phone are NOT in any document on file and stay the literal string \"TBD\" until Prince supplies them, which keeps bench:paymongo honestly red.",
+  "_note": "Merchant identity for the PayMongo review surfaces. legal_name and registration_body are the DTI-registered business name (BNRS Certificate of Business Name Registration, Business Name No. 7875506, ADVO Web Development Services, National, valid 2026-02-01 to 2031-02-01, owner Prince Alpherson Adorable Wagan). registration_number is that DTI Business Name No.; business_address is the registered address on the BIR Certificate of Registration (Form 2303, TIN 694-687-979-00000, RDO 042 San Juan City). support_phone stays \"TBD\" until a business line is supplied; the module renders nothing for a TBD field.",
   "trade_name": "ADVO",
   "legal_name": "ADVO Web Development Services",
-  "registration_number": "TBD",
+  "registration_number": "7875506",
   "registration_body": "Department of Trade and Industry (DTI)",
-  "business_address": "TBD",
+  "business_address": "CC-1-A Greenhills Heights, 136 Pinaglabanan St., Pedro Cruz, San Juan City 1500, Metro Manila, Philippines",
   "support_email": "contact@advo.ph",
   "support_phone": "TBD",
   "effective_date": "2026-08-23"
