@@ -70,12 +70,32 @@ if (fileOnDisk.length === 0) fail(`no migrations found in ${migrationDir}`);
  * constraint counts as declared however it is written.
  */
 function declaredConstraint() {
-  const name = new Set();
+  // A constraint belongs to a table, and a later migration may DROP that table
+  // (035/042 tasks-unification drops `task`, taking its chk_task_* with it). Track
+  // the table each chk_ is declared on, and the tables that end up dropped, so a
+  // constraint on a dropped table is not reported as "declared but absent".
+  const tableOf = new Map(); // chk_name -> table it was declared on
+  const dropped = new Set();
   for (const file of fileOnDisk) {
     const body = readFileSync(join(migrationDir, file), "utf8");
-    for (const match of body.matchAll(/CONSTRAINT\s+(chk_[a-z0-9_]+)/gi)) name.add(match[1]);
+    for (const m of body.matchAll(/DROP\s+TABLE\s+(?:IF\s+EXISTS\s+)?"?([a-z0-9_]+)"?/gi)) {
+      dropped.add(m[1].toLowerCase());
+    }
+    // Walk statements, tracking the current table (CREATE/ALTER TABLE <t>), and
+    // bind every CONSTRAINT chk_x to it.
+    let currentTable = null;
+    for (const line of body.split(/\n/)) {
+      const t =
+        /(?:CREATE\s+TABLE(?:\s+IF\s+NOT\s+EXISTS)?|ALTER\s+TABLE(?:\s+IF\s+EXISTS)?)\s+"?([a-z0-9_]+)"?/i.exec(line);
+      if (t) currentTable = t[1].toLowerCase();
+      const c = /CONSTRAINT\s+(chk_[a-z0-9_]+)/i.exec(line);
+      if (c) tableOf.set(c[1], currentTable);
+    }
   }
-  return [...name].sort();
+  return [...tableOf.entries()]
+    .filter(([, table]) => !table || !dropped.has(table))
+    .map(([name]) => name)
+    .sort();
 }
 
 const sql = postgres(databaseUrl, { max: 1, connect_timeout: 10, prepare: false, onnotice: () => {} });
