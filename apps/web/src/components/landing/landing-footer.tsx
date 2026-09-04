@@ -13,6 +13,7 @@ import {
 import { ChevronRight } from "lucide-react";
 import { get } from "@/lib/api";
 import { identityValue } from "@/lib/legal-identity";
+import AdvoDotField from "./AdvoDotField";
 
 interface SocialLink {
   icon: string;
@@ -180,11 +181,17 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
         ))}
       </div>
 
-      {/* The actual wordmark, not the name typed in the body face: the traced
-          letterforms from the lockup, set to exactly the width of the rule
-          above them. A CSS mask so it takes its colour from the footer, and
-          aria-hidden because the bar below says the name once already. */}
-      <div className="landing-footer-wordmark" data-viewport-check="footer-wordmark" aria-hidden="true" />
+      {/* The wordmark as an interactive pixel field — the ADVO letterforms
+          rendered as dots that react to the cursor and settle on their own.
+          The canvas is aria-hidden, so the name is set as text for a reader,
+          and the tagline sits under it at the wordmark's measure. */}
+      <div className="landing-footer-lockup" data-viewport-check="footer-wordmark">
+        <h2 className="landing-sr-only">ADVO</h2>
+        <div className="landing-footer-field">
+          <AdvoDotField />
+        </div>
+        <p className="landing-footer-tagline">We digitalize it for you</p>
+      </div>
 
       <nav className="landing-footer-legal" aria-label="Legal">
         {legalLink.map((link) => (
@@ -215,12 +222,7 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
       </div>
 
       <div className="landing-footer-bar">
-        <div>
-          <img src="/advo-wordmark.svg" alt="ADVO" />
-          <p>
-            © 2026 ADVO / <Link to="/start">Contact</Link> / Built with care in the Philippines.
-          </p>
-        </div>
+        <p className="landing-footer-fine">© 2026 ADVO. All rights reserved.</p>
         <div className="landing-social">
           {socialLink.map((link) => {
             const Icon = socialIcon[link.icon] ?? IconWorld;

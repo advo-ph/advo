@@ -787,16 +787,46 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 /* The wordmark as the footer's floor: the traced lockup, one column wide,
  * coloured through a mask so it is the footer's own ink at low strength. An
  * aspect-ratio box, so it can never overflow the 360px viewport. */
-.landing-footer-wordmark {
-  width: min(1440px, 100%);
-  aspect-ratio: 1024 / 235;
-  margin-inline: auto;
-  margin-bottom: 32px;
-  background: rgba(255, 255, 255, 0.14);
-  -webkit-mask: url("/advo-wordmark.svg") no-repeat center / contain;
-  mask: url("/advo-wordmark.svg") no-repeat center / contain;
-  user-select: none;
+.landing-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
+/* The wordmark is an interactive pixel field (AdvoDotField). Its height tracks
+   width, not the viewport, so the mark fills the measure rather than floating
+   in a tall box on a phone. */
+.landing-footer-lockup {
+  position: relative;
+  z-index: 1;
+  width: min(1440px, 100%);
+  margin-inline: auto;
+  padding-top: clamp(20px, 3vw, 44px);
+  margin-bottom: 24px;
+}
+.landing-footer-field {
+  position: relative;
+  width: 100%;
+  height: clamp(112px, 22vw, 360px);
+}
+.landing-footer-field canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+.landing-page .landing-footer-tagline {
+  width: 93%;
+  margin: clamp(4px, 0.8vw, 16px) auto 0;
+  text-align: center;
+  font-size: clamp(13px, 4.05vw, 58px);
+  font-weight: 300;
+  letter-spacing: 0.34em;
+  text-indent: 0.17em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.42);
+}
+.landing-footer-fine { color: rgba(255, 255, 255, 0.4); font-size: var(--landing-text-micro); }
 /* The PayMongo disclosure row. Its own line above the copyright bar: a
  * reviewer has to find all four from any page. */
 .landing-footer-legal {

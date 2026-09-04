@@ -49,6 +49,7 @@ const allowedLandingModule = new Set([
   "landing-shell.tsx", // /start /login /team /project/:slug /404
   "FloatingNav.tsx", // /hub
   "PortfolioCard.tsx", // proof-card unit under test
+  "AdvoDotField.tsx", // the footer wordmark pixel field, rendered by landing-footer
   "landing-page.css",
 ]);
 
