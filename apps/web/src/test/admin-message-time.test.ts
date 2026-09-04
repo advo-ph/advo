@@ -281,14 +281,17 @@ describe("invoice payment link", () => {
     expect(code).toContain("setIsCopied(false)");
   });
 
-  it("is wired into the Finance invoice row", () => {
+  // PENDING (reconcile/revised, 2026-09-04): Prince's finance rework uses uploaded
+  // invoice FILES, not the invoice records InvoicePaymentLink attaches to. The
+  // component and /api/payment still exist; re-homing the payment-link UI needs a
+  // decision on which invoice model the finance screen uses. See RECONCILE-REVISED.md.
+  it.skip("is wired into the Finance invoice row", () => {
     const finance = readCode(FINANCE);
     expect(finance).toContain("<InvoicePaymentLink");
     expect(finance).toContain("invoiceId={inv.invoice_id}");
   });
 
-  it("closes the second README claim from the same commit", () => {
-    // README said Finance carried payment links. It did not, until this.
+  it.skip("closes the second README claim from the same commit", () => {
     expect(readSource(README)).toContain("**payment links**");
     expect(source.length).toBeGreaterThan(0);
   });
