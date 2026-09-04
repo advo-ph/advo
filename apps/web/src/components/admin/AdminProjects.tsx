@@ -113,6 +113,9 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
       project_status: "discovery",
       total_value_cents: 0,
       amount_paid_cents: 0,
+      list_value_cents: null,
+      discount_cents: 0,
+      discount_reason: "",
       tech_stack: "",
     });
     setAssetType("progress_photo");

@@ -55,6 +55,7 @@ export type AdminSection =
   | "corpus"
   | "time"
   | "social"
+  | "content"
   | "portfolio"
   | "finance"
   | "notifications"

@@ -44,6 +44,9 @@ export interface ClientProject {
   contract_url?: string;
   total_value_cents: number;
   amount_paid_cents: number;
+  list_value_cents?: number | null;
+  discount_cents?: number;
+  discount_reason?: string | null;
   tech_stack: string[];
   repository_name?: string;
   created_at: string;

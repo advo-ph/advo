@@ -12,16 +12,19 @@ import type { ReactNode, ElementType } from "react";
 /** Page title row: title + optional meta + optional right-aligned action. */
 export const PageHeader = ({
   title,
+  subtitle,
   meta,
   action,
 }: {
   title: string;
+  subtitle?: ReactNode;
   meta?: ReactNode;
   action?: ReactNode;
 }) => (
   <div className="flex items-center justify-between gap-4">
     <div className="flex items-baseline gap-3 min-w-0">
       <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
+      {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
       {meta && <span className="text-xs text-muted-foreground truncate">{meta}</span>}
     </div>
     {action && <div className="shrink-0">{action}</div>}
