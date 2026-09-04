@@ -532,6 +532,8 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   border: 1px solid var(--landing-hairline, rgba(12, 12, 12, 0.12));
   border-radius: 4px;
 }
+.landing-industry-head { display: flex; align-items: center; gap: 10px; }
+.landing-industry-head svg { color: var(--landing-ink); opacity: 0.85; }
 .landing-industry-card h3 { font-size: var(--landing-text-lead); font-weight: 500; }
 .landing-page .landing-industry-copy { margin-top: 6px; font-size: var(--landing-text-small); line-height: 1.5; color: var(--landing-ink-soft); }
 .landing-industry-offer { list-style: none; margin: 18px 0 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
@@ -864,7 +866,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 }
 .landing-footer-legal a { color: rgba(255, 255, 255, 0.55); font-size: var(--landing-text-micro); transition: color 0.15s var(--landing-ease); }
 .landing-footer-legal a:hover { color: var(--landing-ground); text-decoration: underline; }
-.landing-footer-identity { margin-top: 14px; display: flex; flex-direction: column; gap: 3px; }
+.landing-footer-identity { width: min(1440px, 100%); margin: 16px auto 0; padding-bottom: 20px; display: flex; flex-direction: column; gap: 4px; }
 .landing-footer-identity p { color: rgba(255, 255, 255, 0.45); font-size: var(--landing-text-micro); }
 .landing-footer-identity a { color: rgba(255, 255, 255, 0.6); }
 .landing-footer-identity a:hover { color: var(--landing-ground); text-decoration: underline; }

@@ -1,7 +1,8 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
-import { ArrowUpRight, ChevronRight } from "lucide-react";
+import { ArrowUpRight, ChevronRight, UtensilsCrossed, Stethoscope, GraduationCap, CircleParking, Building2 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import { getCaseStudy } from "@/data/case-study";
 import WorkMedia from "@/components/WorkMedia";
@@ -24,12 +25,14 @@ interface Offer {
 interface Industry {
   key: string;
   title: string;
+  icon: LucideIcon;
   copy: string;
   offer: Offer[];
 }
 const industry: Industry[] = [
   {
     key: "food",
+    icon: UtensilsCrossed,
     title: "Food",
     copy: "Ordering, seating, and the kitchen behind both.",
     offer: [
@@ -40,6 +43,7 @@ const industry: Industry[] = [
   },
   {
     key: "medical",
+    icon: Stethoscope,
     title: "Medical",
     copy: "Clinics, hospitals, and the records that move between them.",
     offer: [
@@ -50,6 +54,7 @@ const industry: Industry[] = [
   },
   {
     key: "education",
+    icon: GraduationCap,
     title: "Education",
     copy: "Campus security, grading, and the school's own portal.",
     offer: [
@@ -60,6 +65,7 @@ const industry: Industry[] = [
   },
   {
     key: "parking",
+    icon: CircleParking,
     title: "Parking",
     copy: "A fully automated car park for drivers, managers, and owners.",
     offer: [
@@ -70,6 +76,7 @@ const industry: Industry[] = [
   },
   {
     key: "business",
+    icon: Building2,
     title: "Businesses",
     copy: "If it runs on spreadsheets and group chats, it can run on software.",
     offer: [
@@ -249,7 +256,10 @@ const LandingPage = () => {
         <RevealGroup className="landing-industry-grid" stagger={0.08}>
           {industry.map((item) => (
             <Reveal as="article" className="landing-industry-card" key={item.key}>
-              <h3>{item.title}</h3>
+              <div className="landing-industry-head">
+                <item.icon size={20} strokeWidth={1.25} absoluteStrokeWidth />
+                <h3>{item.title}</h3>
+              </div>
               <p className="landing-industry-copy">{item.copy}</p>
               <ul className="landing-industry-offer">
                 {item.offer.map((o) => (
