@@ -24,6 +24,7 @@ interface Offer {
 }
 interface Industry {
   key: string;
+  image: string;
   title: string;
   icon: LucideIcon;
   copy: string;
@@ -32,6 +33,7 @@ interface Industry {
 const industry: Industry[] = [
   {
     key: "food",
+    image: "/landing/industry/food.jpg",
     icon: UtensilsCrossed,
     title: "Food",
     copy: "Ordering, seating, and the kitchen behind both.",
@@ -43,6 +45,7 @@ const industry: Industry[] = [
   },
   {
     key: "medical",
+    image: "/landing/industry/medical.jpg",
     icon: Stethoscope,
     title: "Medical",
     copy: "Clinics, hospitals, and the records that move between them.",
@@ -54,6 +57,7 @@ const industry: Industry[] = [
   },
   {
     key: "education",
+    image: "/landing/industry/education.jpg",
     icon: GraduationCap,
     title: "Education",
     copy: "Campus security, grading, and the school's own portal.",
@@ -65,6 +69,7 @@ const industry: Industry[] = [
   },
   {
     key: "parking",
+    image: "/landing/industry/parking.jpg",
     icon: CircleParking,
     title: "Parking",
     copy: "A fully automated car park for drivers, managers, and owners.",
@@ -76,6 +81,7 @@ const industry: Industry[] = [
   },
   {
     key: "business",
+    image: "/landing/industry/business.jpg",
     icon: Building2,
     title: "Businesses",
     copy: "If it runs on spreadsheets and group chats, it can run on software.",
@@ -254,6 +260,9 @@ const LandingPage = () => {
         <RevealGroup className="landing-industry-grid" stagger={0.08}>
           {industry.map((item) => (
             <Reveal as="article" className="landing-industry-card" key={item.key}>
+              <div className="landing-industry-media">
+                <img src={item.image} alt={`${item.title} — what ADVO builds`} loading="lazy" />
+              </div>
               <div className="landing-industry-head">
                 <item.icon size={20} strokeWidth={1.25} absoluteStrokeWidth />
                 <h3>{item.title}</h3>
