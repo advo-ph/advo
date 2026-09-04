@@ -13,33 +13,70 @@ import LandingFooter from "./landing-footer";
 import "./landing-page.css";
 
 /**
- * The three software surfaces plus the hardware on the counter. One system,
- * shown the way it is used, with the cinematic stills doing the talking.
+ * What ADVO builds, by industry, each with the products we actually sell into it.
+ * Prince, 09-03: this reads to a restaurant or a clinic owner as "yes, they have
+ * built the thing I need", where "Strategy / Design / Development" never does.
  */
-const surface = [
+interface Offer {
+  name: string;
+  copy: string;
+}
+interface Industry {
+  key: string;
+  title: string;
+  copy: string;
+  offer: Offer[];
+}
+const industry: Industry[] = [
   {
-    title: "Public site",
-    heading: "The front door your customers land on.",
-    desc: "On your domain, fast on a phone, and wired to the system behind it. Fourlinq is live at fourlinq.ph.",
-    still: "/landing/rw/story.jpg",
-    primary: { label: "Start a project", href: "/start" },
-    secondary: { label: "See Fourlinq", href: "https://fourlinq.ph" },
+    key: "food",
+    title: "Food",
+    copy: "Ordering, seating, and the kitchen behind both.",
+    offer: [
+      { name: "QR code ordering", copy: "Guests scan the table code and order from their own phone." },
+      { name: "Kiosk ordering", copy: "Self-serve terminals that take the order and the payment." },
+      { name: "Table management", copy: "A live floor plan with seating, waitlist, and turn times." },
+    ],
   },
   {
-    title: "Client Hub",
-    heading: "Scope, files, approvals, and invoices in one place.",
-    desc: "Your team and ours see the same status. Sign-off happens on the work itself, not in a chat thread.",
-    still: "/landing/rw/hero.jpg",
-    primary: { label: "Log in", href: "/login" },
-    secondary: { label: "How it ships", href: "#process" },
+    key: "medical",
+    title: "Medical",
+    copy: "Clinics, hospitals, and the records that move between them.",
+    offer: [
+      { name: "Clinic management", copy: "Appointments, queueing, billing, and stock in one system." },
+      { name: "EMR for doctors", copy: "Patient records a doctor reads and updates between consults." },
+      { name: "Hospital integration", copy: "Clinic data to and from hospital systems, no fax machine." },
+    ],
   },
   {
-    title: "Admin console",
-    heading: "The back office your staff opens every morning.",
-    desc: "Projects, leads, capacity, and finance. The hardware floor is part of the install: tablet, printer, TV.",
-    still: "/landing/rw/deliver.jpg",
-    primary: { label: "Log in", href: "/login" },
-    secondary: { label: "Request a quotation", href: "#work" },
+    key: "education",
+    title: "Education",
+    copy: "Campus security, grading, and the school's own portal.",
+    offer: [
+      { name: "ID authentication", copy: "Student IDs that tap in at the gate and log who is on campus." },
+      { name: "Automated monitoring", copy: "Attendance tracked without a teacher counting heads." },
+      { name: "Grading system", copy: "Marks entered once, computed to the school's own rules." },
+    ],
+  },
+  {
+    key: "parking",
+    title: "Parking",
+    copy: "A fully automated car park for drivers, managers, and owners.",
+    offer: [
+      { name: "Plate recognition", copy: "A camera reads the plate at the gate and the barrier opens." },
+      { name: "Self-service payment", copy: "Pay at a kiosk in cash with coin change, or by e-wallet." },
+      { name: "Runs offline", copy: "The internet drops and the lane keeps working." },
+    ],
+  },
+  {
+    key: "business",
+    title: "Businesses",
+    copy: "If it runs on spreadsheets and group chats, it can run on software.",
+    offer: [
+      { name: "Construction", copy: "Site progress, manpower, deliveries, and progress billing." },
+      { name: "Retail and services", copy: "Inventory, point of sale, scheduling, and customer records." },
+      { name: "Logistics", copy: "Fleet tracking, dispatch, and proof of delivery." },
+    ],
   },
 ];
 
@@ -99,52 +136,9 @@ const clientLogo: Record<string, { src: string; filter?: string; wide?: boolean 
   "coffee-rush-eastridge": { src: "/landing/logo/coffee-rush.png", filter: "invert(1)" },
 };
 
-const tool = [
-  { name: "Gmail", asset: "/landing/integration/gmail.svg" },
-  { name: "Calendar", asset: "/landing/integration/google-calendar.svg" },
-  { name: "Notion", asset: "/landing/integration/notion.svg" },
-  { name: "Slack", asset: "/landing/integration/slack.svg" },
-  { name: "Trello", asset: "/landing/integration/trello.svg" },
-  { name: "Drive", asset: "/landing/integration/google-drive.svg" },
-  { name: "Zoom", asset: "/landing/integration/zoom.svg" },
-  { name: "Asana", asset: "/landing/integration/asana.svg" },
-  { name: "Teams", asset: "/landing/integration/microsoft-teams.svg" },
-];
-
 const heroCopy = {
   hidden: { opacity: 0, y: 18 },
   show: { opacity: 1, y: 0 },
-};
-
-/** In-page anchors stay `<a href>` so the browser owns the smooth scroll. */
-const Action = ({
-  href,
-  className,
-  children,
-}: {
-  href: string;
-  className: string;
-  children: React.ReactNode;
-}) => {
-  if (href.startsWith("http")) {
-    return (
-      <a className={className} href={href} target="_blank" rel="noopener noreferrer">
-        {children}
-      </a>
-    );
-  }
-  if (href.startsWith("#")) {
-    return (
-      <a className={className} href={href}>
-        {children}
-      </a>
-    );
-  }
-  return (
-    <Link className={className} to={href}>
-      {children}
-    </Link>
-  );
 };
 
 const LandingPage = () => {
@@ -243,48 +237,32 @@ const LandingPage = () => {
 
       <section className="landing-piece" id="showcase">
         <Reveal as="h2" className="landing-display">
-          Three pieces already exist. The system is the fourth.
+          What we build
         </Reveal>
         <Reveal className="landing-lede" delay={0.08}>
           <p>
-            Paper, Viber, tally sheets. We drop in the missing piece: software, plus the
-            tablet, printer, and TV already on the counter.
+            Paper, Viber, tally sheets. We drop in the missing piece: software for the
+            industries we already ship into, plus the tablet, printer, and TV on the counter.
           </p>
         </Reveal>
 
-        <RevealGroup className="landing-surface-grid" stagger={0.1}>
-          {surface.map((item) => (
-            <Reveal as="article" className="landing-surface-card" key={item.title}>
+        <RevealGroup className="landing-industry-grid" stagger={0.08}>
+          {industry.map((item) => (
+            <Reveal as="article" className="landing-industry-card" key={item.key}>
               <h3>{item.title}</h3>
-              <div className="landing-still">
-                <img src={item.still} alt="" loading="lazy" />
-              </div>
-              <h4>{item.heading}</h4>
-              <p>{item.desc}</p>
-              <div className="landing-surface-action">
-                <Action className="landing-button landing-button-primary landing-button-small" href={item.primary.href}>
-                  {item.primary.label}
-                </Action>
-                <Action className="landing-button landing-button-ghost landing-button-small" href={item.secondary.href}>
-                  {item.secondary.label}
-                  {item.secondary.href.startsWith("http") ? <ArrowUpRight size={14} strokeWidth={1} absoluteStrokeWidth /> : null}
-                </Action>
-              </div>
+              <p className="landing-industry-copy">{item.copy}</p>
+              <ul className="landing-industry-offer">
+                {item.offer.map((o) => (
+                  <li key={o.name}>
+                    <span className="landing-industry-offer-name">{o.name}</span>
+                    <span className="landing-industry-offer-copy">{o.copy}</span>
+                  </li>
+                ))}
+              </ul>
             </Reveal>
           ))}
         </RevealGroup>
 
-        <Reveal className="landing-tool-row" delay={0.05}>
-          <p>Fits the tools your floor already runs on</p>
-          <div>
-            {tool.map((item) => (
-              <span key={item.name}>
-                <img src={item.asset} alt="" loading="lazy" />
-                {item.name}
-              </span>
-            ))}
-          </div>
-        </Reveal>
       </section>
 
       <section className="landing-process" id="process">

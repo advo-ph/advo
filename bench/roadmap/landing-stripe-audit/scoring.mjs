@@ -67,15 +67,16 @@ const checks = [
   },
   {
     id: "product-surfaces",
-    title: "Services are ADVO product surfaces",
+    title: "Landing shows what ADVO builds, by industry",
     passed: hasAll(files.landingPage, [
-      "Client Hub",
-      "Admin",
-      "Public site",
-      "Hardware floor",
+      "What we build",
+      "Food",
+      "Medical",
+      "Parking",
+      "QR code ordering",
     ]),
     expected:
-      "The landing exposes Client Hub, Admin, public site, and hardware-floor surfaces instead of generic agency services.",
+      "The landing shows what ADVO builds by industry (Food, Medical, Education, Parking, Businesses) with concrete offers, not generic agency services. Superseded the abstract Public-site/Client-Hub/Admin surface cards (2026-09-04).",
   },
   {
     id: "hero-product-system-offer",
@@ -85,11 +86,11 @@ const checks = [
         "We digitalize it for you",
         "Philippine software agency and client workspace",
       ]) &&
-      // The missing-piece section carries the system framing under the hero.
-      hasAll(files.landingPage, ["landing-piece", "the system is the fourth"]) &&
+      // The section under the hero shows what ADVO builds, by industry.
+      hasAll(files.landingPage, ["landing-piece", "What we build"]) &&
       !/Build together|Ship with clarity/i.test(files.landingPage),
     expected:
-      "Hero headline and the section under it position ADVO as a website-plus-system builder, not a generic agency intro. The headline is the founder's mission line; the Stripe-era 'Build together. Ship with clarity.' is retired.",
+      "Hero headline is the founder's mission line, and the section under it shows what ADVO builds by industry. The Stripe-era 'Build together. Ship with clarity.' is retired. (2026-09-04: the abstract three-surface framing became the industry offers.)",
   },
   {
     id: "proof-metrics",
@@ -175,27 +176,27 @@ const checks = [
   },
   {
     id: "why-system-not-generic-digital",
-    title: "The section under the hero explains the system, not digital-transformation",
+    title: "The section under the hero shows concrete offers, not digital-transformation",
     passed:
       hasAll(files.landingPage, [
-        "Three pieces already exist",
+        "What we build",
         "Paper, Viber, tally sheets",
       ]) &&
       !/Invest in Your Digital Future|24\/7 Online Presence|Scale Effortlessly|Better Customer Experience/.test(
         files.landingPage,
       ),
     expected:
-      "The first post-hero section names the concrete gap on the floor instead of generic digital-transformation benefits.",
+      "The first post-hero section names the concrete gap on the floor and what ADVO builds by industry, instead of generic digital-transformation benefits.",
   },
   {
     id: "integration-strip",
-    title: "Integration strip is quiet and locally served",
+    title: "Client-logo strip is quiet and locally served",
     passed:
       /landing-marquee/.test(files.landingPage) &&
-      /\/landing\/integration\//.test(files.landingPage) &&
+      /\/landing\/logo\//.test(files.landingPage) &&
       !/simpleicons|cdn\.simpleicons/.test(files.landingPage),
     expected:
-      "The integration strip serves its own marks and does not depend on an external logo CDN.",
+      "The client-logo marquee serves its own marks and does not depend on an external logo CDN. (2026-09-04: the separate integration-tool strip was removed to shorten the page; the marquee carries the locally-served proof.)",
   },
   {
     id: "process-system-sequence",
