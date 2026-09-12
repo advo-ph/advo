@@ -1,15 +1,14 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
-import { ArrowUpRight, ChevronRight, UtensilsCrossed, Stethoscope, GraduationCap, CircleParking, Building2 } from "lucide-react";
+import { ChevronRight, UtensilsCrossed, Stethoscope, GraduationCap, CircleParking, Building2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
-import { getCaseStudy } from "@/data/case-study";
-import WorkMedia from "@/components/WorkMedia";
 import LandingNav from "@/components/LandingNav";
 import LandingScrollbar from "@/components/LandingScrollbar";
 import { Reveal, RevealGroup } from "@/components/motion/Reveal";
 import { EASE } from "@/lib/motion";
+import WorkShowcase from "./WorkShowcase";
 import LandingFooter from "./landing-footer";
 import "./landing-page.css";
 
@@ -329,51 +328,7 @@ const LandingPage = () => {
           </div>
         </Reveal>
       </section>
-      {shippedProject.length > 0 ? (
-        <section className="landing-work" id="work">
-          <Reveal as="h2" className="landing-display">
-            The sites we have already shipped.
-          </Reveal>
-          <RevealGroup className="landing-work-grid" stagger={0.1}>
-            {shippedProject.map((item) => {
-              // A case study read out of the client's own source beats bouncing
-              // the visitor straight off-site. The live URL is one click away
-              // inside it.
-              const study = getCaseStudy(item.slug);
-              const href = study
-                ? `/work/${item.slug}`
-                : item.live_url ?? (item.slug ? `/project/${item.slug}` : null);
-              const isExternal = !study && Boolean(item.live_url);
-              const body = (
-                <>
-                  <WorkMedia slug={item.slug} title={item.title} fallback={item.screenshotUrl} />
-                  <h3>{item.title}</h3>
-                  <p>{item.blurb}</p>
-                  {href ? (
-                    <span className="landing-text-link">
-                      {study ? "Read the case study" : isExternal ? "Visit the site" : "See the project"}
-                      {isExternal ? <ArrowUpRight size={14} strokeWidth={1} absoluteStrokeWidth /> : <ChevronRight size={14} strokeWidth={1} absoluteStrokeWidth />}
-                    </span>
-                  ) : null}
-                </>
-              );
-              return (
-                <Reveal as="article" className="landing-work-card" key={item.portfolio_project_id}>
-                  {href && isExternal ? (
-                    <a href={href} target="_blank" rel="noopener noreferrer">
-                      {body}
-                    </a>
-                  ) : href ? (
-                    <Link to={href}>{body}</Link>
-                  ) : (
-                    <div>{body}</div>
-                  )}
-                </Reveal>
-              );
-            })}
-          </RevealGroup>
-        </section>
-      ) : null}
+      {shippedProject.length > 0 ? <WorkShowcase project={shippedProject} /> : null}
       <LandingFooter />
     </main>
   );
