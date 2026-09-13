@@ -55,7 +55,9 @@ const WorkShowcase = ({ project }: WorkShowcaseProps) => {
         return;
       }
       const progress = Math.min(1, Math.max(0, -rect.top / travel));
-      setActive(Math.round(progress * (total - 1)));
+      // Equal dwell: the scroll budget splits into `total` equal bands, one per
+      // card. Rounding over (total - 1) gave the first and last card half a band.
+      setActive(Math.min(total - 1, Math.floor(progress * total)));
     };
 
     const onScroll = () => {

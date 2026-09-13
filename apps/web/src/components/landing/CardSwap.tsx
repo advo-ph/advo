@@ -148,7 +148,13 @@ const CardSwap = ({
     const total = refs.length;
     if (!total) return;
 
-    const boxH = container.current?.getBoundingClientRect().height ?? 0;
+    // Drop far enough to leave the stage, not just the deck's own box. On a phone
+    // the box is ~220px, so a box-relative drop kept the retiring card fading in
+    // plain view under the deck; half the viewport clears it (the stage clips).
+    const boxH = Math.max(
+      container.current?.getBoundingClientRect().height ?? 0,
+      typeof window === "undefined" ? 0 : window.innerHeight * 0.5,
+    );
     const index = Math.min(Math.max(activeIndex ?? 0, 0), total - 1);
 
     refs.forEach((r, i) => {

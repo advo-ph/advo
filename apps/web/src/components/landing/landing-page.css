@@ -128,8 +128,15 @@ html:has(.landing-page) #root {
   }
 }
 
+/* Clip sideways overflow WITHOUT becoming a scroll container. `overflow: hidden`
+   here made <main> the sticky containing scroller, so .work-stage (position:
+   sticky) pinned to <main> — which never scrolls — and slid off the screen with
+   the page. `clip` clips the same pixels but leaves the document as the
+   scroller. The `hidden` line is only a fallback for engines without `clip`. */
 .landing-page {
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-x: clip;
+  overflow-y: visible;
   color-scheme: light;
   --landing-muted: var(--landing-ink-soft);
   --landing-ghost: var(--landing-line-soft);
