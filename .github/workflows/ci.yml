@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Manual trigger. Pushes from some accounts have created no run at all (none for the
+  # 2026-09-04 and 2026-09-13 pushes while 3a0ddc6 did run), so verify can be started by hand.
+  workflow_dispatch:
 
 # Cancel in-flight runs for the same branch when a new commit lands
 concurrency:
