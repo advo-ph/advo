@@ -31,11 +31,13 @@ Cross-links:
 
 **Honest open-items**
 
-- **CI does not trigger on push** even though Actions is enabled and the workflow is active. Unexplained; do not count on the `deploy-web` job.
+- **CI does not run for pushes from the `CelestialBrain` account — root cause found:** a manual `workflow_dispatch` returned `HTTP 422: Actions has been disabled for this user`. GitHub has disabled Actions on that account itself (the org allows all actions; `princewagan`'s 09-12 push ran). Only the account owner can clear it (GitHub billing/support). Until then, deploy with `deploy.sh`, or have another member push or dispatch (`workflow_dispatch` added in `2374494`).
 - **`mac/org-compat-t0` (analytics) is still unmerged** and 37+ commits behind; only the self-contained token commit was ported. `mac/main` stays local.
 - **`C:/Users/maran/Code/advo-lane-runway`** is a leftover folder from the removed worktree (a few files that differ from the tagged branch, plus `node_modules`). Not deleted.
 - **`docs/SCHEMA.md` ~line 179** still describes the original `018` commission defaults.
-- **Johann Endriga and Kenneth Leo Dela Cruz have no login** — creating one needs their email, which sends the invite.
+- ~~**Johann Endriga and Kenneth Leo Dela Cruz have no login.**~~ **Resolved:** Kenneth (`advo.kenneth.id@gmail.com`, the account that owns ADVO's junior-dev sign-up form) and Johann (`endrigsjohann@gmail.com`, owner of the VBE project docs in Drive) now have logins; both invite emails sent (prod mail state: 2 sent, 0 failed).
+- **The internal commission agreement is readable by anyone with the link** (Drive permission `anyone: reader`; owner is Anthony's account). An internal compensation agreement should not be link-public — Anthony should restrict it.
+- **polkadoc vault repaired on the Mac** with the merged fix (`CelestialBrain/polkadoc` `35e33dd`): 2,465 duplicate records merged in ADVO Core, 130 dates restored, a re-run finds 0, notes re-rendered. The pre-repair collection file is at `~/polkadoc-backup-20260913/`. Chrome loads the extension unpacked from the checkout, so the capture fixes apply on the next extension reload.
 
 ---
 
