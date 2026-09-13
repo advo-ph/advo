@@ -163,17 +163,20 @@ describe("Commission — the 55/35/10 structure (Phase 8)", () => {
   it("sub-splits the staff pool 20/50/20/10 (Lead Partnerships/Management/Marketing/Accounting)", () => {
     const { derived } = computeSplit(makePlan(), fullLedger());
     // referralBps = 2000 (Lead Partnerships 20% of staff pool)
-    // marketingBps = 5000 (Management 50%)
+    // marketingBps = 2000 (Marketing 20%)
     // accountingBps = 1000 (Accounting 10%)
-    // managementBps = 2000 (Marketing 20%)
+    // managementBps = 5000 (Management 50%)
     // 20% of ₱35,000 = ₱7,000
     expect(derived.staffRolePoolCents.referral).toBe(700_000);
-    // 50% of ₱35,000 = ₱17,500
-    expect(derived.staffRolePoolCents.marketing).toBe(1_750_000);
+    // 20% of ₱35,000 = ₱7,000
+    expect(derived.staffRolePoolCents.marketing).toBe(700_000);
     // 10% of ₱35,000 = ₱3,500
     expect(derived.staffRolePoolCents.accounting).toBe(350_000);
-    // 20% of ₱35,000 = ₱7,000
-    expect(derived.staffRolePoolCents.management).toBe(700_000);
+    // 50% of ₱35,000 = ₱17,500
+    expect(derived.staffRolePoolCents.management).toBe(1_750_000);
+    // The agreement's weights, not the swapped 037 defaults.
+    expect(DEFAULT_BPS.marketing).toBe(2000);
+    expect(DEFAULT_BPS.management).toBe(5000);
 
     // The four unique sub-pools (referral + marketing + accounting + management) sum to staff pool.
     const staffSubSum =
@@ -201,11 +204,11 @@ describe("Commission — the 55/35/10 structure (Phase 8)", () => {
   });
 
   it("reports cents belonging to an empty role as UNALLOCATED, never absorbing them", () => {
-    // Nobody in marketing (managementBps = 5000 = 50% of staff, the marketing column).
-    const share = fullLedger().filter((s) => s.role !== "marketing");
+    // Nobody in management (managementBps = 5000 = 50% of the staff pool).
+    const share = fullLedger().filter((s) => s.role !== "management");
     const { derived, amountByShareId } = computeSplit(makePlan(), share);
 
-    // marketing = 50% of 35% of ₱100,000 = ₱17,500
+    // management = 50% of 35% of ₱100,000 = ₱17,500
     expect(derived.unallocatedCents).toBe(1_750_000);
     expect(derived.allocatedCents).toBe(10_000_000 - 1_750_000);
     // The company reserve is still exactly 10% — it did not swell.

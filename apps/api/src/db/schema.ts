@@ -1132,11 +1132,11 @@ export const commissionPlan = pgTable(
     developerBps: integer("developer_bps").notNull().default(5500),
     staffBps: integer("staff_bps").notNull().default(3500),
     companyBps: integer("company_bps").notNull().default(1000),
-    /** Basis points OF THE STAFF POOL. These four CHECK-sum to 10000. Updated by migration 030. */
+    /** Basis points OF THE STAFF POOL. These four CHECK-sum to 10000. Marketing/management defaults corrected by migration 045. */
     referralBps: integer("referral_bps").notNull().default(2000),
-    marketingBps: integer("marketing_bps").notNull().default(5000),
+    marketingBps: integer("marketing_bps").notNull().default(2000),
     accountingBps: integer("accounting_bps").notNull().default(1000),
-    managementBps: integer("management_bps").notNull().default(2000),
+    managementBps: integer("management_bps").notNull().default(5000),
     /** App-validated growable set: draft | finalized | void. */
     status: varchar("status", { length: 20 }).notNull().default("draft"),
     /** THE stamp. NULL = draft and fully editable. Non-NULL = frozen forever. */

@@ -28,7 +28,9 @@ already the best-of-both). This records how it was done and what is left.
   superseded by that reconciliation.
 - **AdminFinance + ProjectCommandCenter:** took revised's admin rework whole.
 - **Commission staff split:** took revised's Lead Partnerships 20 / Management
-  50 / Marketing 20 / Accounting 10. **Confirm against the signed agreement.**
+  50 / Marketing 20 / Accounting 10, which matches the signed agreement
+  (`data/corpus/document/internal-commission-agreement.json`). The column
+  defaults from `037` had Marketing and Management swapped; fixed by `045`.
 - **Expense receipts:** revised's migration 039 removed receipt_url and the
   reimbursable flag; the bookkeeping sheet dropped those two columns to match.
 - **Deliverable status:** revised unified task→deliverable; the done state is
@@ -43,4 +45,6 @@ already the best-of-both). This records how it was done and what is left.
    Center.** Same shape: component + `/api/project-message` intact, needs a mount.
 3. **`e2e-flow` team-member login** is a live-API test; confirm it against the
    merged server with a seeded team member (revised reworked sessions).
-4. **Confirm the commission staff sub-weights** with Prince before any payout.
+4. ~~**Confirm the commission staff sub-weights** with Prince before any payout.~~
+   **Resolved:** confirmed against the signed agreement; defaults corrected by
+   migration `045_commission_staff_split_fix.sql`.
