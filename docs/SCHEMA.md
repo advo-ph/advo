@@ -164,7 +164,7 @@ Indexes: `(project_id)`, and `(next_run_on) WHERE status = 'active'` (the genera
 
 ### commission_plan
 
-How ONE project's value is split among the people who earned it (migration `018`). Prince, 2026-06-19: **60% developer / 25% staff / 15% company**. The staff quarter sub-splits **28% referral / 24% marketing / 24% accounting / 24% management**. Every prior money model in this repo points outward at a client; this is the first that models how ADVO pays itself.
+How ONE project's value is split among the people who earned it (migration `018`). The current defaults match the signed internal commission agreement: **55% developer / 35% staff / 10% company**, set by `037`. The staff pool sub-splits **20% Lead Partnerships (`referral_bps`) / 50% Management / 20% Marketing / 10% Accounting**, set by `037` with marketing and management swapped back into place by `045`. Prince's 2026-06-19 structure (60/25/15, staff 28/24/24/24) was `018`'s default and is superseded. Existing rows keep the split they were drafted under. Every prior money model in this repo points outward at a client; this is the first that models how ADVO pays itself.
 
 | Column | Type | Description |
 | ------ | ---- | ----------- |
@@ -172,11 +172,13 @@ How ONE project's value is split among the people who earned it (migration `018`
 | `project_id` | BIGINT (FK) | → `project` `ON DELETE CASCADE` |
 | `basis_cents` | INTEGER | Integer CENTS being split. Seeded from `project.total_value_cents` at draft time, then independently editable. CHECK `>= 0`. |
 | `basis_note` | TEXT | Why the basis differs from the contract value, when it does |
-| `developer_bps` | INTEGER | Basis points, default `6000` (60%) |
-| `staff_bps` | INTEGER | Default `2500` |
-| `company_bps` | INTEGER | Default `1500`. CHECK: the three **sum to exactly 10000**. |
-| `referral_bps` | INTEGER | Basis points **of the staff pool**, default `2800` (= 7% of the project) |
-| `marketing_bps` / `accounting_bps` / `management_bps` | INTEGER | Default `2400` each. CHECK: the four **sum to exactly 10000**. |
+| `developer_bps` | INTEGER | Basis points, default `5500` (55%, `037`) |
+| `staff_bps` | INTEGER | Default `3500` (`037`) |
+| `company_bps` | INTEGER | Default `1000` (`037`). CHECK: the three **sum to exactly 10000**. |
+| `referral_bps` | INTEGER | Lead Partnerships. Basis points **of the staff pool**, default `2000` (= 7% of the project) |
+| `marketing_bps` | INTEGER | Default `2000` (`045`) |
+| `accounting_bps` | INTEGER | Default `1000` (`037`) |
+| `management_bps` | INTEGER | Default `5000` (`045`). CHECK: the four staff weights **sum to exactly 10000**. |
 | `status` | VARCHAR(20) | App-validated growable set: `draft` / `finalized` / `void`. CHECK `(status = 'finalized') = (finalized_at IS NOT NULL)`. |
 | `finalized_at` | TIMESTAMPTZ | **THE stamp.** NULL = draft, every amount derived and every weight editable. Non-NULL = frozen forever. |
 | `finalized_by` | BIGINT (FK) | → `user` `ON DELETE SET NULL` |
@@ -511,6 +513,33 @@ API: `GET/POST /api/project-signoff`, `GET/PATCH /api/project-signoff/:id`, `POS
 
 ---
 
+### corpus_source
+
+One document, recording or pasted text in the fact corpus (migration `027`; `body` added in `047`). Unique on `(kind, external_id)`, so re-ingesting replaces rather than duplicates. Its facts, terms and actions live in `corpus_fact`, `corpus_term` and `corpus_action` (ON DELETE CASCADE); see [FEATURES.md](FEATURES.md#corpus-admin--corpus-apicorpus-migration-027).
+
+| Column | Type | Description |
+| --- | --- | --- |
+| `corpus_source_id` | BIGSERIAL (PK) | |
+| `kind` | VARCHAR(30) | `plaud`, `drive_doc`, `local_file`, `web`, `text` — CHECKed |
+| `external_id` | VARCHAR(255) | Plaud file id, Drive id, repo slug; UNIQUE with `kind` |
+| `url` | VARCHAR(1000) | The original, when there is one |
+| `title` | VARCHAR(500) | |
+| `document_kind` | VARCHAR(30) | contract, proposal, addendum, minutes, … |
+| `occurred_at` | TIMESTAMPTZ | When the meeting happened or the document is dated |
+| `duration_second` | INTEGER | Recordings only |
+| `language` | VARCHAR(10) | |
+| `summary` | TEXT | Extractor or Plaud summary |
+| `body` | TEXT | **The full document text or transcript** (047). Nullable: sources ingested before 047 without a `meta.body` have none. Capped at 2,000,000 characters by the API. Returned only by `GET /api/corpus/source/:id`; the list returns `body_character_count` instead. A re-ingest without a body keeps the stored one. 047 moved any `meta.body` stopgap here and removed the key from `meta`. |
+| `project_id` / `client_id` / `lead_id` | INTEGER (FK) | ON DELETE SET NULL |
+| `lead_name` | VARCHAR(255) | The organisation as named in the source |
+| `meta` | JSONB | Extraction method, meeting id, `unresolvedProjectId`, … — never the body |
+| `ingested_by` | INTEGER (FK) | → `user` ON DELETE SET NULL |
+| `ingested_at` / `updated_at` | TIMESTAMPTZ | |
+
+List: `GET /api/corpus/source` is paged, returning `{ source, totalCount, limit, offset }`. `limit` runs 1–500 (default 50). Rows are ordered by `occurred_at DESC NULLS LAST, corpus_source_id DESC`, so offset pages are stable. Search: `?q=` is ILIKE over `title`, `summary` and `body`. No trigram index — a sequential scan over tens of sources is free, and `pg_trgm` needs an extension prod migrations may not be allowed to create.
+
+---
+
 ### schema_migration
 
 One row per migration file a database has applied. Written by `019_schema_ledger.sql` and by every migration after it; read by `scripts/migration-drift.mjs`. **No API route touches it** — the app has no business editing its own deploy history.
@@ -544,9 +573,10 @@ Drizzle-kit `push` syncs `schema.ts` → Postgres. For schema changes that need 
 | `013_meeting_is_visible_client.sql` | 2026-08-16 | `meeting.is_visible_client` NOT NULL DEFAULT false. Import/paste stay unpublished until Publish. Partial index on `project_id` where visible. |
 | `016_project_signoff.sql` | 2026-08-19 | Created `project_signoff` + `signoff_revision` — the CLIENT-FACING final-delivery document the FourlinQ MOA names 5 times (final payment due on signing with 7 days to pay; all free revisions used before signing; unused rounds invocable 6 months after). Distinct from `deliverable.verified_at` (internal QA). `status`/`signed_method` app-validated varchar, money in integer cents, two partial unique indexes (one open sign-off per project; no duplicate title), UNIQUE `(project_signoff_id, round_number)` as the revision double-spend guard. used/remaining and every clock are DERIVED at read time. Signing is one transaction guarded by `UPDATE ... WHERE signed_at IS NULL RETURNING`, which mints the final-payment invoice exactly once. |
 | `017_recurring_fee.sql` | 2026-08-19 | Created `recurring_fee` + `recurring_fee_status` ENUM and ALTERed `invoice` with two nullable columns (`recurring_fee_id` SET NULL, `period_start_on` DATE) — the FIRST recurring money in the repo, backing the FourlinQ MOA ₱3,000.00/month infrastructure fee billed on the 1st with a 15-day suspension window. **No parallel billing system** and **no new `invoice_status` value**: the generated charge IS an `invoice` row. Every billing anchor is DATE (Asia/Manila), never timestamptz. Double-billing is blocked by the partial UNIQUE `(recurring_fee_id, period_start_on) WHERE recurring_fee_id IS NOT NULL` plus `onConflictDoNothing`; catch-up is bounded by `MAX_CATCHUP_PERIOD = 24`. `billing_day_of_month` CHECKed 1..28 so no month skips. Suspension is DERIVED at read time — `suspended_at` is written only by an explicit admin POST that 409s when unjustified, and nothing auto-suspends hosting. `DELETE /api/invoices/:id` now 409s for a generated invoice so a billed period cannot be orphaned. |
-| `018_commission_split.sql` | 2026-08-19 | Created `commission_plan` + `commission_share` — the FIRST model of how ADVO pays itself (Prince, 2026-06-19: 60% developer / 25% staff / 15% company; staff sub-split 28/24/24/24 referral/marketing/accounting/management). Every percentage is integer BASIS POINTS stored **as columns on the plan**, snapshotted per project, so renegotiating the structure can never rewrite an already-finalized plan. The 15% company reserve is a real share row with `team_member_id` NULL, which is what makes `SUM(share.amount_cents) = plan.basis_cents` provable with no residue. Rounding is largest-remainder (Hamilton) applied recursively and exact at every level — no centavo is lost, invented, or absorbed; cents belonging to an unheld role surface as `unallocatedCents` and block finalize. `amount_cents` is NULL while draft (derived on read) and frozen at finalize, which is atomic and single-shot via `UPDATE ... WHERE finalized_at IS NULL RETURNING`. Cardinality (1 main developer, 1 assistant, 1 company reserve, 1 live plan per project) is enforced by partial unique indexes. `team_member_id` is `ON DELETE RESTRICT`, diverging from the house CASCADE on purpose. **No payout, no disbursement, no scheduler** — a finalized plan states who is owed what; moving the money is a separate human act. |
+| `018_commission_split.sql` | 2026-08-19 | Created `commission_plan` + `commission_share` — the FIRST model of how ADVO pays itself (Prince, 2026-06-19: 60% developer / 25% staff / 15% company; staff sub-split 28/24/24/24 referral/marketing/accounting/management — **defaults since superseded by `037`/`045`: 55/35/10, staff 20 Lead Partnerships / 50 Management / 20 Marketing / 10 Accounting**). Every percentage is integer BASIS POINTS stored **as columns on the plan**, snapshotted per project, so renegotiating the structure can never rewrite an already-finalized plan. The 15% company reserve is a real share row with `team_member_id` NULL, which is what makes `SUM(share.amount_cents) = plan.basis_cents` provable with no residue. Rounding is largest-remainder (Hamilton) applied recursively and exact at every level — no centavo is lost, invented, or absorbed; cents belonging to an unheld role surface as `unallocatedCents` and block finalize. `amount_cents` is NULL while draft (derived on read) and frozen at finalize, which is atomic and single-shot via `UPDATE ... WHERE finalized_at IS NULL RETURNING`. Cardinality (1 main developer, 1 assistant, 1 company reserve, 1 live plan per project) is enforced by partial unique indexes. `team_member_id` is `ON DELETE RESTRICT`, diverging from the house CASCADE on purpose. **No payout, no disbursement, no scheduler** — a finalized plan states who is owed what; moving the money is a separate human act. |
 | `019_schema_ledger.sql` | 2026-08-23 | Created `schema_migration` — the first record this repo keeps of what a database has actually seen. Prod's health payload carried `relation "expense" does not exist` on 2026-08-19 while 012–015 were on the box: `005_expense.sql` had been skipped and nothing could say so, because migrations are applied by hand and the only evidence one ran was the schema it left behind. **The backfill is deliberately not a blanket insert** — each of the 18 prior rows is gated on a SENTINEL (the table, column or FK action that migration creates), so a database missing `expense` gets no 005 row and reports the gap instead of being handed a clean bill. `is_backfilled` marks an inferred row, whose `applied_at` means "known applied by", never "applied at". Mirrored into `schema.ts` because `db:push` drops what that file does not declare. Checked by `npm run migration:drift`. |
 | `020_soft_bounce.sql` | 2026-08-23 | Created `email_soft_bounce` — the counter that makes `suppression_reason.soft_bounce_limit` reachable. Migration 015 shipped that enum arm with no producer: it appeared only in the enum and in `suppress()`'s own reason union, and the delivery-failure route did not even accept `soft_bounce`. The count is keyed on the **address**, not on `campaign_recipient` — a per-recipient count resets at every campaign boundary, so an address soft-bouncing twice per campaign forever would sit at 2 and never escalate, and that is exactly the address that must. The count is **cumulative, never reset**: nothing in this repo receives a delivery event (`status = 'sent'` means handed to the transport), so resetting on it would zero the counter for precisely the accept-then-defer addresses this catches; cumulative errs toward suppressing sooner, never later, and the reset belongs in a delivery webhook when one exists. Uniqueness is a **plain-column** index plus `CHECK (email = lower(email))`, diverging from 015's `lower(email)` expression index on purpose — `ON CONFLICT` can only infer a plain-column index through the query builder, so normalization becomes a database guarantee instead of an application convention. The threshold is NOT a column: `SOFT_BOUNCE_LIMIT` lives in `campaign.service.ts`, because unlike 018's percentages no already-written suppression changes meaning when the policy is retuned. **No ESP webhook calls the endpoint yet** — the mechanism is complete, the trigger is manual. |
+| `047_corpus_source_body.sql` | 2026-09-13 | Added nullable `corpus_source.body` TEXT — the full document text or transcript, which ingest used to discard (`/ingest/text`) or hide in `meta.body` (`/ingest/json`). Backfill MOVES rather than copies: `body = meta->>'body'` and `meta = meta - 'body'` where `body IS NULL` and `meta.body` is a string; the WHERE clause is the idempotence, and a row with both keeps both untouched. No search index (see `corpus_source`). Ledger row inserted. |
 
 ### Which migration has this database seen?
 

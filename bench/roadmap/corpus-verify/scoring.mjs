@@ -32,10 +32,8 @@ const checks = [];
 const check = (id, passed, expected, actual) => checks.push({ id, passed: Boolean(passed), expected, actual });
 
 const cleanup = async () => {
-  const source = (await call("GET", "/api/corpus/source")).data ?? [];
-  for (const s of source) {
-    if ((s.external_id ?? s.externalId) === EXTERNAL) await call("DELETE", `/api/corpus/source/${s.corpus_source_id ?? s.corpusSourceId}`);
-  }
+  const source = (await call("GET", `/api/corpus/source?externalId=${encodeURIComponent(EXTERNAL)}`)).data?.source ?? [];
+  for (const s of source) await call("DELETE", `/api/corpus/source/${s.corpus_source_id}`);
 };
 
 const main = async () => {

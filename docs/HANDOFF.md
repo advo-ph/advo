@@ -15,6 +15,21 @@ Cross-links:
 
 ---
 
+## 2026-09-13 (late night) — corpus sources keep their full text, and the admin can read it
+
+> Branch `feat/corpus-document-body`, not merged or deployed.
+
+**Shipped on the branch.** Migration `047_corpus_source_body.sql` adds `corpus_source.body` and moves every `meta.body` stopgap into it. All three ingest routes now store the text. The detail read returns it, the list read returns only `body_character_count`, and `?q=` searches title, summary and body. On the Corpus → Sources tab there is a search box, and each source opens into a document view at `?source=<id>`. `GET /api/corpus/source` is now paged and returns `{ source, totalCount, limit, offset }` (limit 1–500, default 50) with `kind`/`projectId`/`externalId` filters. The Sources tab has kind and project filters and a "Load more" button that fetches the rest of the sources. The four corpus benches read the new shape. The commission split in FEATURES.md and SCHEMA.md now reads 55/35/10, staff 20/50/20/10 (037/045), replacing the stale 60/25/15. Tests: `corpus-body.test.ts` (source wiring, the live API, and 047 against a throwaway DB via `CORPUS_MIGRATION_DATABASE_URL`) and `corpus-document.test.tsx`.
+
+**Honest open-items**
+
+- **Prod needs 047 applied by hand**, then a redeploy. Until then the new API code will fail on `corpus_source.body`. Apply the migration first.
+- **The live nginx on the VPS is not this repo's `apps/api/nginx.conf`.** The `client_max_body_size 16m` block for `/api/corpus/ingest/` has to be added to `/etc/nginx/sites-available/advo-api` too. Otherwise any ingest over 1 MB gets a 413 from nginx.
+- **No markdown rendering.** Bodies show as wrapped monospace source because no renderer is in the repo. Adding one (and sanitising it) is a separate decision.
+- **Existing sources without a `meta.body`** (the 2026-09-03 first pass) have no text until their bundles are re-posted with `source.body` or the recordings are re-ingested.
+
+---
+
 ## 2026-09-13 (night) — "what's next" worked through: bootstrap fix, consent on mobile, claims measured, ventures prepared
 
 > Three code changes shipped across three repos, and every pitch figure we could check was checked. The rest is prepared for people: drafts, research and tasks on prod, nothing sent.

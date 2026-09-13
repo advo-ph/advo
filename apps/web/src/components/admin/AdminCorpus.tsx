@@ -7,6 +7,7 @@
  * the templates distilled from them. Ingest is a Plaud link or pasted text.
  */
 import { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   BookOpenCheck,
   Check,
@@ -27,8 +28,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { PageHeader, Panel, Empty, Stat, StatStrip, Dot } from "@/components/admin/_ui";
-import { useCorpus, type CorpusAction, type CorpusFact, type CorpusTemplate } from "@/hooks/useCorpus";
+import { useCorpus, useCorpusDocument, type CorpusAction, type CorpusFact, type CorpusTemplate } from "@/hooks/useCorpus";
 import { useOrgProjects } from "@/hooks/useOrgProjects";
+import { CorpusDocumentState } from "@/components/admin/CorpusDocument";
 
 type Tab = "check" | "draft" | "fact" | "action" | "source" | "template";
 
@@ -159,7 +161,13 @@ const TemplateCard = ({ template, onRender }: { template: CorpusTemplate; onRend
 };
 
 const AdminCorpus = () => {
-  const [tab, setTab] = useState<Tab>("check");
+  // An open document lives in the URL (`?source=<id>`), so it survives a reload and can be linked.
+  const [searchParam, setSearchParam] = useSearchParams();
+  const openSourceId = Number(searchParam.get("source")) || null;
+  const [tab, setTab] = useState<Tab>(openSourceId ? "source" : "check");
+  const [sourceQ, setSourceQ] = useState("");
+  const [sourceKind, setSourceKind] = useState("");
+  const [sourceProjectId, setSourceProjectId] = useState("");
   const [q, setQ] = useState("");
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState("open");
@@ -170,8 +178,19 @@ const AdminCorpus = () => {
   const [unverifiedOnly, setUnverifiedOnly] = useState(false);
   const [draftProjectId, setDraftProjectId] = useState("");
   const [draftTemplateId, setDraftTemplateId] = useState("");
-  const corpus = useCorpus({ q, category: category || undefined, status: status || undefined, verified: unverifiedOnly ? false : undefined });
+  const corpus = useCorpus({ q, sourceQ, sourceKind: sourceKind || undefined, sourceProjectId: sourceProjectId ? Number(sourceProjectId) : null, category: category || undefined, status: status || undefined, verified: unverifiedOnly ? false : undefined });
   const { projects } = useOrgProjects();
+  const opened = useCorpusDocument(openSourceId);
+  const openSource = (id: number | null) =>
+    setSearchParam(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (id === null) next.delete("source");
+        else next.set("source", String(id));
+        return next;
+      },
+      { replace: false },
+    );
 
   const categoryList = useMemo(() => Array.from(new Set(corpus.fact.map((f) => f.category))).sort(), [corpus.fact]);
   const s = corpus.stat;
@@ -499,24 +518,86 @@ const AdminCorpus = () => {
         </Panel>
       )}
 
-      {tab === "source" && (
-        <Panel title="Sources" meta={`${corpus.source.length}`}>
+      {tab === "source" && openSourceId !== null && (
+        <CorpusDocumentState
+          document={opened.document}
+          isLoading={opened.isLoading}
+          error={opened.error}
+          projectTitle={projects.find((p) => p.project_id === opened.document?.projectId)?.title ?? null}
+          onClose={() => openSource(null)}
+        />
+      )}
+
+      {tab === "source" && openSourceId === null && (
+        <Panel
+          title="Sources"
+          meta={`${corpus.source.length} of ${corpus.sourceTotalCount}${sourceQ.trim() || sourceKind || sourceProjectId ? " matching" : ""}`}
+          action={
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <select
+                value={sourceKind}
+                onChange={(e) => setSourceKind(e.target.value)}
+                aria-label="Filter sources by kind"
+                className="h-8 rounded-md border border-border bg-background px-2 text-xs"
+              >
+                <option value="">All kinds</option>
+                {["plaud", "drive_doc", "local_file", "web", "text"].map((k) => (
+                  <option key={k} value={k}>
+                    {k}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={sourceProjectId}
+                onChange={(e) => setSourceProjectId(e.target.value)}
+                aria-label="Filter sources by project"
+                className="h-8 max-w-[10rem] rounded-md border border-border bg-background px-2 text-xs"
+              >
+                <option value="">All projects</option>
+                {projects.map((p) => (
+                  <option key={p.project_id} value={p.project_id}>
+                    {p.title}
+                  </option>
+                ))}
+              </select>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" strokeWidth={1} />
+                <Input
+                  value={sourceQ}
+                  onChange={(e) => setSourceQ(e.target.value)}
+                  placeholder="Search title, summary, full text"
+                  aria-label="Search sources"
+                  className="h-8 w-44 sm:w-64 pl-7 text-xs"
+                />
+              </div>
+            </div>
+          }
+        >
           {corpus.source.length === 0 ? (
-            <Empty text="No sources yet." />
+            <Empty
+              text={
+                corpus.isLoadingSource
+                  ? "Loading…"
+                  : sourceQ.trim() || sourceKind || sourceProjectId
+                    ? "No source matches, in its title, summary or full text."
+                    : "No sources yet."
+              }
+            />
           ) : (
             <ul className="divide-y divide-border">
               {corpus.source.map((src) => (
                 <li key={src.corpus_source_id} className="px-4 py-3 flex items-start justify-between gap-3">
-                  <div className="min-w-0 space-y-1">
-                    <p className="text-sm font-medium truncate">{src.title}</p>
+                  <button type="button" onClick={() => openSource(src.corpus_source_id)} className="min-w-0 flex-1 space-y-1 text-left group">
+                    <p className="text-sm font-medium truncate group-hover:underline">{src.title}</p>
                     {src.summary && <p className="text-xs text-muted-foreground line-clamp-2">{src.summary}</p>}
                     <p className="text-[11px] text-muted-foreground">
                       {src.kind}
                       {src.document_kind ? ` · ${src.document_kind}` : ""} · {fmtDate(src.occurred_at)}
                       {src.duration_second ? ` · ${Math.round(src.duration_second / 60)} min` : ""} · {src.fact_count} facts · {src.open_action_count} open
                       {src.project_id ? ` · project ${src.project_id}` : src.lead_name ? ` · lead ${src.lead_name}` : ""}
+                      {Number(src.body_character_count) > 0 ? ` · ${Number(src.body_character_count).toLocaleString()} chars` : " · no full text"}
                     </p>
-                  </div>
+                  </button>
                   <div className="flex shrink-0 items-center gap-2">
                     {src.url && (
                       <a href={src.url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
@@ -540,6 +621,17 @@ const AdminCorpus = () => {
                 </li>
               ))}
             </ul>
+          )}
+          {corpus.hasMoreSource && (
+            <div className="border-t border-border px-4 py-3 flex items-center justify-between gap-3">
+              <span className="text-[11px] text-muted-foreground">
+                {corpus.source.length} of {corpus.sourceTotalCount} shown
+              </span>
+              <Button size="sm" variant="outline" className="h-8 text-xs" disabled={corpus.isLoadingMoreSource} onClick={corpus.loadMoreSource}>
+                {corpus.isLoadingMoreSource ? <Loader2 className="h-3 w-3 animate-spin" strokeWidth={1} /> : null}
+                Load more
+              </Button>
+            </div>
           )}
         </Panel>
       )}
