@@ -36,9 +36,9 @@ const checks = [];
 const check = (id, passed, expected, actual) => checks.push({ id, passed: Boolean(passed), expected, actual });
 
 const cleanup = async (projectId, templateId) => {
-  const source = (await call("GET", "/api/corpus/source")).data ?? [];
-  for (const s of source) {
-    if (Object.values(EX).includes(s.external_id ?? s.externalId)) await call("DELETE", `/api/corpus/source/${s.corpus_source_id ?? s.corpusSourceId}`);
+  for (const externalId of Object.values(EX)) {
+    const source = (await call("GET", `/api/corpus/source?externalId=${encodeURIComponent(externalId)}`)).data?.source ?? [];
+    for (const s of source) await call("DELETE", `/api/corpus/source/${s.corpus_source_id}`);
   }
   if (templateId) await call("DELETE", `/api/corpus/template/${templateId}`);
   const project = (await call("GET", "/api/projects")).data ?? [];

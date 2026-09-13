@@ -30,7 +30,13 @@ const post = async (path, body) => (await (await fetch(`${API}${path}`, { method
 const project = await get("/api/projects");
 const byTitle = (t) => project.find((p) => (p.title ?? "").toLowerCase() === t.toLowerCase());
 const stat = await get("/api/corpus/stat");
-const source = await get("/api/corpus/source");
+// The source list is paged ({ source, totalCount, limit, offset }); walk every page.
+const source = [];
+for (let offset = 0; ; offset += 500) {
+  const page = await get(`/api/corpus/source?limit=500&offset=${offset}`);
+  source.push(...(page?.source ?? []));
+  if (!page || source.length >= page.totalCount || (page.source ?? []).length === 0) break;
+}
 const recurring = await get("/api/recurring-fee");
 const felici = await post("/api/corpus/check", { claim: "Felici pays ₱3,000 a month for infrastructure" });
 const vbe = byTitle("VBE Eye Center Website");

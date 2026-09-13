@@ -36,9 +36,9 @@ const check = (id, passed, expected, actual) => checks.push({ id, passed: Boolea
 const peso = (cents) => `₱${(cents / 100).toLocaleString("en-PH")}`;
 
 const cleanup = async (projectId) => {
-  const source = (await call("GET", "/api/corpus/source")).data ?? [];
-  for (const s of source) {
-    if (Object.values(EXTERNAL).includes(s.external_id ?? s.externalId)) await call("DELETE", `/api/corpus/source/${s.corpus_source_id ?? s.corpusSourceId}`);
+  for (const externalId of Object.values(EXTERNAL)) {
+    const source = (await call("GET", `/api/corpus/source?externalId=${encodeURIComponent(externalId)}`)).data?.source ?? [];
+    for (const s of source) await call("DELETE", `/api/corpus/source/${s.corpus_source_id}`);
   }
   const project = (await call("GET", "/api/projects")).data ?? [];
   for (const p of project) {

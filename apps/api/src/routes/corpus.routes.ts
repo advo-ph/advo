@@ -18,6 +18,7 @@ import { importPlaudMeeting, resolveInboxProjectId } from "../services/plaud-imp
 import {
   FACT_BASIS,
   SOURCE_KIND,
+  SOURCE_PAGE_MAX,
   TEMPLATE_KIND,
   checkClaim,
   corpusStat,
@@ -51,6 +52,14 @@ const idParam = (raw: string) => {
   return id;
 };
 
+/**
+ * A source's full text is capped at two million characters: the longest Plaud transcript
+ * and the longest contract markdown in data/corpus are each well under a tenth of that.
+ * Hono and @hono/node-server impose no request-size limit; the nginx in front of the API
+ * does (1m by default), and apps/api/nginx.conf raises it to 16m for /api/corpus/ingest/.
+ */
+const BODY_MAX_CHARACTER = 2_000_000;
+
 const factSchema = z.object({
   claim: z.string().min(1).max(2000),
   category: z.string().max(30),
@@ -73,6 +82,8 @@ const bundleSchema = z.object({
     durationSecond: z.number().int().nullish(),
     language: z.string().max(10).nullish(),
     summary: z.string().nullish(),
+    /** The full document text or transcript. Omitted on a re-ingest keeps the stored body. */
+    body: z.string().max(BODY_MAX_CHARACTER).nullish(),
     projectId: z.number().int().nullish(),
     clientId: z.number().int().nullish(),
     leadName: z.string().max(255).nullish(),
@@ -141,6 +152,7 @@ corpusRoutes.post(
           title: payload.title,
           occurredAt: payload.recordedAt,
           summary: extraction.summary ?? payload.summary ?? null,
+          body: payload.transcript.slice(0, BODY_MAX_CHARACTER),
           projectId: projectId ?? null,
           leadName: leadName ?? null,
           meta: { extractionMethod: extraction.method, meetingId: (meeting as { meetingId?: number }).meetingId ?? null },
@@ -162,7 +174,7 @@ corpusRoutes.post(
     "json",
     z.object({
       title: z.string().min(1).max(500),
-      text: z.string().min(20).max(400_000),
+      text: z.string().min(20).max(BODY_MAX_CHARACTER),
       kind: z.enum(SOURCE_KIND).default("text"),
       externalId: z.string().max(255).optional(),
       occurredAt: z.string().nullish(),
@@ -183,6 +195,7 @@ corpusRoutes.post(
           title: input.title,
           occurredAt: input.occurredAt ?? null,
           summary: extraction.summary,
+          body: input.text,
           projectId: input.projectId ?? null,
           leadName: input.leadName ?? null,
           meta: { extractionMethod: extraction.method, characterCount: input.text.length },
@@ -199,13 +212,32 @@ corpusRoutes.post(
 
 // ─── Read ────────────────────────────────────────────
 
-corpusRoutes.get("/source", async (c) => {
-  const projectId = c.req.query("projectId");
-  return c.json({
-    data: await listSource({ kind: c.req.query("kind") || undefined, projectId: projectId ? Number(projectId) : undefined }),
-    error: null,
-  });
-});
+/**
+ * One page of sources: `{ source, totalCount, limit, offset }`. The rows never carry `body`
+ * (payload size); `body_character_count` does. `?q=` searches title, summary and body;
+ * `kind`, `projectId` and `externalId` filter; `limit` is 1–500 (default 50), `offset` ≥ 0.
+ */
+corpusRoutes.get(
+  "/source",
+  zValidator(
+    "query",
+    z.object({
+      q: z.string().max(200).optional(),
+      kind: z.string().max(30).optional(),
+      projectId: z.coerce.number().int().positive().optional(),
+      externalId: z.string().max(255).optional(),
+      limit: z.coerce.number().int().min(1).max(SOURCE_PAGE_MAX).optional(),
+      offset: z.coerce.number().int().min(0).optional(),
+    }),
+  ),
+  async (c) => {
+    const query = c.req.valid("query");
+    return c.json({
+      data: await listSource({ ...query, q: query.q || undefined, kind: query.kind || undefined, externalId: query.externalId || undefined }),
+      error: null,
+    });
+  },
+);
 
 corpusRoutes.get("/source/:id", async (c) => {
   const row = await getSource(idParam(c.req.param("id")));

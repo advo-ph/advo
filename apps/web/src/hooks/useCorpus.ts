@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { del, get, patch, post } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -25,8 +25,34 @@ export interface CorpusSource {
   summary: string | null;
   project_id: number | null;
   lead_name: string | null;
+  /** The list never carries the body itself — only how long it is. */
+  body_character_count: string | number;
   fact_count: string | number;
   open_action_count: string | number;
+}
+/**
+ * One source with its full text, from GET /api/corpus/source/:id. The detail read is a
+ * drizzle select, so it comes back camelCase; the nested fact/term/action rows too.
+ */
+export interface CorpusDocument {
+  corpusSourceId: number;
+  kind: string;
+  externalId: string;
+  url: string | null;
+  title: string;
+  documentKind: string | null;
+  occurredAt: string | null;
+  durationSecond: number | null;
+  language: string | null;
+  summary: string | null;
+  body: string | null;
+  projectId: number | null;
+  leadName: string | null;
+  ingestedAt: string;
+  updatedAt: string;
+  fact: { corpusFactId: number; claim: string; category: string; quote: string | null; locator: string | null; basis: string; confidence: string | number; isVerified: boolean; supersededByFactId: number | null }[];
+  term: { corpusTermId: number; name: string; value: string; unit: string | null }[];
+  action: { corpusActionId: number; description: string; ownerName: string | null; dueAt: string | null; status: "open" | "done" | "dropped" }[];
 }
 export interface CorpusFact {
   corpus_fact_id: number;
@@ -130,7 +156,54 @@ export interface ProposalResult {
 
 const KEY = ["corpus"];
 
-export function useCorpus(filter: { q?: string; projectId?: number | null; category?: string; status?: string; verified?: boolean } = {}) {
+/** One source with its full body. Fetched only while a document is open. */
+export function useCorpusDocument(corpusSourceId: number | null) {
+  const { user } = useAuth();
+  const document = useQuery({
+    queryKey: [...KEY, "document", corpusSourceId],
+    queryFn: async () => {
+      const res = await get<CorpusDocument>(`/api/corpus/source/${corpusSourceId}`);
+      if (res.error || !res.data) throw new Error(res.error || "Could not open the source");
+      return res.data;
+    },
+    enabled: Boolean(user) && corpusSourceId !== null,
+  });
+  return { document: document.data ?? null, isLoading: document.isLoading, error: document.error ? document.error.message : null };
+}
+
+/** One page of GET /api/corpus/source. */
+export interface CorpusSourcePage {
+  source: CorpusSource[];
+  totalCount: number;
+  limit: number;
+  offset: number;
+}
+
+export const SOURCE_PAGE_SIZE = 50;
+
+/** The query string for one source page; the filters and the page travel together. */
+export const sourcePagePath = (filter: { q?: string; kind?: string; projectId?: number | null }, offset: number) => {
+  const search = new URLSearchParams();
+  if (filter.q?.trim()) search.set("q", filter.q.trim());
+  if (filter.kind) search.set("kind", filter.kind);
+  if (filter.projectId) search.set("projectId", String(filter.projectId));
+  search.set("limit", String(SOURCE_PAGE_SIZE));
+  search.set("offset", String(offset));
+  return `/api/corpus/source?${search}`;
+};
+
+export function useCorpus(
+  filter: {
+    q?: string;
+    sourceQ?: string;
+    sourceKind?: string;
+    sourceProjectId?: number | null;
+    projectId?: number | null;
+    category?: string;
+    status?: string;
+    verified?: boolean;
+  } = {},
+) {
   const { user } = useAuth();
   const enabled = Boolean(user);
   const qc = useQueryClient();
@@ -153,7 +226,19 @@ export function useCorpus(filter: { q?: string; projectId?: number | null; categ
   const actionPath = `/api/corpus/action${actionSearch.toString() ? `?${actionSearch}` : ""}`;
 
   const stat = useQuery({ queryKey: [...KEY, "stat"], queryFn: query("/api/corpus/stat"), enabled });
-  const source = useQuery({ queryKey: [...KEY, "source"], queryFn: query("/api/corpus/source"), enabled });
+  const sourceFilter = { q: filter.sourceQ, kind: filter.sourceKind, projectId: filter.sourceProjectId };
+  const source = useInfiniteQuery({
+    queryKey: [...KEY, "source", sourcePagePath(sourceFilter, 0)],
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }) => {
+      const res = await get<CorpusSourcePage>(sourcePagePath(sourceFilter, pageParam));
+      if (res.error || !res.data) throw new Error(res.error || "Could not load sources");
+      return res.data;
+    },
+    getNextPageParam: (last) => (last.offset + last.source.length < last.totalCount && last.source.length > 0 ? last.offset + last.source.length : undefined),
+    enabled,
+  });
+  const sourceRow = source.data?.pages.flatMap((p) => p.source) ?? [];
   const fact = useQuery({ queryKey: [...KEY, "fact", factPath], queryFn: query(factPath), enabled });
   const action = useQuery({ queryKey: [...KEY, "action", actionPath], queryFn: query(actionPath), enabled });
   const term = useQuery({ queryKey: [...KEY, "term"], queryFn: query("/api/corpus/term"), enabled });
@@ -250,7 +335,12 @@ export function useCorpus(filter: { q?: string; projectId?: number | null; categ
 
   return {
     stat: (stat.data as CorpusStat | undefined) ?? null,
-    source: (source.data as CorpusSource[] | undefined) ?? [],
+    source: sourceRow,
+    sourceTotalCount: source.data?.pages[0]?.totalCount ?? 0,
+    hasMoreSource: Boolean(source.hasNextPage),
+    loadMoreSource: () => void source.fetchNextPage(),
+    isLoadingSource: source.isLoading,
+    isLoadingMoreSource: source.isFetchingNextPage,
     fact: (fact.data as CorpusFact[] | undefined) ?? [],
     action: (action.data as CorpusAction[] | undefined) ?? [],
     term: (term.data as CorpusTerm[] | undefined) ?? [],

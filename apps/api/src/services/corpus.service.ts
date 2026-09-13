@@ -76,6 +76,8 @@ export interface IngestSource {
   durationSecond?: number | null;
   language?: string | null;
   summary?: string | null;
+  /** The full text. Absent or null on a re-ingest keeps the body already stored. */
+  body?: string | null;
   projectId?: number | null;
   clientId?: number | null;
   leadName?: string | null;
@@ -176,11 +178,17 @@ export async function ingestBundle(bundle: IngestBundle, userId: number | null) 
     ...(bundle.action ?? []).map((a) => a.projectId),
   ]);
   const keep = (id: number | null | undefined) => (typeof id === "number" && known.has(id) ? id : null);
+  // Bundles written before 047 carry the full text as `meta.body`. It is moved to the
+  // column on the way in, exactly as 047 backfilled, so re-loading an old bundle does not
+  // recreate the stopgap. An explicit `source.body` wins.
+  const { body: metaBody, ...metaWithoutBody } = bundle.source.meta ?? {};
+  const isMetaBody = typeof metaBody === "string";
   const s: IngestSource = {
     ...bundle.source,
+    body: bundle.source.body ?? (isMetaBody ? metaBody.slice(0, 2_000_000) : null),
     projectId: keep(bundle.source.projectId),
     meta: {
-      ...(bundle.source.meta ?? {}),
+      ...(isMetaBody ? metaWithoutBody : (bundle.source.meta ?? {})),
       ...(typeof bundle.source.projectId === "number" && !known.has(bundle.source.projectId)
         ? { unresolvedProjectId: bundle.source.projectId }
         : {}),
@@ -197,6 +205,7 @@ export async function ingestBundle(bundle: IngestBundle, userId: number | null) 
     durationSecond: s.durationSecond ?? null,
     language: s.language ?? null,
     summary: s.summary ?? null,
+    body: s.body ?? null,
     projectId: s.projectId ?? null,
     clientId: s.clientId ?? null,
     leadId,
@@ -208,8 +217,13 @@ export async function ingestBundle(bundle: IngestBundle, userId: number | null) 
   const [row] = await d
     .insert(corpusSource)
     .values(values)
-    .onConflictDoUpdate({ target: [corpusSource.kind, corpusSource.externalId], set: values })
-    .returning();
+    .onConflictDoUpdate({
+      target: [corpusSource.kind, corpusSource.externalId],
+      // A bundle re-posted without its text (an older loader, a facts-only correction)
+      // must not erase the document already stored.
+      set: { ...values, body: sql`coalesce(excluded.body, ${corpusSource.body})` },
+    })
+    .returning({ corpusSourceId: corpusSource.corpusSourceId });
   const sourceId = row.corpusSourceId;
 
   await d.delete(corpusAction).where(eq(corpusAction.corpusSourceId, sourceId));
@@ -650,20 +664,49 @@ async function discountExplaining(figure: string[], name: string[]): Promise<Che
 
 // ─── Reads and updates ───────────────────────────────
 
-export async function listSource(filter: { kind?: string; projectId?: number } = {}) {
+/** `%`, `_` and `\` are wildcards to ILIKE; a search for "50%" means the characters. */
+const likePattern = (q: string) => `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+
+export const SOURCE_PAGE_DEFAULT = 50;
+export const SOURCE_PAGE_MAX = 500;
+
+/**
+ * One page of sources, WITHOUT their bodies: a list of a hundred multi-megabyte
+ * transcripts is not a list. `body_character_count` says how much there is to open.
+ * `q` matches title, summary or body, case-insensitively, as a plain substring.
+ * `totalCount` is the count under the same filters, so a caller knows when it has them all;
+ * the order is total (occurred_at, then id), so offset pages never skip or repeat a row.
+ */
+export async function listSource(
+  filter: { kind?: string; projectId?: number; q?: string; externalId?: string; limit?: number; offset?: number } = {},
+) {
   const d = db();
-  const where = [];
-  if (filter.kind) where.push(eq(corpusSource.kind, filter.kind));
-  if (filter.projectId) where.push(eq(corpusSource.projectId, filter.projectId));
+  const limit = Math.min(Math.max(Math.trunc(filter.limit ?? SOURCE_PAGE_DEFAULT), 1), SOURCE_PAGE_MAX);
+  const offset = Math.max(Math.trunc(filter.offset ?? 0), 0);
+  const cond = [];
+  if (filter.kind) cond.push(sql`s.kind = ${filter.kind}`);
+  if (filter.projectId) cond.push(sql`s.project_id = ${filter.projectId}`);
+  if (filter.externalId) cond.push(sql`s.external_id = ${filter.externalId}`);
+  const q = filter.q?.trim();
+  if (q) {
+    const pattern = likePattern(q);
+    cond.push(sql`(s.title ilike ${pattern} or s.summary ilike ${pattern} or s.body ilike ${pattern})`);
+  }
+  const where = cond.length ? sql`where ${sql.join(cond, sql` and `)}` : sql``;
+  const [counted] = (await d.execute(sql`select count(*)::int as total_count from corpus_source s ${where}`)) as unknown as { total_count: number }[];
   const row = await d.execute(sql`
-    select s.*,
+    select s.corpus_source_id, s.kind, s.external_id, s.url, s.title, s.document_kind, s.occurred_at,
+      s.duration_second, s.language, s.summary, s.project_id, s.client_id, s.lead_id, s.lead_name,
+      s.meta, s.ingested_by, s.ingested_at, s.updated_at,
+      coalesce(char_length(s.body), 0) as body_character_count,
       (select count(*) from corpus_fact f where f.corpus_source_id = s.corpus_source_id) as fact_count,
       (select count(*) from corpus_action a where a.corpus_source_id = s.corpus_source_id and a.status = 'open') as open_action_count
     from corpus_source s
-    ${where.length ? sql`where ${and(...where)}` : sql``}
+    ${where}
     order by s.occurred_at desc nulls last, s.corpus_source_id desc
+    limit ${limit} offset ${offset}
   `);
-  return row as unknown as Record<string, unknown>[];
+  return { source: row as unknown as Record<string, unknown>[], totalCount: Number(counted?.total_count ?? 0), limit, offset };
 }
 
 export async function deleteSource(corpusSourceId: number): Promise<boolean> {

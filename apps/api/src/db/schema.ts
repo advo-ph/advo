@@ -1667,6 +1667,8 @@ export const corpusSource = pgTable(
     durationSecond: integer("duration_second"),
     language: varchar("language", { length: 10 }),
     summary: text("summary"),
+    /** The full document text or transcript (047). Never returned by the list read. */
+    body: text("body"),
     projectId: integer("project_id").references(() => project.projectId, { onDelete: "set null" }),
     clientId: integer("client_id").references(() => client.clientId, { onDelete: "set null" }),
     leadId: integer("lead_id").references(() => lead.leadId, { onDelete: "set null" }),
