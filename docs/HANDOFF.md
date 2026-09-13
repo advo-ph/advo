@@ -15,6 +15,30 @@ Cross-links:
 
 ---
 
+## 2026-09-13 (later) — CI unblocked, commission split fixed and deployed, design token landed
+
+> Product code did change this time. Prod runs `d7e8b90` for web and `4a3d1a9`+ for the API; migration `045` is applied on prod.
+
+**CI was red since 09-12.** `.env.example` has pinned `TZ=Asia/Manila` since `420ae81`, but `env.ts` never named it, so the Env drift step failed and the web deploy job never ran. `TZ` is now in the schema (`4a91d52`); env-drift, both `tsc`, and lint pass locally. Separately, GitHub created **no run at all** for the 09-13 pushes although the workflow is active — deploys this session went through `deploy.sh`, not CI.
+
+**Commission staff split** now matches the signed agreement — Management 50 / Marketing 20 — in `DEFAULT_BPS`, the drizzle defaults, and migration `045_commission_staff_split_fix.sql` (merge `4a3d1a9`). 30/30 commission tests; `migration:drift` clean locally. `045` applied on prod by hand (`deploy.sh` does not run migrations); prod had no `commission_plan` rows, so nothing was backfilled. API redeployed, `/api/health` ok.
+
+**Design token** from the Mac's `t2` lane ported onto main (merge `c6653a6`): `apps/web/src/styles/advo-token.css` is the one brand source; `index.css` and `landing-page.css` reference it with every resolved value unchanged (font list kept at main's Instrument Sans). The park.advo.ph Cloudflare cutover doc came with it. Build green, 677 web tests pass, and the live CSS was checked: every `var(--advo-*)` it uses is defined. Web deployed via `deploy.sh --frontend-only`.
+
+**Landing bench 15/15.** `no-dead-landing-module` had read 14/15 since `3a0ddc6` because its allowlist predated `WorkShowcase`/`CardSwap`; both are rendered by `LandingPage` and are now listed (`d7e8b90`).
+
+**Housekeeping.** Prod admin moved off the seed password (stored outside the repo). `feat/landing-runway` and `chimney-prairie-dog` deleted, kept as tags `archive/feat-landing-runway` and `archive/chimney-prairie-dog`. The Flood venture got a no-price DPWH letter draft and a WATEC meeting brief in the internal corpus, linked from the owners' tasks.
+
+**Honest open-items**
+
+- **CI does not trigger on push** even though Actions is enabled and the workflow is active. Unexplained; do not count on the `deploy-web` job.
+- **`mac/org-compat-t0` (analytics) is still unmerged** and 37+ commits behind; only the self-contained token commit was ported. `mac/main` stays local.
+- **`C:/Users/maran/Code/advo-lane-runway`** is a leftover folder from the removed worktree (a few files that differ from the tagged branch, plus `node_modules`). Not deleted.
+- **`docs/SCHEMA.md` ~line 179** still describes the original `018` commission defaults.
+- **Johann Endriga and Kenneth Leo Dela Cruz have no login** — creating one needs their email, which sends the invite.
+
+---
+
 ## 2026-09-13 — orientation sweep, Mac rescue, ventures ingested
 
 > No product code changed. The session did three things: brought local `main` level with what prod already runs, pulled work that existed only on the Mac into local branches before it could be lost, and took the team's Sep 6–13 chats into the internal corpus. The three ventures from those chats (Flood, Park, School) now have their own section in [ROADMAP.md](ROADMAP.md#ventures--flood-park-school-from-2026-09-06).
@@ -36,8 +60,8 @@ None of these have been reviewed or merged.
 
 - **advoroads had 17 uncommitted files** from a separate session active on 09-13. They were left alone. A re-check while writing this entry found its working tree clean at `aa360e5`, with no commit dated 09-13, so where those files went is not confirmed here.
 - **`pnpm-workspace.yaml` appeared untracked on 09-12**, reported across every repo, so it is not ADVO-specific. `package-lock.json` is still the committed lockfile; do not commit the workspace file. A 09-13 spot check did **not** find it untracked in `advopark`, `advoroads` or `advo-revised`, so the "every repo" scope is unverified.
-- **`feat/landing-runway` and `chimney-prairie-dog` are unmerged.** Both are superseded by the 09-04 best-of-both landing and later roadmap work. They are kept, not deleted.
-- **Prod admin still accepts the seed password.** Rotate it.
+- ~~**`feat/landing-runway` and `chimney-prairie-dog` are unmerged.**~~ **Resolved (later):** deleted, kept as `archive/*` tags.
+- ~~**Prod admin still accepts the seed password.**~~ **Resolved (later):** rotated.
 - **VPS `/opt/advo` is dirty:** uncommitted `.env.bak` files and a changed `package-lock.json`. Fix both before the next `git pull` deploy.
 - **polkadoc capture bugs:** September messages are duplicated in ADVO Core, and some Slack messages come through empty. Counts derived from that capture are inflated or incomplete until the bugs are fixed.
 - ~~**Commission sub-split mismatch (found while fixing the ROADMAP row):** migration `037` and `DEFAULT_BPS` default `marketing_bps` 5000 / `management_bps` 2000. The agreement says Management 50 / Marketing 20. Confirm before any plan is seeded.~~ **Resolved:** migration `045_commission_staff_split_fix.sql` and `DEFAULT_BPS` now default Marketing 2000 / Management 5000, per `data/corpus/document/internal-commission-agreement.json`.
