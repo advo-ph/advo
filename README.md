@@ -30,9 +30,9 @@ Proof on `/` is the portfolio database — real shipped sites only, no testimoni
 
 Four public routes, registered outside every `ProtectedRoute` because PayMongo reviews the live site signed out before approving a merchant. They share one layout (`components/legal/LegalDocument.tsx`) inside `landing-shell`, and the shared footer carries a legal row linking all four from every page.
 
-Merchant identity — registered name, registration body and number, business address, support email and phone — lives once in [`data/legal-identity.json`](data/legal-identity.json) and is read through [`lib/legal-identity.ts`](apps/web/src/lib/legal-identity.ts). No component hardcodes a registration number. A field still set to the literal `TBD` renders as "Not yet published — request it at contact@advo.ph" rather than an invented value; filling the file is the whole change needed to publish the real facts.
+Merchant identity — registered name, registration body and number, business address, support email and phone — lives once in [`data/legal-identity.json`](data/legal-identity.json) and is read through [`lib/legal-identity.ts`](apps/web/src/lib/legal-identity.ts). No component hardcodes a registration number. The file carries the DTI registration and the BIR-registered business address; `support_phone` is still the literal `TBD`. A `TBD` field is left out of the footer disclosure and renders as "Not yet published — request it at contact@advo.ph" on the legal pages, never as an invented value.
 
-Measured by `npm run bench:paymongo` (**5/7** — `legal-identity-filled` and `legal-support-contact` stay red until ADVO's DTI/SEC paperwork is transcribed into that file) and covered by `apps/web/src/test/legal-compliance.test.ts`.
+Measured by `npm run bench:paymongo` (**7/7** — a business phone is optional when `support_email` is set) and covered by `apps/web/src/test/legal-compliance.test.ts`.
 
 ### Client Hub (`/hub`)
 

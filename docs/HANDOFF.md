@@ -15,6 +15,36 @@ Cross-links:
 
 ---
 
+## 2026-09-13 — orientation sweep, Mac rescue, ventures ingested
+
+> No product code changed. The session did three things: brought local `main` level with what prod already runs, pulled work that existed only on the Mac into local branches before it could be lost, and took the team's Sep 6–13 chats into the internal corpus. The three ventures from those chats (Flood, Park, School) now have their own section in [ROADMAP.md](ROADMAP.md#ventures--flood-park-school-from-2026-09-06).
+
+**Local main caught up with prod.** `3a0ddc6` (09-12, scroll-driven card deck for the work showcase) was already deployed on the VPS but missing from this machine. It is now fetched into local `main`.
+
+**Mac rescue.** Work that existed only on the Mac is now in local branches here:
+- `mac/org-compat-t0`
+- `mac/t2-design-token`
+- `mac/main`. This branch carries the org study. **Keep it local: do not push `mac/main`.** The repo is public and the study is not.
+- The landing-redesign stash, saved as a patch outside the repo.
+- In `advopark`: `mac/lpr-feasibility-senior-face-verify` (licence-plate-recognition feasibility and senior/PWD face verification).
+
+None of these have been reviewed or merged.
+
+**Ventures and chats ingested.** Flood, Park and School, plus the chat capture, are loaded into the internal corpus, and tasks and corpus are updated on prod (see admin). Political and personal contacts stay in the corpus, not in this repo. ROADMAP.md also got corrections in this session: the commission row now states 55/35/10 (`037`) and marks 60/25/15 as superseded; the FourlinQ gap is now "which systems get initialled"; the Ms. Imee / Inventi row flags the name collision with the FourlinQ contact; and FourlinQ status notes the 09-04 site additions with sign-off pending.
+
+**Honest open-items**
+
+- **advoroads had 17 uncommitted files** from a separate session active on 09-13. They were left alone. A re-check while writing this entry found its working tree clean at `aa360e5`, with no commit dated 09-13, so where those files went is not confirmed here.
+- **`pnpm-workspace.yaml` appeared untracked on 09-12**, reported across every repo, so it is not ADVO-specific. `package-lock.json` is still the committed lockfile; do not commit the workspace file. A 09-13 spot check did **not** find it untracked in `advopark`, `advoroads` or `advo-revised`, so the "every repo" scope is unverified.
+- **`feat/landing-runway` and `chimney-prairie-dog` are unmerged.** Both are superseded by the 09-04 best-of-both landing and later roadmap work. They are kept, not deleted.
+- **Prod admin still accepts the seed password.** Rotate it.
+- **VPS `/opt/advo` is dirty:** uncommitted `.env.bak` files and a changed `package-lock.json`. Fix both before the next `git pull` deploy.
+- **polkadoc capture bugs:** September messages are duplicated in ADVO Core, and some Slack messages come through empty. Counts derived from that capture are inflated or incomplete until the bugs are fixed.
+- **Commission sub-split mismatch (found while fixing the ROADMAP row):** migration `037` and `DEFAULT_BPS` default `marketing_bps` 5000 / `management_bps` 2000. The agreement says Management 50 / Marketing 20. Confirm before any plan is seeded.
+- **Flood procurement route is unresolved** (bidding and accreditation vs. none; no mayor's permit). The WATEC partner meeting is 2026-09-23.
+
+---
+
 ## 2026-09-04 (later) — the landing gets its photographs, and the DTI paperwork lands
 
 > The What-we-build cards and the process section now carry real photographs, and the footer's business disclosure is filled from ADVO's actual registration documents.

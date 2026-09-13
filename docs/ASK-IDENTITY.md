@@ -2,7 +2,7 @@
 
 Date: 2026-08-28
 Owner: Prince (nobody else in the repo holds these facts)
-Status: outstanding
+Status: partly answered 2026-09-04 — the DTI Business Name No. and the BIR-registered address are in `data/legal-identity.json` (`bench:paymongo` 7/7); `support_phone` is still TBD, and LEGAL-BRIEF Annex A still carries TODOs.
 
 Three separate pieces of work are stalled on the **same five facts** from ADVO's DTI/SEC
 paperwork. They have been tracked as three rows in [ROADMAP.md](ROADMAP.md), which made them
