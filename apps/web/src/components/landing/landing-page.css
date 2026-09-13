@@ -973,6 +973,30 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-nav-drawer-action .landing-button { width: 100%; height: 40px; }
 }
 
+/* Consent sheet (components/ConsentGate.tsx). Below 900px it is a full-width bottom
+ * sheet; while it is on screen the root carries .has-consent-panel and
+ * --advo-consent-height. The hero copy is anchored to the frame's bottom, which sits
+ * min(strip, what the frame's min-height leaves) above the viewport's bottom, so lift the
+ * copy only by whatever of the sheet reaches past that gap, plus 16px of air. The drawer
+ * pads by the full sheet height so its last button scrolls clear. Desktop: untouched. */
+@media (max-width: 900px) {
+  .has-consent-panel .landing-hero-copy {
+    padding-bottom: max(
+      clamp(32px, 5vw, 64px),
+      calc(var(--advo-consent-height, 0px) - min(var(--landing-strip-height), 100svh - var(--landing-nav-height) - 440px) + 16px)
+    );
+  }
+  .has-consent-panel .landing-nav-link { padding-bottom: calc(24px + var(--advo-consent-height, 0px)); }
+}
+@media (max-width: 680px) {
+  .has-consent-panel .landing-hero-copy {
+    padding-bottom: max(
+      40px,
+      calc(var(--advo-consent-height, 0px) - min(var(--landing-strip-height), 100svh - 520px) + 16px)
+    );
+  }
+}
+
 @media (max-width: 900px) {
   .landing-surface-grid { grid-template-columns: 1fr; gap: 48px; }
   .landing-surface-card { max-width: 560px; margin-inline: auto; width: 100%; }
