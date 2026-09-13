@@ -102,6 +102,17 @@ export const readConsent = (): ConsentRecord => {
   return cachedRecord;
 };
 
+/**
+ * THE SITE FLAG. Visitor analytics is off unless the deployment explicitly sets
+ * `VITE_ANALYTICS=true` — unset, "", "false", "0" are all off. While off, the prompt never
+ * renders, the tracker sends nothing, and /privacy says no analytics run. It stays off until
+ * the prompt has been reviewed in a browser and the privacy text has had legal review.
+ */
+export const isAnalyticsEnabled = (): boolean => {
+  const raw = import.meta.env.VITE_ANALYTICS as string | boolean | undefined;
+  return raw === true || raw === "true" || raw === "1";
+};
+
 /** Convenience: has the visitor affirmatively allowed non-essential tracking? */
 export const isConsentGranted = (): boolean => readConsent().status === "granted";
 
@@ -203,7 +214,7 @@ const ConsentGate = () => {
   const isExcluded = EXCLUDED_PREFIX.some(
     (prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`),
   );
-  if (isExcluded || !isVisible) return null;
+  if (!isAnalyticsEnabled() || isExcluded || !isVisible) return null;
 
   return (
     <div

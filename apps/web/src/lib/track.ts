@@ -17,6 +17,7 @@
 
 import { getAccessToken } from "@/lib/api";
 import {
+  isAnalyticsEnabled,
   isConsentGranted,
   subscribeConsent,
   TRACKING_STORAGE_KEY,
@@ -255,7 +256,9 @@ let isListenerBound = false;
  */
 const isAllowed = (): boolean => {
   if (typeof window === "undefined") return false;
-  return isConsentGranted();
+  // The site flag outranks a stored "granted": consent given while analytics was on does not
+  // keep a tracker alive in a deployment that has switched it off.
+  return isAnalyticsEnabled() && isConsentGranted();
 };
 
 const send = (batch: TrackEvent[], isUnload: boolean): void => {

@@ -21,10 +21,26 @@ describe("analytics consent gate", () => {
     window.sessionStorage.clear();
     fetchSpy = vi.fn(() => Promise.resolve(new Response(null, { status: 202 })));
     vi.stubGlobal("fetch", fetchSpy);
+    // Most cases exercise consent with the site flag ON; the flag-off case unstubs it.
+    vi.stubEnv("VITE_ANALYTICS", "true");
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+
+  it("sends nothing, even after a grant, while VITE_ANALYTICS is off", async () => {
+    vi.stubEnv("VITE_ANALYTICS", "");
+    const { isAnalyticsEnabled, setConsent } = await import("@/components/ConsentGate");
+    const { track, flush, getIdentity } = await import("@/lib/track");
+    expect(isAnalyticsEnabled()).toBe(false);
+    setConsent("granted");
+    expect(track("page_view", { surface: "landing" })).toBe(false);
+    flush(false);
+    expect(getIdentity()).toBeNull();
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(storedTrackingKey()).toEqual([]);
   });
 
   it("refuses to track, and stores no identifier, while consent is unset", async () => {

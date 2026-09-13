@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import LegalDocument, { LegalSection } from "@/components/legal/LegalDocument";
 import { legalIdentity } from "@/lib/legal-identity";
 import {
+  isAnalyticsEnabled,
   openConsentPrompt,
   readConsent,
   resetConsent,
@@ -27,6 +28,7 @@ const STATUS_LABEL: Record<ConsentStatus, string> = {
 };
 
 const Privacy = () => {
+  const isAnalyticsOn = isAnalyticsEnabled();
   const [status, setStatus] = useState<ConsentStatus>(() => readConsent().status);
 
   useEffect(() => subscribeConsent((record) => setStatus(record.status)), []);
@@ -61,12 +63,21 @@ const Privacy = () => {
           held by our payment provider, not by ADVO. We keep the reference, the
           amount, and the status of each payment.
         </p>
-        <p>
-          <strong>Analytics, only if you allow it.</strong> See the next section.
-          Nothing described there runs until you choose yes.
-        </p>
+        {isAnalyticsOn ? (
+          <p>
+            <strong>Analytics, only if you allow it.</strong> See the next section.
+            Nothing described there runs until you choose yes.
+          </p>
+        ) : (
+          <p>
+            <strong>No analytics.</strong> This site does not currently record
+            analytics, identify your device, or ask for analytics consent.
+          </p>
+        )}
       </LegalSection>
 
+      {isAnalyticsOn && (
+      <>
       <LegalSection heading="Analytics and device recognition">
         <p>
           The first time you visit, we ask whether we may record analytics. The
@@ -138,6 +149,8 @@ const Privacy = () => {
           under &ldquo;Your rights&rdquo;.
         </p>
       </LegalSection>
+      </>
+      )}
 
       <LegalSection heading="Why we hold it">
         <p>
@@ -163,8 +176,8 @@ const Privacy = () => {
           Enquiries that do not become engagements are kept for two (2) years.
           Engagement records, invoices, and the accounting trail are kept for ten
           (10) years, as Philippine tax and corporate rules require. Account data is
-          deleted on request once the engagement is closed and settled. Analytics
-          records are kept for ninety (90) days, as described above.
+          deleted on request once the engagement is closed and settled.
+          {isAnalyticsOn && " Analytics records are kept for ninety (90) days, as described above."}
         </p>
       </LegalSection>
 
@@ -186,8 +199,7 @@ const Privacy = () => {
         <p>
           This site sets a session cookie so a signed-in account stays signed in,
           and stores a small amount of data in your browser so the app works
-          offline and so your analytics choice is remembered. If you allow
-          analytics, it also stores the visitor and session ids described above.
+          offline{isAnalyticsOn ? " and so your analytics choice is remembered. If you allow analytics, it also stores the visitor and session ids described above." : "."}{" "}
           There are no advertising or cross-site tracking cookies.
         </p>
       </LegalSection>
