@@ -35,7 +35,7 @@ Cross-links:
 **Honest open-items**
 
 - **ADVO is not procurement-eligible today:** no mayor's permit, tax clearance or audited FS, no similar completed contract, and the registered line is "Web Development Services". The no-cost MOA pilot is the only government route.
-- **AdvoPark edge tests are unreliable on Windows.** The payment-guide test breaks on CRLF, and vitest's worker cap doesn't apply to the forks pool. A fix is in progress on `fix/edge-test-infra`, not merged.
+- ~~**AdvoPark edge tests are unreliable on Windows.**~~ **Fixed on advopark main `82d9fab`:** the payment-guide test normalises CRLF, and `vitest.config.ts` now caps the forks pool (`maxForks` = the existing DB-worker cap). The full edge suite ran clean twice (40/40 files, 443 passed, 2 intentional skips). Trade-off: idle wall time went 74 s → ~120 s, in exchange for no 16-worker PGlite storm under load. Note: `pnpm --filter @advopark/edge test` on a fresh checkout needs `pnpm turbo run build --filter=@advopark/edge^...` first; root `pnpm test` does that itself.
 - **Local checkouts:** `advopark` main is behind origin by 7 and carries someone's uncommitted README edit; pull it by hand. `advopark-lpr` stays as a worktree because its gitignored label files hold real plate numbers (RA 10173). Keep them out of git.
 - **Nothing was sent to a client, lawyer, agency or partner.** Every draft carries reviewer notes with conflicting figures to resolve first.
 
