@@ -111,13 +111,11 @@ export const DEFAULT_BPS = {
   developer: 5500,
   staff: 3500,
   company: 1000,
-  // Prince's rework: "referral" is displayed as "Lead Partnerships". Staff pool
-  // splits 20/50/10/20. FLAG: confirm these sub-weights against the signed
-  // commission agreement — main previously defaulted 20/20/10/50.
+  // Staff pool per data/corpus/document/internal-commission-agreement.json (Lead Partnerships 20 / Management 50 / Marketing 20 / Accounting 10).
   referral: 2000,
-  marketing: 5000,
+  marketing: 2000,
   accounting: 1000,
-  management: 2000,
+  management: 5000,
 } as const;
 
 // ─── THE ALLOCATOR ───────────────────────────────────
