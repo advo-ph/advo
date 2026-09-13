@@ -307,6 +307,7 @@ structurally cannot see, mostly the env-drift class that took prod down twice on
 | `npm run bench:paymongo` | The four PayMongo disclosure pages and the merchant identity file |
 | `npm run bench:offer` `bench:visual` `bench:landing` | Landing offer truth, design-token discipline, viewport overflow |
 | `npm run bench:preview` `bench:deploy` `bench:drift` `bench:bounce` `bench:legal` `bench:outreach` `bench:ship` | Preview hosting, deploy safety, schema drift, soft-bounce escalation, the legal packet, outreach DNS preflight, prod ship |
+| `npm run bench:analytics` | Analytics: privacy notice, consent gate honoured by the tracker, event table + retention, engagement and accountability surfaces, staff telemetry gated on the monitoring policy |
 
 ## CI
 

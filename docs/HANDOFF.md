@@ -15,6 +15,27 @@ Cross-links:
 
 ---
 
+## 2026-09-13 (latest) — analytics ported from `mac/org-compat-t0` onto `feat/analytics-port`
+
+> Branch only: not merged, not pushed, not deployed. Migration `046_analytics_event` exists only on a local throwaway DB, which has since been dropped.
+
+**What came over.** `a4c4395` (consent gate, event spine, tracker, Engagement + Accountability panels, staff telemetry behind `VITE_STAFF_MONITORING`), plus the two policy drafts it depends on (`MONITORING-POLICY.md` and `LEGITIMATE-INTEREST-ASSESSMENT.md` from `03ff71a`) and the bench and rejected-ideas list from `807adeb`. Mac migration `020` is now **`046`**: the enum is created idempotently and the ledger insert was added. It was applied twice with `ON_ERROR_STOP=1`, exit 0 both times.
+
+**What changed in the port.** The consent controls went into main's `pages/legal/Privacy.tsx` rather than reviving the Mac's standalone page, and the notice now describes the tracker as it actually behaves. `/work` is no longer excluded from the consent prompt, because on main it is the public case-study route. Refusing or withdrawing consent now really does delete the browser-side visitor id, fingerprint and session id; on the Mac branch the notice promised this but no code did it. The prompt uses the monotone style, with no blur or shadow. `ANALYTICS_RETENTION_DAY` was added to `env.ts` and `.env.example`. There is a new unit test, `analytics-consent.test.ts`.
+
+**Left out:** the 41 org-study and org-compat doc commits, the org-compat gate and lane emitter, the T1 result doc, and `/work` + member of the month (`ea56663`, migration `019_recognition`). Analytics depends on none of them. The only link was an unused `recognition` import.
+
+**Honest open-items**
+
+- **Engagement panel reads nothing yet.** The Hub fires no events and the consent prompt is off on `/hub`, so every client will show "Never opened". It needs a consent ask for signed-in clients and Hub instrumentation.
+- **Landing attention data has no admin read surface.** It is collected (after consent) and rolled up, but nothing displays it.
+- **Staff telemetry is off and must stay off.** Neither policy is signed. The assessment finds the accountability purpose **fails necessity**. The code also emits idle/active and route-transition records that policy §2 does not list, and the §5 "own data" view and §6 per-person rollup do not exist.
+- **No server-side record of consent.** It lives only in the visitor's `localStorage`, so ADVO cannot show that a given row was consented. Server-side erasure is still a manual request.
+- **`db:local` fails at `032` on a fresh DB** (pre-existing on main). `032`–`038` are not idempotent after `db:push`, and `migration:drift` reports 8 absent CHECK constraints from `034`/`035`/`038`/`040`. Not caused by `046`, and not fixed here.
+- Never rendered in a browser: the consent prompt, `/privacy`, and both new admin panels.
+
+---
+
 ## 2026-09-13 (later) — CI unblocked, commission split fixed and deployed, design token landed
 
 > Product code did change this time. Prod runs `d7e8b90` for web and `4a3d1a9`+ for the API; migration `045` is applied on prod.

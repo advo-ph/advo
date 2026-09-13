@@ -28,6 +28,8 @@ import {
   Send,
   BookOpenCheck,
   Banknote,
+  Activity,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDrawerLock } from "@/hooks/useDrawerLock";
@@ -44,7 +46,9 @@ export type AdminSection =
   | "dashboard"
   | "projects"
   | "clients"
+  | "engagement"
   | "team"
+  | "accountability"
   | "tasks"
   | "schedule"
   | "calendar"
@@ -111,6 +115,8 @@ const navGroups: NavGroup[] = [
       { id: "tasks", label: "Tasks", icon: ListChecks },
       { id: "projects", label: "Projects", icon: FolderKanban },
       { id: "clients", label: "Clients", icon: Users },
+      // Which clients have gone quiet — reads consented, signed-in analytics only.
+      { id: "engagement", label: "Engagement", icon: Activity },
       { id: "calendar", label: "Calendar", icon: CalendarDays },
       { id: "availability", label: "Availability", icon: CalendarClock },
       { id: "meetings", label: "Meetings", icon: Mic },
@@ -121,6 +127,8 @@ const navGroups: NavGroup[] = [
       // Last in Operations: consulted, not driven. The owner-only controls on
       // the screen itself are what gate the roster, not this nav item.
       { id: "team", label: "Team", icon: Users2 },
+      // Derived from deliverable rows only — no telemetry behind this view.
+      { id: "accountability", label: "Accountability", icon: ShieldCheck },
     ],
   },
   {
