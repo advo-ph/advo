@@ -142,7 +142,7 @@ Parcelled 2026-08-23 from the 08-15/08-21 Messenger threads; see [HANDOFF.md](HA
 
 ## Analytics — consent gate, event spine, surfaces (ported 2026-09-13, migration 046)
 
-Built 2026-08-21 on the Mac (`mac/org-compat-t0`, `a4c4395`) and ported onto main on branch `feat/analytics-port`. Requested scope: browser + user analytics across the public site, client hub and admin, for product improvement **and** staff accountability.
+Built 2026-08-21 on the Mac (`mac/org-compat-t0`, `a4c4395`), ported and merged to main 2026-09-13 (`3dcfec2`); migration `046` applied on prod. **It ships dormant:** visitor analytics also needs `VITE_ANALYTICS=true` at build time — without it the prompt never renders, the tracker sends nothing even for a stored grant, and `/privacy` says no analytics run. Requested scope: browser + user analytics across the public site, client hub and admin, for product improvement **and** staff accountability.
 
 **Lawful basis is the design constraint, not an afterthought.** Visitor analytics run on **consent** (RA 10173 Sec 12(a)) and nothing leaves the browser until the visitor says yes. Staff telemetry cannot rest on consent (employment power imbalance); it rests on a written policy plus notice (NPC AO 2024-003) and stays **off** behind `VITE_STAFF_MONITORING` until [`MONITORING-POLICY.md`](MONITORING-POLICY.md) is signed and distributed. Keystroke logging and screen capture are out in every tier (NPC AO 2018-084).
 
@@ -150,21 +150,25 @@ Benchmark: `npm run bench:analytics` → [`bench/roadmap/analytics/scoring.mjs`]
 
 | Item | What it closes | Surface | Benchmark | Status |
 |---|---|---|---|---|
-| A visitor can read what ADVO collects | The notice named no analytics at all. | `/privacy` (`pages/legal/Privacy.tsx`) — analytics section + "Your analytics choice" | `A1-privacy-notice` | Ported, on branch |
-| Non-essential tracking waits for an explicit choice | Nothing gated collection. | `ConsentGate` on every public route (off `/admin`, `/hub`) | `A2-consent-gate` | Ported, on branch |
-| The tracker sends and stores nothing without consent; refusal clears it | A banner that does not stop the beacon is worse than none. | `lib/track.ts` | `A3-consent-honored` — Tier 1 | Ported, on branch |
+| A visitor can read what ADVO collects | The notice named no analytics at all. | `/privacy` (`pages/legal/Privacy.tsx`) — analytics section + "Your analytics choice" | `A1-privacy-notice` | Merged, dormant (`VITE_ANALYTICS` off) |
+| Non-essential tracking waits for an explicit choice | Nothing gated collection. | `ConsentGate` on every public route (off `/admin`, `/hub`) | `A2-consent-gate` | Merged, dormant (`VITE_ANALYTICS` off) |
+| The tracker sends and stores nothing without consent; refusal clears it | A banner that does not stop the beacon is worse than none. | `lib/track.ts` | `A3-consent-honored` — Tier 1 | Merged, dormant (`VITE_ANALYTICS` off) |
 | The team is told what is monitored, before it is | Lawful path per NPC AO 2024-003. | `docs/MONITORING-POLICY.md` | `A4-monitoring-policy` | Draft, unsigned |
 | The legitimate-interest test is recorded | Purpose · necessity · balancing. | `docs/LEGITIMATE-INTEREST-ASSESSMENT.md` | `A5-legitimate-interest` | Draft; finds the accountability purpose **fails necessity** |
-| Events land in a store built for volume | `activity_log` is an audit trail. | migration `046_analytics_event` | `A6-event-table` | Ported, on branch |
-| Batched ingest | One POST per event does not survive a session. | `POST /api/event` | `A7-ingest-endpoint` | Ported, on branch |
-| Raw events expire and roll up | Unbounded growth on a small VPS database. | `retention.service.ts`, 90 days | `A8-retention` — Tier 1 | Ported, on branch |
+| Events land in a store built for volume | `activity_log` is an audit trail. | migration `046_analytics_event` | `A6-event-table` | Merged, dormant (`VITE_ANALYTICS` off) |
+| Batched ingest | One POST per event does not survive a session. | `POST /api/event` | `A7-ingest-endpoint` | Merged, dormant (`VITE_ANALYTICS` off) |
+| Raw events expire and roll up | Unbounded growth on a small VPS database. | `retention.service.ts`, 90 days | `A8-retention` — Tier 1 | Merged, dormant (`VITE_ANALYTICS` off) |
 | Landing section attention + scroll depth | No behavioural evidence behind landing decisions. | `LandingPage` → `instrumentLanding` | `A9-public-funnel` | Ported; **no admin read surface for it yet** |
-| Visitor identity degrades honestly | Fingerprint noise on Safari/Firefox, blocked on Brave. | `track.ts` identity | `A10-visitor-identity` | Ported, on branch |
+| Visitor identity degrades honestly | Fingerprint noise on Safari/Firefox, blocked on Brave. | `track.ts` identity | `A10-visitor-identity` | Merged, dormant (`VITE_ANALYTICS` off) |
 | Which clients have gone quiet | "Has the client opened the proposal?" | `/admin/engagement` | `A11-hub-engagement` | Ported; **reads nothing yet — the Hub is not instrumented and the gate is off on `/hub`** |
-| Delivery-outcome view per member | Derivable today, surfaced nowhere. | `/admin/accountability` (`GET /api/team/accountability`) | `A12-team-delivery-view` | Ported, on branch |
+| Delivery-outcome view per member | Derivable today, surfaced nowhere. | `/admin/accountability` (`GET /api/team/accountability`) | `A12-team-delivery-view` | Merged, dormant (`VITE_ANALYTICS` off) |
 | Staff section attention on `/admin` | The requested accountability signal. | `lib/staff-telemetry.ts` | `A13-team-behavior` | Built, **flag OFF** — do not enable before the policy is signed and distributed |
 
 **Open decisions.** Who may see per-person staff telemetry (the policy says founder only, plus the member's own data — no read endpoint exists yet). Whether staff telemetry ever feeds the penalty ledger. Whether to proceed with staff telemetry at all, given the assessment's necessity finding. How the Hub asks a signed-in client for analytics consent, which A11 needs before it can show anything.
+
+**Before setting `VITE_ANALYTICS=true`.** Checked in a real browser 2026-09-13 with the flag on: the prompt renders, refusing stores `denied` with no visitor id, fingerprint or session and sends zero `/api/event` requests, and `/privacy` shows the analytics sections and the "Refused" status. Still to do: (1) at 375px the panel covers the hero's "Start a project" button — reserve space or move it before enabling; (2) legal review of the analytics text in `/privacy` and the prompt (it belongs in [LEGAL-BRIEF.md](LEGAL-BRIEF.md)); (3) consent has no server-side record — `POST /api/event` is public and the grant lives only in `localStorage`; (4) `detail` is free-form JSON with no per-field bound.
+
+**Found while porting: a fresh database does not reach a clean drift check.** `db:local` stops at `032` (`032`–`038` fail with "already exists" after `db:push`), and 8 CHECK constraints from `034`, `035`, `038` and `040` are missing on a from-scratch database. Existing databases (local, prod) are unaffected because they were migrated incrementally. ⏳ Open.
 
 ## Connector suite — shipped 2026-09-02 (migrations 022–024)
 

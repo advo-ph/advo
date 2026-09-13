@@ -15,9 +15,11 @@ Cross-links:
 
 ---
 
-## 2026-09-13 (latest) — analytics ported from `mac/org-compat-t0` onto `feat/analytics-port`
+## 2026-09-13 (latest) — analytics ported from `mac/org-compat-t0`, merged dormant, deployed
 
-> Branch only: not merged, not pushed, not deployed. Migration `046_analytics_event` exists only on a local throwaway DB, which has since been dropped.
+> **Merged** (`3dcfec2`), pushed, and deployed (API + web). Migration `046_analytics_event` is applied on prod. **It ships dormant:** a new build-time flag, `VITE_ANALYTICS`, must be `true` as well as visitor consent. Without it the prompt never renders, the tracker sends nothing even for a stored grant, and `/privacy` says no analytics run. The flag is not set, so prod shows no prompt and records nothing. Unit test for the flag-off case; `bench:analytics` 0 outstanding; 55/55 on the consent, legal and commission tests; build green.
+
+**Browser check (flag on, local dev server).** The prompt renders bottom-right on desktop, monotone, non-modal, with equal-weight choices and a privacy link. "No, don't track me" stores `denied`, leaves no visitor id, fingerprint or session id, and sends zero `/api/event` requests. `/privacy` shows the analytics sections and "Refused". **At 375px the panel covers the hero's "Start a project" button** — fix before enabling (tracked in ROADMAP → Analytics).
 
 **What came over.** `a4c4395` (consent gate, event spine, tracker, Engagement + Accountability panels, staff telemetry behind `VITE_STAFF_MONITORING`), plus the two policy drafts it depends on (`MONITORING-POLICY.md` and `LEGITIMATE-INTEREST-ASSESSMENT.md` from `03ff71a`) and the bench and rejected-ideas list from `807adeb`. Mac migration `020` is now **`046`**: the enum is created idempotently and the ledger insert was added. It was applied twice with `ON_ERROR_STOP=1`, exit 0 both times.
 
@@ -32,7 +34,8 @@ Cross-links:
 - **Staff telemetry is off and must stay off.** Neither policy is signed. The assessment finds the accountability purpose **fails necessity**. The code also emits idle/active and route-transition records that policy §2 does not list, and the §5 "own data" view and §6 per-person rollup do not exist.
 - **No server-side record of consent.** It lives only in the visitor's `localStorage`, so ADVO cannot show that a given row was consented. Server-side erasure is still a manual request.
 - **`db:local` fails at `032` on a fresh DB** (pre-existing on main). `032`–`038` are not idempotent after `db:push`, and `migration:drift` reports 8 absent CHECK constraints from `034`/`035`/`038`/`040`. Not caused by `046`, and not fixed here.
-- Never rendered in a browser: the consent prompt, `/privacy`, and both new admin panels.
+- **Not yet viewed in a browser:** the two new admin panels (`/admin/engagement`, `/admin/accountability`). The prompt and `/privacy` were checked (above).
+- **Before enabling `VITE_ANALYTICS`:** fix the 375px overlap and get legal review of the prompt and `/privacy` analytics text.
 
 ---
 
