@@ -39,6 +39,9 @@ import AdminSettings from "@/components/admin/AdminSettings";
 import AdminBrandScraper from "@/components/admin/AdminBrandScraper";
 import AdminFacebookScraper from "@/components/admin/AdminFacebookScraper";
 import AdminLibrary from "@/components/admin/AdminLibrary";
+import AdminEngagement from "@/components/admin/AdminEngagement";
+import AdminAccountability from "@/components/admin/AdminAccountability";
+import { useStaffTelemetry } from "@/lib/staff-telemetry";
 
 /**
  * Names each section for the error boundary heading, so a crash says which page
@@ -49,7 +52,9 @@ const SECTION_LABEL: Record<AdminSection, string> = {
   dashboard: "Dashboard",
   projects: "Projects",
   clients: "Clients",
+  engagement: "Engagement",
   team: "Team",
+  accountability: "Accountability",
   tasks: "Tasks",
   schedule: "Work Items",
   calendar: "Calendar",
@@ -93,6 +98,10 @@ const Admin = () => {
   const { section } = useParams<{ section: string }>();
   const activeSection: AdminSection = isAdminSection(section) ? section : "dashboard";
   const setActiveSection = (next: AdminSection) => navigate(`/admin/${next}`);
+
+  // Staff behavioural telemetry — OFF unless VITE_STAFF_MONITORING is set at build time, and
+  // inert while off. Do not enable before docs/MONITORING-POLICY.md is signed and distributed.
+  useStaffTelemetry(activeSection);
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -255,7 +264,11 @@ const Admin = () => {
               />
             )}
 
+            {activeSection === "engagement" && <AdminEngagement />}
+
             {activeSection === "team" && <AdminTeam />}
+
+            {activeSection === "accountability" && <AdminAccountability />}
 
             {activeSection === "tasks" && <AdminTasks />}
 

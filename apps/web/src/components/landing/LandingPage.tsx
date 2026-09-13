@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { ChevronRight, UtensilsCrossed, Stethoscope, GraduationCap, CircleParking, Building2 } from "lucide-react";
@@ -10,6 +10,7 @@ import { Reveal, RevealGroup } from "@/components/motion/Reveal";
 import { EASE } from "@/lib/motion";
 import WorkShowcase from "./WorkShowcase";
 import LandingFooter from "./landing-footer";
+import { instrumentLanding, trackPrimaryCta } from "@/lib/track";
 import "./landing-page.css";
 
 /**
@@ -155,6 +156,14 @@ const LandingPage = () => {
   const reduceMotion = useReducedMotion();
   const [stepIndex, setStepIndex] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
+  const pageRef = useRef<HTMLElement>(null);
+
+  // Section attention + scroll-depth milestones. A no-op until the visitor grants
+  // consent, and detaches again on withdrawal — see apps/web/src/lib/track.ts.
+  useEffect(() => {
+    if (!pageRef.current) return;
+    return instrumentLanding(pageRef.current);
+  }, []);
 
   // Prince, 08-21: "keep only the section for the websites that we've already
   // created". Real portfolio rows or nothing.
@@ -168,7 +177,7 @@ const LandingPage = () => {
   const current = step[stepIndex] ?? step[0];
 
   return (
-    <main className={reduceMotion ? "landing-page is-reduce-motion" : "landing-page"}>
+    <main className={reduceMotion ? "landing-page is-reduce-motion" : "landing-page"} ref={pageRef}>
       <LandingNav overlayHero />
       <LandingScrollbar />
 
@@ -211,7 +220,11 @@ const LandingPage = () => {
               launch.
             </motion.p>
             <motion.div className="landing-hero-action" variants={heroCopy} transition={{ duration: 0.7, ease: EASE }}>
-              <Link className="landing-button landing-button-hero" to="/start">
+              <Link
+                className="landing-button landing-button-hero"
+                to="/start"
+                onClick={() => trackPrimaryCta("Start a project", "/start")}
+              >
                 Start a project
                 <ChevronRight size={14} strokeWidth={1} absoluteStrokeWidth />
               </Link>

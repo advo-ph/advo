@@ -119,6 +119,13 @@ const envSchema = z.object({
    */
   CORPUS_EXTRACT_MODEL: z.string().optional(),
 
+  /**
+   * Days of RAW analytics_event rows kept before the retention sweep deletes them
+   * (migration 046, services/retention.service.ts). The daily rollup outlives them.
+   * Unset or nonsense → 90, which is what /privacy publishes.
+   */
+  ANALYTICS_RETENTION_DAY: z.string().optional(),
+
   PORT: z.coerce.number().default(6407),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   UPLOAD_DIR: z.string().default("./uploads"),

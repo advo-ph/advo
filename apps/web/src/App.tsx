@@ -6,6 +6,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import ScrollProgress from "@/components/ui/ScrollProgress";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ScrollReset from "@/components/ScrollReset";
+import ConsentGate from "@/components/ConsentGate";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import InstallPrompt from "@/components/InstallPrompt";
 import { JobProgressWidget } from "@/components/admin/shared/JobProgressWidget";
@@ -90,6 +91,10 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          {/* Non-modal analytics consent prompt (RA 10173). Inside the router — it reads
+              the route to stay off /admin and /hub — but outside <Routes> so it
+              survives navigation. Nothing is tracked until the visitor says yes. */}
+          <ConsentGate />
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

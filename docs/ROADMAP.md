@@ -140,6 +140,32 @@ Parcelled 2026-08-23 from the 08-15/08-21 Messenger threads; see [HANDOFF.md](HA
 - **Food / Medical / Education industry sections.** Blocked on the AI customer-journey videos Prince said he was still producing.
 
 
+## Analytics — consent gate, event spine, surfaces (ported 2026-09-13, migration 046)
+
+Built 2026-08-21 on the Mac (`mac/org-compat-t0`, `a4c4395`) and ported onto main on branch `feat/analytics-port`. Requested scope: browser + user analytics across the public site, client hub and admin, for product improvement **and** staff accountability.
+
+**Lawful basis is the design constraint, not an afterthought.** Visitor analytics run on **consent** (RA 10173 Sec 12(a)) and nothing leaves the browser until the visitor says yes. Staff telemetry cannot rest on consent (employment power imbalance); it rests on a written policy plus notice (NPC AO 2024-003) and stays **off** behind `VITE_STAFF_MONITORING` until [`MONITORING-POLICY.md`](MONITORING-POLICY.md) is signed and distributed. Keystroke logging and screen capture are out in every tier (NPC AO 2018-084).
+
+Benchmark: `npm run bench:analytics` → [`bench/roadmap/analytics/scoring.mjs`](../bench/roadmap/analytics/scoring.mjs). Gate-excluded (candidate tier). Unit test: `apps/web/src/test/analytics-consent.test.ts`.
+
+| Item | What it closes | Surface | Benchmark | Status |
+|---|---|---|---|---|
+| A visitor can read what ADVO collects | The notice named no analytics at all. | `/privacy` (`pages/legal/Privacy.tsx`) — analytics section + "Your analytics choice" | `A1-privacy-notice` | Ported, on branch |
+| Non-essential tracking waits for an explicit choice | Nothing gated collection. | `ConsentGate` on every public route (off `/admin`, `/hub`) | `A2-consent-gate` | Ported, on branch |
+| The tracker sends and stores nothing without consent; refusal clears it | A banner that does not stop the beacon is worse than none. | `lib/track.ts` | `A3-consent-honored` — Tier 1 | Ported, on branch |
+| The team is told what is monitored, before it is | Lawful path per NPC AO 2024-003. | `docs/MONITORING-POLICY.md` | `A4-monitoring-policy` | Draft, unsigned |
+| The legitimate-interest test is recorded | Purpose · necessity · balancing. | `docs/LEGITIMATE-INTEREST-ASSESSMENT.md` | `A5-legitimate-interest` | Draft; finds the accountability purpose **fails necessity** |
+| Events land in a store built for volume | `activity_log` is an audit trail. | migration `046_analytics_event` | `A6-event-table` | Ported, on branch |
+| Batched ingest | One POST per event does not survive a session. | `POST /api/event` | `A7-ingest-endpoint` | Ported, on branch |
+| Raw events expire and roll up | Unbounded growth on a small VPS database. | `retention.service.ts`, 90 days | `A8-retention` — Tier 1 | Ported, on branch |
+| Landing section attention + scroll depth | No behavioural evidence behind landing decisions. | `LandingPage` → `instrumentLanding` | `A9-public-funnel` | Ported; **no admin read surface for it yet** |
+| Visitor identity degrades honestly | Fingerprint noise on Safari/Firefox, blocked on Brave. | `track.ts` identity | `A10-visitor-identity` | Ported, on branch |
+| Which clients have gone quiet | "Has the client opened the proposal?" | `/admin/engagement` | `A11-hub-engagement` | Ported; **reads nothing yet — the Hub is not instrumented and the gate is off on `/hub`** |
+| Delivery-outcome view per member | Derivable today, surfaced nowhere. | `/admin/accountability` (`GET /api/team/accountability`) | `A12-team-delivery-view` | Ported, on branch |
+| Staff section attention on `/admin` | The requested accountability signal. | `lib/staff-telemetry.ts` | `A13-team-behavior` | Built, **flag OFF** — do not enable before the policy is signed and distributed |
+
+**Open decisions.** Who may see per-person staff telemetry (the policy says founder only, plus the member's own data — no read endpoint exists yet). Whether staff telemetry ever feeds the penalty ledger. Whether to proceed with staff telemetry at all, given the assessment's necessity finding. How the Hub asks a signed-in client for analytics consent, which A11 needs before it can show anything.
+
 ## Connector suite — shipped 2026-09-02 (migrations 022–024)
 
 The tier that answers "how does money arrive, where does the client actually talk to us,

@@ -15,6 +15,7 @@ import {
   index,
   primaryKey,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 // ─── Enums ────────────────────────────────────────────
 
@@ -1777,4 +1778,89 @@ export const corpusTemplate = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [uniqueIndex("idx_corpus_template_kind_name_version").on(t.kind, t.name, t.version)],
+);
+
+// ─── Analytics event (migration 046) ──────────────────
+//
+// The first table here designed for VOLUME rather than for human reading. Queried by
+// PERIOD and by SESSION. Deliberately NOT activity_log: that is an audit trail kept
+// forever, this is bounded telemetry swept by RETENTION_DAY (services/retention.service.ts).
+// Nothing reaches it from a browser until the visitor has granted consent
+// (apps/web/src/lib/track.ts). Full reasoning lives in the migration header.
+
+export const analyticsEventKindEnum = pgEnum("analytics_event_kind", [
+  "page_view",
+  "click",
+  "form_start",
+  "form_submit",
+  "scroll_depth",
+  "outbound_click",
+  "session_start",
+  "session_end",
+  "error",
+]);
+
+export const analyticsEvent = pgTable(
+  "analytics_event",
+  {
+    /** bigserial, not uuid: monotonic keys keep the hot index leaf small on a small VPS. */
+    analyticsEventId: bigserial("analytics_event_id", { mode: "number" }).primaryKey(),
+    kind: analyticsEventKindEnum("kind").notNull(),
+    /** CLIENT clock. Orders events within one session; never trusted for retention. */
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+    /** SERVER clock. The sweep and the rollup run on this one — a caller cannot skew it. */
+    receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
+    /** Opaque client string, bounded at 64. Not a foreign key — the public site has no session. */
+    sessionId: varchar("session_id", { length: 64 }).notNull(),
+    /** Null for a first-touch visit or a visitor with no persistent storage. */
+    visitorId: varchar("visitor_id", { length: 64 }),
+    /**
+     * Written SERVER-SIDE from the verified JWT, never from the request body. A
+     * body-supplied actor id is the S1/S2/S3 cross-tenant class closed 2026-06-20
+     * (docs/WIRING-AUDIT.md).
+     */
+    userId: integer("user_id").references(() => user.userId, { onDelete: "set null" }),
+    path: varchar("path", { length: 512 }).notNull().default("/"),
+    /** Per-kind payload. NOT NULL with a '{}' default so read code never branches on null. */
+    detail: jsonb("detail").notNull().default({}),
+    // No updatedAt: an analytics event is immutable.
+  },
+  (t) => [
+    // Every index on a firehose table is a tax on every insert; each one names its read.
+    index("idx_analytics_event_occurred").on(t.occurredAt),
+    index("idx_analytics_event_session").on(t.sessionId, t.occurredAt),
+    index("idx_analytics_event_kind_time").on(t.kind, t.occurredAt),
+    // The retention sweep and rollup filter on received_at only.
+    index("idx_analytics_event_received").on(t.receivedAt),
+    // The engagement read groups by user; signed-in rows are a small minority.
+    index("idx_analytics_event_user").on(t.userId, t.occurredAt).where(sql`user_id IS NOT NULL`),
+  ]
+);
+
+/**
+ * What survives the retention sweep. Raw rows are only safe to delete BECAUSE this
+ * aggregate has already been written. One row per (period, kind, path); the unique index
+ * makes the rollup idempotent so it can be safely re-run after a crash.
+ */
+export const analyticsEventRollup = pgTable(
+  "analytics_event_rollup",
+  {
+    analyticsEventRollupId: bigserial("analytics_event_rollup_id", {
+      mode: "number",
+    }).primaryKey(),
+    /** Daily grain, stored as a date — a timestamp invites a "which day" argument. */
+    period: date("period").notNull(),
+    kind: analyticsEventKindEnum("kind").notNull(),
+    path: varchar("path", { length: 512 }).notNull(),
+    eventCount: integer("event_count").notNull().default(0),
+    /** Exact at this DAY's grain only. Summing across days over-counts uniques. */
+    sessionCount: integer("session_count").notNull().default(0),
+    visitorCount: integer("visitor_count").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("idx_analytics_event_rollup_period_kind_path").on(t.period, t.kind, t.path),
+    index("idx_analytics_event_rollup_period").on(t.period),
+  ]
 );

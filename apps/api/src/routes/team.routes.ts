@@ -1,10 +1,10 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { eq, getTableColumns } from "drizzle-orm";
+import { eq, getTableColumns, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { db } from "../db/connection.js";
-import { teamMember, user } from "../db/schema.js";
+import { teamMember, user, deliverable, activityLog } from "../db/schema.js";
 import { requireAuth, optionalAuth, invalidateUserActive } from "../middleware/auth.js";
 import { requireAdmin } from "../middleware/rbac.js";
 import { hashPassword, revokeAllUserSessions } from "../services/auth.service.js";
@@ -127,6 +127,124 @@ team.get("/", optionalAuth, async (c) => {
     .orderBy(teamMember.teamMemberId);
 
   return c.json({ data: rows, error: null });
+});
+
+// ─── Accountability (derived, read-only) ──────────────
+//
+// MUST stay above "/:id" — a literal path registered after "/:id" is shadowed
+// by it in Hono. This repo has already been bitten by that once.
+//
+// Nothing here is collected: every figure is derived from deliverable rows that
+// already exist (status / due_date / completed_at / verified_at / assigned_to),
+// team_member.penalty_point_count, and activity_log. No telemetry.
+//
+// Honesty rule: an on-time RATE is only meaningful with a denominator behind it.
+// A member with one gradable deliverable is not "100% reliable" — so the rate is
+// returned as null below ON_TIME_MIN_SAMPLE and the client must show the raw
+// counts instead. The denominator ships with every rate.
+
+/** Fewer gradable deliverables than this and no rate is reported at all. */
+const ON_TIME_MIN_SAMPLE = 5;
+
+team.get("/accountability", requireAuth, requireAdmin, async (c) => {
+  const now = new Date();
+
+  // One pass over deliverable, grouped per assignee. `gradable` = completed AND
+  // had a due date — only those can be judged on-time, so it is the denominator.
+  const stat = await db()
+    .select({
+      teamMemberId: deliverable.assignedTo,
+      assignedCount: sql<number>`count(*)::int`,
+      openCount: sql<number>`count(*) filter (where ${deliverable.status} <> 'completed')::int`,
+      overdueCount: sql<number>`count(*) filter (where ${deliverable.status} <> 'completed' and ${deliverable.dueDate} is not null and ${deliverable.dueDate} < now())::int`,
+      blockedCount: sql<number>`count(*) filter (where ${deliverable.status} = 'blocked')::int`,
+      completedCount: sql<number>`count(*) filter (where ${deliverable.completedAt} is not null)::int`,
+      gradableCount: sql<number>`count(*) filter (where ${deliverable.completedAt} is not null and ${deliverable.dueDate} is not null)::int`,
+      onTimeCount: sql<number>`count(*) filter (where ${deliverable.completedAt} is not null and ${deliverable.dueDate} is not null and ${deliverable.completedAt} <= ${deliverable.dueDate})::int`,
+      verifiedCount: sql<number>`count(*) filter (where ${deliverable.verifiedAt} is not null)::int`,
+      lastCompletedAt: sql<string | null>`max(${deliverable.completedAt})`,
+    })
+    .from(deliverable)
+    .where(sql`${deliverable.assignedTo} is not null`)
+    .groupBy(deliverable.assignedTo);
+
+  const statByMember = new Map(stat.map((s) => [Number(s.teamMemberId), s]));
+
+  // Last activity: activity_log is keyed by user_id, team_member by team_member_id.
+  // Members with no linked user account simply have no activity trail.
+  const activity = await db()
+    .select({
+      userId: activityLog.userId,
+      lastActivityAt: sql<string | null>`max(${activityLog.createdAt})`,
+    })
+    .from(activityLog)
+    .where(sql`${activityLog.userId} is not null`)
+    .groupBy(activityLog.userId);
+
+  const activityByUser = new Map(activity.map((a) => [Number(a.userId), a.lastActivityAt]));
+
+  const memberRow = await db()
+    .select()
+    .from(teamMember)
+    .where(eq(teamMember.isActive, true));
+
+  const row = memberRow.map((m) => {
+    const s = statByMember.get(m.teamMemberId);
+    const gradableCount = s?.gradableCount ?? 0;
+    const onTimeCount = s?.onTimeCount ?? 0;
+    const overdueCount = s?.overdueCount ?? 0;
+    const openCount = s?.openCount ?? 0;
+
+    // Null, not 0 and not 1 — an unmeasurable rate is not a rate.
+    const onTimeRate =
+      gradableCount >= ON_TIME_MIN_SAMPLE ? onTimeCount / gradableCount : null;
+
+    const lastActivityAt = m.userId != null ? activityByUser.get(m.userId) ?? null : null;
+    const lastCompletedAt = s?.lastCompletedAt ?? null;
+
+    // Ranking weight, not a score shown to anyone as a judgement. Overdue work
+    // dominates; a missing rate contributes nothing rather than guessing.
+    const behindScore =
+      overdueCount * 3 +
+      openCount * 0.5 +
+      m.penaltyPointCount * 2 +
+      (onTimeRate === null ? 0 : (1 - onTimeRate) * 5);
+
+    return {
+      teamMemberId: m.teamMemberId,
+      name: m.name,
+      role: m.role,
+      avatarUrl: m.avatarUrl,
+      penaltyPointCount: m.penaltyPointCount,
+      assignedCount: s?.assignedCount ?? 0,
+      openCount,
+      overdueCount,
+      blockedCount: s?.blockedCount ?? 0,
+      completedCount: s?.completedCount ?? 0,
+      verifiedCount: s?.verifiedCount ?? 0,
+      onTimeCount,
+      /** Denominator for onTimeRate. Always render it beside the rate. */
+      gradableCount,
+      /** null = below ON_TIME_MIN_SAMPLE; render the counts, never a percentage. */
+      onTimeRate,
+      lastCompletedAt,
+      lastActivityAt,
+      behindScore: Math.round(behindScore * 100) / 100,
+    };
+  });
+
+  // Most behind first; ties broken by overdue, then name so the order is stable.
+  row.sort(
+    (a, b) =>
+      b.behindScore - a.behindScore ||
+      b.overdueCount - a.overdueCount ||
+      a.name.localeCompare(b.name)
+  );
+
+  return c.json({
+    data: { row, onTimeMinSample: ON_TIME_MIN_SAMPLE, asOf: now.toISOString() },
+    error: null,
+  });
 });
 
 // ─── Get One ──────────────────────────────────────────

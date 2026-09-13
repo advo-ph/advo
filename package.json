@@ -43,7 +43,8 @@
     "bench:visual": "node bench/roadmap/landing-visual/scoring.mjs",
     "bench:payment": "node bench/roadmap/payment-rail/scoring.mjs",
     "bench:message": "node bench/roadmap/message-channel/scoring.mjs",
-    "bench:scroll": "node bench/roadmap/scroll-reset/scoring.mjs"
+    "bench:scroll": "node bench/roadmap/scroll-reset/scoring.mjs",
+    "bench:analytics": "node bench/roadmap/analytics/scoring.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.0",

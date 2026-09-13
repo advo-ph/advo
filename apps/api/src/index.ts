@@ -14,6 +14,7 @@ import { initDb, closeDb } from "./db/connection.js";
 import { requestId } from "./middleware/requestId.js";
 import { cleanExpiredSessions } from "./services/auth.service.js";
 import { startPlaudPoll, stopPlaudPoll } from "./services/plaud-poll.service.js";
+import { startRetentionSweep, stopRetentionSweep } from "./services/retention.service.js";
 import { startRunner, stopRunner, crashRecovery } from "./services/job-runner.service.js";
 // Import handlers so they register themselves before the runner starts
 import "./services/signoff-draft.service.js";
@@ -55,6 +56,7 @@ import projectMessageRoutes from "./routes/project-message.routes.js";
 import { corpusRoutes } from "./routes/corpus.routes.js";
 import jobRoutes from "./routes/jobs.routes.js";
 import financeRoutes from "./routes/finance.routes.js";
+import eventRoutes from "./routes/event.routes.js";
 
 import type { Variables } from "./types/context.js";
 
@@ -217,6 +219,13 @@ app.route("/api/project-signoff", projectSignoffRoutes);
 // Preview links (public redirect for "Show Client Now")
 app.route("/api/preview", previewRoutes);
 
+// Analytics ingest (migration 046). PUBLIC and BATCHED: the marketing site has no auth
+// session, and one request per hover would not survive a session. No publicLimiter here —
+// the route carries its own event-counting bound, since a legitimate flush is far more
+// frequent than the human-paced 30/min those limiters assume. The browser only sends
+// after the visitor grants consent (apps/web/src/lib/track.ts).
+app.route("/api/event", eventRoutes);
+
 // Internal library (team-wide catalog)
 app.route("/api/library", libraryRoutes);
 
@@ -274,6 +283,9 @@ const port = e.PORT;
 serve({ fetch: app.fetch, port }, () => {
   log.info(`ADVO API running on port ${port} (${e.NODE_ENV})`);
   startPlaudPoll();
+  // Bounded window on analytics_event + the rollup that outlives it. Same self-rescheduling
+  // setTimeout shape as the Plaud poll — no new scheduler.
+  startRetentionSweep();
   // Re-queue any jobs that were running when the previous process died.
   crashRecovery().catch((err) => log.error({ err }, "Crash recovery failed"));
   startRunner();
@@ -295,6 +307,7 @@ setInterval(async () => {
 async function shutdown(signal: string) {
   log.info(`${signal} received, shutting down...`);
   stopPlaudPoll();
+  stopRetentionSweep();
   stopRunner();
   await closeDb();
   process.exit(0);
