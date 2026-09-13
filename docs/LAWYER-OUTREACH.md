@@ -4,7 +4,7 @@ Date: 2026-08-28
 Status: ready to send. The remaining work is choosing a recipient and pressing send.
 
 [LEGAL-BRIEF.md](LEGAL-BRIEF.md) is finished and graded (`npm run bench:legal`, 9/9). It is
-self-contained: all nine policies quoted inline, 49 closed-form questions, the live exposure in the
+self-contained: all nine policies quoted inline, 52 closed-form questions, the live exposure in the
 first screenful, and the real commercial figures counsel needs to judge a payment clause. It needs
 no attachments to produce a quote.
 
@@ -62,7 +62,7 @@ Keep it short. The brief carries the argument; the email only has to get it open
 > basis under RA 10173. That question is holding up revenue.
 >
 > I have written a brief that contains everything you would need to quote: each policy quoted in
-> full, 49 questions phrased so they can be answered yes / no / yes-with-modification, our actual
+> full, 52 questions phrased so they can be answered yes / no / yes-with-modification, our actual
 > commercial figures, and the data-privacy questions. It is attached — no other documents are
 > needed to give us a number.
 >

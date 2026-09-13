@@ -267,6 +267,12 @@ Should these nine policies live in a single master service agreement with per-pr
 48. **Does RA 11967 (Internet Transactions Act) apply to us, to our clients, or to neither?** We sell and contract online, and we host our clients' commerce-adjacent systems. We do not know whether that puts either party in scope, and it would be useful to be told plainly.
 49. **Is there anything in this brief that is the wrong question?** We wrote it from our own failure modes. If there is an exposure we have not thought to ask about — corporate, tax, employment, or cyber — we would rather hear it now than discover it in a dispute.
 
+**Added 2026-09-13 — three exposures that appeared after the first draft.**
+
+50. **Is our visitor-analytics consent flow valid consent under RA 10173 Sec. 12(a)?** Built but switched off: a first-visit prompt with equal-weight "yes" and "no", a random visitor id stored in the browser, a device fingerprint computed only after "yes", events linked to the account when signed in, raw events deleted after 90 days, and consent recorded only in the visitor's browser (no server-side record). Is the prompt and our /privacy text sufficient as written, and is a server-side record of consent **required** before we switch it on?
+51. **What does RA 10173 require before a parking system reads licence plates, and before an optional senior/PWD discount check matches a face on the device?** We are assessing a ticketless parking product for malls and properties. Is a plate number personal information in that setting; is on-device face verification that stores no image **sensitive personal information** requiring consent; and which of registration with the National Privacy Commission, a Privacy Impact Assessment, a Data Protection Officer, and signage at entry points are **required** before a pilot?
+52. **Can a DTI-registered sole proprietorship validly enter a joint venture with a foreign supplier to bid for government goods under RA 12009?** Specifically: whether the 60% Filipino ownership rule for goods JVs is satisfied by a sole proprietor, whether our registered line of business meets the "primary purpose similar or related to the project" condition, whether a no-cost pilot under a memorandum of agreement with an agency is **permitted** outside procurement, and whether converting to a corporation first is advisable.
+
 ---
 
 ## 10. The engagement we are requesting
