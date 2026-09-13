@@ -63,7 +63,7 @@ None of these have been reviewed or merged.
 - ~~**`feat/landing-runway` and `chimney-prairie-dog` are unmerged.**~~ **Resolved (later):** deleted, kept as `archive/*` tags.
 - ~~**Prod admin still accepts the seed password.**~~ **Resolved (later):** rotated.
 - **VPS `/opt/advo` is dirty:** uncommitted `.env.bak` files and a changed `package-lock.json`. Fix both before the next `git pull` deploy.
-- **polkadoc capture bugs:** September messages are duplicated in ADVO Core, and some Slack messages come through empty. Counts derived from that capture are inflated or incomplete until the bugs are fixed.
+- **polkadoc capture bugs:** September messages are duplicated in ADVO Core, and some Slack messages come through empty. **Fixed (later) in the polkadoc repo** on branch `fix/capture-dedupe-date-slack` (keyless-checkpoint twins, exact-timestamp clamp, Slack row selector; gate green), not merged — the Mac checkout has uncommitted edits in `messenger.js`. The existing vault still needs `polkadoc-cli dedupe-message --apply` on the Mac; the corpus bundles loaded here were built from de-duplicated text.
 - ~~**Commission sub-split mismatch (found while fixing the ROADMAP row):** migration `037` and `DEFAULT_BPS` default `marketing_bps` 5000 / `management_bps` 2000. The agreement says Management 50 / Marketing 20. Confirm before any plan is seeded.~~ **Resolved:** migration `045_commission_staff_split_fix.sql` and `DEFAULT_BPS` now default Marketing 2000 / Management 5000, per `data/corpus/document/internal-commission-agreement.json`.
 - **Flood procurement route is unresolved** (bidding and accreditation vs. none; no mayor's permit). The WATEC partner meeting is 2026-09-23.
 
