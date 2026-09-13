@@ -15,11 +15,37 @@ Cross-links:
 
 ---
 
+## 2026-09-13 (night) — "what's next" worked through: bootstrap fix, consent on mobile, claims measured, ventures prepared
+
+> Three code changes shipped across three repos, and every pitch figure we could check was checked. The rest is prepared for people: drafts, research and tasks on prod, nothing sent.
+
+**Shipped.** `e39c123`: a fresh `db:local` applies all 46 migrations and ends drift-clean. 032–040 became idempotent and their CHECKs moved to guarded `ALTER`s. Existing databases, prod included, are unchanged. `9fd53f5`: the consent panel is a compact bottom sheet at ≤900px and no longer covers the hero CTA (375: 30px clear, 768: 66px). It is still dormant, because `VITE_ANALYTICS` is off, and it is deployed. Prod `/api/health` now reports the Anthropic key configured. `284aedb`: LEGAL-BRIEF gains questions 50–52 (analytics consent, plate and face data, a sole proprietorship in a JV under RA 12009), `bench:legal` 9/9.
+
+**Claims measured.**
+- **Flood** (advoroads `a77d6f3`, `docs/ACCURACY.md`): the river-gauge component catches 19% of MMDA-reported flooded roads (11/58, CI 10.9–30.9%). The live river+rain map cannot be scored because rain inputs were never archived. **"65%" and "99% with hardware" are unsupported.**
+- **Parking** (advopark `e5e8df5`, `docs/LPR-FEASIBILITY.md`, merged): 79% exact plate reads (26/33, daylight, untuned). The AdvoPark presentation brief says "1 plate in 20 won't read" and "6 seconds", and neither is measured. Prince has task #52 to source or change both.
+
+**Prepared on prod (corpus / tasks).**
+- **Flood:** DPWH letter v2 (#51) with the Secretary and chief of staff verified and five candidate national roads, the WATEC brief (#52), the eligibility checklist (#63), accuracy (#67).
+- **Clients:** FourlinQ sign-off and balance, FourlinQ system selection, Felici restart (#55–57). The glass railing was verified live, and its task is finished.
+- **Legal:** lawyer shortlist and covering email (#58).
+- **Park:** Megaworld research (#59), LPR feasibility (#64), presentation brief and interview kit (#65–66).
+- **Tasks:** #46 Prince WATEC structure; #47 David pre-meeting alignment; #48 Anthony restrict the link-public commission agreement; #49 Mar re-enable GitHub Actions; #50 Prince send the legal brief; #51 Schiffier mayor's permit / tax clearance / PhilGEPS; #52 Prince fix the deck claims.
+
+**Honest open-items**
+
+- **ADVO is not procurement-eligible today:** no mayor's permit, tax clearance or audited FS, no similar completed contract, and the registered line is "Web Development Services". The no-cost MOA pilot is the only government route.
+- **AdvoPark edge tests are unreliable on Windows.** The payment-guide test breaks on CRLF, and vitest's worker cap doesn't apply to the forks pool. A fix is in progress on `fix/edge-test-infra`, not merged.
+- **Local checkouts:** `advopark` main is behind origin by 7 and carries someone's uncommitted README edit; pull it by hand. `advopark-lpr` stays as a worktree because its gitignored label files hold real plate numbers (RA 10173). Keep them out of git.
+- **Nothing was sent to a client, lawyer, agency or partner.** Every draft carries reviewer notes with conflicting figures to resolve first.
+
+---
+
 ## 2026-09-13 (latest) — analytics ported from `mac/org-compat-t0`, merged dormant, deployed
 
 > **Merged** (`3dcfec2`), pushed, and deployed (API + web). Migration `046_analytics_event` is applied on prod. **It ships dormant:** a new build-time flag, `VITE_ANALYTICS`, must be `true` as well as visitor consent. Without it the prompt never renders, the tracker sends nothing even for a stored grant, and `/privacy` says no analytics run. The flag is not set, so prod shows no prompt and records nothing. Unit test for the flag-off case; `bench:analytics` 0 outstanding; 55/55 on the consent, legal and commission tests; build green.
 
-**Browser check (flag on, local dev server).** The prompt renders bottom-right on desktop, monotone, non-modal, with equal-weight choices and a privacy link. "No, don't track me" stores `denied`, leaves no visitor id, fingerprint or session id, and sends zero `/api/event` requests. `/privacy` shows the analytics sections and "Refused". **At 375px the panel covers the hero's "Start a project" button** — fix before enabling (tracked in ROADMAP → Analytics).
+**Browser check (flag on, local dev server).** The prompt renders bottom-right on desktop, monotone, non-modal, with equal-weight choices and a privacy link. "No, don't track me" stores `denied`, leaves no visitor id, fingerprint or session id, and sends zero `/api/event` requests. `/privacy` shows the analytics sections and "Refused". ~~**At 375px the panel covers the hero's "Start a project" button.**~~ **Fixed in `9fd53f5`** (compact bottom sheet at ≤900px; see the night entry above).
 
 **What came over.** `a4c4395` (consent gate, event spine, tracker, Engagement + Accountability panels, staff telemetry behind `VITE_STAFF_MONITORING`), plus the two policy drafts it depends on (`MONITORING-POLICY.md` and `LEGITIMATE-INTEREST-ASSESSMENT.md` from `03ff71a`) and the bench and rejected-ideas list from `807adeb`. Mac migration `020` is now **`046`**: the enum is created idempotently and the ledger insert was added. It was applied twice with `ON_ERROR_STOP=1`, exit 0 both times.
 
