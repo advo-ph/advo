@@ -2,8 +2,11 @@
 -- Stores uploaded audio files for meeting transcription.
 -- transcript is NULL until a background transcription job completes.
 -- job_id links to the background_job that is running or ran the transcription.
+--
+-- Idempotent (2026-09-13): IF NOT EXISTS / ON CONFLICT, so a `db:push`-created table or a
+-- re-run no longer stops `npm run db:local`.
 
-CREATE TABLE meeting_recording (
+CREATE TABLE IF NOT EXISTS meeting_recording (
   recording_id  bigserial PRIMARY KEY,
   meeting_id    integer REFERENCES meeting(meeting_id) ON DELETE CASCADE,
   file_url      text NOT NULL,
@@ -14,7 +17,8 @@ CREATE TABLE meeting_recording (
   created_at    timestamptz NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_meeting_recording_meeting ON meeting_recording(meeting_id);
-CREATE INDEX idx_meeting_recording_job ON meeting_recording(job_id);
+CREATE INDEX IF NOT EXISTS idx_meeting_recording_meeting ON meeting_recording(meeting_id);
+CREATE INDEX IF NOT EXISTS idx_meeting_recording_job ON meeting_recording(job_id);
 
-INSERT INTO schema_migration (filename) VALUES ('036_meeting_recording.sql');
+INSERT INTO schema_migration (filename) VALUES ('036_meeting_recording.sql')
+ON CONFLICT (filename) DO NOTHING;

@@ -12,8 +12,13 @@
 --   • One person cannot hold the same role twice on one project (composite unique).
 --   • A person CAN hold two different roles on the same project.
 --   • Exactly one referral per project (partial unique index).
+--
+-- Idempotent (2026-09-13): on a fresh database `db:push` has already created this table
+-- from schema.ts, and the bare CREATE TABLE stopped `npm run db:local` here. Every
+-- statement is now IF NOT EXISTS / ON CONFLICT, so the file is a no-op where the objects
+-- exist and the definition where they do not.
 
-CREATE TABLE project_role_assignment (
+CREATE TABLE IF NOT EXISTS project_role_assignment (
   project_role_assignment_id bigserial PRIMARY KEY,
   project_id                  integer NOT NULL REFERENCES project(project_id) ON DELETE CASCADE,
   team_member_id              integer NOT NULL REFERENCES team_member(team_member_id) ON DELETE RESTRICT,
@@ -24,18 +29,19 @@ CREATE TABLE project_role_assignment (
 
 -- One person cannot hold the same role twice on one project.
 -- A person CAN hold two different roles (e.g. referral + project_manager).
-CREATE UNIQUE INDEX idx_project_role_assignment_unique
+CREATE UNIQUE INDEX IF NOT EXISTS idx_project_role_assignment_unique
   ON project_role_assignment (project_id, team_member_id, project_role);
 
 -- Exactly one referral per project.
-CREATE UNIQUE INDEX idx_project_role_assignment_referral
+CREATE UNIQUE INDEX IF NOT EXISTS idx_project_role_assignment_referral
   ON project_role_assignment (project_id)
   WHERE project_role = 'referral';
 
-CREATE INDEX idx_project_role_assignment_project
+CREATE INDEX IF NOT EXISTS idx_project_role_assignment_project
   ON project_role_assignment (project_id);
 
-CREATE INDEX idx_project_role_assignment_member
+CREATE INDEX IF NOT EXISTS idx_project_role_assignment_member
   ON project_role_assignment (team_member_id);
 
-INSERT INTO schema_migration (filename) VALUES ('032_project_role_assignment.sql');
+INSERT INTO schema_migration (filename) VALUES ('032_project_role_assignment.sql')
+ON CONFLICT (filename) DO NOTHING;
