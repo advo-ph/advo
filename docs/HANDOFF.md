@@ -17,7 +17,19 @@ Cross-links:
 
 ## 2026-09-13 (late night) — corpus sources keep their full text, and the admin can read it
 
-> Branch `feat/corpus-document-body`, not merged or deployed.
+> **Merged (`8f6501e`), deployed, migration `047` applied on prod.** Verified live in a real browser at 1440px and 375px: Corpus → Sources lists every source ("50 of 468" with Load more), and a source such as #50 opens at `?source=50` with its full 372,973-character transcript. On prod, the project, kind, `q`, `externalId` and paging filters all return 200.
+>
+> **Corpus contents after the 2026-09-14 ingestion sweep: 468 sources, 466 with full text.** New sources:
+> - 51 advo repo docs, plus the 09-13 changelog and orientation snapshot
+> - 126 advoroads docs on project 22 (35 flagged as contradicting `ACCURACY.md`, mostly "never measured" wording that is now out of date)
+> - 121 advopark docs on project 23 (every unmeasured buyer-facing claim flagged; the inventory is on task #52)
+> - 95 FourlinQ/Felici repo docs
+> - 25 Mac-only org-study dossiers
+> - RA 12009 and its IRR
+> - full chat transcripts on #46–50
+> - the consent-overlap measurements
+>
+> The first-pass sources #1–32 now carry their transcripts, Drive text and case-study files. #21 and #22 (the Felici contract and proposal) have no text yet: re-posting either would clear the supersede links between them. Their text has to go straight into `body` without touching facts.
 
 **Shipped on the branch.** Migration `047_corpus_source_body.sql` adds `corpus_source.body` and moves every `meta.body` stopgap into it. All three ingest routes now store the text. The detail read returns it, the list read returns only `body_character_count`, and `?q=` searches title, summary and body. On the Corpus → Sources tab there is a search box, and each source opens into a document view at `?source=<id>`. `GET /api/corpus/source` is now paged and returns `{ source, totalCount, limit, offset }` (limit 1–500, default 50) with `kind`/`projectId`/`externalId` filters. The Sources tab has kind and project filters and a "Load more" button that fetches the rest of the sources. The four corpus benches read the new shape. The commission split in FEATURES.md and SCHEMA.md now reads 55/35/10, staff 20/50/20/10 (037/045), replacing the stale 60/25/15. Tests: `corpus-body.test.ts` (source wiring, the live API, and 047 against a throwaway DB via `CORPUS_MIGRATION_DATABASE_URL`) and `corpus-document.test.tsx`.
 
