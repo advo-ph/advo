@@ -50,6 +50,9 @@ const allowedLandingModule = new Set([
   "FloatingNav.tsx", // /hub
   "PortfolioCard.tsx", // proof-card unit under test
   "AdvoDotField.tsx", // the footer wordmark pixel field, rendered by landing-footer
+  "WorkShowcase.tsx", // the work showcase, rendered by LandingPage (3a0ddc6)
+  "CardSwap.tsx", // the scroll-driven card deck, rendered by WorkShowcase (3a0ddc6)
+  "CardSwap.css", // imported by CardSwap
   "landing-page.css",
 ]);
 
