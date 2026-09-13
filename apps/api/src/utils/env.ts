@@ -4,6 +4,8 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   JWT_SECRET: z.string().min(32),
   JWT_REFRESH_SECRET: z.string().min(32),
+  /** Pins log timestamps and any leftover local-time formatting to Manila. See .env.example. */
+  TZ: z.string().optional(),
 
   RESEND_API_KEY: z.string().optional(),
   /**
