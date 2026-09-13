@@ -37,7 +37,7 @@ Cross-links:
 - **`docs/SCHEMA.md` ~line 179** still describes the original `018` commission defaults.
 - ~~**Johann Endriga and Kenneth Leo Dela Cruz have no login.**~~ **Resolved:** Kenneth (`advo.kenneth.id@gmail.com`, the account that owns ADVO's junior-dev sign-up form) and Johann (`endrigsjohann@gmail.com`, owner of the VBE project docs in Drive) now have logins; both invite emails sent (prod mail state: 2 sent, 0 failed).
 - **The internal commission agreement is readable by anyone with the link** (Drive permission `anyone: reader`; owner is Anthony's account). An internal compensation agreement should not be link-public — Anthony should restrict it.
-- **polkadoc vault repaired on the Mac** with the merged fix (`CelestialBrain/polkadoc` `35e33dd`): 2,465 duplicate records merged in ADVO Core, 130 dates restored, a re-run finds 0, notes re-rendered. The pre-repair collection file is at `~/polkadoc-backup-20260913/`. Chrome loads the extension unpacked from the checkout, so the capture fixes apply on the next extension reload.
+- **polkadoc vault repaired on the Mac** with the merged fix (`CelestialBrain/polkadoc` `35e33dd`): 2,465 duplicate records merged in ADVO Core, 130 dates restored, a re-run finds 0, notes re-rendered. The pre-repair collection file is at `~/polkadoc-backup-20260913/`. Chrome loads the extension unpacked from the checkout, so the capture fixes apply on the next extension reload. The desktop app (which holds the store-side dedupe fix) was rebuilt locally from `35e33dd` and reinstalled in `/Applications`; the previous app is kept at `~/polkadoc-backup-20260913/polkadoc-prev.app`. The local build has updater artifacts off, so the next signed release replaces it normally.
 
 ---
 
