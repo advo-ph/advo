@@ -25,10 +25,16 @@ CREATE TABLE IF NOT EXISTS project_tier_assignment (
   tier_label           varchar(500) NOT NULL,
   -- Derived from tier: Tier 1 = 500 bps (5%), Tier 2 = 1000 (10%), Tier 3 = 1500 (15%).
   allocation_bps       integer      NOT NULL,
-  created_at           timestamptz  NOT NULL DEFAULT NOW(),
-
-  CONSTRAINT chk_tier_allocation_bps CHECK (allocation_bps IN (500, 1000, 1500))
+  created_at           timestamptz  NOT NULL DEFAULT NOW()
 );
+
+-- A guarded ALTER, not an in-body CONSTRAINT (2026-09-13): on a fresh database `db:push`
+-- has already created this table, the IF NOT EXISTS above is a no-op, and an in-body
+-- CHECK was silently skipped — 025's defect. Existing databases already have it.
+DO $$ BEGIN
+  ALTER TABLE project_tier_assignment ADD CONSTRAINT chk_tier_allocation_bps
+    CHECK (allocation_bps IN (500, 1000, 1500));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- One tier pick per share row.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_tier_assignment_share

@@ -21,11 +21,16 @@ ALTER TABLE expense
   ADD COLUMN IF NOT EXISTS expense_type        varchar(40)  NOT NULL DEFAULT 'general_expenses',
   ADD COLUMN IF NOT EXISTS expense_paid_status varchar(20)  NOT NULL DEFAULT 'unpaid';
 
-ALTER TABLE expense
-  ADD CONSTRAINT chk_expense_type
-    CHECK (expense_type IN ('development_expenses', 'general_expenses')),
-  ADD CONSTRAINT chk_expense_paid_status
+-- Guarded (2026-09-13) so a re-run is a no-op instead of "constraint already exists".
+DO $$ BEGIN
+  ALTER TABLE expense ADD CONSTRAINT chk_expense_type
+    CHECK (expense_type IN ('development_expenses', 'general_expenses'));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  ALTER TABLE expense ADD CONSTRAINT chk_expense_paid_status
     CHECK (expense_paid_status IN ('paid', 'unpaid'));
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- authorizedBy and location are no longer in the Phase 8 form but the columns
 -- stay in the database to preserve existing data. They are simply not returned
