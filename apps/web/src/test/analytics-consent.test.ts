@@ -91,6 +91,45 @@ describe("analytics consent gate", () => {
     expect(storedTrackingKey()).toEqual([]);
   });
 
+  it("reserves the panel's space while it is on screen and releases it on a decision", async () => {
+    const { createElement } = await import("react");
+    const { act, cleanup, fireEvent, render, screen } = await import("@testing-library/react");
+    const { MemoryRouter } = await import("react-router-dom");
+    const { default: ConsentGate, CONSENT_PANEL_CLASS, CONSENT_HEIGHT_VAR } = await import(
+      "@/components/ConsentGate"
+    );
+    const root = document.documentElement;
+
+    render(createElement(MemoryRouter, { initialEntries: ["/"] }, createElement(ConsentGate)));
+    expect(screen.getByRole("region", { name: "Privacy choice" })).toBeTruthy();
+    expect(root.classList.contains(CONSENT_PANEL_CLASS)).toBe(true);
+    expect(root.style.getPropertyValue(CONSENT_HEIGHT_VAR)).toMatch(/^\d+px$/);
+
+    // Refusing and accepting are the same size and weight: identical inline style.
+    const no = screen.getByRole("button", { name: "No, don't track me" });
+    const yes = screen.getByRole("button", { name: "Yes, that's fine" });
+    expect(no.getAttribute("style")).toBe(yes.getAttribute("style"));
+
+    act(() => {
+      fireEvent.click(no);
+    });
+    expect(screen.queryByRole("region", { name: "Privacy choice" })).toBeNull();
+    expect(root.classList.contains(CONSENT_PANEL_CLASS)).toBe(false);
+    expect(root.style.getPropertyValue(CONSENT_HEIGHT_VAR)).toBe("");
+    cleanup();
+  });
+
+  it("reserves no space on a route that never shows the panel", async () => {
+    const { createElement } = await import("react");
+    const { cleanup, render } = await import("@testing-library/react");
+    const { MemoryRouter } = await import("react-router-dom");
+    const { default: ConsentGate, CONSENT_PANEL_CLASS } = await import("@/components/ConsentGate");
+
+    render(createElement(MemoryRouter, { initialEntries: ["/admin"] }, createElement(ConsentGate)));
+    expect(document.documentElement.classList.contains(CONSENT_PANEL_CLASS)).toBe(false);
+    cleanup();
+  });
+
   it("staff telemetry is inert unless VITE_STAFF_MONITORING is set", async () => {
     const { isStaffMonitoringEnabled, startStaffTelemetry } = await import("@/lib/staff-telemetry");
     expect(isStaffMonitoringEnabled()).toBe(false);

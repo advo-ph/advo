@@ -176,6 +176,24 @@ export const subscribeConsent = (
  */
 const EXCLUDED_PREFIX = ["/admin", "/hub"];
 
+/** On the document root while the panel is on screen — landing CSS reserves space with it. */
+export const CONSENT_PANEL_CLASS = "has-consent-panel";
+/** The panel's rendered height in px, on the document root while it is on screen. */
+export const CONSENT_HEIGHT_VAR = "--advo-consent-height";
+
+/**
+ * House monotone: solid #0C0C0C, 1px hairline, no glass, no shadow. Desktop keeps the card
+ * bottom-right. At the width where the landing bar becomes a drawer (900px) the card would
+ * start to cover the hero's "Start a project", so it becomes a compact full-width sheet with
+ * the short copy; the hero lifts above it via CONSENT_PANEL_CLASS (landing-page.css).
+ */
+const CONSENT_STYLE = `.advo-consent{position:fixed;left:16px;right:16px;bottom:16px;z-index:60;max-width:560px;margin-left:auto;display:flex;flex-direction:column;gap:12px;padding:16px 18px;border-radius:8px;border:1px solid hsl(0 0% 100% / 0.12);background:#0C0C0C;color:hsl(0 0% 96%)}
+.advo-consent-copy{font-size:13px;line-height:1.55;margin:0;color:hsl(0 0% 78%)}
+.advo-consent-copy-short{display:none}
+@media (max-width:900px){.advo-consent{left:0;right:0;bottom:0;max-width:none;margin-left:0;gap:10px;padding:12px 16px calc(12px + env(safe-area-inset-bottom, 0px));border-radius:0;border-width:1px 0 0}.advo-consent-copy-full{display:none}.advo-consent-copy-short{display:block;line-height:1.45}}
+@keyframes advo-consent-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.advo-consent{animation:none !important}}`;
+
 const ConsentGate = () => {
   const location = useLocation();
   const reduceMotion = useReducedMotion();
@@ -214,7 +232,32 @@ const ConsentGate = () => {
   const isExcluded = EXCLUDED_PREFIX.some(
     (prefix) => location.pathname === prefix || location.pathname.startsWith(`${prefix}/`),
   );
-  if (!isAnalyticsEnabled() || isExcluded || !isVisible) return null;
+  const isShown = isAnalyticsEnabled() && !isExcluded && isVisible;
+
+  // Reserve the panel's height while it is on screen. The root gets CONSENT_PANEL_CLASS and
+  // --advo-consent-height; landing CSS uses them (small screens only) to lift the hero copy
+  // and pad the drawer so no primary control sits under the sheet. Both are removed the
+  // moment the panel goes away, whether by a decision, Escape, or a route into /admin.
+  useEffect(() => {
+    if (!isShown) return;
+    const root = document.documentElement;
+    const panel = panelRef.current;
+    const write = () => {
+      const height = panel ? Math.ceil(panel.getBoundingClientRect().height) : 0;
+      root.style.setProperty(CONSENT_HEIGHT_VAR, `${height}px`);
+    };
+    root.classList.add(CONSENT_PANEL_CLASS);
+    write();
+    const observer = typeof ResizeObserver === "undefined" || !panel ? null : new ResizeObserver(write);
+    if (observer && panel) observer.observe(panel);
+    return () => {
+      observer?.disconnect();
+      root.classList.remove(CONSENT_PANEL_CLASS);
+      root.style.removeProperty(CONSENT_HEIGHT_VAR);
+    };
+  }, [isShown]);
+
+  if (!isShown) return null;
 
   return (
     <div
@@ -222,31 +265,13 @@ const ConsentGate = () => {
       // fully usable and every control behind it stays reachable.
       role="region"
       aria-label="Privacy choice"
+      className="advo-consent"
       ref={panelRef}
-      style={{
-        position: "fixed",
-        left: 16,
-        right: 16,
-        bottom: 16,
-        zIndex: 60,
-        maxWidth: 560,
-        marginLeft: "auto",
-        display: "flex",
-        flexDirection: "column",
-        gap: 12,
-        padding: "16px 18px",
-        // House monotone: solid #0C0C0C, 1px hairline, no glass, no shadow.
-        borderRadius: 8,
-        border: "1px solid hsl(0 0% 100% / 0.12)",
-        background: "#0C0C0C",
-        color: "hsl(0 0% 96%)",
-        animation: reduceMotion ? undefined : "advo-consent-rise 200ms ease-out",
-      }}
+      style={{ animation: reduceMotion ? undefined : "advo-consent-rise 200ms ease-out" }}
     >
-      <style>{`@keyframes advo-consent-rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion: reduce){[aria-label="Privacy choice"]{animation:none !important}}`}</style>
+      <style>{CONSENT_STYLE}</style>
 
-      <p style={{ fontSize: 13, lineHeight: 1.55, margin: 0, color: "hsl(0 0% 78%)" }}>
+      <p className="advo-consent-copy advo-consent-copy-full">
         <strong style={{ color: "hsl(0 0% 98%)", fontWeight: 600 }}>
           Analytics and device recognition.
         </strong>{" "}
@@ -260,6 +285,16 @@ const ConsentGate = () => {
           Read the privacy notice
         </Link>
         .
+      </p>
+
+      {/* Small screens: the same ask in two lines, with the detail one tap away. */}
+      <p className="advo-consent-copy advo-consent-copy-short">
+        <strong style={{ color: "hsl(0 0% 98%)", fontWeight: 600 }}>Analytics?</strong> We'd record
+        pages you view and a device fingerprint to recognise return visits. Say no and none of it
+        runs.{" "}
+        <Link to="/privacy" style={{ textDecoration: "underline", color: "hsl(0 0% 92%)" }}>
+          Details
+        </Link>
       </p>
 
       <div style={{ display: "flex", gap: 8 }}>
