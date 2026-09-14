@@ -38,8 +38,33 @@ const WorkShowcase = ({ project }: WorkShowcaseProps) => {
   const stageRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const [card, setCard] = useState({ w: 440, h: 290 });
+  /**
+   * The screenshots are full-size PNGs (1.4–6.8 MB each), and `loading="lazy"`
+   * only starts them once the deck is on screen — a visitor who scrolled in met
+   * black cards for 2–4 s (playtest 2026-09-14). Two screens ahead, the section
+   * flips the images to eager so they are downloading before the deck pins.
+   */
+  const [isNear, setIsNear] = useState(false);
+  const [loaded, setLoaded] = useState<Record<number, boolean>>({});
 
   const total = project.length;
+
+  useEffect(() => {
+    const node = trackRef.current;
+    if (!node || isNear) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setIsNear(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) setIsNear(true);
+      },
+      { rootMargin: "200% 0px 200% 0px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [isNear, total]);
 
   useEffect(() => {
     const node = trackRef.current;
@@ -159,8 +184,17 @@ const WorkShowcase = ({ project }: WorkShowcaseProps) => {
               onCardClick={openCard}
             >
               {project.map((item) => (
-                <Card key={item.portfolio_project_id} customClass="work-card">
-                  <img src={item.screenshotUrl ?? ""} alt={`${item.title} website`} loading="lazy" />
+                <Card
+                  key={item.portfolio_project_id}
+                  customClass={loaded[item.portfolio_project_id] ? "work-card is-loaded" : "work-card"}
+                >
+                  <img
+                    src={item.screenshotUrl ?? ""}
+                    alt={`${item.title} website`}
+                    loading={isNear ? "eager" : "lazy"}
+                    decoding="async"
+                    onLoad={() => setLoaded((prev) => ({ ...prev, [item.portfolio_project_id]: true }))}
+                  />
                   <span className="work-card-label">{item.title}</span>
                 </Card>
               ))}

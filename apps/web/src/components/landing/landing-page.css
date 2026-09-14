@@ -1200,7 +1200,9 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .work-cards .work-card {
   overflow: hidden;
   border: 0;
-  background: var(--landing-ink);
+  /* Neutral until the screenshot arrives, so a slow image reads as a card
+     loading rather than a black slab (the img fades in on .is-loaded). */
+  background: var(--landing-ground-soft);
   box-shadow: 0 30px 60px -24px rgba(12, 12, 12, 0.45);
   cursor: pointer;
 }
@@ -1209,6 +1211,13 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   height: 100%;
   object-fit: cover;
   object-position: top center;
+  opacity: 0;
+  transition: opacity .4s ease;
+}
+.work-cards .work-card.is-loaded img { opacity: 1; }
+.landing-page.is-reduce-motion .work-cards .work-card img { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  .work-cards .work-card img { transition: none; }
 }
 /* A card seen out of the corner of the eye should still say what it is; the
    left column only ever names the one in front. */
