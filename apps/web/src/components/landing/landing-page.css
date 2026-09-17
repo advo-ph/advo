@@ -445,7 +445,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   text-align: center;
   overflow: hidden;
 }
-.landing-page .landing-marquee > p { font-size: var(--landing-text-small); line-height: 20px; color: var(--landing-ink-mute); }
+.landing-page .landing-marquee > p { font-size: var(--landing-text-small); line-height: 20px; color: var(--landing-ink-soft); }
 .landing-marquee-mask {
   width: min(1200px, 100%);
   margin: 12px auto 0;
@@ -888,7 +888,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   letter-spacing: 0.34em;
   text-indent: 0.17em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.42);
+  color: rgba(255, 255, 255, 0.5);
 }
 .landing-footer-fine { color: rgba(255, 255, 255, 0.4); font-size: var(--landing-text-micro); }
 /* The PayMongo disclosure row. Its own line above the copyright bar: a
@@ -1125,7 +1125,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   font-weight: 500;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--landing-ink-mute);
+  color: var(--landing-ink-soft);
 }
 
 /* Remounted on every card change, so this replays as the entrance. */
