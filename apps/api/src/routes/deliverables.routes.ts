@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { eq, and, asc, ne, inArray, sql } from "drizzle-orm";
+import { eq, and, asc, desc, ne, inArray, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { db } from "../db/connection.js";
 import { deliverable, deliverableComment, project, teamMember, client, projectAccess, user } from "../db/schema.js";
@@ -15,6 +15,8 @@ import { toManilaInstant } from "../utils/manila-date.js";
 const deliverables = new Hono<{ Variables: Variables }>();
 
 deliverables.use("*", requireAuth);
+
+const deliverableStatusSchema = z.enum(["todo", "ongoing", "review", "finished"]);
 
 /**
  * Which project ids may this user see?
@@ -286,6 +288,93 @@ deliverables.get("/upcoming", async (c) => {
     error: null,
   });
 });
+
+// ─── Shared Tasks board order ─────────────────────────
+// Team members may reorder the deliverables they can see. The request may be
+// a filtered subset (for example, "My Tasks"); the server replaces only those
+// ids' existing slots so hidden tasks keep their relative positions.
+
+const reorderSchema = z.object({
+  status: deliverableStatusSchema,
+  order: z.array(z.number().int().positive()).max(1000),
+});
+
+deliverables.post(
+  "/reorder",
+  requireTeam,
+  zValidator("json", reorderSchema, zodMessageHook),
+  async (c) => {
+    const { status, order } = c.req.valid("json");
+    const duplicateIds = new Set<number>();
+    for (const id of order) {
+      if (duplicateIds.has(id)) {
+        throw new HTTPException(400, { message: "Order contains a duplicate deliverable" });
+      }
+      duplicateIds.add(id);
+    }
+
+    const caller = c.get("user");
+    const allowedProjectIds = await visibleProjectIds(caller);
+    if (allowedProjectIds !== null && allowedProjectIds.length === 0) {
+      return c.json({ data: { message: "Order saved" }, error: null });
+    }
+
+    const rows = await db()
+      .select({
+        deliverableId: deliverable.deliverableId,
+        projectId: deliverable.projectId,
+        sortOrder: deliverable.sortOrder,
+      })
+      .from(deliverable)
+      .where(eq(deliverable.status, status))
+      .orderBy(asc(deliverable.sortOrder), desc(deliverable.deliverableId));
+
+    const currentIds = rows.map((row) => row.deliverableId);
+    const reorderableIds = new Set(
+      rows
+        .filter(
+          (row) =>
+            allowedProjectIds === null || allowedProjectIds.includes(row.projectId),
+        )
+        .map((row) => row.deliverableId),
+    );
+    const currentPositions = new Map(currentIds.map((id, index) => [id, index]));
+    const requestedPositions = order.map((id) => currentPositions.get(id));
+
+    if (
+      requestedPositions.some((position) => position === undefined) ||
+      order.some((id) => !reorderableIds.has(id))
+    ) {
+      throw new HTTPException(400, { message: "Order contains an inaccessible or invalid deliverable" });
+    }
+    if (currentIds.length > 0 && order.length === 0) {
+      throw new HTTPException(400, { message: "Order must include at least one deliverable" });
+    }
+
+    const nextIds = [...currentIds];
+    const sortedRequestedPositions = requestedPositions
+      .filter((position): position is number => position !== undefined)
+      .sort((a, b) => a - b);
+    order.forEach((id, index) => {
+      nextIds[sortedRequestedPositions[index]] = id;
+    });
+
+    const changed = nextIds.some((id, index) => id !== currentIds[index]);
+    if (changed) {
+      const d = db();
+      await d.transaction(async (tx) => {
+        for (let index = 0; index < nextIds.length; index += 1) {
+          await tx
+            .update(deliverable)
+            .set({ sortOrder: index })
+            .where(eq(deliverable.deliverableId, nextIds[index]));
+        }
+      });
+    }
+
+    return c.json({ data: { message: "Order saved" }, error: null });
+  },
+);
 
 // ─── Create ───────────────────────────────────────────
 

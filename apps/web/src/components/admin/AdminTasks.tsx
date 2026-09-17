@@ -1,5 +1,6 @@
-import { useMemo, useState, useRef } from "react";
+import { useMemo, useState, useRef, type DragEvent } from "react";
 import {
+  GripVertical,
   Paperclip,
   Pencil,
   Loader2,
@@ -38,6 +39,7 @@ import { useRoles } from "@/hooks/useRoles";
 import { upload } from "@/lib/api";
 import { PageHeader } from "@/components/admin/_ui";
 import { useToast } from "@/hooks/use-toast";
+import { moveTaskId } from "@/lib/task-order";
 
 // ─── Status order and labels ──────────────────────────────────────────────────
 
@@ -360,6 +362,13 @@ const DeliverableCard = ({
   onStatusChange,
   onOpenComments,
   onOpenWrite,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDrop,
+  onKeyboardMove,
+  isDragging,
+  isDropTarget,
 }: {
   deliverable: Deliverable;
   isAssignee: boolean;
@@ -368,6 +377,13 @@ const DeliverableCard = ({
   onStatusChange: (status: KanbanStatus, extra?: { attachmentUrl?: string | null }) => void;
   onOpenComments: () => void;
   onOpenWrite: () => void;
+  onDragStart: (event: DragEvent<HTMLButtonElement>) => void;
+  onDragEnd: () => void;
+  onDragOver: (event: DragEvent<HTMLDivElement>) => void;
+  onDrop: (event: DragEvent<HTMLDivElement>) => void;
+  onKeyboardMove: (direction: "up" | "down") => void;
+  isDragging: boolean;
+  isDropTarget: boolean;
 }) => {
   const status = deliverable.status as KanbanStatus;
   const hasUnread = deliverable.has_unread_comments;
@@ -441,9 +457,14 @@ const DeliverableCard = ({
   return (
     <>
       <div
+        data-task-card
+        onDragOver={onDragOver}
+        onDrop={onDrop}
         className={cn(
           "relative overflow-hidden rounded-lg border border-border bg-card p-3 pl-4 shadow-sm transition-colors hover:border-foreground/20",
           hasUnread && "border-accent/40 bg-accent/[0.06]",
+          isDragging && "opacity-50",
+          isDropTarget && "border-accent ring-1 ring-accent/40",
         )}
       >
         {/* Left-edge status stripe */}
@@ -456,6 +477,26 @@ const DeliverableCard = ({
 
         {/* Row 1 — title + comment badge + edit */}
         <div className="flex items-start gap-2">
+          <button
+            type="button"
+            draggable
+            aria-label={`Drag ${deliverable.title} to reorder`}
+            title="Drag to reorder"
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowUp") {
+                event.preventDefault();
+                onKeyboardMove("up");
+              } else if (event.key === "ArrowDown") {
+                event.preventDefault();
+                onKeyboardMove("down");
+              }
+            }}
+            className="mt-0.5 h-11 w-11 shrink-0 cursor-grab rounded text-muted-foreground/40 hover:bg-secondary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing lg:h-7 lg:w-7"
+          >
+            <GripVertical className="mx-auto h-4 w-4" />
+          </button>
           <div className="flex-1 min-w-0 flex items-center gap-1.5 flex-wrap">
             <p className="text-sm font-medium leading-snug">{deliverable.title}</p>
             {hasComments && (
@@ -476,7 +517,7 @@ const DeliverableCard = ({
             <button
               aria-label="Edit"
               onClick={onEdit}
-              className="h-9 w-9 lg:h-7 lg:w-7 grid place-items-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors shrink-0 -mr-1 -mt-0.5"
+              className="h-11 w-11 lg:h-7 lg:w-7 grid place-items-center rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors shrink-0 -mr-1 -mt-0.5"
             >
               <Pencil className="h-3.5 w-3.5" />
             </button>
@@ -491,7 +532,7 @@ const DeliverableCard = ({
         )}
 
         {/* Row 3 — project label */}
-        <p className="mt-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground/70 truncate">
+        <p className="mt-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground truncate">
           {deliverable.project?.title ?? "No project"}
         </p>
 
@@ -569,10 +610,12 @@ const AdminTasks = () => {
     createDeliverable,
     updateDeliverable,
     updateStatus,
+    reorderDeliverables,
     deleteDeliverable,
     addComment,
     markCommentsRead,
     isSaving,
+    isReordering,
     isAddingComment,
     isMarkingRead,
   } = useAdminDeliverables();
@@ -581,8 +624,8 @@ const AdminTasks = () => {
   const { projects } = useOrgProjects();
   const { toast } = useToast();
 
-  // "My Tasks / All Tasks" toggle — default is "All Tasks"
-  const [taskView, setTaskView] = useState<"mine" | "all">("all");
+  // "My Tasks / All Tasks" toggle — default is "My Tasks"
+  const [taskView, setTaskView] = useState<"mine" | "all">("mine");
 
   // Phone: pick one column to show
   const [visibleList, setVisibleList] = useState<KanbanStatus>("todo");
@@ -597,14 +640,30 @@ const AdminTasks = () => {
   // Comments dialog
   const [commentDeliverable, setCommentDeliverable] = useState<Deliverable | null>(null);
   const [commentMode, setCommentMode] = useState<"read" | "write">("read");
+  const [draggedTask, setDraggedTask] = useState<{
+    id: number;
+    status: KanbanStatus;
+  } | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<number | null>(null);
+
+  // The API's list endpoint still serves its historical due-date order because
+  // other surfaces use the same hook. The board opts into its durable order here.
+  const orderedDeliverables = useMemo(
+    () =>
+      [...deliverables].sort(
+        (a, b) => a.sort_order - b.sort_order || b.deliverable_id - a.deliverable_id,
+      ),
+    [deliverables],
+  );
 
   // Apply "My Tasks" filter before grouping
   const filtered = useMemo(() => {
     if (taskView === "mine") {
-      return deliverables.filter((d) => d.assigned_to === viewerTeamMemberId);
+      if (viewerTeamMemberId === null) return [];
+      return orderedDeliverables.filter((d) => d.assigned_to === viewerTeamMemberId);
     }
-    return deliverables;
-  }, [deliverables, taskView, viewerTeamMemberId]);
+    return orderedDeliverables;
+  }, [orderedDeliverables, taskView, viewerTeamMemberId]);
 
   const byStatus = useMemo(() => {
     const groups: Record<KanbanStatus, Deliverable[]> = {
@@ -619,6 +678,99 @@ const AdminTasks = () => {
     }
     return groups;
   }, [filtered]);
+
+  const resetDrag = () => {
+    setDraggedTask(null);
+    setDropTargetId(null);
+  };
+
+  const handleDragStart = (event: DragEvent<HTMLButtonElement>, deliverable: Deliverable) => {
+    if (isReordering) return;
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", String(deliverable.deliverable_id));
+    setDraggedTask({
+      id: deliverable.deliverable_id,
+      status: deliverable.status as KanbanStatus,
+    });
+  };
+
+  const handleReorder = async (
+    status: KanbanStatus,
+    draggedId: number,
+    targetId: number | null,
+  ) => {
+    const currentIds = byStatus[status].map((item) => item.deliverable_id);
+    const nextIds = moveTaskId(currentIds, draggedId, targetId);
+    if (nextIds.every((id, index) => id === currentIds[index])) return;
+
+    resetDrag();
+    try {
+      await reorderDeliverables(status, nextIds);
+    } catch {
+      // The hook restores the previous order and surfaces the error toast.
+    }
+  };
+
+  const handleCardDragOver = (
+    event: DragEvent<HTMLDivElement>,
+    status: KanbanStatus,
+    targetId: number,
+  ) => {
+    if (!draggedTask || isReordering || draggedTask.status !== status) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.dataTransfer.dropEffect = "move";
+    setDropTargetId(targetId);
+  };
+
+  const handleCardDrop = (
+    event: DragEvent<HTMLDivElement>,
+    status: KanbanStatus,
+    targetId: number,
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!draggedTask || draggedTask.status !== status || draggedTask.id === targetId) {
+      resetDrag();
+      return;
+    }
+    void handleReorder(status, draggedTask.id, targetId);
+  };
+
+  const handleListDragOver = (event: DragEvent<HTMLDivElement>, status: KanbanStatus) => {
+    if (!draggedTask || isReordering || draggedTask.status !== status) return;
+    if ((event.target as HTMLElement).closest("[data-task-card]")) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "move";
+    setDropTargetId(null);
+  };
+
+  const handleListDrop = (event: DragEvent<HTMLDivElement>, status: KanbanStatus) => {
+    if ((event.target as HTMLElement).closest("[data-task-card]")) return;
+    event.preventDefault();
+    if (!draggedTask || draggedTask.status !== status) {
+      resetDrag();
+      return;
+    }
+    void handleReorder(status, draggedTask.id, null);
+  };
+
+  const handleKeyboardMove = (
+    status: KanbanStatus,
+    taskId: number,
+    direction: "up" | "down",
+  ) => {
+    if (isReordering) return;
+    const currentIds = byStatus[status].map((item) => item.deliverable_id);
+    const index = currentIds.indexOf(taskId);
+    if (index < 0) return;
+    const targetId =
+      direction === "up"
+        ? currentIds[index - 1] ?? null
+        : currentIds[index + 2] ?? null;
+    if (direction === "up" && targetId === null) return;
+    void handleReorder(status, taskId, targetId);
+  };
 
   const defaultProjectId =
     projects.length > 0 ? String(projects[0].project_id) : "";
@@ -698,7 +850,11 @@ const AdminTasks = () => {
     <div className="space-y-4">
       <PageHeader
         title="Tasks"
-        meta={`${filtered.length} total`}
+        meta={
+          <span className="hidden sm:inline">
+            {filtered.length} total{isReordering ? " · Saving order…" : ""}
+          </span>
+        }
         action={
           <div className="flex items-center gap-2">
             {/* My Tasks / All Tasks segmented control */}
@@ -768,53 +924,81 @@ const AdminTasks = () => {
           ))}
         </div>
       ) : (
-        <div className="grid gap-4 lg:grid-cols-4 lg:items-start">
+        <div className="grid h-[calc(100dvh-16rem)] min-h-[22rem] gap-4 lg:h-[calc(100dvh-13rem)] lg:grid-cols-4 lg:items-stretch">
           {DELIVERABLE_STATUS_ORDER.map((status) => (
             <div
               key={status}
-              className={cn("lg:block", visibleList === status ? "block" : "hidden")}
+              className={cn(
+                "min-h-0 flex-col",
+                visibleList === status ? "flex" : "hidden",
+                "lg:flex",
+              )}
             >
               {/* Bare column header — no panel wrapper */}
-              <div className="flex items-center gap-2 mb-2">
+              <div className="mb-2 flex shrink-0 items-center gap-2">
                 <span className="text-sm font-semibold">{STATUS_LABEL[status]}</span>
                 <span className="text-xs tabular-nums rounded-full bg-secondary px-2 py-0.5 text-muted-foreground">
                   {byStatus[status].length}
                 </span>
               </div>
 
-              {/* Cards stack */}
-              {byStatus[status].length === 0 ? (
-                <div className="rounded-lg border border-dashed border-border py-8 text-center text-xs text-muted-foreground">
-                  Nothing {STATUS_LABEL[status].toLowerCase()}
-                </div>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {byStatus[status].map((d) => {
-                    const isAssignee =
-                      teamMemberId !== null && d.assigned_to === teamMemberId;
-                    return (
-                      <DeliverableCard
-                        key={d.deliverable_id}
-                        deliverable={d}
-                        isAssignee={isAssignee}
-                        isOwner={isOwner}
-                        onEdit={() => openEdit(d)}
-                        onStatusChange={(newStatus, extra) =>
-                          updateStatus(d.deliverable_id, newStatus as DeliverableStatus, extra)
-                        }
-                        onOpenComments={() => {
-                          setCommentDeliverable(d);
-                          setCommentMode("read");
-                        }}
-                        onOpenWrite={() => {
-                          setCommentDeliverable(d);
-                          setCommentMode("write");
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-              )}
+              {/* Each list owns the remaining viewport height. The page remains
+                  still while a long column is scrolled independently. */}
+              <div
+                data-task-list
+                role="list"
+                aria-label={`${STATUS_LABEL[status]} tasks`}
+                onDragOver={(event) => handleListDragOver(event, status)}
+                onDrop={(event) => handleListDrop(event, status)}
+                className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 pb-2"
+              >
+                {byStatus[status].length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-border py-8 text-center text-xs text-muted-foreground">
+                    Nothing {STATUS_LABEL[status].toLowerCase()}
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2">
+                    {byStatus[status].map((d) => {
+                      const isAssignee =
+                        teamMemberId !== null && d.assigned_to === teamMemberId;
+                      return (
+                        <div key={d.deliverable_id} role="listitem">
+                          <DeliverableCard
+                            deliverable={d}
+                            isAssignee={isAssignee}
+                            isOwner={isOwner}
+                            onEdit={() => openEdit(d)}
+                            onStatusChange={(newStatus, extra) =>
+                              updateStatus(d.deliverable_id, newStatus as DeliverableStatus, extra)
+                            }
+                            onOpenComments={() => {
+                              setCommentDeliverable(d);
+                              setCommentMode("read");
+                            }}
+                            onOpenWrite={() => {
+                              setCommentDeliverable(d);
+                              setCommentMode("write");
+                            }}
+                            onDragStart={(event) => handleDragStart(event, d)}
+                            onDragEnd={resetDrag}
+                            onDragOver={(event) =>
+                              handleCardDragOver(event, status, d.deliverable_id)
+                            }
+                            onDrop={(event) =>
+                              handleCardDrop(event, status, d.deliverable_id)
+                            }
+                            onKeyboardMove={(direction) =>
+                              handleKeyboardMove(status, d.deliverable_id, direction)
+                            }
+                            isDragging={draggedTask?.id === d.deliverable_id}
+                            isDropTarget={dropTargetId === d.deliverable_id}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>

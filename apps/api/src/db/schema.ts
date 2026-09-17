@@ -297,6 +297,8 @@ export const deliverable = pgTable(
     title: varchar("title", { length: 255 }).notNull(),
     description: text("description"),
     priority: integer("priority").default(0),
+    /** Stable per-status position for the shared Tasks board (migration 048). */
+    sortOrder: integer("sort_order").notNull().default(0),
     status: deliverableStatusEnum("status").notNull().default("todo"),
     dueDate: timestamp("due_date", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
