@@ -92,23 +92,25 @@ export async function createProject(project: {
   list_value_cents?: number | null;
   discount_cents?: number;
   discount_reason?: string | null;
-  tech_stack: string[];
+  tech_stack?: string[];
 }): Promise<DbResult<null>> {
-  const res = await post("/api/projects", {
+  const body: Record<string, unknown> = {
     clientId: project.client_id,
     title: project.title,
     description: project.description,
     repositoryName: project.repository_name,
     previewUrl: project.preview_url,
-    contractUrl: project.contract_url,
     projectStatus: project.project_status,
     totalValueCents: project.total_value_cents,
     amountPaidCents: project.amount_paid_cents,
     listValueCents: project.list_value_cents ?? null,
     discountCents: project.discount_cents ?? 0,
     discountReason: project.discount_reason ?? null,
-    techStack: project.tech_stack,
-  });
+  };
+  if (project.contract_url !== undefined) body.contractUrl = project.contract_url;
+  if (project.tech_stack !== undefined) body.techStack = project.tech_stack;
+
+  const res = await post("/api/projects", body);
   return { data: null, error: res.error };
 }
 

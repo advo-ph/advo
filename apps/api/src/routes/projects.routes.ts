@@ -268,8 +268,14 @@ const discountArithmeticError = (row: { listValueCents?: number | null; discount
   return list - discount === total ? null : `listValueCents − discountCents must equal totalValueCents (${list} − ${discount} ≠ ${total})`;
 };
 
+/** Treat a zero list price as an empty optional discount field. */
+const normalizeDiscountFields = <T extends { listValueCents?: number | null }>(row: T): T => {
+  if (row.listValueCents !== 0) return row;
+  return { ...row, listValueCents: null } as T;
+};
+
 projects.post("/", requireAdmin, zValidator("json", createSchema), async (c) => {
-  const data = c.req.valid("json");
+  const data = normalizeDiscountFields(c.req.valid("json"));
   const arithmetic = discountArithmeticError(data);
   if (arithmetic) throw new HTTPException(400, { message: arithmetic });
   const [created] = await db().insert(project).values(data).returning();
@@ -282,7 +288,7 @@ const updateSchema = createSchema.partial().omit({ clientId: true });
 
 projects.patch("/:id", requireAdmin, zValidator("json", updateSchema), async (c) => {
   const id = Number(c.req.param("id"));
-  const data = c.req.valid("json");
+  const data = normalizeDiscountFields(c.req.valid("json"));
   const d = db();
 
   // Get old status before update
@@ -296,7 +302,7 @@ projects.patch("/:id", requireAdmin, zValidator("json", updateSchema), async (c)
     })
     .from(project).where(eq(project.projectId, id)).limit(1);
   if (!old) throw new HTTPException(404, { message: "Project not found" });
-  const arithmetic = discountArithmeticError({ ...old, ...data });
+  const arithmetic = discountArithmeticError(normalizeDiscountFields({ ...old, ...data }));
   if (arithmetic) throw new HTTPException(400, { message: arithmetic });
 
   const [updated] = await d
