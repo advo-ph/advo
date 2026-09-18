@@ -108,8 +108,8 @@ const CaseStudy = () => {
 
             <Reveal className="landing-case-cta">
               <h2>Want the same for your floor?</h2>
-              <Link className="landing-button landing-button-primary" to="/start">
-                Request a quotation
+              <Link className="landing-button landing-button-primary" to="/#start">
+                Start a project
               </Link>
             </Reveal>
           </>

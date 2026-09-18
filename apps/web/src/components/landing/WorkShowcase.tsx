@@ -137,7 +137,7 @@ const WorkShowcase = ({ project }: WorkShowcaseProps) => {
       ref={trackRef}
       className="work"
       id="work"
-      aria-label="Work we have shipped"
+      aria-label="Portfolio — projects we have shipped"
       style={{ ["--work-steps" as string]: total - 1 }}
     >
       <div className="work-stage">

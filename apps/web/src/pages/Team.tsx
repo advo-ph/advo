@@ -80,7 +80,7 @@ const Team = () => {
           <div className="text-center mt-24 pt-16 border-t border-border">
             <p className="text-muted-foreground mb-6">Want to work with us?</p>
             <Link
-              to="/start"
+              to="/#start"
               className="inline-flex items-center px-6 py-3 bg-foreground text-background rounded-full text-sm font-medium hover:bg-foreground/90 btn-press"
             >
               Start a Project

@@ -75,10 +75,10 @@ const footerCol: { title: string; link: FooterLink[] }[] = [
   {
     title: "The system",
     link: [
-      { label: "Public site", href: "#showcase" },
+      { label: "Public site", href: "#solutions" },
       { label: "Client Hub", href: "/login" },
       { label: "Admin Console", href: "/login" },
-      { label: "Hardware floor", href: "/start" },
+      { label: "Hardware floor", href: "#start" },
     ],
   },
   {
@@ -95,16 +95,16 @@ const footerCol: { title: string; link: FooterLink[] }[] = [
     link: [
       { label: "The work we shipped", href: "#work" },
       { label: "How it ships", href: "#process" },
-      { label: "Request a quotation", href: "/start" },
+      { label: "Project enquiry", href: "#start" },
     ],
   },
   {
     title: "Studio",
     link: [
       { label: "Team", href: "/team" },
-      { label: "Work", href: "#work" },
+      { label: "Portfolio", href: "#work" },
       { label: "Fourlinq", href: "https://fourlinq.ph", ext: true },
-      { label: "Start a project", href: "/start" },
+      { label: "Start a project", href: "#start" },
     ],
   },
 ];
@@ -165,10 +165,17 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
             Console your studio runs on, and the hardware on the floor — built as one system, not
             four vendors. When it is done, the VPS handoff leaves the whole stack in your name.
           </p>
-          <Link className="landing-footer-cta" to="/start">
-            Start the system
-            <ChevronRight size={14} strokeWidth={1} absoluteStrokeWidth />
-          </Link>
+          {isSamePage ? (
+            <a className="landing-footer-cta" href="#start">
+              Start a project
+              <ChevronRight size={14} strokeWidth={1} absoluteStrokeWidth />
+            </a>
+          ) : (
+            <Link className="landing-footer-cta" to={`${anchorPrefix}#start`}>
+              Start a project
+              <ChevronRight size={14} strokeWidth={1} absoluteStrokeWidth />
+            </Link>
+          )}
         </div>
       </div>
 
@@ -185,8 +192,12 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
           rendered as dots that react to the cursor and settle on their own.
           The canvas is aria-hidden, so the name is set as text for a reader,
           and the tagline sits under it at the wordmark's measure. */}
-      <div className="landing-footer-lockup" data-viewport-check="footer-wordmark">
-        <h2 className="landing-sr-only">ADVO</h2>
+      <div
+        className="landing-footer-lockup"
+        data-viewport-check="footer-wordmark"
+        role="img"
+        aria-label="ADVO. We digitalize it for you."
+      >
         <div className="landing-footer-field">
           <AdvoDotField />
         </div>

@@ -260,7 +260,7 @@ const ProjectDetail = () => {
               Let's discuss how we can help with your project.
             </p>
             <Button asChild className="btn-press bg-foreground text-background hover:bg-foreground/90">
-              <Link to="/start">Start a Project</Link>
+              <Link to="/#start">Start a Project</Link>
             </Button>
           </motion.div>
         </div>

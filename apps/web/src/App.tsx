@@ -35,7 +35,7 @@ const LoginAlias = () => {
  * The app scrolls inside #root (html/body are overflow-hidden), so a route
  * change kept the previous page's scroll offset — "Start a project" opened
  * /start already scrolled down. Reset the scroller to the top on every path
- * change. In-page anchors (/#work, /#services) carry a hash, so they are left
+ * change. In-page anchors (/#services, /#solutions, /#work, /#start) carry a hash, so they are left
  * alone and keep scrolling to their section.
  */
 // Last line of defence. Narrower boundaries inside the app (see pages/Admin.tsx)

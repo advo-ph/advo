@@ -1,15 +1,11 @@
-import { useEffect, useState, type MouseEvent } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ChevronDown, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { useDrawerLock } from "@/hooks/useDrawerLock";
 
 interface NavLink {
   label: string;
   href: string;
-}
-
-interface NavItem extends NavLink {
-  panel?: NavLink[];
 }
 
 interface LandingNavProps {
@@ -26,20 +22,11 @@ interface LandingNavProps {
   overlayHero?: boolean;
 }
 
-const item: NavItem[] = [
-  {
-    label: "Product",
-    href: "#showcase",
-    panel: [
-      { label: "Public site", href: "#showcase" },
-      { label: "Client Hub", href: "/login" },
-      { label: "Admin console", href: "/login" },
-      { label: "Start a project", href: "/start" },
-    ],
-  },
-  { label: "Work", href: "#work" },
-  { label: "Process", href: "#process" },
-  { label: "Quotation", href: "#engagement" },
+const item: NavLink[] = [
+  { label: "Home", href: "#top" },
+  { label: "Services", href: "#services" },
+  { label: "Solutions", href: "#solutions" },
+  { label: "Portfolio", href: "#work" },
 ];
 
 const DRAWER_ID = "mobile-navigation-drawer";
@@ -52,13 +39,11 @@ const DRAWER_ID = "mobile-navigation-drawer";
  */
 const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [openPanel, setOpenPanel] = useState<string | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const { pathname } = useLocation();
 
   const closeMenu = () => {
     setIsMenuOpen(false);
-    setOpenPanel(null);
   };
 
   useDrawerLock(isMenuOpen, closeMenu, DRAWER_ID);
@@ -74,49 +59,47 @@ const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps)
     return () => window.removeEventListener("scroll", read);
   }, []);
 
-  // Hover cannot happen on touch, and a keyboard Enter deserves the same menu
-  // a mouse gets: the first activation of a panel parent opens the panel, the
-  // second follows the link.
-  const handlePanelNav = (entry: NavItem, event: MouseEvent<HTMLAnchorElement>) => {
-    if (!entry.panel || openPanel === entry.label) {
-      closeMenu();
-      return;
-    }
-    event.preventDefault();
-    setOpenPanel(entry.label);
-  };
-
   const renderLink = (
     link: NavLink,
-    extra: { className?: string; onClick?: (event: MouseEvent<HTMLAnchorElement>) => void; expanded?: boolean } = {},
+    extra: { className?: string } = {},
   ) => {
-    const { className, onClick, expanded } = extra;
+    const { className } = extra;
     const isHash = link.href.startsWith("#");
-    const chevron = "panel" in link && (link as NavItem).panel ? (
-      <ChevronDown className={openPanel === link.label ? "is-open" : ""} size={14} strokeWidth={1} absoluteStrokeWidth />
-    ) : null;
 
     if (isHash && anchorPrefix === "") {
-      return (
-        <a key={link.label} href={link.href} className={className} onClick={onClick} aria-expanded={expanded}>
-          {link.label}
-          {chevron}
-        </a>
-      );
+      return <a key={link.label} href={link.href} className={className} onClick={closeMenu}>{link.label}</a>;
     }
     return (
       <Link
         key={link.label}
         to={isHash ? `${anchorPrefix}${link.href}` : link.href}
         className={className}
-        onClick={onClick}
-        aria-expanded={expanded}
+        onClick={closeMenu}
       >
         {link.label}
-        {chevron}
       </Link>
     );
   };
+
+  const startLink = anchorPrefix === "" ? (
+    <a className="landing-button landing-button-primary" href="#start" onClick={closeMenu}>
+      Start a project
+    </a>
+  ) : (
+    <Link className="landing-button landing-button-primary" to={`${anchorPrefix}#start`} onClick={closeMenu}>
+      Start a project
+    </Link>
+  );
+
+  const startLinkSmall = anchorPrefix === "" ? (
+    <a className="landing-button landing-button-primary landing-button-small" href="#start" onClick={closeMenu}>
+      Start a project
+    </a>
+  ) : (
+    <Link className="landing-button landing-button-primary landing-button-small" to={`${anchorPrefix}#start`} onClick={closeMenu}>
+      Start a project
+    </Link>
+  );
 
   const isOverlay = overlayHero && !isScrolled && !isMenuOpen;
   const className = [
@@ -141,21 +124,8 @@ const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps)
           aria-label="Main navigation"
         >
           {item.map((entry) => (
-            <div
-              className="landing-nav-item"
-              key={entry.label}
-              onMouseEnter={() => entry.panel && setOpenPanel(entry.label)}
-              onMouseLeave={() => setOpenPanel(null)}
-            >
-              {renderLink(entry, {
-                onClick: entry.panel ? (event) => handlePanelNav(entry, event) : closeMenu,
-                expanded: entry.panel ? openPanel === entry.label : undefined,
-              })}
-              {entry.panel ? (
-                <div className={openPanel === entry.label ? "landing-nav-panel is-open" : "landing-nav-panel"}>
-                  {entry.panel.map((link) => renderLink(link, { onClick: closeMenu }))}
-                </div>
-              ) : null}
+            <div className="landing-nav-item" key={entry.label}>
+              {renderLink(entry)}
             </div>
           ))}
 
@@ -166,9 +136,7 @@ const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps)
             <Link className="landing-button landing-button-ghost" to="/team" onClick={closeMenu}>
               Team
             </Link>
-            <Link className="landing-button landing-button-primary" to="/start" onClick={closeMenu}>
-              Start a project
-            </Link>
+            {startLink}
           </div>
         </nav>
 
@@ -179,9 +147,7 @@ const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps)
           <Link className="landing-login" to="/login" onClick={closeMenu}>
             Log in
           </Link>
-          <Link className="landing-button landing-button-primary landing-button-small" to="/start" onClick={closeMenu}>
-            Start a project
-          </Link>
+          {startLinkSmall}
           <button
             type="button"
             className="landing-menu"

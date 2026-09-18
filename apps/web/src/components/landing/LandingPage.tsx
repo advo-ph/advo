@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
-import { ChevronRight, UtensilsCrossed, Stethoscope, GraduationCap, CircleParking, Building2 } from "lucide-react";
+import { ArrowUpRight, ChevronRight, UtensilsCrossed, Stethoscope, GraduationCap, CircleParking, Building2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import LandingNav from "@/components/LandingNav";
@@ -9,6 +8,7 @@ import LandingScrollbar from "@/components/LandingScrollbar";
 import { Reveal, RevealGroup } from "@/components/motion/Reveal";
 import { EASE } from "@/lib/motion";
 import WorkShowcase from "./WorkShowcase";
+import ProjectInquiry from "./ProjectInquiry";
 import LandingFooter from "./landing-footer";
 import { instrumentLanding, trackPrimaryCta } from "@/lib/track";
 import "./landing-page.css";
@@ -90,6 +90,30 @@ const industry: Industry[] = [
       { name: "Retail and services", copy: "Inventory, point of sale, scheduling, and customer records." },
       { name: "Logistics", copy: "Fleet tracking, dispatch, and proof of delivery." },
     ],
+  },
+];
+
+interface Service {
+  number: string;
+  title: string;
+  copy: string;
+}
+
+const services: Service[] = [
+  {
+    number: "01",
+    title: "Websites and portals",
+    copy: "A clear public site for customers, with the private client space behind it when the work needs more than a contact form.",
+  },
+  {
+    number: "02",
+    title: "Operational software",
+    copy: "Custom systems for the work happening between a customer, a counter, a team, and the person keeping the numbers right.",
+  },
+  {
+    number: "03",
+    title: "Hardware and deployment",
+    copy: "The tablets, printers, screens, hosting, training, and support that make the software hold up on a real working floor.",
   },
 ];
 
@@ -220,14 +244,14 @@ const LandingPage = () => {
               launch.
             </motion.p>
             <motion.div className="landing-hero-action" variants={heroCopy} transition={{ duration: 0.7, ease: EASE }}>
-              <Link
+              <a
                 className="landing-button landing-button-hero"
-                to="/start"
-                onClick={() => trackPrimaryCta("Start a project", "/start")}
+                href="#start"
+                onClick={() => trackPrimaryCta("Start a project", "#start")}
               >
                 Start a project
                 <ChevronRight size={14} strokeWidth={1} absoluteStrokeWidth />
-              </Link>
+              </a>
             </motion.div>
           </motion.div>
         </div>
@@ -258,9 +282,35 @@ const LandingPage = () => {
         </section>
       ) : null}
 
-      <section className="landing-piece" id="showcase">
+      <section className="landing-services" id="services" aria-labelledby="services-heading">
+        <div className="landing-services-frame">
+          <Reveal className="landing-services-intro">
+            <p className="landing-kicker">Services</p>
+            <h2 id="services-heading">The software layer your operation has been missing.</h2>
+            <p>
+              ADVO joins the visible part of your business to the work behind it — from the first
+              visit to the last report.
+            </p>
+          </Reveal>
+
+          <RevealGroup className="landing-services-list" stagger={0.08}>
+            {services.map((service) => (
+              <Reveal as="article" className="landing-service-row" key={service.number}>
+                <span className="landing-service-number">{service.number}</span>
+                <div>
+                  <h3>{service.title}</h3>
+                  <p>{service.copy}</p>
+                </div>
+                <ArrowUpRight size={18} strokeWidth={1.25} aria-hidden="true" />
+              </Reveal>
+            ))}
+          </RevealGroup>
+        </div>
+      </section>
+
+      <section className="landing-piece" id="solutions">
         <Reveal as="h2" className="landing-display">
-          What we build
+          Solutions
         </Reveal>
         <Reveal className="landing-lede" delay={0.08}>
           <p>
@@ -273,7 +323,7 @@ const LandingPage = () => {
           {industry.map((item) => (
             <Reveal as="article" className="landing-industry-card" key={item.key}>
               <div className="landing-industry-media">
-                <img src={item.image} alt={`${item.title} — what ADVO builds`} loading="lazy" />
+                <img src={item.image} alt={`${item.title} — an ADVO solution`} loading="lazy" />
               </div>
               <div className="landing-industry-head">
                 <item.icon size={20} strokeWidth={1.25} absoluteStrokeWidth />
@@ -342,6 +392,7 @@ const LandingPage = () => {
         </Reveal>
       </section>
       {shippedProject.length > 0 ? <WorkShowcase project={shippedProject} /> : null}
+      <ProjectInquiry embedded />
       <LandingFooter />
     </main>
   );

@@ -137,7 +137,7 @@ const FloatingNav = () => {
 
             <div className="flex items-center gap-2 shrink-0">
               <Link
-                to="/start"
+                to="/#start"
                 className="hidden sm:inline-flex items-center px-4 py-1.5 rounded-full bg-foreground text-background text-sm font-medium hover:bg-foreground/90 btn-press"
               >
                 Get Started
@@ -214,7 +214,7 @@ const FloatingNav = () => {
 
               <div className="mt-auto grid gap-px border-t border-border/60 bg-border/60 sm:grid-cols-2">
                 <Link
-                  to="/start"
+                  to="/#start"
                   className="group flex min-h-16 items-center justify-between bg-card px-5 py-4 text-sm font-medium transition-colors hover:bg-secondary/70"
                   onClick={closeMobileMenu}
                 >
