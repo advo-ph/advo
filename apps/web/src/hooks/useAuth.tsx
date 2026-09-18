@@ -18,7 +18,6 @@ import {
   setLastUser,
   type SavedAccount,
 } from "@/lib/saved-accounts";
-import AccountPanel from "@/components/AccountPanel";
 
 export interface AuthUser {
   userId: number;
@@ -311,13 +310,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }}
     >
       {children}
-      {/* Mounted here rather than on a page, because every signed-in role needs to be able
-          to change their password and only admins have a settings screen. */}
-      {user ? (
-        <AccountPanel
-          user={{ displayName: user.displayName, email: user.email, role: user.role }}
-        />
-      ) : null}
     </AuthContext.Provider>
   );
 };
