@@ -196,7 +196,7 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
         className="landing-footer-lockup"
         data-viewport-check="footer-wordmark"
         role="img"
-        aria-label="ADVO. We digitalize it for you."
+        aria-label="ADVO. we modernize it for you."
       >
         <div className="landing-footer-field">
           <AdvoDotField />

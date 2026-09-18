@@ -337,15 +337,6 @@ body:has(.landing-shell) {
 }
 .landing-button-ghost:hover,
 .landing-button-secondary:hover { background: var(--landing-ground-soft); box-shadow: inset 0 0 0 1px var(--landing-ink-mute); }
-.landing-button-hero {
-  height: 40px;
-  padding: 0 14px;
-  border-radius: 8px;
-  background: var(--landing-ground-soft);
-  color: var(--landing-ink) !important;
-  font-size: var(--landing-text-lead);
-}
-.landing-button-hero:hover { background: var(--landing-ground); }
 .landing-button-outline {
   height: 34px;
   background: transparent;
@@ -373,7 +364,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-hero { padding: var(--landing-nav-height) var(--landing-gutter) 0; }
 .landing-hero-frame {
   position: relative;
-  width: min(1440px, 100%);
+  width: 100%;
   margin-inline: auto;
   height: calc(100vh - var(--landing-nav-height) - var(--landing-strip-height));
   height: calc(100svh - var(--landing-nav-height) - var(--landing-strip-height));
@@ -403,12 +394,11 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   max-width: 14ch;
   /* The hero headline runs larger than the shared display size — the first
      impression, and big enough to read at arm's length (the A/B 60-year-old). */
-  font-size: clamp(40px, 5.2vw, 60px);
+  font-size: 60px;
   line-height: 1.03;
   letter-spacing: -0.025em;
 }
 .landing-hero-copy > p { max-width: 46ch; font-size: var(--landing-text-lead); line-height: 1.5; color: rgba(255, 255, 255, 0.92); }
-.landing-hero-action { margin-top: 8px; }
 
 /* ---------------------------------------------------------------- Partner strip */
 .landing-marquee {
@@ -548,7 +538,13 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   padding-block: var(--landing-section-rhythm);
 }
 .landing-piece { text-align: center; }
-.landing-piece > .landing-display { max-width: 22ch; margin-inline: auto; }
+.landing-piece > .landing-display { max-width: 24ch; margin-inline: auto; }
+.landing-solutions-title {
+  font-size: clamp(34px, 4.2vw, 56px);
+  font-weight: 500;
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+}
 .landing-piece > .landing-lede { margin-inline: auto; }
 
 /* Media card: every still on the page sits in the same frame */
@@ -582,59 +578,104 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-page .landing-surface-card p { margin-top: 10px; max-width: 40ch; font-size: var(--landing-text-body); line-height: 1.55; color: var(--landing-ink-soft); }
 .landing-surface-action { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
 
-/* Solutions — the industries we ship into, each with its offers. A quiet
-   monotone grid: a hairline per card, the offer name in ink, its line soft. */
+/* Solutions — three real-world verticals, laid out like an editorial product
+   catalogue: label, image, headline, proof, and a clear next step. */
 .landing-industry-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
+  gap: clamp(24px, 2.6vw, 40px);
   margin-top: 56px;
   text-align: left;
 }
-/* Equal-height cards: the grid row stretches every card to the tallest, so a
-   short description never shortens its card and shifts the row. */
 .landing-industry-grid { align-items: stretch; }
 .landing-industry-card {
-  position: relative;
   display: flex;
   flex-direction: column;
+  min-width: 0;
   height: 100%;
-  padding: 24px;
-  overflow: hidden;
-  border: 1px solid var(--landing-line);
-  border-radius: 4px;
 }
-/* The scene bleeds in from the right edge and fades toward the text, so the card
-   keeps its original text-first look with the photograph behind it on the right. */
+.landing-industry-label {
+  margin-bottom: 16px;
+  font-size: var(--landing-text-title);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
 .landing-industry-media {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 62%;
-  z-index: 0;
-  pointer-events: none;
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--landing-ground-soft);
 }
 .landing-industry-media img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
   display: block;
-  /* Angled and gentle: fades diagonally from the lower-right, with a soft
-     mid-stop so there is no hard vertical seam through the card. */
-  -webkit-mask-image: linear-gradient(252deg, #000 14%, rgba(0, 0, 0, 0.5) 52%, transparent 90%);
-  mask-image: linear-gradient(252deg, #000 14%, rgba(0, 0, 0, 0.5) 52%, transparent 90%);
+  object-fit: cover;
+  transition: transform 0.8s var(--landing-ease);
 }
-.landing-industry-head { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; }
-.landing-industry-head svg { color: var(--landing-ink); opacity: 0.85; }
-.landing-industry-card h3 { font-size: var(--landing-text-lead); font-weight: 500; }
-.landing-page .landing-industry-copy { position: relative; z-index: 1; margin-top: 6px; max-width: 24ch; font-size: var(--landing-text-small); line-height: 1.5; color: var(--landing-ink-soft); }
-.landing-industry-offer { position: relative; z-index: 1; list-style: none; margin: 18px 0 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.landing-industry-card:hover .landing-industry-media img { transform: scale(1.025); }
+.landing-industry-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding-top: 24px;
+}
+.landing-industry-card h3 {
+  font-size: clamp(24px, 2.2vw, 32px);
+  font-weight: 500;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+}
+.landing-page .landing-industry-copy {
+  max-width: 42ch;
+  margin-top: 14px;
+  font-size: var(--landing-text-lead);
+  line-height: 1.55;
+  color: var(--landing-ink-soft);
+}
+.landing-industry-offer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 24px 0 0;
+  padding: 18px 0 0;
+  border-top: 1px solid var(--landing-line);
+  list-style: none;
+}
 .landing-industry-offer li { display: flex; flex-direction: column; gap: 2px; }
-.landing-industry-offer-name { font-size: var(--landing-text-body); font-weight: 500; }
-.landing-page .landing-industry-offer-copy { max-width: 26ch; font-size: var(--landing-text-small); line-height: 1.5; color: var(--landing-ink-soft); }
+.landing-industry-offer-name {
+  font-size: var(--landing-text-body);
+  font-weight: 500;
+  line-height: 1.35;
+}
+.landing-page .landing-industry-offer-copy {
+  max-width: 34ch;
+  font-size: var(--landing-text-small);
+  line-height: 1.5;
+  color: var(--landing-ink-soft);
+}
+.landing-industry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 28px;
+}
+.landing-industry-actions .landing-button { min-height: 40px; }
+.landing-industry-card .landing-button-secondary {
+  background: var(--landing-ground-soft);
+}
 @media (max-width: 900px) { .landing-industry-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 560px) { .landing-industry-grid { grid-template-columns: 1fr; } }
+@media (max-width: 680px) {
+  .landing-piece { text-align: left; }
+  .landing-piece > .landing-display { margin-inline: 0; }
+  .landing-industry-grid { grid-template-columns: 1fr; margin-top: 40px; }
+  .landing-industry-label { margin-bottom: 12px; }
+  .landing-industry-content { padding-top: 20px; }
+  .landing-industry-actions .landing-button { flex: 1 1 140px; }
+}
 
 /* Static row of the everyday tools; quiet on purpose, it is context, not proof */
 .landing-tool-row {
@@ -1211,6 +1252,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
     min-height: 520px;
     border-radius: 0;
   }
+  .landing-hero h1 { font-size: 40px; }
   .landing-hero-copy { padding: 0 20px 40px; }
   .landing-hero-shade { background: rgba(0, 0, 0, 0.34); }
 

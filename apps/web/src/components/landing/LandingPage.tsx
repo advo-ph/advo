@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
-import { ArrowUpRight, ChevronRight, UtensilsCrossed, Stethoscope, GraduationCap, CircleParking, Building2 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import LandingNav from "@/components/LandingNav";
 import LandingScrollbar from "@/components/LandingScrollbar";
@@ -10,7 +9,7 @@ import { EASE } from "@/lib/motion";
 import WorkShowcase from "./WorkShowcase";
 import ProjectInquiry from "./ProjectInquiry";
 import LandingFooter from "./landing-footer";
-import { instrumentLanding, trackPrimaryCta } from "@/lib/track";
+import { instrumentLanding } from "@/lib/track";
 import "./landing-page.css";
 
 /**
@@ -26,52 +25,16 @@ interface Industry {
   key: string;
   image: string;
   title: string;
-  icon: LucideIcon;
+  heading: string;
   copy: string;
   offer: Offer[];
 }
 const industry: Industry[] = [
   {
-    key: "food",
-    image: "/landing/industry/food.jpg",
-    icon: UtensilsCrossed,
-    title: "Food",
-    copy: "Ordering, seating, and the kitchen behind both.",
-    offer: [
-      { name: "QR code ordering", copy: "Guests scan the table code and order from their own phone." },
-      { name: "Kiosk ordering", copy: "Self-serve terminals that take the order and the payment." },
-      { name: "Table management", copy: "A live floor plan with seating, waitlist, and turn times." },
-    ],
-  },
-  {
-    key: "medical",
-    image: "/landing/industry/medical.jpg",
-    icon: Stethoscope,
-    title: "Medical",
-    copy: "Clinics, hospitals, and the records that move between them.",
-    offer: [
-      { name: "Clinic management", copy: "Appointments, queueing, billing, and stock in one system." },
-      { name: "EMR for doctors", copy: "Patient records a doctor reads and updates between consults." },
-      { name: "Hospital integration", copy: "Clinic data to and from hospital systems, no fax machine." },
-    ],
-  },
-  {
-    key: "education",
-    image: "/landing/industry/education.jpg",
-    icon: GraduationCap,
-    title: "Education",
-    copy: "Campus security, grading, and the school's own portal.",
-    offer: [
-      { name: "ID authentication", copy: "Student IDs that tap in at the gate and log who is on campus." },
-      { name: "Automated monitoring", copy: "Attendance tracked without a teacher counting heads." },
-      { name: "Grading system", copy: "Marks entered once, computed to the school's own rules." },
-    ],
-  },
-  {
     key: "parking",
     image: "/landing/industry/parking.jpg",
-    icon: CircleParking,
     title: "Parking",
+    heading: "A car park that runs itself.",
     copy: "A fully automated car park for drivers, managers, and owners.",
     offer: [
       { name: "Plate recognition", copy: "A camera reads the plate at the gate and the barrier opens." },
@@ -80,15 +43,27 @@ const industry: Industry[] = [
     ],
   },
   {
-    key: "business",
-    image: "/landing/industry/business.jpg",
-    icon: Building2,
-    title: "Businesses",
-    copy: "If it runs on spreadsheets and group chats, it can run on software.",
+    key: "education",
+    image: "/landing/industry/education.jpg",
+    title: "Education",
+    heading: "A safer, more connected campus.",
+    copy: "Campus access, safety, and school operations in one system.",
     offer: [
-      { name: "Construction", copy: "Site progress, manpower, deliveries, and progress billing." },
-      { name: "Retail and services", copy: "Inventory, point of sale, scheduling, and customer records." },
-      { name: "Logistics", copy: "Fleet tracking, dispatch, and proof of delivery." },
+      { name: "ID authentication", copy: "Student IDs tap in at gates, integrated with attendance monitoring." },
+      { name: "Safety and Security", copy: "Turnstile tap ID entrance and exit with industry-grade baggage scanning." },
+      { name: "Dedicated website and app", copy: "A dedicated website and app for the institution and its students." },
+    ],
+  },
+  {
+    key: "flood",
+    image: "/landing/industry/flood.png",
+    title: "Flood",
+    heading: "Know which roads are flooded before you drive them.",
+    copy: "A live Metro Manila flood map that combines river gauges, rain data, hazard maps, and route guidance.",
+    offer: [
+      { name: "Live flood map", copy: "Road conditions update from PAGASA gauges, rainfall data, and UP NOAH hazard maps." },
+      { name: "Flood-aware routing", copy: "Routes drivers around risky water and warns them before a flooded stretch." },
+      { name: "Works offline", copy: "Cached road data keeps the map usable through weak signal and brownout days." },
     ],
   },
 ];
@@ -178,9 +153,21 @@ const heroCopy = {
 
 const LandingPage = () => {
   const reduceMotion = useReducedMotion();
+  const [isMobileViewport, setIsMobileViewport] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia("(max-width: 680px)").matches,
+  );
   const [stepIndex, setStepIndex] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
   const pageRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 680px)");
+    const handleChange = () => setIsMobileViewport(mediaQuery.matches);
+
+    handleChange();
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
 
   // Section attention + scroll-depth milestones. A no-op until the visitor grants
   // consent, and detaches again on withdrawal — see apps/web/src/lib/track.ts.
@@ -215,12 +202,16 @@ const LandingPage = () => {
             transition={{ duration: 1.8, ease: EASE }}
           >
             {reduceMotion ? (
-              <img src="/landing/hero-building.jpg" alt="" />
+              <img
+                src={isMobileViewport ? "/landing/hero-building-mobile.jpg" : "/landing/hero-building.jpg"}
+                alt=""
+              />
             ) : (
               <video
+                key={isMobileViewport ? "mobile" : "desktop"}
                 className="landing-hero-video"
-                src="/landing/hero-building.mp4"
-                poster="/landing/hero-building.jpg"
+                src={isMobileViewport ? "/landing/hero-building-mobile.mp4" : "/landing/hero-building.mp4"}
+                poster={isMobileViewport ? "/landing/hero-building-mobile.jpg" : "/landing/hero-building.jpg"}
                 autoPlay
                 muted
                 loop
@@ -237,22 +228,12 @@ const LandingPage = () => {
             transition={{ staggerChildren: 0.1, delayChildren: 0.25 }}
           >
             <motion.h1 variants={heroCopy} transition={{ duration: 0.7, ease: EASE }}>
-              We digitalize it for you.
+              we modernize it for you.
             </motion.h1>
             <motion.p variants={heroCopy} transition={{ duration: 0.7, ease: EASE }}>
-              Philippine software agency and client workspace. One shared place from brief to
-              launch.
+              our vision is To become the infrastructure of the technological layer for industries
+              around the Philippines.
             </motion.p>
-            <motion.div className="landing-hero-action" variants={heroCopy} transition={{ duration: 0.7, ease: EASE }}>
-              <a
-                className="landing-button landing-button-hero"
-                href="#start"
-                onClick={() => trackPrimaryCta("Start a project", "#start")}
-              >
-                Start a project
-                <ChevronRight size={14} strokeWidth={1} absoluteStrokeWidth />
-              </a>
-            </motion.div>
           </motion.div>
         </div>
       </section>
@@ -282,6 +263,39 @@ const LandingPage = () => {
         </section>
       ) : null}
 
+      <section className="landing-piece" id="solutions" aria-labelledby="solutions-heading">
+        <Reveal as="h2" id="solutions-heading" className="landing-display landing-solutions-title">
+          Building Real-World Technological Solutions
+        </Reveal>
+
+        <RevealGroup className="landing-industry-grid" stagger={0.08}>
+          {industry.map((item) => (
+            <Reveal as="article" className="landing-industry-card" key={item.key}>
+              <p className="landing-industry-label">{item.title}</p>
+              <div className="landing-industry-media">
+                <img src={item.image} alt={`${item.title} — an ADVO solution`} loading="lazy" />
+              </div>
+              <div className="landing-industry-content">
+                <h3>{item.heading}</h3>
+                <p className="landing-industry-copy">{item.copy}</p>
+                <ul className="landing-industry-offer">
+                  {item.offer.map((o) => (
+                    <li key={o.name}>
+                      <span className="landing-industry-offer-name">{o.name}</span>
+                      <span className="landing-industry-offer-copy">{o.copy}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="landing-industry-actions">
+                  <a className="landing-button landing-button-primary" href="#start">Talk to us</a>
+                  <a className="landing-button landing-button-secondary" href="#process">How it ships</a>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </RevealGroup>
+      </section>
+
       <section className="landing-services" id="services" aria-labelledby="services-heading">
         <div className="landing-services-frame">
           <Reveal className="landing-services-intro">
@@ -306,42 +320,6 @@ const LandingPage = () => {
             ))}
           </RevealGroup>
         </div>
-      </section>
-
-      <section className="landing-piece" id="solutions">
-        <Reveal as="h2" className="landing-display">
-          Solutions
-        </Reveal>
-        <Reveal className="landing-lede" delay={0.08}>
-          <p>
-            Paper, Viber, tally sheets. We drop in the missing piece: software for the
-            industries we already ship into, plus the tablet, printer, and TV on the counter.
-          </p>
-        </Reveal>
-
-        <RevealGroup className="landing-industry-grid" stagger={0.08}>
-          {industry.map((item) => (
-            <Reveal as="article" className="landing-industry-card" key={item.key}>
-              <div className="landing-industry-media">
-                <img src={item.image} alt={`${item.title} — an ADVO solution`} loading="lazy" />
-              </div>
-              <div className="landing-industry-head">
-                <item.icon size={20} strokeWidth={1.25} absoluteStrokeWidth />
-                <h3>{item.title}</h3>
-              </div>
-              <p className="landing-industry-copy">{item.copy}</p>
-              <ul className="landing-industry-offer">
-                {item.offer.map((o) => (
-                  <li key={o.name}>
-                    <span className="landing-industry-offer-name">{o.name}</span>
-                    <span className="landing-industry-offer-copy">{o.copy}</span>
-                  </li>
-                ))}
-              </ul>
-            </Reveal>
-          ))}
-        </RevealGroup>
-
       </section>
 
       <section className="landing-process" id="process">

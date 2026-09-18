@@ -24,8 +24,8 @@ interface LandingNavProps {
 
 const item: NavLink[] = [
   { label: "Home", href: "#top" },
-  { label: "Services", href: "#services" },
   { label: "Solutions", href: "#solutions" },
+  { label: "Services", href: "#services" },
   { label: "Portfolio", href: "#work" },
 ];
 
