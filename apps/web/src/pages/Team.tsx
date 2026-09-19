@@ -16,15 +16,28 @@ interface TeamMember {
   linkedin_url: string | null;
 }
 
+interface PublicSetting {
+  key: string;
+  value: unknown;
+}
+
 const Team = () => {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
-      const { data } = await get<Array<Record<string, unknown>>>("/api/team");
-      setMembers(
-        (data || []).map((m) => ({
+      const [{ data }, { data: settings }] = await Promise.all([
+        get<Array<Record<string, unknown>>>("/api/team", { cache: "no-store" }),
+        get<PublicSetting[]>("/api/settings/public", { cache: "no-store" }),
+      ]);
+      const orderValue = settings?.find((setting) => setting.key === "team_order")?.value;
+      const order = (typeof orderValue === "string" ? JSON.parse(orderValue) : orderValue) as
+        | number[]
+        | undefined;
+      const nextMembers = (data || [])
+        .filter((m) => Boolean(m.isActive ?? m.is_active ?? true))
+        .map((m) => ({
           team_member_id: (m.teamMemberId ?? m.team_member_id) as number,
           name: m.name as string,
           role: m.role as string,
@@ -33,8 +46,15 @@ const Team = () => {
           preview_image_url: (m.previewImageUrl ?? m.preview_image_url ?? null) as string | null,
           email: (m.email as string) || null,
           linkedin_url: (m.linkedinUrl ?? m.linkedin_url) as string | null,
-        })),
-      );
+        }));
+      if (Array.isArray(order)) {
+        nextMembers.sort((a, b) => {
+          const ai = order.indexOf(a.team_member_id);
+          const bi = order.indexOf(b.team_member_id);
+          return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+        });
+      }
+      setMembers(nextMembers);
       setLoading(false);
     })();
   }, []);

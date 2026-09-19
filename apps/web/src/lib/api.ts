@@ -318,8 +318,8 @@ export async function api<T>(
 
 // ─── Convenience Methods ──────────────────────────────
 
-export function get<T>(path: string) {
-  return api<T>(path, { method: "GET" });
+export function get<T>(path: string, options: RequestInit = {}) {
+  return api<T>(path, { ...options, method: "GET" });
 }
 
 export function post<T>(path: string, body?: unknown) {
