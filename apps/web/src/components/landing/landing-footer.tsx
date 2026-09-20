@@ -10,7 +10,6 @@ import {
   IconMail,
   IconWorld,
 } from "@tabler/icons-react";
-import { ChevronRight } from "lucide-react";
 import { get } from "@/lib/api";
 import { identityValue } from "@/lib/legal-identity";
 import AdvoDotField from "./AdvoDotField";
@@ -20,18 +19,6 @@ interface SocialLink {
   href: string;
   label: string;
 }
-
-/**
- * The four PayMongo merchant-review disclosures. They sit on their own row
- * rather than inside `footerCol`, whose grid is fixed at four columns — and a
- * reviewer needs them from every page, not buried in a service menu.
- */
-const legalLink: { label: string; href: string }[] = [
-  { label: "Terms and Conditions", href: "/terms" },
-  { label: "Privacy Policy", href: "/privacy" },
-  { label: "Return and Refund Policy", href: "/refund" },
-  { label: "Dispute Resolution Policy", href: "/dispute" },
-];
 
 interface FooterLink {
   label: string;
@@ -68,8 +55,10 @@ const socialIcon: Record<string, typeof IconMail> = {
 };
 
 /**
- * Columns follow the system, not a service menu: the four surfaces we ship,
- * what keeps them running, and who stands behind them.
+ * Five columns: the four surfaces we ship, what keeps them running, who stands
+ * behind them, and the legal/policy links. The Policies column carries the four
+ * PayMongo merchant-review disclosures — a reviewer must reach them from every
+ * page, so they live in the main grid rather than a separate row.
  */
 const footerCol: { title: string; link: FooterLink[] }[] = [
   {
@@ -105,6 +94,15 @@ const footerCol: { title: string; link: FooterLink[] }[] = [
       { label: "Portfolio", href: "#work" },
       { label: "Fourlinq", href: "https://fourlinq.ph", ext: true },
       { label: "Start a project", href: "#start" },
+    ],
+  },
+  {
+    title: "Policies",
+    link: [
+      { label: "Terms and Conditions", href: "/terms" },
+      { label: "Privacy Policy", href: "/privacy" },
+      { label: "Return and Refund Policy", href: "/refund" },
+      { label: "Dispute Resolution Policy", href: "/dispute" },
     ],
   },
 ];
@@ -154,31 +152,6 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
 
   return (
     <footer className="landing-footer" id="footer">
-      <div className="landing-footer-lede">
-        <div>
-          <p className="landing-kicker">The whole system</p>
-          <h3>Websites with client systems behind them.</h3>
-        </div>
-        <div>
-          <p>
-            The public site your customers land on, the Client Hub they sign into, the Admin
-            Console your studio runs on, and the hardware on the floor — built as one system, not
-            four vendors. When it is done, the VPS handoff leaves the whole stack in your name.
-          </p>
-          {isSamePage ? (
-            <a className="landing-footer-cta" href="#start">
-              Start a project
-              <ChevronRight size={14} strokeWidth={1} absoluteStrokeWidth />
-            </a>
-          ) : (
-            <Link className="landing-footer-cta" to={`${anchorPrefix}#start`}>
-              Start a project
-              <ChevronRight size={14} strokeWidth={1} absoluteStrokeWidth />
-            </Link>
-          )}
-        </div>
-      </div>
-
       <div className="landing-footer-grid">
         {footerCol.map((col) => (
           <div key={col.title}>
@@ -196,21 +169,13 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
         className="landing-footer-lockup"
         data-viewport-check="footer-wordmark"
         role="img"
-        aria-label="ADVO. we modernize it for you."
+        aria-label="ADVO. We digitalize it for you."
       >
         <div className="landing-footer-field">
           <AdvoDotField />
         </div>
-        <p className="landing-footer-tagline">We digitalize it for you</p>
+        <p className="landing-footer-tagline">We digitalize it for you.</p>
       </div>
-
-      <nav className="landing-footer-legal" aria-label="Legal">
-        {legalLink.map((link) => (
-          <Link key={link.href} to={link.href}>
-            {link.label}
-          </Link>
-        ))}
-      </nav>
 
       {/* The registered-business disclosure a DTI merchant is expected to publish.
           Every field is read from data/legal-identity.json through identityValue,

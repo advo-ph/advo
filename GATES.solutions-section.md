@@ -2,10 +2,10 @@
 
 OWNS: apps/web/src/components/landing/LandingPage.tsx, apps/web/src/components/LandingNav.tsx, apps/web/src/components/landing/landing-page.css, apps/web/public/landing/industry/flood.png, scripts/verify-solutions-section.mjs
 
-Scope: move the solutions section above services, keep only Parking, Education, and Flood, and update the requested copy and visual hierarchy without breaking the landing page.
+Scope: move the solutions section above services, keep only Flood, School, and Parking in that order, and update the requested copy and visual hierarchy without breaking the landing page.
 
 - [x] G1: the requested solutions content and ordering are present in the landing page source
-  CHECK: node -e "const fs=require('fs'); const p=fs.readFileSync('apps/web/src/components/landing/LandingPage.tsx','utf8'); const order=['Parking','Education','Flood']; const idx=order.map(x=>p.indexOf(x)); if(idx.some(x=>x<0)||idx.some((x,i)=>i&&x<=idx[i-1])) throw new Error('solutions order/content missing'); if(!p.includes('Building Real-World Technological Solutions')) throw new Error('solutions heading missing'); if(p.includes('Paper, Viber, tally sheets.')) throw new Error('removed intro copy still present'); console.log('solutions source verification passed')"
+  CHECK: node -e "const fs=require('fs'); const p=fs.readFileSync('apps/web/src/components/landing/LandingPage.tsx','utf8'); const order=['Flood','School','Parking']; const idx=order.map(x=>p.indexOf(x)); if(idx.some(x=>x<0)||idx.some((x,i)=>i&&x<=idx[i-1])) throw new Error('solutions order/content missing'); if(!p.includes('Building Real-World Technological Solutions')) throw new Error('solutions heading missing'); if(p.includes('Paper, Viber, tally sheets.')) throw new Error('removed intro copy still present'); console.log('solutions source verification passed')"
   EXPECT: solutions source verification passed
   EVIDENCE: exit=0; shell=/bin/sh; cwd=/Users/princewagan/advo-1; path=fd331c0faf67/40 entries; output=solutions source verification passed
 

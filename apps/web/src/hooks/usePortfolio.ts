@@ -49,6 +49,8 @@ function mapShipped(row: Record<string, unknown>): ShippedProject {
 
 async function fetchShipped(): Promise<ShippedProject[]> {
   const res = await get<Record<string, unknown>[]>("/api/content/portfolio");
+  if (res.error) throw new Error(res.error);
+
   return (res.data || [])
     .map(mapShipped)
     // A row with no screenshot is not "a large screenshot with one short line".
@@ -57,11 +59,11 @@ async function fetchShipped(): Promise<ShippedProject[]> {
 }
 
 export function usePortfolio() {
-  const { data: project = [], isLoading } = useQuery({
+  const { data: project = [], isLoading, isError } = useQuery({
     queryKey: ["publicPortfolio"],
     queryFn: fetchShipped,
     staleTime: 5 * 60 * 1000,
   });
 
-  return { project, isLoading };
+  return { project, isLoading, isError };
 }

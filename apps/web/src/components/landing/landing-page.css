@@ -220,7 +220,7 @@ body:has(.landing-shell) {
 .landing-page img { display: block; }
 
 /* Shared containers */
-.landing-container { width: min(1440px, 100% - var(--landing-gutter) * 2); margin-inline: auto; }
+.landing-container { width: calc(100% - var(--landing-gutter) * 2); margin-inline: auto; }
 
 /* Type roles */
 .landing-display {
@@ -260,7 +260,7 @@ body:has(.landing-shell) {
 .landing-nav-inner {
   position: relative;
   z-index: 1;
-  width: min(1440px, 100% - var(--landing-gutter) * 2);
+  width: calc(100% - var(--landing-gutter) * 2);
   height: 100%;
   margin-inline: auto;
   display: flex;
@@ -409,7 +409,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 }
 .landing-page .landing-marquee > p { font-size: var(--landing-text-small); line-height: 20px; color: var(--landing-ink-soft); }
 .landing-marquee-mask {
-  width: min(1200px, 100%);
+  width: calc(100% - var(--landing-gutter) * 2);
   margin: 12px auto 0;
   overflow: hidden;
   -webkit-mask-image: var(--landing-edge-fade);
@@ -445,9 +445,9 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-services-frame {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+  grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
   gap: clamp(40px, 8vw, 120px);
-  width: min(1440px, 100%);
+  width: 100%;
   margin-inline: auto;
   padding: clamp(40px, 7vw, 92px) clamp(24px, 6vw, 88px);
   overflow: hidden;
@@ -468,20 +468,12 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 }
 .landing-services-intro,
 .landing-services-list { position: relative; z-index: 1; }
-.landing-services-intro .landing-kicker { color: rgba(255, 255, 255, 0.48); }
 .landing-services-intro h2 {
   max-width: 12ch;
-  margin-top: 12px;
+  margin-top: 0;
   font-size: clamp(32px, 4vw, 56px);
   line-height: 1.03;
   letter-spacing: -0.035em;
-}
-.landing-services-intro > p:last-child {
-  max-width: 36ch;
-  margin-top: 24px;
-  color: rgba(255, 255, 255, 0.62);
-  font-size: var(--landing-text-lead);
-  line-height: 1.55;
 }
 .landing-services-list {
   display: flex;
@@ -533,7 +525,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-piece,
 .landing-work,
 .landing-faq {
-  width: min(1440px, 100% - var(--landing-gutter) * 2);
+  width: calc(100% - var(--landing-gutter) * 2);
   margin-inline: auto;
   padding-block: var(--landing-section-rhythm);
 }
@@ -663,9 +655,32 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   margin-top: auto;
   padding-top: 28px;
 }
-.landing-industry-actions .landing-button { min-height: 40px; }
-.landing-industry-card .landing-button-secondary {
-  background: var(--landing-ground-soft);
+.landing-industry-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  min-height: 44px;
+  padding-block: 10px;
+  color: var(--landing-ink);
+  font-size: var(--landing-text-body);
+  font-weight: 500;
+}
+.landing-industry-more > span {
+  text-decoration: underline;
+  text-underline-offset: 6px;
+  text-decoration-thickness: 1px;
+  transition: text-underline-offset 0.22s var(--landing-ease);
+}
+.landing-industry-more:hover > span { text-underline-offset: 10px; }
+.landing-industry-more svg {
+  flex: none;
+  transition: transform 0.22s var(--landing-ease);
+}
+.landing-industry-more:hover svg { transform: translate(3px, -3px); }
+@media (prefers-reduced-motion: reduce) {
+  .landing-industry-more:hover > span { text-underline-offset: 6px; }
+  .landing-industry-more:hover svg { transform: none; }
 }
 @media (max-width: 900px) { .landing-industry-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 680px) {
@@ -695,8 +710,15 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-tool-row img { width: 16px; height: 16px; object-fit: contain; }
 
 /* ---------------------------------------------------------------- Process */
+.landing-process-title {
+  margin-bottom: clamp(24px, 3vw, 40px);
+  font-size: clamp(30px, 3.4vw, 48px);
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
 .landing-process {
-  width: min(1440px, 100% - var(--landing-gutter) * 2);
+  width: calc(100% - var(--landing-gutter) * 2);
   margin-inline: auto;
   padding-block: 0 var(--landing-section-rhythm);
 }
@@ -748,7 +770,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 
 /* ---------------------------------------------------------------- Start a project */
 .landing-start {
-  width: min(1440px, 100% - var(--landing-gutter) * 2);
+  width: calc(100% - var(--landing-gutter) * 2);
   margin-inline: auto;
   padding-bottom: var(--landing-section-rhythm);
 }
@@ -883,7 +905,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-band { padding: 0 var(--landing-gutter); }
 .landing-band-frame {
   position: relative;
-  width: min(1440px, 100%);
+  width: 100%;
   margin-inline: auto;
   overflow: hidden;
   border-radius: 16px;
@@ -896,9 +918,9 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
   gap: 64px;
-  width: min(1180px, 100% - 48px);
+  width: 100%;
   margin-inline: auto;
-  padding: clamp(72px, 9vw, 150px) 0;
+  padding: clamp(72px, 9vw, 150px) var(--landing-gutter);
 }
 .landing-band-lede h2 { max-width: 24ch; font-size: var(--landing-text-title); line-height: 1.3; letter-spacing: -0.01em; }
 .landing-band-lede .landing-button { margin-top: 28px; }
@@ -952,7 +974,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-page .landing-work-card p { margin-top: 8px; max-width: 48ch; color: var(--landing-ink-soft); line-height: 1.5; }
 
 /* ---------------------------------------------------------------- FAQ */
-.landing-faq { max-width: 760px; }
+.landing-faq { max-width: none; }
 .landing-faq-list { margin-top: 32px; border-top: 1px solid var(--landing-line); }
 .landing-faq-item { border-bottom: 1px solid var(--landing-line); }
 .landing-faq-item button {
@@ -1034,46 +1056,12 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   padding: var(--landing-section-rhythm) var(--landing-gutter) 32px;
   overflow: hidden;
 }
-.landing-footer-lede {
-  width: min(1440px, 100%);
-  margin-inline: auto;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 32px;
-  padding-bottom: 64px;
-  margin-bottom: 64px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-}
-.landing-footer-lede .landing-kicker { color: rgba(255, 255, 255, 0.45); }
-.landing-footer-lede h3 {
-  margin-top: 10px;
-  max-width: 14ch;
-  font-size: var(--landing-text-heading);
-  line-height: 1.1;
-  letter-spacing: -0.02em;
-}
-.landing-footer-lede p { color: rgba(255, 255, 255, 0.62); font-size: var(--landing-text-lead); line-height: 1.55; max-width: 50ch; }
-/* `inline-flex`, not the default inline.
-   As an inline element the `margin-top` below was simply ignored — vertical
-   margins do not apply to inline boxes — and the ChevronRight after the label
-   was treated as another inline word, so it wrapped onto its own line and sat
-   under the text. Flex keeps the label and its chevron on one baseline, and
-   makes the margin real. */
-.landing-footer-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 24px;
-  white-space: nowrap;
-}
-/* The chevron must never be the thing that shrinks when space is tight. */
-.landing-footer-cta svg { flex: none; }
 .landing-footer-grid {
-  width: min(1440px, 100%);
+  width: 100%;
   margin-inline: auto;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 32px 24px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 32px 20px;
   margin-bottom: 72px;
 }
 .landing-footer-grid h3 { margin-bottom: 14px; color: rgba(255, 255, 255, 0.45); font-size: var(--landing-text-small); }
@@ -1086,7 +1074,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-footer-lockup {
   position: relative;
   z-index: 1;
-  width: min(1440px, 100%);
+  width: 100%;
   margin-inline: auto;
   padding-top: clamp(20px, 3vw, 44px);
   margin-bottom: 24px;
@@ -1109,25 +1097,13 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   color: rgba(255, 255, 255, 0.5);
 }
 .landing-footer-fine { color: rgba(255, 255, 255, 0.4); font-size: var(--landing-text-micro); }
-/* The PayMongo disclosure row. Its own line above the copyright bar: a
- * reviewer has to find all four from any page. */
-.landing-footer-legal {
-  width: min(1440px, 100%);
-  margin-inline: auto;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px 24px;
-  padding-bottom: 20px;
-}
-.landing-footer-legal a { color: rgba(255, 255, 255, 0.55); font-size: var(--landing-text-micro); transition: color 0.15s var(--landing-ease); }
-.landing-footer-legal a:hover { color: var(--landing-ground); text-decoration: underline; }
-.landing-footer-identity { width: min(1440px, 100%); margin: 16px auto 0; padding-bottom: 20px; display: flex; flex-direction: column; gap: 4px; }
+.landing-footer-identity { width: 100%; margin: 16px auto 0; padding-bottom: 20px; display: flex; flex-direction: column; gap: 4px; }
 .landing-footer-identity p { color: rgba(255, 255, 255, 0.45); font-size: var(--landing-text-micro); }
 .landing-footer-identity a { color: rgba(255, 255, 255, 0.6); }
 .landing-footer-identity a:hover { color: var(--landing-ground); text-decoration: underline; }
 
 .landing-footer-bar {
-  width: min(1440px, 100%);
+  width: 100%;
   margin-inline: auto;
   display: flex;
   align-items: flex-end;
@@ -1146,6 +1122,22 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-kicker { margin-bottom: 8px; color: var(--landing-muted); font-size: var(--landing-text-small); }
 
 /* ---------------------------------------------------------------- Responsive */
+@media (min-width: 901px) {
+  /* Desktop needs a readable editorial measure at arm's length. Keep the
+   * compact scale on phones/tablets, but give the landing's supporting copy
+   * enough presence beside the large stills and headings. */
+  .landing-page {
+    --landing-text-micro: 13px;
+    --landing-text-small: 15px;
+    --landing-text-body: 16px;
+    --landing-text-lead: 19px;
+    --landing-text-title: 26px;
+  }
+
+  .landing-hero h1 { font-size: clamp(60px, 5vw, 76px); }
+  .landing-hero-copy > p { font-size: clamp(18px, 1.35vw, 21px); line-height: 1.45; }
+}
+
 @media (max-width: 1100px) {
   .landing-nav-item > a { padding: 8px 8px; }
   .landing-login-wide { display: none; }
@@ -1224,9 +1216,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-case-row { grid-template-columns: 1fr; gap: 16px; }
   .landing-case-row ul { grid-template-columns: 1fr; }
   .landing-tool-row { justify-content: flex-start; }
-  .landing-footer-grid { grid-template-columns: repeat(2, 1fr); }
-  .landing-footer-lede { grid-template-columns: 1fr; gap: 20px; }
-  .landing-footer-lede h3 { max-width: none; }
+  .landing-footer-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
 @media (max-width: 680px) {
@@ -1264,7 +1254,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-work,
   .landing-faq,
   .landing-process,
-  .landing-start { width: min(100% - 32px, 1440px); }
+  .landing-start { width: calc(100% - 32px); }
   .landing-services { padding-inline: 16px; }
   .landing-surface-grid { margin-top: 40px; }
   .landing-workflow-section { overflow-x: auto; scrollbar-width: none; font-size: var(--landing-text-body); }
@@ -1275,10 +1265,10 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-start-frame { padding: 24px 16px 16px; border-radius: 12px; }
   .landing-start-form { padding: 20px 16px; border-radius: 12px; }
   .landing-band { padding: 0 16px; }
-  .landing-band-inner { width: min(100% - 32px, 1180px); gap: 40px; }
+  .landing-band-inner { width: 100%; gap: 40px; }
   .landing-footer { padding-inline: 20px; }
-  /* Four short link columns stay paired on phones — stacking all four turns
-   * the footer into a scroll of its own now that it carries the lede. */
+  /* Five short link columns pair up on phones. Stacking them one per row turns
+   * the footer into a scroll of its own. */
   .landing-footer-grid { grid-template-columns: repeat(2, 1fr); gap: 28px 20px; }
   .landing-footer-bar { flex-direction: column; align-items: flex-start; }
 }
@@ -1306,10 +1296,11 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
    Ported from the WorkShowcase / CardSwap deck. A tall section whose contents
    are sticky. The height is the scroll budget: one screen to read the deck,
    plus a step for every card after the first. --work-steps is set on the
-   element by WorkShowcase from the row count. */
+   element by WorkShowcase from the row count. 40svh per step keeps scrolling
+   tight — enough dwell to read each card without a long journey to the next. */
 .work {
   position: relative;
-  height: calc(100svh + var(--work-steps, 0) * 72svh);
+  height: calc(100svh + var(--work-steps, 0) * 40svh);
   scroll-margin-top: 0;
 }
 
@@ -1324,12 +1315,14 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 }
 
 .work-stage-inner {
-  width: min(1600px, calc(100% - 40px));
+  width: calc(100% - var(--landing-gutter) * 2);
   margin-inline: auto;
   display: grid;
   grid-template-columns: minmax(0, 0.68fr) minmax(0, 1fr);
   align-items: center;
   gap: 40px;
+  padding-inline: clamp(24px, 3vw, 40px);
+  box-sizing: border-box;
 }
 
 .landing-page .work-copy-eyebrow {
@@ -1407,15 +1400,14 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 }
 
 /* Prince, 09-03: "remove the outline on the work cards". CardSwap ships a 1px
-   white hairline, which on a white page is only ever visible as a seam. The
-   shadow is what separates one card from the one behind it now. */
+   white hairline, which on a white page is only ever visible as a seam. Cards
+   have neither border nor shadow — the stack depth separates them visually. */
 .work-cards .work-card {
   overflow: hidden;
   border: 0;
   /* Neutral until the screenshot arrives, so a slow image reads as a card
      loading rather than a black slab (the img fades in on .is-loaded). */
   background: var(--landing-ground-soft);
-  box-shadow: 0 30px 60px -24px rgba(12, 12, 12, 0.45);
   cursor: pointer;
 }
 .work-cards .work-card img {
@@ -1431,20 +1423,6 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 @media (prefers-reduced-motion: reduce) {
   .work-cards .work-card img { transition: none; }
 }
-/* A card seen out of the corner of the eye should still say what it is; the
-   left column only ever names the one in front. */
-.work-card-label {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 34px 18px 14px;
-  font-size: var(--landing-text-small);
-  font-weight: 500;
-  color: #fff;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0));
-}
-
 @media (max-width: 900px) {
   .work-stage-inner { grid-template-columns: 1fr; gap: 20px; }
   .work-cards { height: min(34svh, 300px); }

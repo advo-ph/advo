@@ -81,17 +81,28 @@ function toApiPayload(input: TeamMemberInput) {
 
 const QUERY_KEY = ["adminTeam"];
 
-async function fetchTeam(): Promise<TeamMember[]> {
+export async function fetchTeam(): Promise<TeamMember[]> {
   const [teamRes, publicRes] = await Promise.all([
     get<Record<string, unknown>[]>("/api/team"),
     get<{ key: string; value: unknown }[]>("/api/settings/public"),
   ]);
-  const mapped = (teamRes.data || []).map(mapMember);
+
+  if (teamRes.error || !Array.isArray(teamRes.data)) {
+    throw new Error(teamRes.error || "Team roster unavailable");
+  }
+
+  const mapped = teamRes.data.map(mapMember);
   const orderRow = (publicRes.data || []).find((row) => row.key === "team_order");
-  if (orderRow?.value) {
-    const order = (typeof orderRow.value === "string"
-      ? JSON.parse(orderRow.value)
-      : orderRow.value) as number[];
+  let order: number[] | undefined;
+  try {
+    const parsed = typeof orderRow?.value === "string" ? JSON.parse(orderRow.value) : orderRow?.value;
+    if (Array.isArray(parsed) && parsed.every((value) => typeof value === "number")) {
+      order = parsed;
+    }
+  } catch {
+    // A malformed optional setting should not hide an otherwise valid roster.
+  }
+  if (order) {
     mapped.sort((a, b) => {
       const ai = order.indexOf(a.team_member_id);
       const bi = order.indexOf(b.team_member_id);

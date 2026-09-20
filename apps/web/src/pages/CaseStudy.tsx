@@ -27,7 +27,7 @@ const CaseStudy = () => {
   useEffect(() => {
     if (entry) document.title = `${entry.title} — ADVO`;
     return () => {
-      document.title = "ADVO. we modernize it for you.";
+      document.title = "ADVO. We digitalize it for you.";
     };
   }, [entry]);
 

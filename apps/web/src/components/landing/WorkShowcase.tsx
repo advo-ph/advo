@@ -6,7 +6,7 @@ import type { ShippedProject } from "@/hooks/usePortfolio";
 import CardSwap, { Card } from "./CardSwap";
 
 /** Screens of scroll each card past the first is given. */
-const STEP_VH = 0.72;
+const STEP_VH = 0.4;
 
 /** Card geometry, all derived from the width the stage can spare. */
 const CARD_MIN = 300;
@@ -195,7 +195,6 @@ const WorkShowcase = ({ project }: WorkShowcaseProps) => {
                     decoding="async"
                     onLoad={() => setLoaded((prev) => ({ ...prev, [item.portfolio_project_id]: true }))}
                   />
-                  <span className="work-card-label">{item.title}</span>
                 </Card>
               ))}
             </CardSwap>

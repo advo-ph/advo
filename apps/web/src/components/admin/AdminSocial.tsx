@@ -399,7 +399,7 @@ const AdminSocial = () => {
                   
                   <div className="text-sm">
                     <p className="font-semibold">Advo</p>
-                    <p className="text-muted-foreground">we modernize it for you.</p>
+                    <p className="text-muted-foreground">We digitalize it for you.</p>
                     <p className="text-muted-foreground">for inquiries: contact@advo.ph</p>
                   </div>
                 </div>

@@ -28,24 +28,32 @@ interface Industry {
   heading: string;
   copy: string;
   offer: Offer[];
+  href?: string;
 }
 const industry: Industry[] = [
   {
-    key: "parking",
-    image: "/landing/industry/parking.jpg",
-    title: "Parking",
-    heading: "A car park that runs itself.",
-    copy: "A fully automated car park for drivers, managers, and owners.",
+    key: "flood",
+    image: "/landing/industry/flood.png",
+    title: "Flood",
+    heading: "Know which roads are flooded in real-time",
+    copy: "A live Metro Manila flood map that combines river gauges, rain data, hazard maps, and route guidance.",
     offer: [
-      { name: "Plate recognition", copy: "A camera reads the plate at the gate and the barrier opens." },
-      { name: "Self-service payment", copy: "Pay at a kiosk in cash with coin change, or by e-wallet." },
-      { name: "Runs offline", copy: "The internet drops and the lane keeps working." },
+      {
+        name: "Live flood map",
+        copy: "Automatically detect flood depth through flood monitoring devices in streets, PAGASA river gauges, live rainfall data, and UP NOAH hazard maps.",
+      },
+      {
+        name: "Navigation avoids flooded areas",
+        copy: "The app gives directions to safer routes to avoid flooded roads.",
+      },
+      { name: "Shared operational view", copy: "Provide LGUs live data for faster coordination and rescues." },
     ],
+    href: "https://floodpass.com",
   },
   {
     key: "education",
     image: "/landing/industry/education.jpg",
-    title: "Education",
+    title: "School",
     heading: "A safer, more connected campus.",
     copy: "Campus access, safety, and school operations in one system.",
     offer: [
@@ -55,16 +63,20 @@ const industry: Industry[] = [
     ],
   },
   {
-    key: "flood",
-    image: "/landing/industry/flood.png",
-    title: "Flood",
-    heading: "Know which roads are flooded before you drive them.",
-    copy: "A live Metro Manila flood map that combines river gauges, rain data, hazard maps, and route guidance.",
+    key: "parking",
+    image: "/landing/industry/parking.jpg",
+    title: "Parking",
+    heading: "A convenient parking experience.",
+    copy: "A fully automated car park for drivers, managers, and owners.",
     offer: [
-      { name: "Live flood map", copy: "Road conditions update from PAGASA gauges, rainfall data, and UP NOAH hazard maps." },
-      { name: "Flood-aware routing", copy: "Routes drivers around risky water and warns them before a flooded stretch." },
-      { name: "Works offline", copy: "Cached road data keeps the map usable through weak signal and brownout days." },
+      {
+        name: "Ticketless system",
+        copy: "Entrance and exit automatically open by scanning the license plate.",
+      },
+      { name: "Self-service payment", copy: "Pay at the kiosk, or scan the QR to pay using your phone" },
+      { name: "Find my car", copy: "Locate your parking spot through the app" },
     ],
+    href: "https://park.advo.ph",
   },
 ];
 
@@ -77,57 +89,47 @@ interface Service {
 const services: Service[] = [
   {
     number: "01",
-    title: "Websites and portals",
-    copy: "A clear public site for customers, with the private client space behind it when the work needs more than a contact form.",
+    title: "Websites and apps",
+    copy: "A public site that makes your business visible to customers, and an app your customers use.",
   },
   {
     number: "02",
     title: "Operational software",
-    copy: "Custom systems for the work happening between a customer, a counter, a team, and the person keeping the numbers right.",
+    copy: "Custom systems for the full operational flow between your staff and your customers.",
   },
   {
     number: "03",
-    title: "Hardware and deployment",
-    copy: "The tablets, printers, screens, hosting, training, and support that make the software hold up on a real working floor.",
+    title: "Hardware, training, and support",
+    copy: "Kiosks, devices, and screens, installed with training and support.",
   },
 ];
 
-const step = [
+const industryTab = [
   {
-    title: "Discover",
-    heading: "Learn the floor before we write software",
-    copy: "We sit with how the shop actually runs today: paper, Viber, and tally sheets, then name the outcome.",
-    still: "/landing/process/discover.jpg",
+    title: "Food",
+    heading: "Restaurants, cafes, and food stalls",
+    copy: "QR code ordering from the table, kiosk ordering with payment, and table management for seating, waitlists, and turn times.",
+    still: "/landing/industry/food.jpg",
   },
   {
-    title: "Design",
-    heading: "Make the system visible before we build it",
-    copy: "Screens, hardware, and handoffs are drawn together, so counter staff and the admin see one shared plan.",
-    still: "/landing/process/design.jpg",
+    title: "Medical",
+    heading: "Clinics, labs, and pharmacies",
+    copy: "Clinic management for appointments, queueing, billing, and stock; EMR for doctors; and hospital integration without a fax machine.",
+    still: "/landing/industry/medical.jpg",
   },
   {
-    title: "Build",
-    heading: "Ship in the shared workspace, not in email",
-    copy: "Design, development, and integration all happen in one place, so you watch the progress the week it lands.",
-    still: "/landing/process/build.jpg",
+    // Construction still is a stand-in until a real photo lands in
+    // apps/web/public/landing/industry/construction.jpg
+    title: "Construction",
+    heading: "Contractors and developers",
+    copy: "Site progress and manpower tracking, delivery coordination, and progress billing in one system.",
+    still: "/landing/hero-building.jpg",
   },
   {
-    title: "Review",
-    heading: "Approve what is true, not what was attached",
-    copy: "Feedback and sign-off live on the work itself, so there are no lost versions and no mystery last file.",
-    still: "/landing/process/review.jpg",
-  },
-  {
-    title: "Launch",
-    heading: "Install, train, and stay on the floor",
-    copy: "We go live with the tablet, the printer, and the TV, and train the people who use them on a busy night.",
-    still: "/landing/process/launch.jpg",
-  },
-  {
-    title: "Support",
-    heading: "Stay after launch, because uptime is the product",
-    copy: "A care plan or hourly support keeps it running: the printer that dies at 8PM is covered that same night.",
-    still: "/landing/process/support.jpg",
+    title: "Business",
+    heading: "Offices, retail, and services",
+    copy: "Inventory and point of sale; scheduling and customer records; fleet tracking, dispatch, and proof of delivery.",
+    still: "/landing/industry/business.jpg",
   },
 ];
 
@@ -146,6 +148,20 @@ const clientLogo: Record<string, { src: string; filter?: string; wide?: boolean 
   "coffee-rush-eastridge": { src: "/landing/logo/coffee-rush.png", filter: "invert(1)" },
 };
 
+/**
+ * Keep the proof strip present while its remote source is loading or briefly
+ * unavailable. A successful empty response still renders no strip: the API
+ * remains the source of truth when it is reachable.
+ */
+const fallbackMarquee = [
+  { key: "vbe-eye-center-clinic", title: "VBE Eye Center Clinic", slug: null },
+  { key: "fourlinq", title: "FourlinQ", slug: "fourlinq" },
+  { key: "felici-artisan-gelato", title: "Felici Artisan Gelato", slug: "felici-artisan-gelato" },
+  { key: "coffee-rush-eastridge", title: "Coffee Rush Eastridge", slug: "coffee-rush-eastridge" },
+  { key: "tmc-registry", title: "TMC Registry", slug: "tmc-registry" },
+  { key: "camps-ph", title: "Camps PH", slug: "camps-ph" },
+] as const;
+
 const heroCopy = {
   hidden: { opacity: 0, y: 18 },
   show: { opacity: 1, y: 0 },
@@ -156,7 +172,7 @@ const LandingPage = () => {
   const [isMobileViewport, setIsMobileViewport] = useState(() =>
     typeof window !== "undefined" && window.matchMedia("(max-width: 680px)").matches,
   );
-  const [stepIndex, setStepIndex] = useState(0);
+  const [tabIndex, setTabIndex] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
   const pageRef = useRef<HTMLElement>(null);
 
@@ -178,14 +194,24 @@ const LandingPage = () => {
 
   // Prince, 08-21: "keep only the section for the websites that we've already
   // created". Real portfolio rows or nothing.
-  const { project: shippedProject } = usePortfolio();
+  const { project: shippedProject, isLoading: isPortfolioLoading, isError: isPortfolioError } = usePortfolio();
+  const marqueeItems =
+    shippedProject.length > 0
+      ? shippedProject.map((item) => ({
+          key: String(item.portfolio_project_id),
+          title: item.title,
+          slug: item.slug,
+        }))
+      : isPortfolioLoading || isPortfolioError
+        ? fallbackMarquee
+        : [];
 
   // The hero still drifts a little slower than the page. Small on purpose: the
   // photo is the point, the motion only keeps it from reading as a poster.
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
   const heroShift = useTransform(scrollYProgress, [0, 1], ["0%", reduceMotion ? "0%" : "14%"]);
 
-  const current = step[stepIndex] ?? step[0];
+  const current = industryTab[tabIndex] ?? industryTab[0];
 
   return (
     <main className={reduceMotion ? "landing-page is-reduce-motion" : "landing-page"} ref={pageRef}>
@@ -228,28 +254,28 @@ const LandingPage = () => {
             transition={{ staggerChildren: 0.1, delayChildren: 0.25 }}
           >
             <motion.h1 variants={heroCopy} transition={{ duration: 0.7, ease: EASE }}>
-              we modernize it for you.
+              We digitalize it for you.
             </motion.h1>
             <motion.p variants={heroCopy} transition={{ duration: 0.7, ease: EASE }}>
-              our vision is To become the infrastructure of the technological layer for industries
+              Our vision is to become the infrastructure of the technological layer for industries
               around the Philippines.
             </motion.p>
           </motion.div>
         </div>
       </section>
 
-      {shippedProject.length > 0 ? (
+      {marqueeItems.length > 0 ? (
         <section className="landing-marquee" aria-label="Businesses running on ADVO">
           <p>Businesses already running on ADVO</p>
           <div className="landing-marquee-mask">
             <div className="landing-marquee-track">
-              {[...shippedProject, ...shippedProject].map((item, index) => {
+              {[...marqueeItems, ...marqueeItems].map((item, index) => {
                 const logo = item.slug ? clientLogo[item.slug] : undefined;
                 return (
                   <span
                     className={logo?.wide ? "landing-marquee-item is-wide" : "landing-marquee-item"}
-                    key={`${item.portfolio_project_id}-${index}`}
-                    aria-hidden={index >= shippedProject.length}
+                    key={`${item.key}-${index}`}
+                    aria-hidden={index >= marqueeItems.length}
                   >
                     {logo ? (
                       <img src={logo.src} alt={item.title} style={logo.filter ? { filter: logo.filter } : undefined} />
@@ -286,10 +312,19 @@ const LandingPage = () => {
                     </li>
                   ))}
                 </ul>
-                <div className="landing-industry-actions">
-                  <a className="landing-button landing-button-primary" href="#start">Talk to us</a>
-                  <a className="landing-button landing-button-secondary" href="#process">How it ships</a>
-                </div>
+                {item.href ? (
+                  <div className="landing-industry-actions">
+                    <a
+                      className="landing-industry-more"
+                      href={item.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <span>See more</span>
+                      <ArrowUpRight size={17} strokeWidth={1.5} aria-hidden="true" />
+                    </a>
+                  </div>
+                ) : null}
               </div>
             </Reveal>
           ))}
@@ -299,12 +334,7 @@ const LandingPage = () => {
       <section className="landing-services" id="services" aria-labelledby="services-heading">
         <div className="landing-services-frame">
           <Reveal className="landing-services-intro">
-            <p className="landing-kicker">Services</p>
-            <h2 id="services-heading">The software layer your operation has been missing.</h2>
-            <p>
-              ADVO joins the visible part of your business to the work behind it — from the first
-              visit to the last report.
-            </p>
+            <h2 id="services-heading">What we offer</h2>
           </Reveal>
 
           <RevealGroup className="landing-services-list" stagger={0.08}>
@@ -323,16 +353,17 @@ const LandingPage = () => {
       </section>
 
       <section className="landing-process" id="process">
+        <Reveal as="h2" className="landing-process-title">Industries we modernize</Reveal>
         <Reveal className="landing-process-card" delay={0.1}>
-          <div className="landing-process-tab" role="tablist" aria-orientation="vertical" aria-label="How it ships">
-            {step.map((item, index) => (
+          <div className="landing-process-tab" role="tablist" aria-orientation="vertical" aria-label="Industries we modernize">
+            {industryTab.map((item, index) => (
               <button
                 type="button"
                 role="tab"
                 key={item.title}
-                aria-selected={index === stepIndex}
-                className={index === stepIndex ? "is-active" : ""}
-                onClick={() => setStepIndex(index)}
+                aria-selected={index === tabIndex}
+                className={index === tabIndex ? "is-active" : ""}
+                onClick={() => setTabIndex(index)}
               >
                 {item.title}
               </button>

@@ -27,6 +27,7 @@ const item: NavLink[] = [
   { label: "Solutions", href: "#solutions" },
   { label: "Services", href: "#services" },
   { label: "Portfolio", href: "#work" },
+  { label: "Team", href: "/team" },
 ];
 
 const DRAWER_ID = "mobile-navigation-drawer";
@@ -133,17 +134,11 @@ const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps)
             <Link className="landing-button landing-button-ghost" to="/login" onClick={closeMenu}>
               Log in
             </Link>
-            <Link className="landing-button landing-button-ghost" to="/team" onClick={closeMenu}>
-              Team
-            </Link>
             {startLink}
           </div>
         </nav>
 
         <div className="landing-nav-action">
-          <Link className="landing-login landing-login-wide" to="/team" onClick={closeMenu}>
-            Team
-          </Link>
           <Link className="landing-login" to="/login" onClick={closeMenu}>
             Log in
           </Link>

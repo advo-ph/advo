@@ -6,7 +6,7 @@ const viewports = [
   { name: "mobile", width: 390, height: 844, columns: 1 },
 ];
 
-const expectedLabels = ["Parking", "Education", "Flood"];
+const expectedLabels = ["Flood", "School", "Parking"];
 const expectedHeading = "Building Real-World Technological Solutions";
 
 function assert(condition, message) {
@@ -60,12 +60,16 @@ try {
         educationApp: section?.textContent?.includes(
           "A dedicated website and app for the institution and its students.",
         ),
+        hasLegacyActions: section?.querySelectorAll(".landing-button").length > 0,
+        floodLink: section?.querySelector('a[href="https://floodpass.com"]') !== null,
+        parkingLink: section?.querySelector('a[href="https://park.advo.ph"]') !== null,
+        schoolLink: section?.querySelector('.landing-industry-card:nth-child(2) a') !== null,
         beforeServices: Boolean(
           section && services && section.compareDocumentPosition(services) & Node.DOCUMENT_POSITION_FOLLOWING,
         ),
         sectionOverflow: section ? section.scrollWidth - section.clientWidth : 999,
         imagesLoaded: images.every((image) => image?.complete && image.naturalWidth > 0),
-        floodImage: images.at(-1)?.getAttribute("src") === "/landing/industry/flood.png",
+        floodImage: images[0]?.getAttribute("src") === "/landing/industry/flood.png",
       };
     });
 
@@ -76,7 +80,10 @@ try {
     assert(result.columns === viewport.columns, `${viewport.name}: expected ${viewport.columns} grid columns, got ${result.columns}`);
     assert(!result.hasLegacyIntro, `${viewport.name}: legacy solutions intro is still rendered`);
     assert(!result.hasHiddenIndustry, `${viewport.name}: hidden industry card text is still rendered`);
+    assert(!result.hasLegacyActions, `${viewport.name}: legacy solution buttons are still rendered`);
     assert(result.educationAuth && result.educationSafety && result.educationApp, `${viewport.name}: education copy mismatch`);
+    assert(result.floodLink && result.parkingLink, `${viewport.name}: solution links mismatch`);
+    assert(!result.schoolLink, `${viewport.name}: school should not have a destination link yet`);
     assert(result.beforeServices, `${viewport.name}: solutions does not precede services`);
     assert(result.sectionOverflow <= 1, `${viewport.name}: solutions overflows horizontally by ${result.sectionOverflow}px`);
     assert(result.imagesLoaded && result.floodImage, `${viewport.name}: solution images did not load as expected`);
