@@ -428,9 +428,25 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   opacity: 0.8;
   animation: landing-marquee 42s linear infinite;
 }
-.landing-marquee-item { display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; }
-.landing-marquee-item img { height: 42px; width: auto; max-width: 154px; object-fit: contain; }
-.landing-marquee-item.is-wide img { height: 36px; }
+.landing-marquee-item {
+  flex: 0 0 152px;
+  width: 152px;
+  height: 52px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+.landing-marquee-item img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 132px;
+  max-height: 42px;
+  object-fit: contain;
+  filter: grayscale(1);
+  opacity: 0.72;
+}
 /* The strip loops regardless of the reduced-motion setting, by the owner's
  * call: it is the one continuous motion on the page and it stays. */
 @keyframes landing-marquee {
@@ -1249,8 +1265,12 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 
   .landing-marquee-mask { --landing-fade: 8%; }
   .landing-marquee-track { gap: 32px; padding-inline: 12%; }
-  .landing-marquee-item img { height: 30px; }
-  .landing-marquee-item.is-wide img { height: 26px; }
+  .landing-marquee-item {
+    flex-basis: 116px;
+    width: 116px;
+    height: 44px;
+  }
+  .landing-marquee-item img { max-width: 104px; max-height: 34px; }
   .landing-piece,
   .landing-work,
   .landing-faq,

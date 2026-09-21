@@ -135,18 +135,17 @@ const industryTab = [
 ];
 
 const marqueeLogos = [
-  { src: "/landing/logo/vbe-eye-center.png", alt: "VBE Eye Center", wide: true },
-  { src: "/landing/logo/fourlinq.png", alt: "FourlinQ", wide: true },
-  { src: "/landing/logo/the-medical-city.png", alt: "The Medical City", wide: true },
+  { src: "/landing/logo/vbe-eye-center.png", alt: "VBE Eye Center" },
+  { src: "/landing/logo/fourlinq.png", alt: "FourlinQ" },
+  { src: "/landing/logo/the-medical-city.png", alt: "The Medical City" },
   {
     src: "/landing/logo/philippine-college-endocrinology.png",
     alt: "Philippine College of Endocrinology, Diabetes and Metabolism",
-    wide: false,
   },
-  { src: "/landing/logo/nokoji.png", alt: "Nokoji Matcha and Doughnuts", wide: true },
-  { src: "/landing/logo/felici.png", alt: "Felici Artisan Gelato", wide: false },
-  { src: "/landing/logo/felici-italian-cafe.png", alt: "Felici Italian Café", wide: true },
-  { src: "/landing/logo/coffee-rush.png", alt: "Coffee Rush", wide: false },
+  { src: "/landing/logo/nokoji.png", alt: "Nokoji Matcha and Doughnuts" },
+  { src: "/landing/logo/felici.png", alt: "Felici Artisan Gelato" },
+  { src: "/landing/logo/felici-italian-cafe.png", alt: "Felici Italian Café" },
+  { src: "/landing/logo/coffee-rush.png", alt: "Coffee Rush" },
 ] as const;
 
 const heroCopy = {
@@ -247,7 +246,7 @@ const LandingPage = () => {
           <div className="landing-marquee-track">
             {[...marqueeLogos, ...marqueeLogos].map((logo, index) => (
               <span
-                className={logo.wide ? "landing-marquee-item is-wide" : "landing-marquee-item"}
+                className="landing-marquee-item"
                 key={`${logo.src}-${index}`}
                 aria-hidden={index >= marqueeLogos.length}
               >
