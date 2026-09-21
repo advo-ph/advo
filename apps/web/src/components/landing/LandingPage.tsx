@@ -9,6 +9,7 @@ import { EASE } from "@/lib/motion";
 import WorkShowcase from "./WorkShowcase";
 import ProjectInquiry from "./ProjectInquiry";
 import LandingFooter from "./landing-footer";
+import FlowingBackground from "./FlowingBackground";
 import { instrumentLanding } from "@/lib/track";
 import "./landing-page.css";
 
@@ -133,33 +134,19 @@ const industryTab = [
   },
 ];
 
-/**
- * Real client marks, lifted from each client's own repository. Keyed by the
- * portfolio slug so the strip stays driven by the live portfolio table: a
- * client with no entry here shows its name as text, and removing a client
- * from the CMS removes it here too.
- */
-const clientLogo: Record<string, { src: string; filter?: string; wide?: boolean }> = {
-  fourlinq: { src: "/landing/logo/fourlinq.png" },
-  "felici-artisan-gelato": { src: "/landing/logo/felici.png", wide: true },
-  "tmc-registry": { src: "/landing/logo/tmc-registry.png", wide: true },
-  "camps-ph": { src: "/landing/logo/camps-ph.png" },
-  // Coffee Rush ships a white-on-transparent badge for their own dark site.
-  "coffee-rush-eastridge": { src: "/landing/logo/coffee-rush.png", filter: "invert(1)" },
-};
-
-/**
- * Keep the proof strip present while its remote source is loading or briefly
- * unavailable. A successful empty response still renders no strip: the API
- * remains the source of truth when it is reachable.
- */
-const fallbackMarquee = [
-  { key: "vbe-eye-center-clinic", title: "VBE Eye Center Clinic", slug: null },
-  { key: "fourlinq", title: "FourlinQ", slug: "fourlinq" },
-  { key: "felici-artisan-gelato", title: "Felici Artisan Gelato", slug: "felici-artisan-gelato" },
-  { key: "coffee-rush-eastridge", title: "Coffee Rush Eastridge", slug: "coffee-rush-eastridge" },
-  { key: "tmc-registry", title: "TMC Registry", slug: "tmc-registry" },
-  { key: "camps-ph", title: "Camps PH", slug: "camps-ph" },
+const marqueeLogos = [
+  { src: "/landing/logo/vbe-eye-center.png", alt: "VBE Eye Center", wide: true },
+  { src: "/landing/logo/fourlinq.png", alt: "FourlinQ", wide: true },
+  { src: "/landing/logo/the-medical-city.png", alt: "The Medical City", wide: true },
+  {
+    src: "/landing/logo/philippine-college-endocrinology.png",
+    alt: "Philippine College of Endocrinology, Diabetes and Metabolism",
+    wide: false,
+  },
+  { src: "/landing/logo/nokoji.png", alt: "Nokoji Matcha and Doughnuts", wide: true },
+  { src: "/landing/logo/felici.png", alt: "Felici Artisan Gelato", wide: false },
+  { src: "/landing/logo/felici-italian-cafe.png", alt: "Felici Italian Café", wide: true },
+  { src: "/landing/logo/coffee-rush.png", alt: "Coffee Rush", wide: false },
 ] as const;
 
 const heroCopy = {
@@ -192,19 +179,9 @@ const LandingPage = () => {
     return instrumentLanding(pageRef.current);
   }, []);
 
-  // Prince, 08-21: "keep only the section for the websites that we've already
-  // created". Real portfolio rows or nothing.
-  const { project: shippedProject, isLoading: isPortfolioLoading, isError: isPortfolioError } = usePortfolio();
-  const marqueeItems =
-    shippedProject.length > 0
-      ? shippedProject.map((item) => ({
-          key: String(item.portfolio_project_id),
-          title: item.title,
-          slug: item.slug,
-        }))
-      : isPortfolioLoading || isPortfolioError
-        ? fallbackMarquee
-        : [];
+  // The marquee is a fixed set of supplied partner marks. Portfolio rows still
+  // drive the projects section below.
+  const { project: shippedProject } = usePortfolio();
 
   // The hero still drifts a little slower than the page. Small on purpose: the
   // photo is the point, the motion only keeps it from reading as a poster.
@@ -215,6 +192,7 @@ const LandingPage = () => {
 
   return (
     <main className={reduceMotion ? "landing-page is-reduce-motion" : "landing-page"} ref={pageRef}>
+      <FlowingBackground />
       <LandingNav overlayHero />
       <LandingScrollbar />
 
@@ -264,30 +242,21 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {marqueeItems.length > 0 ? (
-        <section className="landing-marquee" aria-label="Businesses running on ADVO">
-          <p>Businesses already running on ADVO</p>
-          <div className="landing-marquee-mask">
-            <div className="landing-marquee-track">
-              {[...marqueeItems, ...marqueeItems].map((item, index) => {
-                const logo = item.slug ? clientLogo[item.slug] : undefined;
-                return (
-                  <span
-                    className={logo?.wide ? "landing-marquee-item is-wide" : "landing-marquee-item"}
-                    key={`${item.key}-${index}`}
-                    aria-hidden={index >= marqueeItems.length}
-                  >
-                    {logo ? (
-                      <img src={logo.src} alt={item.title} style={logo.filter ? { filter: logo.filter } : undefined} />
-                    ) : null}
-                    {!logo || !logo.wide ? <span>{item.title}</span> : null}
-                  </span>
-                );
-              })}
-            </div>
+      <section className="landing-marquee" aria-label="Businesses running on ADVO">
+        <div className="landing-marquee-mask">
+          <div className="landing-marquee-track">
+            {[...marqueeLogos, ...marqueeLogos].map((logo, index) => (
+              <span
+                className={logo.wide ? "landing-marquee-item is-wide" : "landing-marquee-item"}
+                key={`${logo.src}-${index}`}
+                aria-hidden={index >= marqueeLogos.length}
+              >
+                <img src={logo.src} alt={logo.alt} />
+              </span>
+            ))}
           </div>
-        </section>
-      ) : null}
+        </div>
+      </section>
 
       <section className="landing-piece" id="solutions" aria-labelledby="solutions-heading">
         <Reveal as="h2" id="solutions-heading" className="landing-display landing-solutions-title">

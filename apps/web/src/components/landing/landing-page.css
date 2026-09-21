@@ -403,14 +403,15 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 /* ---------------------------------------------------------------- Partner strip */
 .landing-marquee {
   height: var(--landing-strip-height);
-  padding: 22px 0 0;
+  padding: 24px 0;
   text-align: center;
   overflow: hidden;
+  display: flex;
+  align-items: center;
 }
-.landing-page .landing-marquee > p { font-size: var(--landing-text-small); line-height: 20px; color: var(--landing-ink-soft); }
 .landing-marquee-mask {
   width: calc(100% - var(--landing-gutter) * 2);
-  margin: 12px auto 0;
+  margin: 0 auto;
   overflow: hidden;
   -webkit-mask-image: var(--landing-edge-fade);
   mask-image: var(--landing-edge-fade);
@@ -428,8 +429,8 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   animation: landing-marquee 42s linear infinite;
 }
 .landing-marquee-item { display: inline-flex; align-items: center; gap: 10px; white-space: nowrap; }
-.landing-marquee-item img { height: 26px; width: auto; max-width: 140px; object-fit: contain; filter: grayscale(1); }
-.landing-marquee-item.is-wide img { height: 30px; }
+.landing-marquee-item img { height: 42px; width: auto; max-width: 154px; object-fit: contain; }
+.landing-marquee-item.is-wide img { height: 36px; }
 /* The strip loops regardless of the reduced-motion setting, by the owner's
  * call: it is the one continuous motion on the page and it stays. */
 @keyframes landing-marquee {
@@ -1248,7 +1249,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 
   .landing-marquee-mask { --landing-fade: 8%; }
   .landing-marquee-track { gap: 32px; padding-inline: 12%; }
-  .landing-marquee-item img { height: 22px; }
+  .landing-marquee-item img { height: 30px; }
   .landing-marquee-item.is-wide img { height: 26px; }
   .landing-piece,
   .landing-work,

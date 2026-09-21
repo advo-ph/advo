@@ -1,0 +1,47 @@
+.landing-page:has(> .flowing-background) {
+  position: relative;
+  isolation: isolate;
+}
+
+.flowing-background {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: #fdfefe;
+}
+
+.flowing-background svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.flowing-background path {
+  transform-origin: center;
+  animation: flowing-wave 18s ease-in-out -6s infinite alternate;
+}
+
+.flowing-background .flowing-background-middle {
+  animation-duration: 22s;
+  animation-delay: -8s;
+  animation-direction: alternate-reverse;
+}
+
+.flowing-background .flowing-background-lower {
+  animation-duration: 26s;
+  animation-delay: -13s;
+}
+
+@keyframes flowing-wave {
+  from { transform: translate(-5%, 4%) rotate(-2deg) scale(1.04); }
+  to { transform: translate(5%, -5%) rotate(2deg) scale(1.1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flowing-background path { animation: none; }
+}
+
+.is-reduce-motion .flowing-background path { animation: none; }

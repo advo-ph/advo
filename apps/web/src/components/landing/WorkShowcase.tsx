@@ -12,13 +12,12 @@ const STEP_VH = 0.4;
 const CARD_MIN = 300;
 const CARD_MAX = 720;
 /**
- * 9/16. Prince, 09-03: "make sure the cards for work has the same ratio as the
- * images, js use the common ratio". Measured across the six live rows: 1.760,
- * 1.757, 1.776, 1.728, then 1.905 and 2.009. Four sit on 16:9, so 16:9 is the
- * ratio — it crops the two outliers by 7% and 11% instead of cropping the
- * majority by 17%, which is what the old 3:2 card was doing.
+ * Prince, 09-03: "make sure the cards for work has the same ratio as the
+ * images, js use the common ratio". The six live rows measure 1.728, 1.757,
+ * 1.760, 1.776, 1.905, and 2.009 wide. The common cluster is about 1.76:1,
+ * so use that representative ratio instead of forcing every image into 16:9.
  */
-const CARD_RATIO = 0.5625;
+const CARD_RATIO = 1 / 1.76;
 const CARD_SHARE = 0.9;
 /**
  * Lean, as a fraction of the card. Tighter than CardSwap's default, and it has

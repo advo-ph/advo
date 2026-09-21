@@ -23,7 +23,7 @@ const Team = () => {
   const closeSpotlight = useCallback(() => setActiveIndex(null), []);
 
   return (
-    <LandingShell>
+    <LandingShell flowingBackground>
       <main className="landing-shell-main team-page">
         <header className="team-head">
           <h1>Team</h1>
