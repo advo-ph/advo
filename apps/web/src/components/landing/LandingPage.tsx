@@ -83,25 +83,60 @@ const industry: Industry[] = [
 
 interface Service {
   number: string;
+  label: string;
   title: string;
   copy: string;
+  items: string[];
 }
 
 const services: Service[] = [
   {
     number: "01",
-    title: "Websites and apps",
-    copy: "A public site that makes your business visible to customers, and an app your customers use.",
+    label: "Foundation",
+    title: "Connect the systems your business already depends on",
+    copy: "Bring customers, staff, payments, and day-to-day operations into one dependable source of truth.",
+    items: [
+      "Client or member management and billing",
+      "POS, inventory, scheduling, and staff workflows",
+      "CRM, mobile apps, check-in, and access",
+      "Data migration from the tools you already use",
+    ],
   },
   {
     number: "02",
-    title: "Operational software",
-    copy: "Custom systems for the full operational flow between your staff and your customers.",
+    label: "AI layer",
+    title: "Put AI to work on the repetitive parts",
+    copy: "Give your team an always-on layer that answers, routes, summarizes, and follows up.",
+    items: [
+      "Back-office AI agent for routine operations",
+      "AI voice receptionist for calls, bookings, and FAQs",
+      "Text and web chat for leads and customer questions",
+      "Campaign builder, messaging, and automated follow-up",
+    ],
   },
   {
     number: "03",
-    title: "Hardware, training, and support",
-    copy: "Kiosks, devices, and screens, installed with training and support.",
+    label: "Customer journey",
+    title: "Turn every visit, call, and enquiry into action",
+    copy: "Make it easier for people to find you, get started, and move forward without dropping the handoff.",
+    items: [
+      "Conversion-focused websites and landing pages",
+      "Digital forms, intake, and lead capture",
+      "Booking, onboarding, and online join flows",
+      "Attribution and reporting that shows what is working",
+    ],
+  },
+  {
+    number: "04",
+    label: "Continuity",
+    title: "Keep the system secure, adopted, and improving",
+    copy: "Launch with a team that knows what to do, then keep the platform healthy as you grow.",
+    items: [
+      "Hosting, monitoring, security, and automated backups",
+      "Team training, documentation, and rollout support",
+      "Usage reporting and dedicated engineering",
+      "Ongoing optimization as your business changes",
+    ],
   },
 ];
 
@@ -311,20 +346,48 @@ const LandingPage = () => {
       <section className="landing-services" id="services" aria-labelledby="services-heading">
         <div className="landing-services-frame">
           <Reveal className="landing-services-intro">
-            <h2 id="services-heading">What we offer</h2>
+            <p className="landing-services-kicker">AI modernization for real-world operations</p>
+            <h2 id="services-heading">Prepare your business for the modern AI world.</h2>
+            <p className="landing-services-lede">
+              Bring your customer experience, day-to-day operations, and business data into one dependable
+              system—then put AI to work where it removes manual effort.
+            </p>
+            <a className="landing-services-cta" href="#start">
+              <span>Plan your modernization</span>
+              <ArrowUpRight size={17} strokeWidth={1.5} aria-hidden="true" />
+            </a>
+            <div className="landing-services-path" aria-label="Our modernization approach">
+              {services.map((service) => (
+                <span key={service.number}>
+                  <b>{service.number}</b>
+                  {service.label}
+                </span>
+              ))}
+            </div>
           </Reveal>
 
           <RevealGroup className="landing-services-list" stagger={0.08}>
             {services.map((service) => (
               <Reveal as="article" className="landing-service-row" key={service.number}>
                 <span className="landing-service-number">{service.number}</span>
-                <div>
+                <div className="landing-service-body">
+                  <p className="landing-service-label">{service.label}</p>
                   <h3>{service.title}</h3>
-                  <p>{service.copy}</p>
+                  <p className="landing-service-copy">{service.copy}</p>
+                  <ul className="landing-service-items">
+                    {service.items.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
                 </div>
-                <ArrowUpRight size={18} strokeWidth={1.25} aria-hidden="true" />
+                <span className="landing-service-arrow" aria-hidden="true">
+                  <ArrowUpRight size={18} strokeWidth={1.25} />
+                </span>
               </Reveal>
             ))}
+            <p className="landing-services-note">
+              Roll out by location. Migrate what matters. Train the team that uses it.
+            </p>
           </RevealGroup>
         </div>
       </section>

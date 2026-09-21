@@ -21,17 +21,17 @@
 
 .flowing-background path {
   transform-origin: center;
-  animation: flowing-wave 18s ease-in-out -6s infinite alternate;
+  animation: flowing-wave 16s ease-in-out -6s infinite alternate;
 }
 
 .flowing-background .flowing-background-middle {
-  animation-duration: 22s;
+  animation-duration: 20s;
   animation-delay: -8s;
   animation-direction: alternate-reverse;
 }
 
 .flowing-background .flowing-background-lower {
-  animation-duration: 26s;
+  animation-duration: 23s;
   animation-delay: -13s;
 }
 
