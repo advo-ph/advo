@@ -95,6 +95,10 @@ if $DEPLOY_FRONTEND; then
   export VITE_API_URL="${VITE_API_URL:-https://api.${DOMAIN}}"
   log "Building web (VITE_API_URL=${VITE_API_URL})..."
   npm run build:web || err "Web build failed"
+  # Git tracks only the executable bit. Public assets copied from macOS can
+  # still carry mode 0600, which makes nginx return 403 after the tar upload.
+  find apps/web/dist -type d -exec chmod 0755 {} +
+  find apps/web/dist -type f -exec chmod 0644 {} +
   if ! grep -Rql "api.${DOMAIN}" apps/web/dist/; then
     err "Built bundle does not reference api.${DOMAIN} — refusing to ship (check VITE_API_URL)."
   fi
