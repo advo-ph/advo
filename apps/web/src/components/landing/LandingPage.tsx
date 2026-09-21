@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
@@ -135,17 +135,18 @@ const industryTab = [
 ];
 
 const marqueeLogos = [
-  { src: "/landing/logo/vbe-eye-center.png", alt: "VBE Eye Center" },
-  { src: "/landing/logo/fourlinq.png", alt: "FourlinQ" },
-  { src: "/landing/logo/the-medical-city.png", alt: "The Medical City" },
+  { src: "/landing/logo/vbe-eye-center.png", alt: "VBE Eye Center", scale: 1.2 },
+  { src: "/landing/logo/fourlinq.png", alt: "FourlinQ", scale: 1 },
+  { src: "/landing/logo/the-medical-city.png", alt: "The Medical City", scale: 1.45 },
   {
     src: "/landing/logo/philippine-college-endocrinology.png",
     alt: "Philippine College of Endocrinology, Diabetes and Metabolism",
+    scale: 1.55,
   },
-  { src: "/landing/logo/nokoji.png", alt: "Nokoji Matcha and Doughnuts" },
-  { src: "/landing/logo/felici.png", alt: "Felici Artisan Gelato" },
-  { src: "/landing/logo/felici-italian-cafe.png", alt: "Felici Italian Café" },
-  { src: "/landing/logo/coffee-rush.png", alt: "Coffee Rush" },
+  { src: "/landing/logo/nokoji.png", alt: "Nokoji Matcha and Doughnuts", scale: 1.08 },
+  { src: "/landing/logo/felici.png", alt: "Felici Artisan Gelato", scale: 1.55 },
+  { src: "/landing/logo/felici-italian-cafe.png", alt: "Felici Italian Café", scale: 1.18 },
+  { src: "/landing/logo/coffee-rush.png", alt: "Coffee Rush", scale: 1.55 },
 ] as const;
 
 const heroCopy = {
@@ -244,14 +245,22 @@ const LandingPage = () => {
       <section className="landing-marquee" aria-label="Businesses running on ADVO">
         <div className="landing-marquee-mask">
           <div className="landing-marquee-track">
-            {[...marqueeLogos, ...marqueeLogos].map((logo, index) => (
-              <span
-                className="landing-marquee-item"
-                key={`${logo.src}-${index}`}
-                aria-hidden={index >= marqueeLogos.length}
+            {[0, 1].map((groupIndex) => (
+              <div
+                className="landing-marquee-group"
+                key={groupIndex}
+                aria-hidden={groupIndex === 1 ? true : undefined}
               >
-                <img src={logo.src} alt={logo.alt} />
-              </span>
+                {marqueeLogos.map((logo) => (
+                  <span className="landing-marquee-item" key={logo.src}>
+                    <img
+                      src={logo.src}
+                      alt={groupIndex === 0 ? logo.alt : ""}
+                      style={{ "--landing-logo-scale": logo.scale } as CSSProperties}
+                    />
+                  </span>
+                ))}
+              </div>
             ))}
           </div>
         </div>

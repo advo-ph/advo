@@ -419,19 +419,26 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-marquee-track {
   display: flex;
   align-items: center;
-  gap: 56px;
   width: max-content;
-  padding: 8px 28px;
+  padding-block: 8px;
   color: var(--landing-ink);
   font-size: var(--landing-text-lead);
   font-weight: 500;
   opacity: 0.8;
+  will-change: transform;
   animation: landing-marquee 42s linear infinite;
+}
+.landing-marquee-group {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 56px;
+  padding-inline: 28px;
 }
 .landing-marquee-item {
   flex: 0 0 152px;
   width: 152px;
-  height: 52px;
+  height: 72px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -444,6 +451,8 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   max-width: 132px;
   max-height: 42px;
   object-fit: contain;
+  transform: scale(var(--landing-logo-scale, 1));
+  transform-origin: center;
   filter: grayscale(1);
   opacity: 0.72;
 }
@@ -1264,11 +1273,11 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-hero-shade { background: rgba(0, 0, 0, 0.34); }
 
   .landing-marquee-mask { --landing-fade: 8%; }
-  .landing-marquee-track { gap: 32px; padding-inline: 12%; }
+  .landing-marquee-group { gap: 32px; padding-inline: 24px; }
   .landing-marquee-item {
     flex-basis: 116px;
     width: 116px;
-    height: 44px;
+    height: 58px;
   }
   .landing-marquee-item img { max-width: 104px; max-height: 34px; }
   .landing-piece,
