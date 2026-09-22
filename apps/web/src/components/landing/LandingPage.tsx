@@ -82,8 +82,6 @@ const industry: Industry[] = [
 ];
 
 interface Service {
-  number: string;
-  label: string;
   title: string;
   copy: string;
   items: string[];
@@ -91,8 +89,6 @@ interface Service {
 
 const services: Service[] = [
   {
-    number: "01",
-    label: "Foundation",
     title: "Connect your business operations into an integrated system",
     copy: "Bring customers, staff, payments, and day-to-day operations into one dependable source of truth.",
     items: [
@@ -103,8 +99,6 @@ const services: Service[] = [
     ],
   },
   {
-    number: "02",
-    label: "AI layer",
     title: "Put AI to work on the repetitive parts",
     copy: "Give your team an always-on layer that answers, routes, summarizes, and follows up.",
     items: [
@@ -115,8 +109,6 @@ const services: Service[] = [
     ],
   },
   {
-    number: "03",
-    label: "Customer journey",
     title: "Turn every visit, call, and inquiry into action",
     copy: "Make it easier for people to find you, get started, and move forward without dropping the handoff.",
     items: [
@@ -124,18 +116,6 @@ const services: Service[] = [
       "Digital forms, intake, and lead capture",
       "Booking, onboarding, and online join flows",
       "Attribution and reporting that shows what is working",
-    ],
-  },
-  {
-    number: "04",
-    label: "Continuity",
-    title: "Keep the system secure, adopted, and improving",
-    copy: "Launch with a team that knows what to do, then keep the platform healthy as you grow.",
-    items: [
-      "Hosting, monitoring, security, and automated backups",
-      "Team training, documentation, and rollout support",
-      "Usage reporting and dedicated engineering",
-      "Ongoing optimization as your business changes",
     ],
   },
 ];
@@ -346,7 +326,6 @@ const LandingPage = () => {
       <section className="landing-services" id="services" aria-labelledby="services-heading">
         <div className="landing-services-frame">
           <Reveal className="landing-services-intro">
-            <p className="landing-services-kicker">AI modernization for real-world operations</p>
             <h2 id="services-heading">Prepare your business for the modern AI world.</h2>
             <p className="landing-services-lede">
               Bring your customer experience, day-to-day operations, and business data into one system.
@@ -360,10 +339,8 @@ const LandingPage = () => {
 
           <RevealGroup className="landing-services-list" stagger={0.08}>
             {services.map((service) => (
-              <Reveal as="article" className="landing-service-row" key={service.number}>
-                <span className="landing-service-number">{service.number}</span>
+              <Reveal as="article" className="landing-service-row" key={service.title}>
                 <div className="landing-service-body">
-                  <p className="landing-service-label">{service.label}</p>
                   <h3>{service.title}</h3>
                   <p className="landing-service-copy">{service.copy}</p>
                   <ul className="landing-service-items">
@@ -372,9 +349,6 @@ const LandingPage = () => {
                     ))}
                   </ul>
                 </div>
-                <span className="landing-service-arrow" aria-hidden="true">
-                  <ArrowUpRight size={18} strokeWidth={1.25} />
-                </span>
               </Reveal>
             ))}
           </RevealGroup>

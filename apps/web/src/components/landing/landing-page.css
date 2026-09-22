@@ -503,17 +503,8 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   flex-direction: column;
   align-items: flex-start;
 }
-.landing-services-kicker,
-.landing-service-label {
-  color: var(--advo-orange-hex);
-  font-size: var(--landing-text-small);
-  font-weight: 500;
-  letter-spacing: 0.04em;
-}
-.landing-services-kicker { max-width: 28ch; text-transform: uppercase; }
 .landing-services-intro h2 {
   max-width: 11ch;
-  margin-top: 18px;
   font-size: clamp(38px, 4.5vw, 62px);
   line-height: 1.03;
   letter-spacing: -0.035em;
@@ -549,43 +540,10 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   flex-direction: column;
 }
 .landing-service-row {
-  position: relative;
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) 28px;
-  align-items: start;
-  gap: 18px;
   padding: 28px 0 30px;
   border-top: 1px solid rgba(255, 255, 255, 0.18);
 }
-.landing-service-row::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: -18px;
-  width: 2px;
-  background: var(--advo-orange-hex);
-  opacity: 0;
-  transform: scaleY(0.6);
-  transition: opacity 0.22s var(--landing-ease), transform 0.22s var(--landing-ease);
-}
 .landing-service-row:last-of-type { border-bottom: 1px solid rgba(255, 255, 255, 0.18); }
-.landing-service-row:hover::before { opacity: 1; transform: scaleY(1); }
-.landing-service-number {
-  display: grid;
-  width: 34px;
-  height: 34px;
-  margin-top: 1px;
-  place-items: center;
-  border: 1px solid rgba(230, 122, 58, 0.54);
-  border-radius: 50%;
-  color: var(--advo-orange-hex);
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  font-size: var(--landing-text-micro);
-  font-variant-numeric: tabular-nums;
-}
-.landing-service-body { min-width: 0; }
-.landing-service-label { margin-bottom: 8px; text-transform: uppercase; }
 .landing-service-row h3 {
   max-width: 28ch;
   font-size: clamp(21px, 2vw, 29px);
@@ -624,14 +582,6 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   border-radius: 50%;
   background: var(--advo-orange-hex);
 }
-.landing-service-arrow {
-  display: grid;
-  min-height: 34px;
-  place-items: start end;
-  color: rgba(255, 255, 255, 0.64);
-  transition: transform 0.2s var(--landing-ease), color 0.2s var(--landing-ease);
-}
-.landing-service-row:hover .landing-service-arrow { color: var(--landing-ground); transform: translate(3px, -3px); }
 /* ---------------------------------------------------------------- Sections */
 .landing-piece,
 .landing-process,
@@ -1383,15 +1333,9 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-services-intro h2 { max-width: 10ch; font-size: clamp(36px, 10.5vw, 46px); }
   .landing-services-lede { font-size: var(--landing-text-lead); }
   .landing-service-row {
-    grid-template-columns: 34px minmax(0, 1fr);
-    gap: 12px;
     padding-block: 26px;
   }
-  .landing-service-row::before { left: -12px; }
-  .landing-service-number { width: 30px; height: 30px; }
-  .landing-service-body { padding-right: 20px; }
   .landing-service-items { grid-template-columns: 1fr; gap: 8px; margin-top: 16px; }
-  .landing-service-arrow { position: absolute; top: 28px; right: 0; }
   .landing-surface-grid { margin-top: 40px; }
   .landing-workflow-section { overflow-x: auto; scrollbar-width: none; font-size: var(--landing-text-body); }
   .landing-workflow-section::-webkit-scrollbar { display: none; }
@@ -1583,29 +1527,27 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .work-copy-swap { opacity: 1; transform: none; }
 }
 
-/* ---------------------------------------------------------------- work v2 (case-study flip stack)
-   The old `.work` rules above intentionally stay in place for the V1 archive.
-   V2 owns its own surface and typography so the shadcn demo can sit inside the
-   public landing page without inheriting the old CardSwap geometry. */
-.work-v2 {
-  --work-v2-ground: #eeeae2;
-  background: var(--work-v2-ground);
-  scroll-margin-top: var(--landing-nav-height);
+/* ---------------------------------------------------------------- work v2 (same layout, different card motion)
+   V2 intentionally inherits the V1 section geometry and copy. Its only visual
+   differences are the flip-style card transition and uncropped image treatment. */
+.work-v2 .card-swap-container {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  transform-origin: bottom right;
+  perspective: 900px;
+  overflow: visible;
 }
-.work-v2-stack {
-  overflow: clip;
-  font-family: var(--advo-font-public);
+.work-v2 .work-card {
+  border-radius: 12px;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
-.work-v2-stack.font-sans { font-family: var(--advo-font-public); }
-.work-v2-stack h2.font-semibold { font-weight: 600; }
-.work-v2-stack h2,
-.work-v2-stack p { font-family: var(--advo-font-public); }
-
-@media (max-width: 680px) {
-  .work-v2-stack > section:first-child {
-    min-height: 580px;
-  }
-  .work-v2-stack > div > div {
-    padding-inline: 12px;
-  }
+.work-v2 .work-card img {
+  object-fit: contain;
+  object-position: center;
+  background: var(--landing-ground-soft);
+  opacity: 1;
+  transition: none;
 }
