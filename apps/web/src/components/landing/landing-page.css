@@ -476,7 +476,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   width: 100%;
   margin-inline: auto;
   padding: clamp(40px, 7vw, 92px) clamp(24px, 6vw, 88px);
-  overflow: hidden;
+  overflow: clip;
   border-radius: 16px;
   background: var(--landing-ink);
   color: var(--landing-ground);
@@ -495,7 +495,14 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 }
 .landing-services-intro,
 .landing-services-list { position: relative; z-index: 1; }
-.landing-services-intro { display: flex; flex-direction: column; align-items: flex-start; }
+.landing-services-intro {
+  position: sticky;
+  top: calc(var(--landing-nav-height) + 24px);
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
 .landing-services-kicker,
 .landing-service-label {
   color: var(--advo-orange-hex);
@@ -537,25 +544,6 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-services-cta:hover span { text-underline-offset: 10px; }
 .landing-services-cta svg { transition: transform 0.22s var(--landing-ease); }
 .landing-services-cta:hover svg { transform: translate(3px, -3px); }
-.landing-services-path {
-  display: grid;
-  gap: 12px;
-  width: 100%;
-  margin-top: clamp(48px, 7vw, 96px);
-  padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.16);
-  color: rgba(255, 255, 255, 0.54);
-  font-size: var(--landing-text-small);
-}
-.landing-services-path span { display: flex; align-items: baseline; gap: 10px; }
-.landing-services-path b {
-  min-width: 22px;
-  color: var(--advo-orange-hex);
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  font-size: var(--landing-text-micro);
-  font-weight: 400;
-  font-variant-numeric: tabular-nums;
-}
 .landing-services-list {
   display: flex;
   flex-direction: column;
@@ -644,13 +632,6 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   transition: transform 0.2s var(--landing-ease), color 0.2s var(--landing-ease);
 }
 .landing-service-row:hover .landing-service-arrow { color: var(--landing-ground); transform: translate(3px, -3px); }
-.landing-services-note {
-  margin-top: 22px;
-  color: rgba(255, 255, 255, 0.52);
-  font-size: var(--landing-text-small);
-  line-height: 1.5;
-}
-
 /* ---------------------------------------------------------------- Sections */
 .landing-piece,
 .landing-process,
@@ -1343,6 +1324,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-services-frame,
   .landing-start-frame { grid-template-columns: 1fr; gap: 48px; }
   .landing-services-frame { padding: clamp(32px, 7vw, 64px) clamp(24px, 6vw, 56px); }
+  .landing-services-intro { position: static; }
   .landing-process-card { grid-template-columns: 1fr; gap: 24px; }
   .landing-process-tab { flex-direction: row; flex-wrap: wrap; gap: 6px 18px; }
   .landing-process-tab button { font-size: var(--landing-text-lead); }
@@ -1400,7 +1382,6 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-services-frame { gap: 42px; padding: 36px 20px 32px; }
   .landing-services-intro h2 { max-width: 10ch; font-size: clamp(36px, 10.5vw, 46px); }
   .landing-services-lede { font-size: var(--landing-text-lead); }
-  .landing-services-path { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 40px; }
   .landing-service-row {
     grid-template-columns: 34px minmax(0, 1fr);
     gap: 12px;
@@ -1600,4 +1581,31 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 @media (prefers-reduced-motion: reduce) {
   .work-copy-link:hover svg { transform: none; }
   .work-copy-swap { opacity: 1; transform: none; }
+}
+
+/* ---------------------------------------------------------------- work v2 (case-study flip stack)
+   The old `.work` rules above intentionally stay in place for the V1 archive.
+   V2 owns its own surface and typography so the shadcn demo can sit inside the
+   public landing page without inheriting the old CardSwap geometry. */
+.work-v2 {
+  --work-v2-ground: #eeeae2;
+  background: var(--work-v2-ground);
+  scroll-margin-top: var(--landing-nav-height);
+}
+.work-v2-stack {
+  overflow: clip;
+  font-family: var(--advo-font-public);
+}
+.work-v2-stack.font-sans { font-family: var(--advo-font-public); }
+.work-v2-stack h2.font-semibold { font-weight: 600; }
+.work-v2-stack h2,
+.work-v2-stack p { font-family: var(--advo-font-public); }
+
+@media (max-width: 680px) {
+  .work-v2-stack > section:first-child {
+    min-height: 580px;
+  }
+  .work-v2-stack > div > div {
+    padding-inline: 12px;
+  }
 }

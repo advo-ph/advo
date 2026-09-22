@@ -93,7 +93,7 @@ const services: Service[] = [
   {
     number: "01",
     label: "Foundation",
-    title: "Connect the systems your business already depends on",
+    title: "Connect your business operations into an integrated system",
     copy: "Bring customers, staff, payments, and day-to-day operations into one dependable source of truth.",
     items: [
       "Client or member management and billing",
@@ -117,7 +117,7 @@ const services: Service[] = [
   {
     number: "03",
     label: "Customer journey",
-    title: "Turn every visit, call, and enquiry into action",
+    title: "Turn every visit, call, and inquiry into action",
     copy: "Make it easier for people to find you, get started, and move forward without dropping the handoff.",
     items: [
       "Conversion-focused websites and landing pages",
@@ -349,21 +349,13 @@ const LandingPage = () => {
             <p className="landing-services-kicker">AI modernization for real-world operations</p>
             <h2 id="services-heading">Prepare your business for the modern AI world.</h2>
             <p className="landing-services-lede">
-              Bring your customer experience, day-to-day operations, and business data into one dependable
-              system—then put AI to work where it removes manual effort.
+              Bring your customer experience, day-to-day operations, and business data into one system.
+              Integrated AI to optimize workflows and remove manual effort.
             </p>
             <a className="landing-services-cta" href="#start">
               <span>Plan your modernization</span>
               <ArrowUpRight size={17} strokeWidth={1.5} aria-hidden="true" />
             </a>
-            <div className="landing-services-path" aria-label="Our modernization approach">
-              {services.map((service) => (
-                <span key={service.number}>
-                  <b>{service.number}</b>
-                  {service.label}
-                </span>
-              ))}
-            </div>
           </Reveal>
 
           <RevealGroup className="landing-services-list" stagger={0.08}>
@@ -385,9 +377,6 @@ const LandingPage = () => {
                 </span>
               </Reveal>
             ))}
-            <p className="landing-services-note">
-              Roll out by location. Migrate what matters. Train the team that uses it.
-            </p>
           </RevealGroup>
         </div>
       </section>
