@@ -128,7 +128,7 @@ const ProjectInquiry = ({ embedded = false }: ProjectInquiryProps) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-2">
           <label className={fieldLabelClass}>
-            Your name <span className="text-accent">*</span>
+            Your name <span className="text-[#a9491c]">*</span>
           </label>
           <Input
             value={formData.name}
@@ -139,7 +139,7 @@ const ProjectInquiry = ({ embedded = false }: ProjectInquiryProps) => {
         </div>
         <div className="space-y-2">
           <label className={fieldLabelClass}>
-            Email <span className="text-accent">*</span>
+            Email <span className="text-[#a9491c]">*</span>
           </label>
           <Input
             type="email"
@@ -195,12 +195,11 @@ const ProjectInquiry = ({ embedded = false }: ProjectInquiryProps) => {
 
       <div className="space-y-2">
         <label className={fieldLabelClass}>
-          Tell us about your project <span className="text-accent">*</span>
+          Tell us about your project <span className="text-[#a9491c]">*</span>
         </label>
         <Textarea
           value={formData.description}
           onChange={(event) => updateField("description", event.target.value)}
-          placeholder="What are you building? What problem does it solve?"
           rows={6}
           className="min-h-[160px] resize-none"
           required
@@ -274,11 +273,7 @@ const ProjectInquiry = ({ embedded = false }: ProjectInquiryProps) => {
         <div className="landing-start-frame">
           <div className="landing-start-copy">
             <p className="landing-kicker">Start a project</p>
-            <h2 id="start-heading">Tell us what you’re building.</h2>
-            <p>
-              Bring us the messy version: a business problem, a paper process, or an idea that
-              needs a working system around it.
-            </p>
+            <h2 id="start-heading">Tell us what you need to modernize.</h2>
 
             <ul className="landing-start-perks">
               {PERKS.map((perk) => (
@@ -336,7 +331,7 @@ const ProjectInquiry = ({ embedded = false }: ProjectInquiryProps) => {
             </span>
 
             <h1 className="text-4xl md:text-5xl font-semibold tracking-tight leading-[1.05] mb-6 text-balance">
-              Tell us what you’re building.
+              Tell us what you need to modernize.
             </h1>
 
             <div className="space-y-3 mb-10">

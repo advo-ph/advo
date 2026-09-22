@@ -83,14 +83,12 @@ const industry: Industry[] = [
 
 interface Service {
   title: string;
-  copy: string;
   items: string[];
 }
 
 const services: Service[] = [
   {
     title: "Connect your business operations into an integrated system",
-    copy: "Bring customers, staff, payments, and day-to-day operations into one dependable source of truth.",
     items: [
       "Client or member management and billing",
       "POS, inventory, scheduling, and staff workflows",
@@ -100,7 +98,6 @@ const services: Service[] = [
   },
   {
     title: "Put AI to work on the repetitive parts",
-    copy: "Give your team an always-on layer that answers, routes, summarizes, and follows up.",
     items: [
       "Back-office AI agent for routine operations",
       "AI voice receptionist for calls, bookings, and FAQs",
@@ -110,7 +107,6 @@ const services: Service[] = [
   },
   {
     title: "Turn every visit, call, and inquiry into action",
-    copy: "Make it easier for people to find you, get started, and move forward without dropping the handoff.",
     items: [
       "Conversion-focused websites and landing pages",
       "Digital forms, intake, and lead capture",
@@ -208,7 +204,7 @@ const LandingPage = () => {
   return (
     <main className={reduceMotion ? "landing-page is-reduce-motion" : "landing-page"} ref={pageRef}>
       <FlowingBackground />
-      <LandingNav overlayHero />
+      <LandingNav />
       <LandingScrollbar />
 
       <section className="landing-hero" id="top">
@@ -342,7 +338,6 @@ const LandingPage = () => {
               <Reveal as="article" className="landing-service-row" key={service.title}>
                 <div className="landing-service-body">
                   <h3>{service.title}</h3>
-                  <p className="landing-service-copy">{service.copy}</p>
                   <ul className="landing-service-items">
                     {service.items.map((item) => (
                       <li key={item}>{item}</li>

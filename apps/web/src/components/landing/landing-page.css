@@ -482,22 +482,10 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   color: var(--landing-ground);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 24px 64px rgba(12, 12, 12, 0.08);
 }
-.landing-services-frame::after {
-  content: "";
-  position: absolute;
-  top: -22%;
-  right: -5%;
-  width: min(42vw, 560px);
-  aspect-ratio: 1;
-  border: 1px solid rgba(230, 122, 58, 0.22);
-  border-radius: 50%;
-  pointer-events: none;
-}
 .landing-services-intro,
 .landing-services-list { position: relative; z-index: 1; }
 .landing-services-intro {
-  position: sticky;
-  top: calc(var(--landing-nav-height) + 24px);
+  position: static;
   align-self: start;
   display: flex;
   flex-direction: column;
@@ -549,13 +537,6 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   font-size: clamp(21px, 2vw, 29px);
   line-height: 1.2;
   letter-spacing: -0.02em;
-}
-.landing-service-copy {
-  max-width: 48ch;
-  margin-top: 8px;
-  color: rgba(255, 255, 255, 0.68);
-  font-size: var(--landing-text-body);
-  line-height: 1.55;
 }
 .landing-service-items {
   display: grid;
@@ -1293,36 +1274,32 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-shell-main { width: min(100% - 28px, 1440px); padding: 16px 0 64px; }
   .landing-shell-auth { padding: 28px 16px 56px; }
 
-  /* Bar over a full-bleed hero: transparent and light until the first scroll */
+  /* Keep the mobile hero aligned with the desktop card treatment. */
   .landing-page { --landing-nav-height: 60px; }
-  .landing-nav.is-overlay { color: var(--landing-ground); }
-  .landing-nav.is-overlay::before { opacity: 0; }
-  .landing-nav.is-overlay .landing-brand img { filter: invert(1); }
-  .landing-nav.is-overlay .landing-button-primary { background: var(--landing-ground); color: var(--landing-ink) !important; }
-  .landing-nav.is-overlay::before { border-bottom-color: transparent; }
-
-  /* Full-bleed under the transparent bar, and still cut so the client strip
-   * sits inside the first screen. */
-  .landing-hero { padding: 0; }
+  /* The portrait video stays inside the same guttered, rounded frame as desktop. */
   .landing-hero-frame {
     width: 100%;
-    height: calc(100vh - var(--landing-strip-height));
-    height: calc(100svh - var(--landing-strip-height));
+    height: calc(100vh - var(--landing-nav-height) - var(--landing-strip-height));
+    height: calc(100svh - var(--landing-nav-height) - var(--landing-strip-height));
     min-height: 520px;
-    border-radius: 0;
+    border-radius: 16px;
   }
   .landing-hero h1 { font-size: 40px; }
   .landing-hero-copy { padding: 0 20px 40px; }
   .landing-hero-shade { background: rgba(0, 0, 0, 0.34); }
 
   .landing-marquee-mask { --landing-fade: 8%; }
-  .landing-marquee-group { gap: 32px; padding-inline: 24px; }
+  .landing-marquee-group { gap: 16px; padding-inline: 12px; }
   .landing-marquee-item {
-    flex-basis: 116px;
-    width: 116px;
-    height: 58px;
+    flex-basis: 88px;
+    width: 88px;
+    height: 48px;
   }
-  .landing-marquee-item img { max-width: 104px; max-height: 34px; }
+  .landing-marquee-item img {
+    max-width: 78px;
+    max-height: 26px;
+    transform: scale(calc(var(--landing-logo-scale, 1) * 0.72));
+  }
   .landing-piece,
   .landing-work,
   .landing-faq,
