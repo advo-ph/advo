@@ -1289,16 +1289,16 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-hero-shade { background: rgba(0, 0, 0, 0.34); }
 
   .landing-marquee-mask { --landing-fade: 8%; }
-  .landing-marquee-group { gap: 16px; padding-inline: 12px; }
+  .landing-marquee-group { gap: 20px; padding-inline: 16px; }
   .landing-marquee-item {
-    flex-basis: 88px;
-    width: 88px;
-    height: 48px;
+    flex-basis: 100px;
+    width: 100px;
+    height: 56px;
   }
   .landing-marquee-item img {
-    max-width: 78px;
-    max-height: 26px;
-    transform: scale(calc(var(--landing-logo-scale, 1) * 0.72));
+    max-width: 88px;
+    max-height: 30px;
+    transform: scale(calc(var(--landing-logo-scale, 1) * 0.84));
   }
   .landing-piece,
   .landing-work,

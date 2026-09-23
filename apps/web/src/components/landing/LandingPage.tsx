@@ -148,7 +148,6 @@ const industryTab = [
 const marqueeLogos = [
   { src: "/landing/logo/vbe-eye-center.png", alt: "VBE Eye Center", scale: 1.2 },
   { src: "/landing/logo/fourlinq.png", alt: "FourlinQ", scale: 1 },
-  { src: "/landing/logo/the-medical-city.png", alt: "The Medical City", scale: 1.45 },
   {
     src: "/landing/logo/philippine-college-endocrinology.png",
     alt: "Philippine College of Endocrinology, Diabetes and Metabolism",
@@ -157,7 +156,6 @@ const marqueeLogos = [
   { src: "/landing/logo/nokoji.png", alt: "Nokoji Matcha and Doughnuts", scale: 1.08 },
   { src: "/landing/logo/felici.png", alt: "Felici Artisan Gelato", scale: 1.55 },
   { src: "/landing/logo/felici-italian-cafe.png", alt: "Felici Italian Café", scale: 1.18 },
-  { src: "/landing/logo/coffee-rush.png", alt: "Coffee Rush", scale: 1.55 },
 ] as const;
 
 const heroCopy = {
