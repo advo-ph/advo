@@ -7,7 +7,7 @@ export default function FlowingBackground() {
 
   return (
     <div className="flowing-background" aria-hidden="true">
-      <svg viewBox="0 0 1536 1024" preserveAspectRatio="none" focusable="false">
+      <svg viewBox="0 0 1536 1024" preserveAspectRatio="xMidYMid slice" focusable="false">
         <defs>
           <linearGradient id={`${id}-upper`} x1="0" y1="0" x2="0.8" y2="1">
             <stop offset="0" stopColor="#ffffff" stopOpacity="0" />
