@@ -580,6 +580,11 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 }
 .landing-piece { text-align: center; }
 .landing-piece > .landing-display { max-width: 24ch; margin-inline: auto; }
+.landing-solutions-logo {
+  width: clamp(96px, 9vw, 136px);
+  height: auto;
+  margin: 0 auto 24px;
+}
 .landing-solutions-title {
   font-size: clamp(34px, 4.2vw, 56px);
   font-weight: 500;
@@ -623,7 +628,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
    catalogue: label, image, headline, proof, and a clear next step. */
 .landing-industry-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1.35fr) repeat(2, minmax(0, 1fr));
   gap: clamp(24px, 2.6vw, 40px);
   margin-top: 56px;
   text-align: left;
@@ -668,6 +673,9 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   font-weight: 500;
   line-height: 1.12;
   letter-spacing: -0.025em;
+}
+.landing-industry-card h3.landing-industry-heading--single-line {
+  white-space: nowrap;
 }
 .landing-page .landing-industry-copy {
   max-width: 42ch;
@@ -731,11 +739,17 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-industry-more:hover > span { text-underline-offset: 6px; }
   .landing-industry-more:hover svg { transform: none; }
 }
-@media (max-width: 900px) { .landing-industry-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1100px) {
+  .landing-industry-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .landing-industry-card:first-child { grid-column: 1 / -1; }
+}
 @media (max-width: 680px) {
   .landing-piece { text-align: left; }
   .landing-piece > .landing-display { margin-inline: 0; }
+  .landing-solutions-logo { margin-inline: 0; margin-bottom: 20px; }
   .landing-industry-grid { grid-template-columns: 1fr; margin-top: 40px; }
+  .landing-industry-card:first-child { grid-column: auto; }
+  .landing-industry-card h3 { font-size: clamp(18px, 5.6vw, 22px); }
   .landing-industry-label { margin-bottom: 12px; }
   .landing-industry-content { padding-top: 20px; }
   .landing-industry-actions .landing-button { flex: 1 1 140px; }

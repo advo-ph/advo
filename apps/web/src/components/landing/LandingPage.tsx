@@ -36,12 +36,12 @@ const industry: Industry[] = [
     key: "flood",
     image: "/landing/industry/flood.png",
     title: "Flood",
-    heading: "Know which roads are flooded in real-time",
-    copy: "A live Metro Manila flood map that combines river gauges, rain data, hazard maps, and route guidance.",
+    heading: "Know the flooded roads in real-time",
+    copy: "Navigational map of real-time flooded roads",
     offer: [
       {
-        name: "Live flood map",
-        copy: "Automatically detect flood depth through flood monitoring devices in streets, PAGASA river gauges, live rainfall data, and UP NOAH hazard maps.",
+        name: "Live flood depth measurements",
+        copy: "Flood monitoring devices in flood-prone streets, PAGASA river gauges, live rainfall data, and UP NOAH hazard maps.",
       },
       {
         name: "Navigation avoids flooded areas",
@@ -88,7 +88,7 @@ interface Service {
 
 const services: Service[] = [
   {
-    title: "Connect your business operations into an integrated system",
+    title: "Connect your business operations into a unified system",
     items: [
       "Client or member management and billing",
       "POS, inventory, scheduling, and staff workflows",
@@ -97,16 +97,16 @@ const services: Service[] = [
     ],
   },
   {
-    title: "Put AI to work on the repetitive parts",
+    title: "Integrate AI into your workflow",
     items: [
-      "Back-office AI agent for routine operations",
-      "AI voice receptionist for calls, bookings, and FAQs",
-      "Text and web chat for leads and customer questions",
-      "Campaign builder, messaging, and automated follow-up",
+      "Help keep customer records up to date and handle everyday office tasks",
+      "Answer calls, book appointments, and help with common questions",
+      "Answer customer questions by text or on your website",
+      "Send promotions and follow up with customers automatically",
     ],
   },
   {
-    title: "Turn every visit, call, and inquiry into action",
+    title: "Convert customers and increase sales",
     items: [
       "Conversion-focused websites and landing pages",
       "Digital forms, intake, and lead capture",
@@ -276,6 +276,13 @@ const LandingPage = () => {
       </section>
 
       <section className="landing-piece" id="solutions" aria-labelledby="solutions-heading">
+        <img
+          className="landing-solutions-logo"
+          src="/landing/advo-logo-lockup.png"
+          alt="ADVO Technologies"
+          width={886}
+          height={310}
+        />
         <Reveal as="h2" id="solutions-heading" className="landing-display landing-solutions-title">
           Building Real-World Technological Solutions
         </Reveal>
@@ -288,7 +295,9 @@ const LandingPage = () => {
                 <img src={item.image} alt={`${item.title} — an ADVO solution`} loading="lazy" />
               </div>
               <div className="landing-industry-content">
-                <h3>{item.heading}</h3>
+                <h3 className={item.key === "flood" ? "landing-industry-heading--single-line" : undefined}>
+                  {item.heading}
+                </h3>
                 <p className="landing-industry-copy">{item.copy}</p>
                 <ul className="landing-industry-offer">
                   {item.offer.map((o) => (
