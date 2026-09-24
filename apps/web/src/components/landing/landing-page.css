@@ -586,10 +586,14 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   margin: 0 auto 24px;
 }
 .landing-solutions-title {
-  font-size: clamp(34px, 4.2vw, 56px);
+  font-size: clamp(14px, 4.3vw, 56px);
   font-weight: 500;
   line-height: 1.04;
   letter-spacing: -0.035em;
+}
+.landing-piece > .landing-display.landing-solutions-title {
+  max-width: none;
+  white-space: nowrap;
 }
 .landing-piece > .landing-lede { margin-inline: auto; }
 
@@ -628,7 +632,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
    catalogue: label, image, headline, proof, and a clear next step. */
 .landing-industry-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(24px, 2.6vw, 40px);
   margin-top: 56px;
   text-align: left;
@@ -674,9 +678,6 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   line-height: 1.12;
   letter-spacing: -0.025em;
 }
-.landing-industry-card h3.landing-industry-heading--single-line {
-  white-space: nowrap;
-}
 .landing-page .landing-industry-copy {
   max-width: 42ch;
   margin-top: 14px;
@@ -705,6 +706,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   line-height: 1.5;
   color: var(--landing-ink-soft);
 }
+.landing-mobile-industry-explorer { display: none; }
 .landing-industry-actions {
   display: flex;
   flex-wrap: wrap;
@@ -741,7 +743,6 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 }
 @media (max-width: 1100px) {
   .landing-industry-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .landing-industry-card:first-child { grid-column: 1 / -1; }
 }
 @media (max-width: 680px) {
   .landing-piece { text-align: left; }
@@ -753,6 +754,13 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-industry-label { margin-bottom: 12px; }
   .landing-industry-content { padding-top: 20px; }
   .landing-industry-actions .landing-button { flex: 1 1 140px; }
+
+  #solutions { text-align: left; }
+  #solutions > .landing-solutions-logo,
+  #solutions > #solutions-heading,
+  #solutions > .landing-industry-grid { display: none; }
+  #solutions .landing-mobile-industry-explorer { display: block; }
+  #solutions .landing-mobile-industry-explorer .landing-process-title { margin-bottom: 24px; }
 }
 
 /* Static row of the everyday tools; quiet on purpose, it is context, not proof */
@@ -813,6 +821,8 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-process-tab button {
   border: 0;
   padding: 0;
+  min-width: 44px;
+  min-height: 44px;
   background: none;
   text-align: left;
   font-size: var(--landing-text-title);

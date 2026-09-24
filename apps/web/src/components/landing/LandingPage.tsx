@@ -1,4 +1,10 @@
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
@@ -36,7 +42,7 @@ const industry: Industry[] = [
     key: "flood",
     image: "/landing/industry/flood.png",
     title: "Flood",
-    heading: "Know the flooded roads in real-time",
+    heading: "Know flooded roads in real-time",
     copy: "Navigational map of real-time flooded roads",
     offer: [
       {
@@ -116,7 +122,14 @@ const services: Service[] = [
   },
 ];
 
-const industryTab = [
+interface IndustryTab {
+  title: string;
+  heading: string;
+  copy: string;
+  still: string;
+}
+
+const industryTab: IndustryTab[] = [
   {
     title: "Food",
     heading: "Restaurants, cafes, and food stalls",
@@ -145,6 +158,134 @@ const industryTab = [
   },
 ];
 
+const mobileIndustryTab: IndustryTab[] = [
+  {
+    title: "Flood",
+    heading: "Know flooded roads in real-time",
+    copy: "Navigational map of real-time flooded roads.",
+    still: "/landing/industry/flood.png",
+  },
+  {
+    title: "School",
+    heading: "A safer, more connected campus.",
+    copy: "Campus access, safety, and school operations in one system.",
+    still: "/landing/industry/education.jpg",
+  },
+  {
+    title: "Parking",
+    heading: "A convenient parking experience.",
+    copy: "A fully automated car park for drivers, managers, and owners.",
+    still: "/landing/industry/parking.jpg",
+  },
+  {
+    title: "Medical",
+    heading: "Clinics, labs, and pharmacies",
+    copy: "Clinic management for appointments, queueing, billing, and stock; EMR for doctors; and hospital integration without a fax machine.",
+    still: "/landing/industry/medical.jpg",
+  },
+];
+
+interface IndustryExplorerProps {
+  items: IndustryTab[];
+  activeIndex: number;
+  onSelect: (index: number) => void;
+  idPrefix: string;
+  orientation: "horizontal" | "vertical";
+  reduceMotion: boolean | null;
+}
+
+const IndustryExplorer = ({
+  items,
+  activeIndex,
+  onSelect,
+  idPrefix,
+  orientation,
+  reduceMotion,
+}: IndustryExplorerProps) => {
+  const current = items[activeIndex] ?? items[0];
+  if (!current) return null;
+
+  const handleTabKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const backwards = orientation === "horizontal" ? event.key === "ArrowLeft" : event.key === "ArrowUp";
+    const forwards = orientation === "horizontal" ? event.key === "ArrowRight" : event.key === "ArrowDown";
+    let nextIndex: number | null = null;
+
+    if (event.key === "Home") nextIndex = 0;
+    else if (event.key === "End") nextIndex = items.length - 1;
+    else if (backwards) nextIndex = (activeIndex - 1 + items.length) % items.length;
+    else if (forwards) nextIndex = (activeIndex + 1) % items.length;
+
+    if (nextIndex === null) return;
+
+    event.preventDefault();
+    onSelect(nextIndex);
+    document.getElementById(`${idPrefix}-tab-${nextIndex}`)?.focus();
+  };
+
+  return (
+    <Reveal className="landing-process-card" delay={0.1}>
+      <div
+        className="landing-process-tab"
+        role="tablist"
+        aria-orientation={orientation}
+        aria-label="Industries we modernize"
+        onKeyDown={handleTabKeyDown}
+      >
+        {items.map((item, index) => (
+          <button
+            type="button"
+            role="tab"
+            id={`${idPrefix}-tab-${index}`}
+            aria-controls={`${idPrefix}-panel`}
+            aria-selected={index === activeIndex}
+            tabIndex={index === activeIndex ? 0 : -1}
+            key={item.title}
+            className={index === activeIndex ? "is-active" : ""}
+            onClick={() => onSelect(index)}
+          >
+            {item.title}
+          </button>
+        ))}
+      </div>
+
+      <div
+        className="landing-process-panel"
+        id={`${idPrefix}-panel`}
+        role="tabpanel"
+        aria-labelledby={`${idPrefix}-tab-${activeIndex}`}
+        tabIndex={0}
+      >
+        <div className="landing-still landing-process-still">
+          <AnimatePresence initial={false}>
+            <motion.img
+              key={current.still + current.title}
+              src={current.still}
+              alt=""
+              initial={reduceMotion ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={reduceMotion ? undefined : { opacity: 0 }}
+              transition={{ duration: reduceMotion ? 0 : 0.45, ease: EASE }}
+            />
+          </AnimatePresence>
+        </div>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={current.title}
+            className="landing-process-copy"
+            initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
+            transition={{ duration: reduceMotion ? 0 : 0.28, ease: EASE }}
+          >
+            <h3>{current.heading}</h3>
+            <p>{current.copy}</p>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </Reveal>
+  );
+};
+
 const marqueeLogos = [
   { src: "/landing/logo/vbe-eye-center.png", alt: "VBE Eye Center", scale: 1.2 },
   { src: "/landing/logo/fourlinq.png", alt: "FourlinQ", scale: 1 },
@@ -168,13 +309,26 @@ const LandingPage = () => {
   const [isMobileViewport, setIsMobileViewport] = useState(() =>
     typeof window !== "undefined" && window.matchMedia("(max-width: 680px)").matches,
   );
+  const [isCompactViewport, setIsCompactViewport] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches,
+  );
   const [tabIndex, setTabIndex] = useState(0);
+  const [mobileTabIndex, setMobileTabIndex] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
   const pageRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 680px)");
     const handleChange = () => setIsMobileViewport(mediaQuery.matches);
+
+    handleChange();
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 900px)");
+    const handleChange = () => setIsCompactViewport(mediaQuery.matches);
 
     handleChange();
     mediaQuery.addEventListener("change", handleChange);
@@ -196,8 +350,6 @@ const LandingPage = () => {
   // photo is the point, the motion only keeps it from reading as a poster.
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
   const heroShift = useTransform(scrollYProgress, [0, 1], ["0%", reduceMotion ? "0%" : "14%"]);
-
-  const current = industryTab[tabIndex] ?? industryTab[0];
 
   return (
     <main className={reduceMotion ? "landing-page is-reduce-motion" : "landing-page"} ref={pageRef}>
@@ -275,7 +427,11 @@ const LandingPage = () => {
         </div>
       </section>
 
-      <section className="landing-piece" id="solutions" aria-labelledby="solutions-heading">
+      <section
+        className="landing-piece"
+        id="solutions"
+        aria-labelledby={isMobileViewport ? "mobile-solutions-heading" : "solutions-heading"}
+      >
         <img
           className="landing-solutions-logo"
           src="/landing/advo-logo-lockup.png"
@@ -295,9 +451,7 @@ const LandingPage = () => {
                 <img src={item.image} alt={`${item.title} — an ADVO solution`} loading="lazy" />
               </div>
               <div className="landing-industry-content">
-                <h3 className={item.key === "flood" ? "landing-industry-heading--single-line" : undefined}>
-                  {item.heading}
-                </h3>
+                <h3>{item.heading}</h3>
                 <p className="landing-industry-copy">{item.copy}</p>
                 <ul className="landing-industry-offer">
                   {item.offer.map((o) => (
@@ -324,6 +478,22 @@ const LandingPage = () => {
             </Reveal>
           ))}
         </RevealGroup>
+
+        {isMobileViewport ? (
+          <div className="landing-mobile-industry-explorer">
+            <Reveal as="h2" id="mobile-solutions-heading" className="landing-process-title">
+              Industries we modernize
+            </Reveal>
+            <IndustryExplorer
+              items={mobileIndustryTab}
+              activeIndex={mobileTabIndex}
+              onSelect={setMobileTabIndex}
+              idPrefix="mobile-solutions-industry"
+              orientation="horizontal"
+              reduceMotion={reduceMotion}
+            />
+          </div>
+        ) : null}
       </section>
 
       <section className="landing-services" id="services" aria-labelledby="services-heading">
@@ -357,54 +527,19 @@ const LandingPage = () => {
         </div>
       </section>
 
-      <section className="landing-process" id="process">
-        <Reveal as="h2" className="landing-process-title">Industries we modernize</Reveal>
-        <Reveal className="landing-process-card" delay={0.1}>
-          <div className="landing-process-tab" role="tablist" aria-orientation="vertical" aria-label="Industries we modernize">
-            {industryTab.map((item, index) => (
-              <button
-                type="button"
-                role="tab"
-                key={item.title}
-                aria-selected={index === tabIndex}
-                className={index === tabIndex ? "is-active" : ""}
-                onClick={() => setTabIndex(index)}
-              >
-                {item.title}
-              </button>
-            ))}
-          </div>
-
-          <div className="landing-process-panel" role="tabpanel">
-            <div className="landing-still landing-process-still">
-              <AnimatePresence initial={false}>
-                <motion.img
-                  key={current.still + current.title}
-                  src={current.still}
-                  alt=""
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: reduceMotion ? 0 : 0.45, ease: EASE }}
-                />
-              </AnimatePresence>
-            </div>
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div
-                key={current.title}
-                className="landing-process-copy"
-                initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
-                transition={{ duration: 0.28, ease: EASE }}
-              >
-                <h3>{current.heading}</h3>
-                <p>{current.copy}</p>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </Reveal>
-      </section>
+      {!isMobileViewport ? (
+        <section className="landing-process" id="process">
+          <Reveal as="h2" className="landing-process-title">Industries we modernize</Reveal>
+          <IndustryExplorer
+            items={industryTab}
+            activeIndex={tabIndex}
+            onSelect={setTabIndex}
+            idPrefix="process-industry"
+            orientation={isCompactViewport ? "horizontal" : "vertical"}
+            reduceMotion={reduceMotion}
+          />
+        </section>
+      ) : null}
       {shippedProject.length > 0 ? <WorkShowcase project={shippedProject} /> : null}
       <ProjectInquiry embedded />
       <LandingFooter />
