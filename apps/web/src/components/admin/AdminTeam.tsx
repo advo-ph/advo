@@ -41,6 +41,7 @@ import { PageHeader, Empty } from "./_ui";
 const TEAM_ROLES = [
   "Founder & CEO",
   "Developer",
+  "Senior Developer",
   "Junior Developer",
   "Intern",
   "Creatives Intern",
