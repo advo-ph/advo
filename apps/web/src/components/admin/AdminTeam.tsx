@@ -39,7 +39,7 @@ import ImageCropDialog from "@/components/ImageCropDialog";
 import { PageHeader, Empty } from "./_ui";
 
 const TEAM_ROLES = [
-  "Founder",
+  "Founder & CEO",
   "Developer",
   "Junior Developer",
   "Intern",

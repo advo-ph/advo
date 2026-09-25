@@ -230,7 +230,7 @@ async function seed() {
     permissionRole: "admin" | "developer" | "designer" | "manager";
     avatarUrl: string;
   }> = [
-    { name: "Prince Wagan", role: "Founder", permissionRole: "admin", avatarUrl: "/team/prince-wagan.jpg" },
+    { name: "Prince Wagan", role: "Founder & CEO", permissionRole: "admin", avatarUrl: "/team/prince-wagan.jpg" },
     { name: "Angelo Revelo", role: "Developer", permissionRole: "developer", avatarUrl: "/team/angelo-revelo.jpg" },
     { name: "Anthony Gabriel Ramos", role: "Project Manager", permissionRole: "manager", avatarUrl: "/team/anthony-ramos.jpg" },
     { name: "Au Cargason", role: "Project Manager", permissionRole: "manager", avatarUrl: "/team/au-cargason.jpg" },
