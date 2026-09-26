@@ -42,8 +42,8 @@ interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   signOut: () => Promise<void>;
-  login: (email: string, password: string) => Promise<{ error: string | null; user: AuthUser | null }>;
-  loginWithMagicLink: (email: string) => Promise<{ error: string | null }>;
+  login: (username: string, password: string) => Promise<{ error: string | null; user: AuthUser | null }>;
+  loginWithMagicLink: (username: string) => Promise<{ error: string | null }>;
   verifyMagicLink: (token: string) => Promise<{ error: string | null; user: AuthUser | null }>;
   /** Accounts this browser remembers. Survives sign-out on purpose. */
   savedAccounts: SavedAccount[];
@@ -193,12 +193,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 
   const login = useCallback(
-    async (email: string, password: string) => {
+    async (username: string, password: string) => {
       const res = await post<{
         accessToken: string;
         refreshToken: string;
         user: AuthUserPayload;
-      }>("/api/auth/login", { email, password });
+      }>("/api/auth/login", { username, password });
 
       if (res.error || !res.data) {
         return { error: res.error || "Login failed", user: null };
@@ -212,8 +212,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     [adoptUser, registerDevice]
   );
 
-  const loginWithMagicLink = useCallback(async (email: string) => {
-    const res = await post<{ message: string }>("/api/auth/magic-link", { email });
+  const loginWithMagicLink = useCallback(async (username: string) => {
+    const res = await post<{ message: string }>("/api/auth/magic-link", { username });
     return { error: res.error };
   }, []);
 

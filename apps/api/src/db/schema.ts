@@ -105,6 +105,7 @@ export const libraryItemTypeEnum = pgEnum("library_item_type", [
 export const user = pgTable("user", {
   userId: bigserial("user_id", { mode: "number" }).primaryKey(),
   email: varchar("email", { length: 255 }).unique().notNull(),
+  username: varchar("username", { length: 255 }).notNull(),
   passwordHash: varchar("password_hash", { length: 255 }),
   role: userRoleEnum("role").notNull().default("client"),
   isActive: boolean("is_active").notNull().default(true),
@@ -114,7 +115,7 @@ export const user = pgTable("user", {
   magicTokenExpiresAt: timestamp("magic_token_expires_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => [uniqueIndex("idx_user_username").on(t.username)]);
 
 export const session = pgTable(
   "session",

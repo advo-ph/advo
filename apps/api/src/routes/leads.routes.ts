@@ -11,6 +11,7 @@ import { hashPassword } from "../services/auth.service.js";
 import { sendWelcomeEmail, sendLeadNotificationEmail } from "../services/email.service.js";
 import { nanoid } from "nanoid";
 import type { Variables } from "../types/context.js";
+import { usernameFromEmail } from "../utils/username.js";
 
 const leads = new Hono<{ Variables: Variables }>();
 
@@ -144,10 +145,19 @@ leads.post("/:id/convert", requireAuth, requireAdmin, async (c) => {
   // Create user account
   const tempPassword = nanoid(16);
   const passwordHash = await hashPassword(tempPassword);
+  const username = usernameFromEmail(existing.email);
+  const [usernameOwner] = await d
+    .select({ userId: user.userId })
+    .from(user)
+    .where(eq(user.username, username))
+    .limit(1);
+  if (usernameOwner) {
+    throw new HTTPException(409, { message: "This email produces a username that is already in use" });
+  }
 
   const [newUser] = await d
     .insert(user)
-    .values({ email: existing.email, passwordHash, role: "client" })
+    .values({ email: existing.email, username, passwordHash, role: "client" })
     .returning();
 
   // Create client record

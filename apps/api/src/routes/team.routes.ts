@@ -11,11 +11,12 @@ import { hashPassword, revokeAllUserSessions } from "../services/auth.service.js
 import { sendAdminInviteEmail } from "../services/email.service.js";
 import type { Variables } from "../types/context.js";
 import { looseUrl } from "../utils/validators.js";
+import { usernameFromEmail } from "../utils/username.js";
 
 const team = new Hono<{ Variables: Variables }>();
 
 /**
- * The password every account created here starts with.
+ * The password every member account created here starts with.
  *
  * Deliberately fixed rather than random. This is an internal tool, the person is told the
  * password in the same room they are hired in, and they change it in Settings. The previous
@@ -65,10 +66,20 @@ async function ensureLoginAccount(
     return { userId: existing.userId, created: false };
   }
 
+  const username = usernameFromEmail(email);
+  const [usernameOwner] = await d
+    .select({ userId: user.userId })
+    .from(user)
+    .where(eq(user.username, username))
+    .limit(1);
+  if (usernameOwner) {
+    throw new HTTPException(409, { message: "This email produces a username that is already in use" });
+  }
+
   const passwordHash = await hashPassword(DEFAULT_NEW_ACCOUNT_PASSWORD);
   const [created] = await d
     .insert(user)
-    .values({ email, passwordHash, role: "admin" })
+    .values({ email, username, passwordHash, role: "admin" })
     .returning();
 
   if (!created) {

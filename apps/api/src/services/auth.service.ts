@@ -5,6 +5,7 @@ import { eq, and, gt, lt, or, isNull, isNotNull } from "drizzle-orm";
 import { db } from "../db/connection.js";
 import { user, session, teamMember, client } from "../db/schema.js";
 import { env } from "../utils/env.js";
+import { normalizeUsername } from "../utils/username.js";
 
 const encoder = new TextEncoder();
 const SALT_ROUNDS = 12;
@@ -347,12 +348,15 @@ export async function getDisplayIdentity(
   return { displayName: email.split("@")[0] || email, avatarUrl: null };
 }
 
-export async function generateMagicToken(email: string): Promise<string | null> {
+export async function generateMagicToken(username: string): Promise<{ token: string; email: string } | null> {
   const d = db();
+  const normalized = normalizeUsername(username);
+  if (!normalized) return null;
+
   const [existing] = await d
     .select()
     .from(user)
-    .where(eq(user.email, email))
+    .where(eq(user.username, normalized))
     .limit(1);
 
   if (!existing) return null;
@@ -365,7 +369,7 @@ export async function generateMagicToken(email: string): Promise<string | null> 
     .set({ magicToken: token, magicTokenExpiresAt: expiresAt })
     .where(eq(user.userId, existing.userId));
 
-  return token;
+  return { token, email: existing.email };
 }
 
 export async function verifyMagicToken(token: string) {
@@ -411,6 +415,18 @@ export async function findUserByEmail(email: string) {
     .select()
     .from(user)
     .where(eq(user.email, email))
+    .limit(1);
+  return found || null;
+}
+
+export async function findUserByUsername(username: string) {
+  const normalized = normalizeUsername(username);
+  if (!normalized) return null;
+
+  const [found] = await db()
+    .select()
+    .from(user)
+    .where(eq(user.username, normalized))
     .limit(1);
   return found || null;
 }

@@ -36,7 +36,7 @@ npm run dev                              # npx concurrently: web :6447 + api :64
 
 Open http://localhost:6447
 
-Default admin login: `admin@advo.ph` / `changeme`
+Default local admin login: `admin` / `changeme` (the username is the email local part with punctuation removed)
 
 ### `npm run db:local` — what it does and why it exists
 

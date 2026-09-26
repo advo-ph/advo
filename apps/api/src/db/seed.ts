@@ -13,6 +13,7 @@ import {
   teamMember,
 } from "./schema.js";
 import { hashPassword } from "../services/auth.service.js";
+import { usernameFromEmail } from "../utils/username.js";
 
 loadEnv();
 initDb();
@@ -23,6 +24,7 @@ async function ensureUser(
   passwordHash: string,
 ): Promise<number> {
   const d = db();
+  const username = usernameFromEmail(email);
   const [existing] = await d
     .select({ userId: user.userId })
     .from(user)
@@ -31,13 +33,13 @@ async function ensureUser(
   if (existing) {
     await d
       .update(user)
-      .set({ passwordHash, role, isActive: true, updatedAt: new Date() })
+      .set({ username, passwordHash, role, isActive: true, updatedAt: new Date() })
       .where(eq(user.userId, existing.userId));
     return existing.userId;
   }
   const [created] = await d
     .insert(user)
-    .values({ email, passwordHash, role, isActive: true })
+    .values({ email, username, passwordHash, role, isActive: true })
     .returning({ userId: user.userId });
   if (!created) throw new Error(`Failed to create ${email}`);
   return created.userId;
@@ -167,7 +169,7 @@ async function seed() {
   }
 
   // ─── Client fixture ──────────────────────────────────
-  // A known client login (client@advo.ph / changeme) that owns exactly one
+  // A known client login (client / changeme) that owns exactly one
   // project, deliverable, and notification. Used by the data-scoping tests in
   // api-wiring.test.ts to prove a client cannot read another client's rows.
   const clientPasswordHash = await hashPassword("changeme");
