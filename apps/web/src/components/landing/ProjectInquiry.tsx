@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, Clock, Loader2, Mail, Send } from "lucide-react";
+import { ArrowLeft, Check, Loader2, Mail, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -291,10 +291,6 @@ const ProjectInquiry = ({ embedded = false }: ProjectInquiryProps) => {
                 <span>Prefer email?</span>
                 <a href="mailto:contact@advo.ph">contact@advo.ph</a>
               </div>
-              <div>
-                <span>Response time</span>
-                <strong>Within 24 hours</strong>
-              </div>
             </div>
           </div>
 
@@ -357,17 +353,6 @@ const ProjectInquiry = ({ embedded = false }: ProjectInquiryProps) => {
                   <a href="mailto:contact@advo.ph" className="text-sm font-medium hover:text-accent transition-colors">
                     contact@advo.ph
                   </a>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-secondary border border-border flex items-center justify-center shrink-0">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-0.5">
-                    Response time
-                  </p>
-                  <p className="text-sm font-medium">Within 24 hours, every time</p>
                 </div>
               </div>
             </div>

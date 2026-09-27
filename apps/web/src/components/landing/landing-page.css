@@ -593,7 +593,6 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 }
 .landing-piece > .landing-display.landing-solutions-title {
   max-width: none;
-  white-space: nowrap;
 }
 .landing-piece > .landing-lede { margin-inline: auto; }
 
@@ -628,11 +627,11 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-page .landing-surface-card p { margin-top: 10px; max-width: 40ch; font-size: var(--landing-text-body); line-height: 1.55; color: var(--landing-ink-soft); }
 .landing-surface-action { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
 
-/* Solutions — three real-world verticals, laid out like an editorial product
+/* Solutions — real-world verticals, laid out like an editorial product
    catalogue: label, image, headline, proof, and a clear next step. */
 .landing-industry-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: clamp(24px, 2.6vw, 40px);
   margin-top: 56px;
   text-align: left;
@@ -706,7 +705,6 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   line-height: 1.5;
   color: var(--landing-ink-soft);
 }
-.landing-mobile-industry-explorer { display: none; }
 .landing-industry-actions {
   display: flex;
   flex-wrap: wrap;
@@ -756,11 +754,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-industry-actions .landing-button { flex: 1 1 140px; }
 
   #solutions { text-align: left; }
-  #solutions > .landing-solutions-logo,
-  #solutions > #solutions-heading,
-  #solutions > .landing-industry-grid { display: none; }
-  #solutions .landing-mobile-industry-explorer { display: block; }
-  #solutions .landing-mobile-industry-explorer .landing-process-title { margin-bottom: 24px; }
+  .landing-solutions-title { font-size: clamp(30px, 8vw, 38px); }
 }
 
 /* Static row of the everyday tools; quiet on purpose, it is context, not proof */

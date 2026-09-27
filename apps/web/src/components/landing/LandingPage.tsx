@@ -85,6 +85,18 @@ const industry: Industry[] = [
     ],
     href: "https://park.advo.ph",
   },
+  {
+    key: "medical",
+    image: "/landing/industry/medical.jpg",
+    title: "Medical",
+    heading: "Connected care for clinics, labs, and pharmacies.",
+    copy: "Clinic management for appointments, queueing, billing, and stock; EMR for doctors; and hospital integration without a fax machine.",
+    offer: [
+      { name: "Clinic operations", copy: "Manage appointments, queueing, billing, and stock." },
+      { name: "Electronic medical records", copy: "Give doctors EMR tools for patient records." },
+      { name: "Hospital integration", copy: "Connect care systems without relying on fax machines." },
+    ],
+  },
 ];
 
 interface Service {
@@ -105,8 +117,8 @@ const services: Service[] = [
   {
     title: "Integrate AI into your workflow",
     items: [
-      "Help keep customer records up to date and handle everyday office tasks",
-      "Answer calls, book appointments, and help with common questions",
+      "Keep customer records updated and handle everyday tasks",
+      "Answer calls, book appointments, and help with questions",
       "Answer customer questions by text or on your website",
       "Send promotions and follow up with customers automatically",
     ],
@@ -155,33 +167,6 @@ const industryTab: IndustryTab[] = [
     heading: "Offices, retail, and services",
     copy: "Inventory and point of sale; scheduling and customer records; fleet tracking, dispatch, and proof of delivery.",
     still: "/landing/industry/business.jpg",
-  },
-];
-
-const mobileIndustryTab: IndustryTab[] = [
-  {
-    title: "Flood",
-    heading: "Know flooded roads in real-time",
-    copy: "Navigational map of real-time flooded roads.",
-    still: "/landing/industry/flood.png",
-  },
-  {
-    title: "School",
-    heading: "A safer, more connected campus.",
-    copy: "Campus access, safety, and school operations in one system.",
-    still: "/landing/industry/education.jpg",
-  },
-  {
-    title: "Parking",
-    heading: "A convenient parking experience.",
-    copy: "A fully automated car park for drivers, managers, and owners.",
-    still: "/landing/industry/parking.jpg",
-  },
-  {
-    title: "Medical",
-    heading: "Clinics, labs, and pharmacies",
-    copy: "Clinic management for appointments, queueing, billing, and stock; EMR for doctors; and hospital integration without a fax machine.",
-    still: "/landing/industry/medical.jpg",
   },
 ];
 
@@ -313,7 +298,6 @@ const LandingPage = () => {
     typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches,
   );
   const [tabIndex, setTabIndex] = useState(0);
-  const [mobileTabIndex, setMobileTabIndex] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
   const pageRef = useRef<HTMLElement>(null);
 
@@ -430,7 +414,7 @@ const LandingPage = () => {
       <section
         className="landing-piece"
         id="solutions"
-        aria-labelledby={isMobileViewport ? "mobile-solutions-heading" : "solutions-heading"}
+        aria-labelledby="solutions-heading"
       >
         <img
           className="landing-solutions-logo"
@@ -478,22 +462,6 @@ const LandingPage = () => {
             </Reveal>
           ))}
         </RevealGroup>
-
-        {isMobileViewport ? (
-          <div className="landing-mobile-industry-explorer">
-            <Reveal as="h2" id="mobile-solutions-heading" className="landing-process-title">
-              Industries we modernize
-            </Reveal>
-            <IndustryExplorer
-              items={mobileIndustryTab}
-              activeIndex={mobileTabIndex}
-              onSelect={setMobileTabIndex}
-              idPrefix="mobile-solutions-industry"
-              orientation="horizontal"
-              reduceMotion={reduceMotion}
-            />
-          </div>
-        ) : null}
       </section>
 
       <section className="landing-services" id="services" aria-labelledby="services-heading">
