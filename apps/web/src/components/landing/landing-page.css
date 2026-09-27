@@ -1369,7 +1369,8 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-hero-media { inset: 0; transform-origin: 50% 100%; }
   .landing-hero-media img,
   .landing-hero-media video { object-position: 100% 100%; }
-  .landing-hero-shade { display: none; }
+  /* The tint fades in with the settle, so the card lands as dim as it used to be. */
+  .landing-hero-shade { background: rgba(0, 0, 0, 0.26); opacity: var(--hero-settle); }
   /* The copy trails the scroll at half speed, so it keeps clear of both the
      closing card edge and the building rising under it. */
   .landing-hero-copy {

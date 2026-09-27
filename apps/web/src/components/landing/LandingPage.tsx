@@ -117,10 +117,10 @@ const services: Service[] = [
   {
     title: "Integrate AI into your workflow",
     items: [
-      "Keep customer records updated and handle everyday tasks",
-      "Answer calls, book appointments, and help with questions",
+      "Handle customer records and  everyday tasks",
+      "Answer calls and book appointments",
       "Answer customer questions by text or on your website",
-      "Send promotions and follow up with customers automatically",
+      "Send promotions and follow up with customers",
     ],
   },
   {
@@ -532,7 +532,7 @@ const LandingPage = () => {
             <h2 id="services-heading">Prepare your business for the modern AI world.</h2>
             <p className="landing-services-lede">
               Bring your customer experience, day-to-day operations, and business data into one system.
-              Integrated AI to optimize workflows and remove manual effort.
+              Integrated AI to optimize workflows and minimize manual effort.
             </p>
             <a className="landing-services-cta" href="#start">
               <span>Plan your modernization</span>

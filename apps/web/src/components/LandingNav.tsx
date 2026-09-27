@@ -26,7 +26,6 @@ const item: NavLink[] = [
   { label: "Solutions", href: "#solutions" },
   { label: "Services", href: "#services" },
   { label: "Portfolio", href: "#work" },
-  { label: "How it ships", href: "/how-it-ships" },
   { label: "Team", href: "/team" },
 ];
 
