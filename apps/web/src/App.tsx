@@ -24,6 +24,7 @@ import Terms from "./pages/legal/Terms";
 import Privacy from "./pages/legal/Privacy";
 import Refund from "./pages/legal/Refund";
 import Dispute from "./pages/legal/Dispute";
+import HowItShips from "./pages/HowItShips";
 
 /** Preserves query string (token=, redirectTo=, …) when aliasing /login → /clients */
 const LoginAlias = () => {
@@ -63,6 +64,7 @@ const App = () => (
             <Route path="/clients" element={<Login variant="clients" />} />
             <Route path="/start" element={<Start />} />
             <Route path="/team" element={<Team />} />
+            <Route path="/how-it-ships" element={<HowItShips />} />
             <Route path="/project/:slug" element={<ProjectDetail />} />
             <Route path="/work/:slug" element={<CaseStudy />} />
             <Route path="/p/:token" element={<PreviewLink />} />

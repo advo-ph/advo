@@ -23,7 +23,6 @@ interface SocialLink {
 interface FooterLink {
   label: string;
   href: string;
-  ext?: boolean;
 }
 
 interface LandingFooterProps {
@@ -67,23 +66,22 @@ const footerCol: { title: string; link: FooterLink[] }[] = [
       { label: "Public site", href: "#solutions" },
       { label: "Client Hub", href: "/login" },
       { label: "Admin Console", href: "/login" },
-      { label: "Hardware floor", href: "#start" },
     ],
   },
   {
     title: "How it ships",
     link: [
-      { label: "Discovery", href: "#process" },
-      { label: "The build", href: "#process" },
-      { label: "Review and sign-off", href: "#process" },
-      { label: "VPS handoff", href: "#workflow" },
+      { label: "Discovery", href: "/how-it-ships#discovery" },
+      { label: "The build", href: "/how-it-ships#build" },
+      { label: "Review and sign-off", href: "/how-it-ships#review" },
+      { label: "VPS handoff", href: "/how-it-ships#handoff" },
     ],
   },
   {
     title: "Keep it running",
     link: [
       { label: "The work we shipped", href: "#work" },
-      { label: "How it ships", href: "#process" },
+      { label: "Hosting and support", href: "/how-it-ships#handoff" },
       { label: "Project enquiry", href: "#start" },
     ],
   },
@@ -92,7 +90,6 @@ const footerCol: { title: string; link: FooterLink[] }[] = [
     link: [
       { label: "Team", href: "/team" },
       { label: "Portfolio", href: "#work" },
-      { label: "Fourlinq", href: "https://fourlinq.ph", ext: true },
       { label: "Start a project", href: "#start" },
     ],
   },
@@ -127,7 +124,6 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
       return (
         <a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer">
           {item.label}
-          {item.ext ? <span> ↗</span> : null}
         </a>
       );
     }
@@ -193,7 +189,9 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
           <a href={`mailto:${identityValue("support_email") ?? "contact@advo.ph"}`}>
             {identityValue("support_email") ?? "contact@advo.ph"}
           </a>
-          {identityValue("support_phone") ? ` · ${identityValue("support_phone")}` : ""}
+          {identityValue("support_phone") ? (
+            <> · <a href={`tel:${identityValue("support_phone")}`}>{identityValue("support_phone")}</a></>
+          ) : ""}
         </p>
       </div>
 
