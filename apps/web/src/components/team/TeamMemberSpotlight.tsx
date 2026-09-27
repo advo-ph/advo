@@ -26,34 +26,43 @@ interface TeamMemberSpotlightProps {
 /** Same curve as --landing-ease, in the form framer needs. */
 const EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
 
-/* Small orange glows inside the scrim. Each one darts to a fresh random spot,
-   size and brightness when it arrives, so the backdrop never settles into a loop. */
-const AURA_COUNT = 7;
+/* Faint orange glows inside the scrim. Each one wanders a random loop of spots
+   for as long as the overlay is open. */
+const AURA = [
+  { color: "rgba(230, 122, 58, 0.16)", size: 48 },
+  { color: "rgba(230, 122, 58, 0.1)", size: 60 },
+  { color: "rgba(214, 98, 40, 0.12)", size: 40 },
+];
 
-const randomSpot = () => ({
-  x: `${Math.round(Math.random() * 100 - 10)}vw`,
-  y: `${Math.round(Math.random() * 100 - 10)}vh`,
-  scale: 0.6 + Math.random() * 0.9,
-  opacity: 0.35 + Math.random() * 0.65,
-});
+const AURA_STOPS = 6;
 
-const AuraBlob = ({ still }: { still: boolean }) => {
-  const [spot, setSpot] = useState(randomSpot);
-  const [size] = useState(() => 12 + Math.random() * 12);
-  const [duration, setDuration] = useState(() => 3 + Math.random() * 3);
+const randomPath = () => {
+  const stops = Array.from({ length: AURA_STOPS }, () => ({
+    x: `${Math.round(Math.random() * 90 - 20)}vw`,
+    y: `${Math.round(Math.random() * 90 - 20)}vh`,
+    scale: 0.8 + Math.random() * 0.6,
+  }));
+  // Close the loop so each repeat starts where the last one ended.
+  stops.push(stops[0]);
+  return {
+    x: stops.map((stop) => stop.x),
+    y: stops.map((stop) => stop.y),
+    scale: stops.map((stop) => stop.scale),
+  };
+};
+
+const AuraBlob = ({ color, size, still }: { color: string; size: number; still: boolean }) => {
+  const [path] = useState(randomPath);
+  const [duration] = useState(() => 12 + Math.random() * 6);
+  const start = { x: path.x[0], y: path.y[0], scale: path.scale[0] };
 
   return (
     <motion.span
       className="team-aura-blob"
-      style={{ width: `${size}vmax`, height: `${size}vmax`, marginLeft: `-${size / 2}vmax`, marginTop: `-${size / 2}vmax` }}
-      initial={spot}
-      animate={spot}
-      transition={still ? { duration: 0 } : { duration, ease: "easeInOut" }}
-      onAnimationComplete={() => {
-        if (still) return;
-        setDuration(3 + Math.random() * 3);
-        setSpot(randomSpot());
-      }}
+      style={{ background: color, width: `${size}vmax`, height: `${size}vmax` }}
+      initial={start}
+      animate={still ? start : path}
+      transition={still ? { duration: 0 } : { duration, ease: "easeInOut", repeat: Infinity }}
     />
   );
 };
@@ -151,8 +160,8 @@ const TeamMemberSpotlight = ({
                 exit={{ opacity: 0 }}
                 transition={{ duration: reduceMotion ? 0.12 : 0.25, ease: EASE }}
               >
-                {Array.from({ length: AURA_COUNT }, (_, index) => (
-                  <AuraBlob key={index} still={Boolean(reduceMotion)} />
+                {AURA.map((blob, index) => (
+                  <AuraBlob key={index} {...blob} still={Boolean(reduceMotion)} />
                 ))}
               </motion.div>
             </Dialog.Overlay>

@@ -153,16 +153,16 @@
 }
 .team-tile-role {
   display: block;
-  margin-top: 10px;
+  margin-top: 5px;
   font-family: var(--advo-font-body);
   font-size: clamp(11px, 0.9vw, 13px);
-  letter-spacing: 0.5em;
+  letter-spacing: 0.3em;
   text-transform: uppercase;
 }
 
 /* ---------------------------------------------------------------- Spotlight */
 
-/* Black see-through scrim over the blurred roster, with small orange glows
+/* Black see-through scrim over the blurred roster, with orange glows
    drifting inside it (AuraBlob). 0.86 keeps the copy clear of AA even where
    the white roster shows through. */
 .team-scrim {
@@ -179,8 +179,7 @@
   top: 0;
   left: 0;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(236, 122, 52, 0.55) 0%, rgba(230, 110, 40, 0.18) 45%, transparent 70%);
-  filter: blur(24px);
+  filter: blur(110px);
   will-change: transform;
   pointer-events: none;
 }
