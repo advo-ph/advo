@@ -26,6 +26,7 @@ const item: NavLink[] = [
   { label: "Solutions", href: "#solutions" },
   { label: "Services", href: "#services" },
   { label: "Portfolio", href: "#work" },
+  { label: "How it ships", href: "/how-it-ships" },
   { label: "Team", href: "/team" },
 ];
 
@@ -41,8 +42,10 @@ const DRAWER_ID = "mobile-navigation-drawer";
 const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isAtFooter, setIsAtFooter] = useState(false);
   const { pathname } = useLocation();
   const drawerRef = useRef<HTMLElement>(null);
+  const navRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   const closeMenu = useCallback(() => setIsMenuOpen(false), []);
@@ -75,10 +78,23 @@ const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps)
   }, [pathname, closeMenu]);
 
   useEffect(() => {
-    const read = () => setIsScrolled(window.scrollY > 8);
+    const read = () => {
+      setIsScrolled(window.scrollY > 8);
+
+      const navRect = navRef.current?.getBoundingClientRect();
+      const footerRect = document.getElementById("footer")?.getBoundingClientRect();
+      const footerOverlapsNav = Boolean(
+        navRect && footerRect && footerRect.top < navRect.bottom && footerRect.bottom > navRect.top,
+      );
+      setIsAtFooter((current) => current === footerOverlapsNav ? current : footerOverlapsNav);
+    };
     read();
     window.addEventListener("scroll", read, { passive: true });
-    return () => window.removeEventListener("scroll", read);
+    window.addEventListener("resize", read);
+    return () => {
+      window.removeEventListener("scroll", read);
+      window.removeEventListener("resize", read);
+    };
   }, []);
 
   const renderLink = (
@@ -110,13 +126,14 @@ const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps)
     "landing-nav",
     isScrolled ? "is-scrolled" : "",
     isOverlay ? "is-overlay" : "",
+    isAtFooter ? "is-at-footer" : "",
     isMenuOpen ? "is-menu-open" : "",
   ]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <header className={className}>
+    <header className={className} ref={navRef}>
       <div className="landing-nav-inner">
         <Link className="landing-brand" to="/" aria-label="ADVO home" onClick={closeMenu}>
           {/* Both marks sit at the same height and left edge, so the ADVO in the

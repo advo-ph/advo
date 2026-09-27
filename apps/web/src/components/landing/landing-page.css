@@ -257,6 +257,19 @@ body:has(.landing-shell) {
   transition: opacity 0.25s var(--landing-ease), border-color 0.25s var(--landing-ease);
 }
 .landing-nav.is-scrolled::before { border-bottom-color: var(--landing-line); }
+.landing-nav.is-at-footer { color: #fff; }
+.landing-nav.is-at-footer::before {
+  background: var(--landing-ink);
+  border-bottom-color: rgba(255, 255, 255, 0.14);
+}
+.landing-nav.is-at-footer .landing-brand-full,
+.landing-nav.is-at-footer .landing-brand-mark { filter: brightness(0) invert(1); }
+.landing-nav.is-at-footer .landing-login {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.26);
+}
+.landing-nav.is-at-footer .landing-login:hover { background: rgba(255, 255, 255, 0.16); border-color: rgba(255, 255, 255, 0.5); }
 .landing-nav-inner {
   position: relative;
   z-index: 1;
@@ -1229,8 +1242,8 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
     --landing-text-title: 26px;
   }
 
-  .landing-hero h1 { font-size: clamp(60px, 5vw, 76px); }
-  .landing-hero-copy > p { font-size: clamp(18px, 1.35vw, 21px); line-height: 1.45; }
+  .landing-hero h1 { font-size: clamp(76px, 5.5vw, 92px); }
+  .landing-hero-copy > p { font-size: clamp(22px, 1.55vw, 26px); line-height: 1.45; }
 }
 
 @media (max-width: 1100px) {
@@ -1262,6 +1275,16 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
     align-items: stretch;
     max-height: calc(100dvh - var(--landing-nav-height));
     overflow-y: auto;
+  }
+  .landing-nav.is-at-footer .landing-nav-link {
+    color: #fff;
+    background: var(--landing-ink);
+    border-top-color: rgba(255, 255, 255, 0.14);
+  }
+  .landing-nav.is-at-footer .landing-nav-item { border-bottom-color: rgba(255, 255, 255, 0.14); }
+  .landing-nav.is-at-footer .landing-nav-drawer-action .landing-button {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
   }
   .landing-nav-link.is-open { display: flex; }
   .landing-nav-item { padding-block: 0; border-bottom: 1px solid var(--landing-line); }
@@ -1320,19 +1343,45 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-shell-main { width: min(100% - 28px, 1440px); padding: 16px 0 64px; }
   .landing-shell-auth { padding: 28px 16px 56px; }
 
-  /* Keep the mobile hero aligned with the desktop card treatment. */
   .landing-page { --landing-nav-height: 60px; }
-  /* The portrait video stays inside the same guttered, rounded frame as desktop. */
+  /* Phone hero: opens full-bleed under a clear nav, then the first
+     HERO_SETTLE px of scroll (LandingPage.tsx) clip it into the guttered,
+     rounded card. --hero-settle runs 0 -> 1. The clip is visual only, so the
+     layout never moves. At 1 the page has scrolled one strip height, so the
+     card top meets the nav and the card bottom meets the partner strip. */
+  .landing-hero { padding: 0; }
   .landing-hero-frame {
-    width: 100%;
-    height: calc(100vh - var(--landing-nav-height) - var(--landing-strip-height));
-    height: calc(100svh - var(--landing-nav-height) - var(--landing-strip-height));
-    min-height: 520px;
-    border-radius: 16px;
+    --hero-settle: 0;
+    height: 100vh;
+    height: 100svh;
+    min-height: 600px;
+    border-radius: 0;
+    background: var(--landing-ground);
+    color: var(--landing-ink);
+    clip-path: inset(
+      calc(var(--hero-settle) * (var(--landing-nav-height) + var(--landing-strip-height)))
+      calc(var(--hero-settle) * var(--landing-gutter))
+      0
+      round calc(var(--hero-settle) * 16px)
+    );
   }
-  .landing-hero h1 { font-size: 40px; }
-  .landing-hero-copy { padding: 0 20px 40px; }
-  .landing-hero-shade { background: rgba(0, 0, 0, 0.34); }
+  /* Anchor the video to its bottom edge: a short screen crops the sky, not the building. */
+  .landing-hero-media { inset: 0; transform-origin: 50% 100%; }
+  .landing-hero-media img,
+  .landing-hero-media video { object-position: 100% 100%; }
+  .landing-hero-shade { display: none; }
+  /* The copy trails the scroll at half speed, so it keeps clear of both the
+     closing card edge and the building rising under it. */
+  .landing-hero-copy {
+    top: 26%;
+    bottom: auto;
+    padding: 0 28px;
+    transform: translateY(calc(var(--hero-settle) * var(--landing-strip-height) / 2));
+  }
+  .landing-hero h1 { font-size: 48px; line-height: 1.02; }
+  .landing-hero-copy > p { max-width: 30ch; color: #4b5563; }
+  /* Clear bar over the hero until the first scroll brings the ground back. */
+  .landing-nav.is-overlay::before { opacity: 0; }
 
   .landing-marquee-mask { --landing-fade: 8%; }
   .landing-marquee-group { gap: 12px; padding-inline: 12px; }

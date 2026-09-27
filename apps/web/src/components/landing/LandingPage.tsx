@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform, type MotionStyle } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import LandingNav from "@/components/LandingNav";
@@ -320,6 +320,9 @@ const marqueeLogos = [
   { src: "/landing/logo/felici-italian-cafe.png", alt: "Felici Italian Café", scale: 1.18 },
 ] as const;
 
+/** Scroll distance (px) over which the phone hero settles into its card. Matches --landing-strip-height. */
+const HERO_SETTLE = 120;
+
 const heroCopy = {
   hidden: { opacity: 0, y: 18 },
   show: { opacity: 1, y: 0 },
@@ -370,16 +373,25 @@ const LandingPage = () => {
   // The hero still drifts a little slower than the page. Small on purpose: the
   // photo is the point, the motion only keeps it from reading as a poster.
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
-  const heroShift = useTransform(scrollYProgress, [0, 1], ["0%", reduceMotion ? "0%" : "14%"]);
+  // Phones anchor the video to its bottom edge, so the drift stays off there.
+  const heroShift = useTransform(scrollYProgress, [0, 1], ["0%", reduceMotion || isMobileViewport ? "0%" : "14%"]);
+  // Phones open on a full-bleed hero. The first HERO_SETTLE px of scroll pull it in
+  // to the guttered, rounded card; the CSS reads the 0 → 1 progress from --hero-settle.
+  const { scrollY } = useScroll();
+  const heroSettle = useTransform(scrollY, [0, HERO_SETTLE], [0, 1], { clamp: true });
 
   return (
     <main className={reduceMotion ? "landing-page is-reduce-motion" : "landing-page"} ref={pageRef}>
       <FlowingBackground />
-      <LandingNav />
+      <LandingNav overlayHero={isMobileViewport} />
       <LandingScrollbar />
 
       <section className="landing-hero" id="top">
-        <div className="landing-hero-frame" ref={heroRef}>
+        <motion.div
+          className="landing-hero-frame"
+          ref={heroRef}
+          style={isMobileViewport ? ({ "--hero-settle": heroSettle } as unknown as MotionStyle) : undefined}
+        >
           <motion.div
             className="landing-hero-media"
             style={{ y: heroShift }}
@@ -417,11 +429,10 @@ const LandingPage = () => {
               We digitalize it for you.
             </motion.h1>
             <motion.p variants={heroCopy} transition={{ duration: 0.7, ease: EASE }}>
-              Our vision is to become the infrastructure of the technological layer for industries
-              around the Philippines.
+              Our vision is to build the technological infrastructure for industries across the Philippines.
             </motion.p>
           </motion.div>
-        </div>
+        </motion.div>
       </section>
 
       <section className="landing-marquee" aria-label="Businesses running on ADVO">
