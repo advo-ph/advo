@@ -26,8 +26,7 @@ const Team = () => {
     <LandingShell flowingBackground>
       <main className="landing-shell-main team-page">
         <header className="team-head">
-          <h1>Team</h1>
-          <p>The engineers and designers who build every ADVO project.</p>
+          <h1>Meet the Team</h1>
         </header>
 
         {loading ? (
@@ -61,13 +60,8 @@ const Team = () => {
                       )}
                     </span>
                     <span className="team-tile-caption">
-                      <span className="team-tile-index" aria-hidden="true">
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                      <span>
-                        <span className="team-tile-name">{member.name}</span>
-                        <span className="team-tile-role">{member.role}</span>
-                      </span>
+                      <span className="team-tile-name">{member.name}</span>
+                      <span className="team-tile-role">{member.role}</span>
                     </span>
                   </button>
                 </li>
