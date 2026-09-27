@@ -268,8 +268,25 @@ body:has(.landing-shell) {
   justify-content: space-between;
   gap: 16px;
 }
-.landing-brand { display: inline-flex; align-items: center; flex: 1; min-height: 44px; }
-.landing-brand img { width: 176px; max-width: 100%; height: auto; object-fit: contain; transition: filter 0.25s var(--landing-ease); }
+.landing-brand { position: relative; display: inline-flex; align-items: center; flex: 1; min-height: 44px; }
+/* Lockup and mark share one height, so the ADVO glyphs match in size. */
+.landing-brand { --landing-brand-height: 22px; }
+.landing-brand-full,
+.landing-brand-mark {
+  display: block;
+  height: var(--landing-brand-height);
+  width: auto;
+  max-width: none;
+  opacity: 0;
+  transition: opacity 0.3s var(--landing-ease), filter 0.25s var(--landing-ease);
+}
+.landing-brand-mark { position: absolute; top: 50%; left: 0; transform: translateY(-50%); }
+.landing-brand-full.is-visible,
+.landing-brand-mark.is-visible { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .landing-brand-full,
+  .landing-brand-mark { transition: none; }
+}
 
 .landing-nav-link { display: flex; align-items: center; justify-content: center; }
 .landing-nav-item { position: relative; padding-block: 14px; }
@@ -585,6 +602,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   padding-block: var(--landing-section-rhythm);
 }
 .landing-piece { text-align: center; }
+.landing-piece#solutions { padding-top: calc(var(--landing-section-rhythm) + 40px); }
 .landing-piece > .landing-display { max-width: 24ch; margin-inline: auto; }
 .landing-solutions-logo {
   width: clamp(96px, 9vw, 136px);
@@ -1198,6 +1216,8 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 
 /* ---------------------------------------------------------------- Responsive */
 @media (min-width: 901px) {
+  .landing-process { display: none; }
+
   /* Desktop needs a readable editorial measure at arm's length. Keep the
    * compact scale on phones/tablets, but give the landing's supporting copy
    * enough presence beside the large stills and headings. */

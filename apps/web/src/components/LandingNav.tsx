@@ -103,6 +103,8 @@ const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps)
     );
   };
 
+  // The full lockup belongs to the top of the landing page only.
+  const isCompactBrand = isScrolled || pathname !== "/";
   const isOverlay = overlayHero && !isScrolled && !isMenuOpen;
   const className = [
     "landing-nav",
@@ -117,7 +119,18 @@ const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps)
     <header className={className}>
       <div className="landing-nav-inner">
         <Link className="landing-brand" to="/" aria-label="ADVO home" onClick={closeMenu}>
-          <img src="/advo-technologies-logo.png" alt="ADVO Technologies" />
+          {/* Both marks sit at the same height and left edge, so the ADVO in the
+              lockup lands exactly on the standalone ADVO as they cross-fade. */}
+          <img
+            className={isCompactBrand ? "landing-brand-full" : "landing-brand-full is-visible"}
+            src="/advo-technologies-logo.png"
+            alt={isCompactBrand ? "" : "ADVO Technologies"}
+          />
+          <img
+            className={isCompactBrand ? "landing-brand-mark is-visible" : "landing-brand-mark"}
+            src="/advo-logo-black.png"
+            alt={isCompactBrand ? "ADVO" : ""}
+          />
         </Link>
 
         <nav
