@@ -179,29 +179,37 @@
 
 /* ---------------------------------------------------------------- Spotlight */
 
-/* 0.86, not less: the roster sits on white, so the worst-case composite behind
-   the copy is rgb(41,41,41). That keeps the orange role label at 4.99:1 and the
-   muted bio at 6.56:1 — both clear of AA — while the blur still reads. */
+/* Opaque warm-dark ground with drifting glows (AuraBlob). The copy never sits
+   on the white roster, so contrast is measured against #16100d alone. */
 .team-scrim {
   position: fixed;
   inset: 0;
   z-index: 80;
-  background: rgba(6, 6, 6, 0.86);
-  -webkit-backdrop-filter: blur(14px) saturate(115%);
-  backdrop-filter: blur(14px) saturate(115%);
+  overflow: hidden;
+  background: #17110e;
+}
+.team-aura-blob {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  filter: blur(90px);
+  will-change: transform;
+  pointer-events: none;
 }
 
 .team-spotlight {
   --team-on-dark: #ffffff;
-  --team-on-dark-soft: rgba(255, 255, 255, 0.62);
-  --team-on-dark-line: rgba(255, 255, 255, 0.24);
+  --team-on-dark-soft: rgba(255, 255, 255, 0.82);
+  --team-on-dark-line: rgba(255, 255, 255, 0.16);
+  --team-ring: rgba(236, 214, 196, 0.72);
   position: fixed;
   inset: 0;
   z-index: 81;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: clamp(64px, 8vh, 104px) clamp(20px, 7vw, 104px);
+  padding: clamp(72px, 10vh, 112px) clamp(96px, 10vw, 168px);
   overflow-y: auto;
   overscroll-behavior: contain;
   font-family: var(--advo-font-public);
@@ -211,18 +219,18 @@
 
 .team-spotlight-panel {
   display: grid;
-  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1fr);
   align-items: center;
-  gap: clamp(28px, 4vw, 64px);
-  width: min(1020px, 100%);
+  gap: clamp(40px, 5.6vw, 88px);
+  width: min(1240px, 100%);
   margin: auto;
 }
 
 .team-spotlight-media {
   position: relative;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 5 / 6;
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.06);
   will-change: transform, clip-path;
 }
@@ -233,31 +241,35 @@
   justify-content: center;
   width: 100%;
   height: 100%;
+  font-family: var(--advo-font-title);
   font-size: clamp(56px, 7vw, 96px);
-  font-weight: 500;
   color: var(--team-on-dark-line);
 }
 
 .team-spotlight .team-spotlight-name {
   margin: 0;
-  font-size: var(--landing-text-display);
-  font-weight: 500;
+  font-family: var(--advo-font-title);
+  font-size: clamp(36px, 3.7vw, 64px);
+  font-weight: 400;
   line-height: 1.05;
-  letter-spacing: -0.03em;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
 }
 .team-spotlight .team-spotlight-role {
-  margin: 16px 0 0;
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  font-size: var(--landing-text-micro);
-  letter-spacing: 0.14em;
+  margin: clamp(18px, 1.8vw, 28px) 0 0;
+  padding-bottom: clamp(28px, 3vw, 44px);
+  border-bottom: 1px solid var(--team-on-dark-line);
+  font-family: var(--advo-font-body);
+  font-size: clamp(14px, 1.15vw, 18px);
+  letter-spacing: 0.42em;
   text-transform: uppercase;
   color: var(--advo-orange-hex);
 }
 .team-spotlight .team-spotlight-bio {
-  margin: 24px 0 0;
-  max-width: 46ch;
-  font-size: var(--landing-text-lead);
-  line-height: 1.6;
+  margin: clamp(28px, 3vw, 44px) 0 0;
+  max-width: 34ch;
+  font-size: clamp(18px, 1.6vw, 25px);
+  line-height: 1.45;
   color: var(--team-on-dark-soft);
 }
 
@@ -279,6 +291,31 @@
 .team-spotlight-links a:hover { color: var(--team-on-dark-soft); }
 .team-spotlight-links a:focus-visible { outline: 2px solid var(--team-on-dark); outline-offset: 4px; }
 
+/* Desktop: the arrows leave the flow and pin to the viewport edges (the copy
+   column is unpositioned, so .team-spotlight is their containing block). */
+.team-spotlight-nav { margin-top: clamp(40px, 4.4vw, 64px); }
+.team-spotlight-dots { display: flex; gap: 8px; }
+.team-spotlight-dot {
+  width: 40px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  position: relative;
+}
+.team-spotlight-dot::before {
+  content: "";
+  position: absolute;
+  inset: 8px 0;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.22);
+  transition: background 0.25s var(--landing-ease);
+}
+.team-spotlight-dot:hover::before { background: rgba(255, 255, 255, 0.42); }
+.team-spotlight-dot[aria-current="true"]::before { background: var(--advo-orange-hex); }
+.team-spotlight-dot:focus-visible { outline: 2px solid var(--team-on-dark); outline-offset: 2px; }
+
 .team-spotlight-close,
 .team-spotlight-arrow {
   position: absolute;
@@ -286,57 +323,75 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
+  width: 64px;
+  height: 64px;
   padding: 0;
-  border: 1px solid var(--team-on-dark-line);
+  border: 1.5px solid var(--team-ring);
   border-radius: 999px;
   background: transparent;
-  color: var(--team-on-dark-soft);
-  transition: color 0.18s var(--landing-ease), background 0.18s var(--landing-ease);
-}
-.team-spotlight-close:hover,
-.team-spotlight-arrow:hover {
-  background: rgba(255, 255, 255, 0.08);
   color: var(--team-on-dark);
+  transition: background 0.18s var(--landing-ease);
 }
+.team-spotlight-close { width: 56px; height: 56px; border-color: var(--team-on-dark); }
+.team-spotlight-close:hover,
+.team-spotlight-arrow:hover { background: rgba(255, 255, 255, 0.08); }
 .team-spotlight-close:focus-visible,
 .team-spotlight-arrow:focus-visible { outline: 2px solid var(--team-on-dark); outline-offset: 3px; }
 
-.team-spotlight-close { top: clamp(16px, 3vh, 28px); right: clamp(16px, 3vw, 28px); }
+.team-spotlight-close { top: clamp(20px, 4vh, 36px); right: clamp(20px, 2.4vw, 36px); }
 .team-spotlight-arrow { top: 50%; transform: translateY(-50%); }
-.team-spotlight-arrow.is-prev { left: clamp(10px, 2vw, 24px); }
-.team-spotlight-arrow.is-next { right: clamp(10px, 2vw, 24px); }
+.team-spotlight-arrow.is-prev { left: clamp(20px, 2.4vw, 38px); }
+.team-spotlight-arrow.is-next { right: clamp(20px, 2.4vw, 38px); }
 
 /* ---------------------------------------------------------------- Responsive */
 
 @media (max-width: 900px) {
   .team-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
-  /* Full-screen sheet: portrait above the text, arrows pinned to the viewport
-     so they stay reachable however far the copy scrolls. */
+  /* Full-screen sheet: portrait above the copy, arrows and dots in one row
+     under the bio, role in white. */
   .team-spotlight {
     align-items: flex-start;
-    padding: clamp(64px, 9vh, 88px) 20px 104px;
+    padding: 64px clamp(20px, 11vw, 48px) 40px;
   }
-  /* Capped rather than full-bleed: on a small tablet a 100%-wide column leaves
-     half the sheet empty, and the centred measure reads the same on a phone. */
   .team-spotlight-panel {
     grid-template-columns: minmax(0, 1fr);
-    gap: 26px;
+    gap: 24px;
     width: min(460px, 100%);
     margin: 0 auto;
   }
-  .team-spotlight-media { aspect-ratio: 4 / 5; width: 100%; }
-  .team-spotlight-arrow {
-    position: fixed;
-    top: auto;
-    bottom: clamp(16px, 3vh, 28px);
-    transform: none;
-    background: rgba(255, 255, 255, 0.08);
+  .team-spotlight-media { aspect-ratio: 6 / 7; width: 100%; }
+  .team-spotlight .team-spotlight-name { font-size: clamp(26px, 8.4vw, 40px); }
+  .team-spotlight .team-spotlight-role {
+    margin-top: 12px;
+    padding-bottom: 24px;
+    font-size: clamp(13px, 3.9vw, 17px);
+    letter-spacing: 0.5em;
+    color: var(--team-on-dark);
   }
-  .team-spotlight-arrow.is-prev { left: 20px; }
-  .team-spotlight-arrow.is-next { right: 20px; }
+  .team-spotlight .team-spotlight-bio {
+    margin-top: 20px;
+    font-size: 16px;
+    line-height: 1.3;
+  }
+  .team-spotlight-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 32px;
+  }
+  .team-spotlight-dots { flex-wrap: wrap; justify-content: center; gap: 4px; }
+  .team-spotlight-dot { width: 22px; }
+  .team-spotlight-dot::before { inset: 8.5px 0; }
+  .team-spotlight-arrow {
+    position: static;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    transform: none;
+  }
+  .team-spotlight-close { top: 14px; right: 14px; width: 44px; height: 44px; }
 }
 
 @media (max-width: 680px) {
@@ -350,22 +405,13 @@
 .landing-page.is-reduce-motion .team-tile-frame img { transition: none; }
 .landing-page.is-reduce-motion .team-tile:hover .team-tile-frame img { transform: none; }
 .landing-page.is-reduce-motion .team-tile-index { transition: none; }
-.team-scrim.is-reduce-motion {
-  background: rgba(6, 6, 6, 0.94);
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-}
 
 @media (prefers-reduced-motion: reduce) {
   .team-tile-frame img,
   .team-tile-index,
   .team-spotlight-links a,
   .team-spotlight-close,
-  .team-spotlight-arrow { transition: none; }
+  .team-spotlight-arrow,
+  .team-spotlight-dot::before { transition: none; }
   .team-tile:hover .team-tile-frame img { transform: none; }
-  .team-scrim {
-    background: rgba(6, 6, 6, 0.94);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
 }
