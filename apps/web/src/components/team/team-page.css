@@ -179,21 +179,24 @@
 
 /* ---------------------------------------------------------------- Spotlight */
 
-/* Opaque warm-dark ground with drifting glows (AuraBlob). The copy never sits
-   on the white roster, so contrast is measured against #16100d alone. */
+/* Black see-through scrim over the blurred roster, with slow orange glows
+   drifting inside it (AuraBlob). 0.86 keeps the copy clear of AA even where
+   the white roster shows through. */
 .team-scrim {
   position: fixed;
   inset: 0;
   z-index: 80;
   overflow: hidden;
-  background: #17110e;
+  background: rgba(6, 6, 6, 0.86);
+  -webkit-backdrop-filter: blur(14px) saturate(115%);
+  backdrop-filter: blur(14px) saturate(115%);
 }
 .team-aura-blob {
   position: absolute;
   top: 0;
   left: 0;
   border-radius: 50%;
-  filter: blur(90px);
+  filter: blur(110px);
   will-change: transform;
   pointer-events: none;
 }
@@ -216,6 +219,7 @@
   color: var(--team-on-dark);
 }
 .team-spotlight:focus { outline: none; }
+.team-spotlight.is-steppable { cursor: pointer; }
 
 .team-spotlight-panel {
   display: grid;
@@ -226,15 +230,26 @@
   margin: auto;
 }
 
+/* The portrait keeps its own ratio: the box shrinks to the image, capped by
+   the column width and the viewport height, so nothing is ever cropped. */
 .team-spotlight-media {
   position: relative;
-  aspect-ratio: 5 / 6;
+  justify-self: center;
+  width: fit-content;
+  max-width: 100%;
   overflow: hidden;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.06);
   will-change: transform, clip-path;
 }
-.team-spotlight-media img { width: 100%; height: 100%; object-fit: cover; }
+.team-spotlight-media img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: calc(100dvh - 2 * clamp(72px, 10vh, 112px));
+}
+.team-spotlight-media:has(.team-spotlight-fallback) { width: 100%; aspect-ratio: 3 / 4; }
 .team-spotlight-fallback {
   display: flex;
   align-items: center;
@@ -254,16 +269,17 @@
   line-height: 1.05;
   letter-spacing: 0.01em;
   text-transform: uppercase;
+  font-kerning: normal;
 }
 .team-spotlight .team-spotlight-role {
   margin: clamp(18px, 1.8vw, 28px) 0 0;
   padding-bottom: clamp(28px, 3vw, 44px);
   border-bottom: 1px solid var(--team-on-dark-line);
   font-family: var(--advo-font-body);
-  font-size: clamp(14px, 1.15vw, 18px);
-  letter-spacing: 0.42em;
+  font-size: clamp(15px, 1.4vw, 22px);
+  letter-spacing: 0.5em;
   text-transform: uppercase;
-  color: var(--advo-orange-hex);
+  color: var(--team-on-dark);
 }
 .team-spotlight .team-spotlight-bio {
   margin: clamp(28px, 3vw, 44px) 0 0;
@@ -332,7 +348,7 @@
   color: var(--team-on-dark);
   transition: background 0.18s var(--landing-ease);
 }
-.team-spotlight-close { width: 56px; height: 56px; border-color: var(--team-on-dark); }
+.team-spotlight-close { width: 56px; height: 56px; border-color: transparent; }
 .team-spotlight-close:hover,
 .team-spotlight-arrow:hover { background: rgba(255, 255, 255, 0.08); }
 .team-spotlight-close:focus-visible,
@@ -360,14 +376,12 @@
     width: min(460px, 100%);
     margin: 0 auto;
   }
-  .team-spotlight-media { aspect-ratio: 6 / 7; width: 100%; }
+  .team-spotlight-media img { max-height: 70dvh; }
   .team-spotlight .team-spotlight-name { font-size: clamp(26px, 8.4vw, 40px); }
   .team-spotlight .team-spotlight-role {
     margin-top: 12px;
     padding-bottom: 24px;
     font-size: clamp(13px, 3.9vw, 17px);
-    letter-spacing: 0.5em;
-    color: var(--team-on-dark);
   }
   .team-spotlight .team-spotlight-bio {
     margin-top: 20px;
@@ -405,6 +419,11 @@
 .landing-page.is-reduce-motion .team-tile-frame img { transition: none; }
 .landing-page.is-reduce-motion .team-tile:hover .team-tile-frame img { transform: none; }
 .landing-page.is-reduce-motion .team-tile-index { transition: none; }
+.team-scrim.is-reduce-motion {
+  background: rgba(6, 6, 6, 0.94);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .team-tile-frame img,
@@ -414,4 +433,9 @@
   .team-spotlight-arrow,
   .team-spotlight-dot::before { transition: none; }
   .team-tile:hover .team-tile-frame img { transform: none; }
+  .team-scrim {
+    background: rgba(6, 6, 6, 0.94);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
 }

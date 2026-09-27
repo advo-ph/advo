@@ -48,7 +48,7 @@ def trace(mask, ch, x0, x1, y0, y1, base, workdir):
     # potrace coords: units of 0.1px, y-up from crop bottom
     return ds, H, pad
 
-def build(src, rows, family, out, sb_ratio, thresh=128, upscale=1, space=0.33):
+def build(src, rows, family, out, sb_ratio, thresh=128, upscale=1, space=0.33, kern=False):
     im = Image.open(src).convert('RGBA')
     a = im.split()[3]
     if upscale != 1:
@@ -62,7 +62,17 @@ def build(src, rows, family, out, sb_ratio, thresh=128, upscale=1, space=0.33):
     workdir = os.path.dirname(out)
     names = ['.notdef', 'space']; cmap = {32: 'space'}; charstrings = {}; metrics = {}
     sb = int(round(cap * sb_ratio * s))
+    profiles = {}
     for ch, x0, x1, y0, y1, base, top in glyphs:
+        # left/right ink edge per sampled row of the cap height, in font units
+        # measured from the glyph origin (sidebearing included)
+        lefts, rights = [], []
+        for i in range(24):
+            yy = int(top + (base - top) * (i + 0.5) / 24)
+            xs = np.where(mask[yy, x0:x1])[0]
+            if len(xs): lefts.append(sb + xs[0] * s); rights.append(sb + xs[-1] * s)
+            else: lefts.append(None); rights.append(None)
+        profiles[ch] = (lefts, rights)
         ds, H, pad = trace(mask, ch, x0, x1, y0, y1, base, workdir)
         pen = T2CharStringPen(0, None)
         # px from crop-bottom -> font units; crop bottom = y1+pad; baseline at base
@@ -86,10 +96,38 @@ def build(src, rows, family, out, sb_ratio, thresh=128, upscale=1, space=0.33):
     fb.setupNameTable({'familyName': family, 'styleName': 'Regular'})
     fb.setupOS2(sTypoAscender=900, sTypoDescender=-250, usWinAscent=950, usWinDescent=250, sCapHeight=CAP, sxHeight=CAP)
     fb.setupPost()
+    if kern:
+        from fontTools.feaLib.builder import addOpenTypeFeaturesFromString
+        fea = autokern(profiles, metrics, sb)
+        addOpenTypeFeaturesFromString(fb.font, fea)
     fb.font.flavor = 'woff2'
     fb.save(out)
     print(out, len(glyphs), 'glyphs, cap px', cap, 'sb', sb)
 
+OPEN_RIGHT = set("AVWYTLKXPF")
+OPEN_LEFT = set("AVWYTJX")
+
+def autokern(profiles, metrics, sb):
+    # Optical kerning: the average white space between two letters is pulled
+    # toward the space between two straight stems (2 * sb). Diagonal letters
+    # like W, V, A, Y then overlap their neighbours' empty corners.
+    base = 2 * sb
+    lines = []
+    for l, (_, rl) in profiles.items():
+        adv = metrics[l][0]
+        for r, (lr, _) in profiles.items():
+            gaps = [adv - a + b for a, b in zip(rl, lr) if a is not None and b is not None]
+            if not gaps: continue
+            mean_gap, min_gap = sum(gaps) / len(gaps), min(gaps)
+            # Only pairs with an open diagonal side get real pull; round and
+            # straight pairs keep their even rhythm.
+            open_side = l in OPEN_RIGHT or r in OPEN_LEFT
+            k = -(mean_gap - base) * (0.55 if open_side else 0.12)
+            k = max(k, -(min_gap - base * 0.6))  # strokes never crowd
+            k = int(round(min(k, 0)))
+            if k <= -12: lines.append(f"  pos {l} {r} {k};")
+    return "feature kern {\n" + "\n".join(lines) + "\n} kern;\n"
+
 imgs = sys.argv[1]; outdir = sys.argv[2]
-build(f'{imgs}/advo-display-source.png', ['ABCDEFG', 'HIJKLMN', 'OPQRSTU', 'VWXYZ'], 'ADVO Display', f'{outdir}/advo-display.woff2', 0.06, space=0.42)
-build(f'{imgs}/advo-text-source.png', ['ABCDEFGHIJKLM', 'NOPQRSTUVWXYZ'], 'ADVO Text', f'{outdir}/advo-text.woff2', 0.07, upscale=4, space=0.36)
+build(f'{imgs}/advo-display-source.png', ['ABCDEFG', 'HIJKLMN', 'OPQRSTU', 'VWXYZ'], 'ADVO Display', f'{outdir}/advo-display.woff2', 0.075, space=0.42, kern=True)
+if '--all' in sys.argv: build(f'{imgs}/advo-text-source.png', ['ABCDEFGHIJKLM', 'NOPQRSTUVWXYZ'], 'ADVO Text', f'{outdir}/advo-text.woff2', 0.07, upscale=4, space=0.36)

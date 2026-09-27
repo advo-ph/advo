@@ -26,13 +26,12 @@ interface TeamMemberSpotlightProps {
 /** Same curve as --landing-ease, in the form framer needs. */
 const EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
 
-/* Warm glows behind the spotlight. Each one drifts to a fresh random spot when
+/* Faint orange glows inside the scrim. Each one drifts to a fresh random spot when
    it arrives, so the backdrop never settles into a visible loop. */
 const AURA = [
-  { color: "rgba(110, 70, 44, 0.34)", size: 58 },
-  { color: "rgba(84, 54, 36, 0.4)", size: 50 },
-  { color: "rgba(140, 90, 56, 0.18)", size: 42 },
-  { color: "rgba(60, 38, 26, 0.5)", size: 66 },
+  { color: "rgba(230, 122, 58, 0.16)", size: 48 },
+  { color: "rgba(230, 122, 58, 0.1)", size: 60 },
+  { color: "rgba(214, 98, 40, 0.12)", size: 40 },
 ];
 
 const randomSpot = () => ({
@@ -43,7 +42,7 @@ const randomSpot = () => ({
 
 const AuraBlob = ({ color, size, still }: { color: string; size: number; still: boolean }) => {
   const [spot, setSpot] = useState(randomSpot);
-  const [duration] = useState(() => 9 + Math.random() * 7);
+  const [duration] = useState(() => 18 + Math.random() * 10);
 
   return (
     <motion.span
@@ -104,16 +103,19 @@ const TeamMemberSpotlight = ({
     }
   };
 
-  // The content layer covers the viewport, so Radix never sees a click land
-  // "outside" it. A click on the padding is the scrim click.
-  const handleBackdropClick = (event: MouseEvent<HTMLDivElement>) => {
-    if (event.target === event.currentTarget) onClose();
+  // A tap anywhere that is not a control steps to the next member. With one
+  // member there is nothing to step to, so a tap on the padding closes.
+  const handleSurfaceClick = (event: MouseEvent<HTMLDivElement>) => {
+    if ((event.target as HTMLElement).closest("button, a")) return;
+    if (window.getSelection()?.toString()) return;
+    if (members.length > 1) step(1);
+    else if (event.target === event.currentTarget) onClose();
   };
 
   if (!shown) return null;
 
   const portrait = shown.preview_image_url || shown.avatar_url;
-  const hasLinks = Boolean(shown.email || shown.linkedin_url);
+  const hasLinks = Boolean(shown.linkedin_url);
   const motionClass = reduceMotion ? " is-reduce-motion" : "";
 
   // Radix warns about a missing description unless aria-describedby is passed
@@ -157,12 +159,12 @@ const TeamMemberSpotlight = ({
 
             <Dialog.Content asChild forceMount onKeyDown={handleKeyDown} {...describedBy}>
               <motion.div
-                className={`team-spotlight${motionClass}`}
+                className={`team-spotlight${members.length > 1 ? " is-steppable" : ""}${motionClass}`}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: reduceMotion ? 0.12 : 0.25, ease: EASE }}
-                onClick={handleBackdropClick}
+                onClick={handleSurfaceClick}
               >
                 <button type="button" className="team-spotlight-close" onClick={onClose}>
                   <X size={20} strokeWidth={1.5} aria-hidden="true" />
@@ -216,7 +218,6 @@ const TeamMemberSpotlight = ({
 
                       {hasLinks ? (
                         <motion.div className="team-spotlight-links" {...fade(0.54)}>
-                          {shown.email ? <a href={`mailto:${shown.email}`}>{shown.email}</a> : null}
                           {shown.linkedin_url ? (
                             <a href={shown.linkedin_url} target="_blank" rel="noreferrer">
                               LinkedIn
