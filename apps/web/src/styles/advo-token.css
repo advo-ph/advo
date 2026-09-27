@@ -3,7 +3,7 @@
    maps to the same glyph), so anything outside A-Z falls to the next family. */
 @font-face {
   font-family: "ADVO Display";
-  src: url("/fonts/advo-display.woff2?v=3") format("woff2");
+  src: url("/fonts/advo-display.woff2?v=4") format("woff2");
   font-weight: 400;
   font-display: swap;
 }

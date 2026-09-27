@@ -142,6 +142,11 @@ def autokern(profiles, metrics, sb):
             # straight pairs keep their even rhythm.
             open_side = l in OPEN_RIGHT or r in OPEN_LEFT
             k = -(mean_gap - base) * (0.55 if open_side else 0.12)
+            # Two diagonals that run side by side (W A, A V) leave one even
+            # channel of white. The factor above leaves that channel too wide,
+            # so close it to a set width instead.
+            if open_side and min_gap > 0.9 * mean_gap:
+                k = -(mean_gap - base * 1.6)
             k = max(k, -(min_gap - base * 0.6))  # strokes never crowd
             k = int(round(min(k, 0)))
             if k <= -12: lines.append(f"  pos {l} {r} {k};")
