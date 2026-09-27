@@ -268,8 +268,8 @@ body:has(.landing-shell) {
   justify-content: space-between;
   gap: 16px;
 }
-.landing-brand { display: inline-flex; align-items: center; flex: 1; }
-.landing-brand img { width: 84px; height: 22px; object-fit: contain; transition: filter 0.25s var(--landing-ease); }
+.landing-brand { display: inline-flex; align-items: center; flex: 1; min-height: 44px; }
+.landing-brand img { width: 176px; max-width: 100%; height: auto; object-fit: contain; transition: filter 0.25s var(--landing-ease); }
 
 .landing-nav-link { display: flex; align-items: center; justify-content: center; }
 .landing-nav-item { position: relative; padding-block: 14px; }
@@ -305,7 +305,13 @@ body:has(.landing-shell) {
 }
 .landing-login:hover { background: var(--landing-ground-soft); border-color: var(--landing-ink-mute); }
 .landing-login:active { transform: scale(0.96); }
-.landing-menu { display: none; border: 0; background: none; color: inherit; padding: 8px; margin-right: -8px; }
+.landing-menu { display: none; border: 0; background: none; color: inherit; padding: 12px; margin-right: -12px; }
+.landing-menu,
+.landing-nav-link a { -webkit-tap-highlight-color: transparent; }
+.landing-menu:focus:not(:focus-visible),
+.landing-nav-link a:focus:not(:focus-visible) { outline: none; }
+.landing-menu:focus-visible,
+.landing-nav-link a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 
 /* ---------------------------------------------------------------- Buttons */
 .landing-button {
@@ -755,6 +761,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 
   #solutions { text-align: left; }
   .landing-solutions-title { font-size: clamp(30px, 8vw, 38px); }
+  .landing-mobile-industry-explorer { margin-top: 40px; }
 }
 
 /* Static row of the everyday tools; quiet on purpose, it is context, not proof */
@@ -834,6 +841,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-process-copy { margin-top: 20px; }
 .landing-process-copy h3 { font-size: var(--landing-text-title); letter-spacing: -0.015em; }
 .landing-page .landing-process-copy p { margin-top: 8px; max-width: 60ch; color: var(--landing-ink-soft); line-height: 1.55; }
+.landing-process-copy .landing-industry-actions { margin-top: 18px; padding-top: 0; }
 
 /* ---------------------------------------------------------------- Start a project */
 .landing-start {

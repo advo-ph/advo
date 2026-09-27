@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Menu, X } from "lucide-react";
-import { useDrawerLock } from "@/hooks/useDrawerLock";
 
 interface NavLink {
   label: string;
@@ -35,23 +34,45 @@ const DRAWER_ID = "mobile-navigation-drawer";
 /**
  * One nav for `/` and for every shell route. The drawer contract the a11y
  * bench drives — `#mobile-navigation-drawer` carrying `is-open`, the toggle's
- * aria-controls, Escape, scroll lock on both containers, close on route
- * change — lives here once instead of twice.
+ * aria-controls, Escape, click outside, close on route change — lives here
+ * once instead of twice. The page remains scrollable and focus is not moved
+ * when the menu opens, so tapping the hamburger does not highlight a link.
  */
 const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { pathname } = useLocation();
+  const drawerRef = useRef<HTMLElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
-  const closeMenu = () => {
-    setIsMenuOpen(false);
-  };
+  const closeMenu = useCallback(() => setIsMenuOpen(false), []);
 
-  useDrawerLock(isMenuOpen, closeMenu, DRAWER_ID);
+  useEffect(() => {
+    if (!isMenuOpen) return;
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeMenu();
+    };
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      const path = event.composedPath();
+      if (
+        (drawerRef.current && path.includes(drawerRef.current)) ||
+        (menuButtonRef.current && path.includes(menuButtonRef.current))
+      ) return;
+      closeMenu();
+    };
+
+    window.addEventListener("keydown", closeOnEscape);
+    document.addEventListener("click", closeOnOutsideClick);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      document.removeEventListener("click", closeOnOutsideClick);
+    };
+  }, [isMenuOpen, closeMenu]);
 
   useEffect(() => {
     closeMenu();
-  }, [pathname]);
+  }, [pathname, closeMenu]);
 
   useEffect(() => {
     const read = () => setIsScrolled(window.scrollY > 8);
@@ -82,26 +103,6 @@ const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps)
     );
   };
 
-  const startLink = anchorPrefix === "" ? (
-    <a className="landing-button landing-button-primary" href="#start" onClick={closeMenu}>
-      Start a project
-    </a>
-  ) : (
-    <Link className="landing-button landing-button-primary" to={`${anchorPrefix}#start`} onClick={closeMenu}>
-      Start a project
-    </Link>
-  );
-
-  const startLinkSmall = anchorPrefix === "" ? (
-    <a className="landing-button landing-button-primary landing-button-small" href="#start" onClick={closeMenu}>
-      Start a project
-    </a>
-  ) : (
-    <Link className="landing-button landing-button-primary landing-button-small" to={`${anchorPrefix}#start`} onClick={closeMenu}>
-      Start a project
-    </Link>
-  );
-
   const isOverlay = overlayHero && !isScrolled && !isMenuOpen;
   const className = [
     "landing-nav",
@@ -116,11 +117,12 @@ const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps)
     <header className={className}>
       <div className="landing-nav-inner">
         <Link className="landing-brand" to="/" aria-label="ADVO home" onClick={closeMenu}>
-          <img src="/advo-wordmark.svg" alt="ADVO" />
+          <img src="/advo-technologies-logo.png" alt="ADVO Technologies" />
         </Link>
 
         <nav
           id={DRAWER_ID}
+          ref={drawerRef}
           className={isMenuOpen ? "landing-nav-link is-open" : "landing-nav-link"}
           aria-label="Main navigation"
         >
@@ -134,7 +136,6 @@ const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps)
             <Link className="landing-button landing-button-ghost" to="/login" onClick={closeMenu}>
               Log in
             </Link>
-            {startLink}
           </div>
         </nav>
 
@@ -142,10 +143,10 @@ const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps)
           <Link className="landing-login" to="/login" onClick={closeMenu}>
             Log in
           </Link>
-          {startLinkSmall}
           <button
             type="button"
             className="landing-menu"
+            ref={menuButtonRef}
             onClick={() => setIsMenuOpen((value) => !value)}
             aria-label={isMenuOpen ? "Close menu" : "Open menu"}
             aria-expanded={isMenuOpen}

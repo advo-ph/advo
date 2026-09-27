@@ -139,6 +139,8 @@ interface IndustryTab {
   heading: string;
   copy: string;
   still: string;
+  offer?: Offer[];
+  href?: string;
 }
 
 const industryTab: IndustryTab[] = [
@@ -170,11 +172,21 @@ const industryTab: IndustryTab[] = [
   },
 ];
 
+const solutionExplorerItems: IndustryTab[] = industry.map((item) => ({
+  title: item.title,
+  heading: item.heading,
+  copy: item.copy,
+  still: item.image,
+  offer: item.offer,
+  href: item.href,
+}));
+
 interface IndustryExplorerProps {
   items: IndustryTab[];
   activeIndex: number;
   onSelect: (index: number) => void;
   idPrefix: string;
+  tablistLabel: string;
   orientation: "horizontal" | "vertical";
   reduceMotion: boolean | null;
 }
@@ -184,6 +196,7 @@ const IndustryExplorer = ({
   activeIndex,
   onSelect,
   idPrefix,
+  tablistLabel,
   orientation,
   reduceMotion,
 }: IndustryExplorerProps) => {
@@ -213,7 +226,7 @@ const IndustryExplorer = ({
         className="landing-process-tab"
         role="tablist"
         aria-orientation={orientation}
-        aria-label="Industries we modernize"
+        aria-label={tablistLabel}
         onKeyDown={handleTabKeyDown}
       >
         {items.map((item, index) => (
@@ -264,6 +277,29 @@ const IndustryExplorer = ({
           >
             <h3>{current.heading}</h3>
             <p>{current.copy}</p>
+            {current.offer?.length ? (
+              <ul className="landing-industry-offer">
+                {current.offer.map((offer) => (
+                  <li key={offer.name}>
+                    <span className="landing-industry-offer-name">{offer.name}</span>
+                    <span className="landing-industry-offer-copy">{offer.copy}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {current.href ? (
+              <div className="landing-industry-actions">
+                <a
+                  className="landing-industry-more"
+                  href={current.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span>See more</span>
+                  <ArrowUpRight size={17} strokeWidth={1.5} aria-hidden="true" />
+                </a>
+              </div>
+            ) : null}
           </motion.div>
         </AnimatePresence>
       </div>
@@ -298,6 +334,7 @@ const LandingPage = () => {
     typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches,
   );
   const [tabIndex, setTabIndex] = useState(0);
+  const [solutionTabIndex, setSolutionTabIndex] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
   const pageRef = useRef<HTMLElement>(null);
 
@@ -427,41 +464,55 @@ const LandingPage = () => {
           Building Real-World Technological Solutions
         </Reveal>
 
-        <RevealGroup className="landing-industry-grid" stagger={0.08}>
-          {industry.map((item) => (
-            <Reveal as="article" className="landing-industry-card" key={item.key}>
-              <p className="landing-industry-label">{item.title}</p>
-              <div className="landing-industry-media">
-                <img src={item.image} alt={`${item.title} — an ADVO solution`} loading="lazy" />
-              </div>
-              <div className="landing-industry-content">
-                <h3>{item.heading}</h3>
-                <p className="landing-industry-copy">{item.copy}</p>
-                <ul className="landing-industry-offer">
-                  {item.offer.map((o) => (
-                    <li key={o.name}>
-                      <span className="landing-industry-offer-name">{o.name}</span>
-                      <span className="landing-industry-offer-copy">{o.copy}</span>
-                    </li>
-                  ))}
-                </ul>
-                {item.href ? (
-                  <div className="landing-industry-actions">
-                    <a
-                      className="landing-industry-more"
-                      href={item.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <span>See more</span>
-                      <ArrowUpRight size={17} strokeWidth={1.5} aria-hidden="true" />
-                    </a>
-                  </div>
-                ) : null}
-              </div>
-            </Reveal>
-          ))}
-        </RevealGroup>
+        {isMobileViewport ? (
+          <div className="landing-mobile-industry-explorer">
+            <IndustryExplorer
+              items={solutionExplorerItems}
+              activeIndex={solutionTabIndex}
+              onSelect={setSolutionTabIndex}
+              idPrefix="solutions-industry"
+              tablistLabel="Choose a solution"
+              orientation="horizontal"
+              reduceMotion={reduceMotion}
+            />
+          </div>
+        ) : (
+          <RevealGroup className="landing-industry-grid" stagger={0.08}>
+            {industry.map((item) => (
+              <Reveal as="article" className="landing-industry-card" key={item.key}>
+                <p className="landing-industry-label">{item.title}</p>
+                <div className="landing-industry-media">
+                  <img src={item.image} alt={`${item.title} — an ADVO solution`} loading="lazy" />
+                </div>
+                <div className="landing-industry-content">
+                  <h3>{item.heading}</h3>
+                  <p className="landing-industry-copy">{item.copy}</p>
+                  <ul className="landing-industry-offer">
+                    {item.offer.map((o) => (
+                      <li key={o.name}>
+                        <span className="landing-industry-offer-name">{o.name}</span>
+                        <span className="landing-industry-offer-copy">{o.copy}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {item.href ? (
+                    <div className="landing-industry-actions">
+                      <a
+                        className="landing-industry-more"
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <span>See more</span>
+                        <ArrowUpRight size={17} strokeWidth={1.5} aria-hidden="true" />
+                      </a>
+                    </div>
+                  ) : null}
+                </div>
+              </Reveal>
+            ))}
+          </RevealGroup>
+        )}
       </section>
 
       <section className="landing-services" id="services" aria-labelledby="services-heading">
@@ -503,6 +554,7 @@ const LandingPage = () => {
             activeIndex={tabIndex}
             onSelect={setTabIndex}
             idPrefix="process-industry"
+            tablistLabel="Industries we modernize"
             orientation={isCompactViewport ? "horizontal" : "vertical"}
             reduceMotion={reduceMotion}
           />
