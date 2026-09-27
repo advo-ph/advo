@@ -4,7 +4,6 @@ import LandingShell from "@/components/landing/landing-shell";
 import {
   identityValue,
   legalIdentity,
-  pendingIdentityField,
 } from "@/lib/legal-identity";
 
 /**
@@ -46,23 +45,25 @@ const relatedDocument = [
 const IdentityRow = ({
   label,
   value,
+  href,
 }: {
   label: string;
   value: string | null;
+  href?: string;
 }) => (
   <div className="flex flex-col gap-1 border-t border-border/60 py-3 sm:flex-row sm:gap-6">
     <dt className="w-56 shrink-0 text-xs uppercase tracking-[0.14em] text-muted-foreground">
       {label}
     </dt>
     <dd className="text-sm">
-      {value ?? (
+      {value === null ? (
         <span className="text-muted-foreground">
           Not yet published — request it at{" "}
           <a className="underline" href={"mailto:" + legalIdentity.support_email}>
             {legalIdentity.support_email}
           </a>
         </span>
-      )}
+      ) : href ? <a className="underline underline-offset-4" href={href}>{value}</a> : value}
     </dd>
   </div>
 );
@@ -101,19 +102,12 @@ const LegalDocument = ({ kicker, title, summary, children }: LegalDocumentProps)
               value={identityValue("business_address")}
             />
             <IdentityRow label="Support email" value={identityValue("support_email")} />
-            <IdentityRow label="Support phone" value={identityValue("support_phone")} />
+            <IdentityRow
+              label="Support phone"
+              value={identityValue("support_phone")}
+              href={identityValue("support_phone") ? `tel:${identityValue("support_phone")}` : undefined}
+            />
           </dl>
-          {pendingIdentityField.length > 0 ? (
-            <p className="mt-4 rounded-md border border-amber-500/30 bg-amber-500/5 px-4 py-3 text-xs leading-relaxed text-amber-700 dark:text-amber-400">
-              Some registration details above are not published yet. They are
-              transcribed from ADVO&rsquo;s DTI/SEC paperwork rather than drafted
-              here, so the page shows the gap instead of an invented value. Email{" "}
-              <a className="underline" href={"mailto:" + legalIdentity.support_email}>
-                {legalIdentity.support_email}
-              </a>{" "}
-              and we will send them on request.
-            </p>
-          ) : null}
         </LegalSection>
 
         <nav className="mt-16 border-t border-border/60 pt-6" aria-label="The other policies">
