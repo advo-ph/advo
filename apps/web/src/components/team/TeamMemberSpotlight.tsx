@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { useCallback, useEffect, useRef, type KeyboardEvent, type MouseEvent } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
@@ -25,47 +25,6 @@ interface TeamMemberSpotlightProps {
 
 /** Same curve as --landing-ease, in the form framer needs. */
 const EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
-
-/* Faint orange glows inside the scrim. Each one wanders a random loop of spots
-   for as long as the overlay is open. */
-const AURA = [
-  { color: "rgba(230, 122, 58, 0.16)", size: 48 },
-  { color: "rgba(230, 122, 58, 0.1)", size: 60 },
-  { color: "rgba(214, 98, 40, 0.12)", size: 40 },
-];
-
-const AURA_STOPS = 6;
-
-const randomPath = () => {
-  const stops = Array.from({ length: AURA_STOPS }, () => ({
-    x: `${Math.round(Math.random() * 90 - 20)}vw`,
-    y: `${Math.round(Math.random() * 90 - 20)}vh`,
-    scale: 0.8 + Math.random() * 0.6,
-  }));
-  // Close the loop so each repeat starts where the last one ended.
-  stops.push(stops[0]);
-  return {
-    x: stops.map((stop) => stop.x),
-    y: stops.map((stop) => stop.y),
-    scale: stops.map((stop) => stop.scale),
-  };
-};
-
-const AuraBlob = ({ color, size, still }: { color: string; size: number; still: boolean }) => {
-  const [path] = useState(randomPath);
-  const [duration] = useState(() => 12 + Math.random() * 6);
-  const start = { x: path.x[0], y: path.y[0], scale: path.scale[0] };
-
-  return (
-    <motion.span
-      className="team-aura-blob"
-      style={{ background: color, width: `${size}vmax`, height: `${size}vmax` }}
-      initial={start}
-      animate={still ? start : path}
-      transition={still ? { duration: 0 } : { duration, ease: "easeInOut", repeat: Infinity }}
-    />
-  );
-};
 
 const TeamMemberSpotlight = ({
   members,
@@ -160,9 +119,8 @@ const TeamMemberSpotlight = ({
                 exit={{ opacity: 0 }}
                 transition={{ duration: reduceMotion ? 0.12 : 0.25, ease: EASE }}
               >
-                {AURA.map((blob, index) => (
-                  <AuraBlob key={index} {...blob} still={Boolean(reduceMotion)} />
-                ))}
+                <span className="team-aura" aria-hidden="true" />
+                <span className="team-aura is-counter" aria-hidden="true" />
               </motion.div>
             </Dialog.Overlay>
 

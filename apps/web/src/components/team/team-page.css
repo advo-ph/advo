@@ -40,7 +40,12 @@
 
 /* ---------------------------------------------------------------- Page */
 
-.team-page { padding-bottom: var(--landing-section-rhythm); }
+/* One gap sits above the heading and between the heading and the roster. */
+.team-page { --team-head-gap: clamp(44px, 5vw, 72px); }
+.landing-shell-main.team-page {
+  padding-top: var(--team-head-gap);
+  padding-bottom: var(--landing-section-rhythm);
+}
 
 .team-head { text-align: center; }
 .team-page .team-head h1 {
@@ -89,7 +94,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: clamp(32px, 3.4vw, 52px) clamp(16px, 2vw, 28px);
-  margin: clamp(44px, 5vw, 72px) 0 0;
+  margin: var(--team-head-gap) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -162,8 +167,8 @@
 
 /* ---------------------------------------------------------------- Spotlight */
 
-/* Black see-through scrim over the blurred roster, with orange glows
-   drifting inside it (AuraBlob). 0.86 keeps the copy clear of AA even where
+/* Black see-through scrim over the blurred roster, with a slowly turning
+   orange gradient inside it (.team-aura). 0.86 keeps the copy clear of AA even where
    the white roster shows through. */
 .team-scrim {
   position: fixed;
@@ -174,14 +179,35 @@
   -webkit-backdrop-filter: blur(14px) saturate(115%);
   backdrop-filter: blur(14px) saturate(115%);
 }
-.team-aura-blob {
+/* Two oversized, heavily blurred gradient sheets turning at a constant speed in
+   opposite directions. Where they overlap the orange light slowly swells and
+   fades, so the backdrop keeps moving without any shape to follow. */
+.team-aura {
   position: absolute;
-  top: 0;
-  left: 0;
-  border-radius: 50%;
-  filter: blur(110px);
+  inset: -50%;
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    transparent 0deg,
+    rgba(230, 122, 58, 0.2) 60deg,
+    transparent 130deg,
+    rgba(214, 98, 40, 0.14) 210deg,
+    transparent 280deg,
+    rgba(240, 150, 90, 0.12) 330deg,
+    transparent 360deg
+  );
+  filter: blur(90px);
   will-change: transform;
   pointer-events: none;
+  animation: team-aura-turn 60s linear infinite;
+}
+.team-aura.is-counter {
+  inset: -70% -40% -30% -60%;
+  opacity: 0.8;
+  animation-duration: 84s;
+  animation-direction: reverse;
+}
+@keyframes team-aura-turn {
+  to { transform: rotate(360deg); }
 }
 
 .team-spotlight {
@@ -394,6 +420,8 @@
 
 @media (max-width: 680px) {
   .team-grid { grid-template-columns: minmax(0, 1fr); }
+  .team-tile-name { font-size: clamp(26px, 7.6vw, 34px); }
+  .team-tile-role { margin-top: 6px; font-size: clamp(13px, 3.6vw, 15px); }
 }
 
 /* ---------------------------------------------------------------- Reduced motion */
@@ -415,6 +443,7 @@
   .team-spotlight-arrow,
   .team-spotlight-dot::before { transition: none; }
   .team-tile:hover .team-tile-frame img { transform: none; }
+  .team-aura { animation: none; }
   .team-scrim {
     background: rgba(6, 6, 6, 0.94);
     -webkit-backdrop-filter: none;
