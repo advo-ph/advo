@@ -71,6 +71,16 @@ content.get("/portfolio", async (c) => {
   const rows = await db()
     .select()
     .from(portfolioProject)
+    .where(eq(portfolioProject.isFeatured, true))
+    .orderBy(asc(portfolioProject.displayOrder));
+
+  return c.json({ data: rows, error: null });
+});
+
+content.get("/portfolio/admin", requireAuth, requireAdmin, async (c) => {
+  const rows = await db()
+    .select()
+    .from(portfolioProject)
     .orderBy(asc(portfolioProject.displayOrder));
 
   return c.json({ data: rows, error: null });

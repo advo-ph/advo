@@ -6,7 +6,8 @@ import {
   Save,
   X,
   Loader2,
-  Star,
+  Eye,
+  EyeOff,
   ExternalLink,
   Upload,
   GripVertical,
@@ -202,7 +203,7 @@ const AdminPortfolio = () => {
     preview_url: "",
     image_urls: [] as string[],
     tech_stack: "",
-    is_featured: false,
+    is_featured: true,
     display_order: 0,
     cs_overview: "",
     cs_challenge: "",
@@ -221,7 +222,7 @@ const AdminPortfolio = () => {
       preview_url: "",
       image_urls: [],
       tech_stack: "",
-      is_featured: false,
+      is_featured: true,
       display_order: projects.length,
       cs_overview: "",
       cs_challenge: "",
@@ -409,10 +410,10 @@ const AdminPortfolio = () => {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-sm truncate">{project.title}</p>
-                    {project.is_featured && (
-                      <Badge className="text-[10px] bg-accent/10 text-accent-ink border-accent/30 gap-1 shrink-0">
-                        <Star className="h-2.5 w-2.5" />
-                        Featured
+                    {!project.is_featured && (
+                      <Badge className="text-[10px] bg-muted text-muted-foreground border-border gap-1 shrink-0">
+                        <EyeOff className="h-2.5 w-2.5" />
+                        Hidden
                       </Badge>
                     )}
                     <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
@@ -561,12 +562,12 @@ const AdminPortfolio = () => {
                   }
                   className="gap-1.5"
                 >
-                  <Star
-                    className={`h-3.5 w-3.5 ${
-                      formData.is_featured ? "fill-current" : ""
-                    }`}
-                  />
-                  {formData.is_featured ? "Featured" : "Not Featured"}
+                  {formData.is_featured ? (
+                    <Eye className="h-3.5 w-3.5" />
+                  ) : (
+                    <EyeOff className="h-3.5 w-3.5" />
+                  )}
+                  {formData.is_featured ? "Shown" : "Hidden"}
                 </Button>
               </div>
             </div>

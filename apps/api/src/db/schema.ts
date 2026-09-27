@@ -657,7 +657,7 @@ export const portfolioProject = pgTable(
     imageUrls: text("image_urls").array(),
     techStack: text("tech_stack").array(),
     slug: varchar("slug", { length: 100 }).unique(),
-    isFeatured: boolean("is_featured").notNull().default(false),
+    isFeatured: boolean("is_featured").notNull().default(true),
     displayOrder: integer("display_order").default(0),
     caseStudy: jsonb("case_study"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

@@ -72,9 +72,10 @@ function toApiPayload(input: PortfolioInput) {
 }
 
 const QUERY_KEY = ["adminPortfolio"];
+const PUBLIC_QUERY_KEY = ["publicPortfolio"];
 
 async function fetchPortfolio(): Promise<PortfolioProject[]> {
-  const res = await get<Record<string, unknown>[]>("/api/content/portfolio");
+  const res = await get<Record<string, unknown>[]>("/api/content/portfolio/admin");
   return (res.data || []).map(mapPortfolio);
 }
 
@@ -103,6 +104,7 @@ export function useAdminPortfolio() {
         created,
       ]);
       toast({ title: "Created", description: `${created.title} added to portfolio` });
+      queryClient.invalidateQueries({ queryKey: PUBLIC_QUERY_KEY });
     },
     onError: (err: Error) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -144,7 +146,10 @@ export function useAdminPortfolio() {
     // server-assigned display_order, a slug the API normalised) come out wrong
     // until something re-reads. onSuccess only fixes the one row it was handed.
     // This fixes the list.
-    onSettled: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: PUBLIC_QUERY_KEY });
+    },
   });
 
   const deleteMutation = useMutation({
@@ -168,7 +173,10 @@ export function useAdminPortfolio() {
     onSuccess: (_data, _id, ctx) => {
       toast({ title: "Deleted", description: `${ctx?.removed?.title || "Project"} removed` });
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: PUBLIC_QUERY_KEY });
+    },
   });
 
   return {
