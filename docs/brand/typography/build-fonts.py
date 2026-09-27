@@ -48,13 +48,32 @@ def trace(mask, ch, x0, x1, y0, y1, base, workdir):
     # potrace coords: units of 0.1px, y-up from crop bottom
     return ds, H, pad
 
-def build(src, rows, family, out, sb_ratio, thresh=128, upscale=1, space=0.33, kern=False):
+def replace_glyph(mask, glyphs, ch, path, thresh):
+    # Swap one glyph for a separate drawing, scaled to that glyph's cap height
+    # and placed on the same baseline in a strip added to the right of the sheet.
+    i = next(i for i, g in enumerate(glyphs) if g[0] == ch)
+    _, _, _, y0, y1, base, top = glyphs[i]
+    a = np.array(Image.open(path).convert('RGBA').split()[3])
+    ys = np.where((a >= thresh).any(1))[0]; xs = np.where((a >= thresh).any(0))[0]
+    crop = Image.fromarray(a[ys[0]:ys[-1]+1, xs[0]:xs[-1]+1])
+    h = base - top; w = int(round(crop.width * h / crop.height))
+    g = np.array(crop.resize((w, h), Image.LANCZOS)) >= thresh
+    gap = 20
+    strip = np.zeros((mask.shape[0], w + 2*gap), bool)
+    strip[top:base, gap:gap+w] = g
+    x0 = mask.shape[1] + gap
+    glyphs[i] = (ch, x0, x0 + w, min(y0, top), max(y1, base), base, top)
+    return np.hstack([mask, strip])
+
+def build(src, rows, family, out, sb_ratio, thresh=128, upscale=1, space=0.33, kern=False, overrides={}):
     im = Image.open(src).convert('RGBA')
     a = im.split()[3]
     if upscale != 1:
         a = a.resize((a.width*upscale, a.height*upscale), Image.LANCZOS)
     mask = np.array(a) >= thresh
     glyphs = segment(mask, rows)
+    for ch, path in overrides.items():
+        mask = replace_glyph(mask, glyphs, ch, path, thresh)
     caps = [g[5]-g[6] for g in glyphs]
     cap = float(np.median(caps))
     UPM, CAP = 1000, 700
@@ -129,5 +148,6 @@ def autokern(profiles, metrics, sb):
     return "feature kern {\n" + "\n".join(lines) + "\n} kern;\n"
 
 imgs = sys.argv[1]; outdir = sys.argv[2]
-build(f'{imgs}/advo-display-source.png', ['ABCDEFG', 'HIJKLMN', 'OPQRSTU', 'VWXYZ'], 'ADVO Display', f'{outdir}/advo-display.woff2', 0.075, space=0.42, kern=True)
+build(f'{imgs}/advo-display-source.png', ['ABCDEFG', 'HIJKLMN', 'OPQRSTU', 'VWXYZ'], 'ADVO Display', f'{outdir}/advo-display.woff2', 0.075, space=0.42, kern=True,
+      overrides={'W': f'{imgs}/advo-display-W.png'})
 if '--all' in sys.argv: build(f'{imgs}/advo-text-source.png', ['ABCDEFGHIJKLM', 'NOPQRSTUVWXYZ'], 'ADVO Text', f'{outdir}/advo-text.woff2', 0.07, upscale=4, space=0.36)
