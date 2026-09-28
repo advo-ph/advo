@@ -161,6 +161,11 @@ if $DEPLOY_FRONTEND; then
   ssh "${VPS_SSH}" "test -f ${WEB_STAGE}/index.html && grep -Rql 'api.${DOMAIN}' ${WEB_STAGE}" \
     || err "Staged bundle is incomplete or does not reference api.${DOMAIN}. Live site untouched."
 
+  # GitHub Actions syncs later releases as advo-deploy. Make the atomically
+  # staged tree writable by that account so its rsync can replace old assets.
+  ssh "${VPS_SSH}" "chown -R advo-deploy ${WEB_STAGE}" \
+    || err "Could not set web deploy ownership. Live site untouched."
+
   log "Swapping in ${WEB_STAGE} (previous kept as ${WEB_PREV})"
   ssh "${VPS_SSH}" bash -s <<EOF || err "Web swap failed. Check ${REMOTE_WEB} and ${WEB_PREV} on the box."
 set -euo pipefail

@@ -5,6 +5,7 @@ import { cors } from "hono/cors";
 import { rateLimiter } from "hono-rate-limiter";
 import { HTTPException } from "hono/http-exception";
 import { serveStatic } from "@hono/node-server/serve-static";
+import { readFile } from "node:fs/promises";
 import { extname, resolve } from "node:path";
 
 import { loadEnv, env } from "./utils/env.js";
@@ -110,22 +111,28 @@ app.use(
 );
 
 // Serve resized WebP variants for public portfolio screenshots and team
-// portraits. Original uploads remain available as a fallback for browsers
-// that do not advertise WebP support.
-app.get("/uploads/:bucket/:filename", async (c, next) => {
+// portraits. This uses /api so nginx proxies the request to Hono instead of
+// its direct-to-disk /uploads alias.
+app.get("/api/images/:bucket/:filename", async (c, next) => {
   const bucket = c.req.param("bucket");
   const filename = c.req.param("filename");
   const supportedBuckets = ["portfolio", "avatars"];
   const supportedWidths = bucket === "avatars" ? [160, 320] : [480, 960, 1440];
   const width = Number(c.req.query("width"));
   const imageExtension = extname(filename).toLowerCase();
+  const imageContentTypes: Record<string, string> = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+    ".avif": "image/avif",
+  };
 
   if (
     !supportedBuckets.includes(bucket) ||
     !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(filename) ||
-    ![".jpg", ".jpeg", ".png", ".webp", ".avif"].includes(imageExtension) ||
-    !supportedWidths.includes(width) ||
-    !c.req.header("Accept")?.toLowerCase().includes("image/webp")
+    !imageContentTypes[imageExtension] ||
+    !supportedWidths.includes(width)
   ) {
     return next();
   }
@@ -134,7 +141,19 @@ app.get("/uploads/:bucket/:filename", async (c, next) => {
   const imagePath = resolve(bucketPath, filename);
   if (!imagePath.startsWith(`${bucketPath}/`)) return next();
 
+  const originalHeaders = {
+    "Content-Type": imageContentTypes[imageExtension],
+    "Cache-Control": "public, max-age=31536000, immutable",
+    "Vary": "Accept",
+    "X-Content-Type-Options": "nosniff",
+  };
+
   try {
+    if (!c.req.header("Accept")?.toLowerCase().includes("image/webp")) {
+      const original = await readFile(imagePath);
+      return c.body(new Uint8Array(original), 200, originalHeaders);
+    }
+
     const image = await getOptimizedUploadImage(imagePath, width);
     return c.body(new Uint8Array(image), 200, {
       "Content-Type": "image/webp",
@@ -143,10 +162,16 @@ app.get("/uploads/:bucket/:filename", async (c, next) => {
       "X-Content-Type-Options": "nosniff",
     });
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-      log.warn({ err: error, bucket }, "Could not create optimized image; serving original");
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return next();
+
+    log.warn({ err: error, bucket }, "Could not create optimized image; serving original");
+    try {
+      const original = await readFile(imagePath);
+      return c.body(new Uint8Array(original), 200, originalHeaders);
+    } catch (fallbackError) {
+      if ((fallbackError as NodeJS.ErrnoException).code === "ENOENT") return next();
+      throw fallbackError;
     }
-    return next();
   }
 });
 
