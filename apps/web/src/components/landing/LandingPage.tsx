@@ -5,7 +5,15 @@ import {
   useRef,
   useState,
 } from "react";
-import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform, type MotionStyle } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+  useTransform,
+  type MotionStyle,
+} from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import LandingNav from "@/components/LandingNav";
@@ -339,6 +347,7 @@ const LandingPage = () => {
   const [tabIndex, setTabIndex] = useState(0);
   const [solutionTabIndex, setSolutionTabIndex] = useState(0);
   const heroRef = useRef<HTMLDivElement>(null);
+  const heroVideoRef = useRef<HTMLVideoElement>(null);
   const pageRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -379,6 +388,26 @@ const LandingPage = () => {
   // to the guttered, rounded card; the CSS reads the 0 → 1 progress from --hero-settle.
   const { scrollY } = useScroll();
   const heroSettle = useTransform(scrollY, [0, HERO_SETTLE], [0, 1], { clamp: true });
+  const smoothHeroSettle = useSpring(heroSettle, { stiffness: 140, damping: 30, mass: 0.8 });
+
+  // Keep the hero video muted and inline so browsers can autoplay it. If a
+  // browser waits for enough media data before starting, retry on canplay; the
+  // poster stays visible while loading and native controls stay hidden.
+  useEffect(() => {
+    const video = heroVideoRef.current;
+    if (!video) return;
+
+    const startPlayback = () => {
+      if (video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) return;
+      void video.play().catch(() => {
+        // Keep the poster in place if autoplay is blocked; there are no controls.
+      });
+    };
+
+    video.addEventListener("canplay", startPlayback);
+    startPlayback();
+    return () => video.removeEventListener("canplay", startPlayback);
+  }, [isMobileViewport]);
 
   return (
     <main className={reduceMotion ? "landing-page is-reduce-motion" : "landing-page"} ref={pageRef}>
@@ -390,7 +419,7 @@ const LandingPage = () => {
         <motion.div
           className="landing-hero-frame"
           ref={heroRef}
-          style={isMobileViewport ? ({ "--hero-settle": heroSettle } as unknown as MotionStyle) : undefined}
+          style={isMobileViewport ? ({ "--hero-settle": smoothHeroSettle } as unknown as MotionStyle) : undefined}
         >
           <motion.div
             className="landing-hero-media"
@@ -399,24 +428,20 @@ const LandingPage = () => {
             animate={{ scale: 1 }}
             transition={{ duration: 1.8, ease: EASE }}
           >
-            {reduceMotion ? (
-              <img
-                src={isMobileViewport ? "/landing/hero-building-mobile.jpg" : "/landing/hero-building.jpg"}
-                alt=""
-              />
-            ) : (
-              <video
-                key={isMobileViewport ? "mobile" : "desktop"}
-                className="landing-hero-video"
-                src={isMobileViewport ? "/landing/hero-building-mobile.mp4" : "/landing/hero-building.mp4"}
-                poster={isMobileViewport ? "/landing/hero-building-mobile.jpg" : "/landing/hero-building.jpg"}
-                autoPlay
-                muted
-                loop
-                playsInline
-                aria-hidden="true"
-              />
-            )}
+            <video
+              ref={heroVideoRef}
+              key={isMobileViewport ? "mobile" : "desktop"}
+              className="landing-hero-video"
+              src={isMobileViewport ? "/landing/hero-building-mobile.mp4" : "/landing/hero-building.mp4"}
+              poster={isMobileViewport ? "/landing/hero-building-mobile.jpg" : "/landing/hero-building.jpg"}
+              autoPlay
+              muted
+              loop
+              playsInline
+              controls={false}
+              preload="auto"
+              aria-hidden="true"
+            />
           </motion.div>
           <div className="landing-hero-shade" />
           <motion.div

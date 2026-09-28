@@ -413,6 +413,10 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-hero-media { position: absolute; inset: -8% 0; will-change: transform; }
 .landing-hero-media img,
 .landing-hero-media video { width: 100%; height: 100%; object-fit: cover; }
+.landing-hero-video::-webkit-media-controls-start-playback-button {
+  display: none;
+  -webkit-appearance: none;
+}
 .landing-hero-shade { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.26); }
 .landing-hero-copy {
   position: absolute;
@@ -1369,14 +1373,24 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-hero-media { inset: 0; transform-origin: 50% 100%; }
   .landing-hero-media img,
   .landing-hero-media video { object-position: 100% 100%; }
-  /* The tint fades in with the settle, so the card lands as dim as it used to be. */
-  .landing-hero-shade { background: rgba(0, 0, 0, 0.26); opacity: var(--hero-settle); }
+  /* Slight vertical overscan crops the clip's bottom edge without exposing a gap. */
+  .landing-hero-media video.landing-hero-video {
+    position: absolute;
+    top: 0.74%;
+    right: 0;
+    left: 0;
+    width: 100%;
+    height: 98.52%;
+    transform: scaleY(1.015);
+    transform-origin: center;
+  }
+  .landing-hero-shade { background: rgba(0, 0, 0, 0.14); opacity: var(--hero-settle); }
   /* The copy trails the scroll at half speed, so it keeps clear of both the
      closing card edge and the building rising under it. */
   .landing-hero-copy {
     top: 26%;
     bottom: auto;
-    padding: 0 28px;
+    padding: 0 calc(28px + var(--hero-settle) * var(--landing-gutter));
     transform: translateY(calc(var(--hero-settle) * var(--landing-strip-height) / 2));
   }
   .landing-hero h1 { font-size: 48px; line-height: 1.02; }
