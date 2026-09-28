@@ -8,6 +8,7 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { get } from "@/lib/api";
+import { getResponsiveImageSrcSet } from "@/lib/image-urls";
 
 /** "short and concise and simple descs only" — one line, never a paragraph. */
 export const SHIPPED_DESC_LIMIT = 120;
@@ -20,6 +21,7 @@ export interface ShippedProject {
   blurb: string;
   live_url: string | null;
   screenshotUrl: string | null;
+  screenshotSrcSet?: string;
   display_order: number;
 }
 
@@ -35,6 +37,7 @@ const clamp = (text: string) => {
 function mapShipped(row: Record<string, unknown>): ShippedProject {
   const primaryImage = (row.imageUrl ?? row.image_url ?? null) as string | null;
   const galleryImage = (row.imageUrls ?? row.image_urls ?? null) as string[] | null;
+  const screenshotUrl = primaryImage || galleryImage?.[0] || null;
 
   return {
     portfolio_project_id: (row.portfolioProjectId ?? row.portfolio_project_id) as number,
@@ -42,7 +45,8 @@ function mapShipped(row: Record<string, unknown>): ShippedProject {
     slug: ((row.slug as string) || null),
     blurb: clamp(((row.description as string) || "").trim()),
     live_url: (((row.previewUrl ?? row.preview_url) as string) || null),
-    screenshotUrl: primaryImage || galleryImage?.[0] || null,
+    screenshotUrl,
+    screenshotSrcSet: screenshotUrl ? getResponsiveImageSrcSet(screenshotUrl) : undefined,
     display_order: Number(row.displayOrder ?? row.display_order ?? 0),
   };
 }

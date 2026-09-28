@@ -31,6 +31,8 @@ function toStackItem(project: ShippedProject): CaseStudyFlipItem {
     title: project.title,
     description: project.blurb,
     image: project.screenshotUrl ?? "",
+    imageSrcSet: project.screenshotSrcSet,
+    imageSizes: "(max-width: 760px) 88vw, 720px",
     imageAlt: `${project.title} website screenshot`,
     background: "transparent",
   };

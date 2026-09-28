@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { getResponsiveImageSrcSet } from "@/lib/image-urls";
 
 interface TeamMemberCardProps {
   name: string;
@@ -16,8 +17,12 @@ const TeamMemberCard = ({ name, role, avatar_url, preview_image_url, className }
       {cardImage ? (
         <img
           src={cardImage}
+          srcSet={getResponsiveImageSrcSet(cardImage)}
+          sizes="(max-width: 768px) 45vw, 320px"
           alt={name}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+          loading="lazy"
+          decoding="async"
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center text-7xl font-semibold text-muted-foreground/10 bg-secondary">

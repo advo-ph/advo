@@ -5,6 +5,7 @@ import LandingShell from "@/components/landing/landing-shell";
 import TeamMemberSpotlight, { type TeamMember } from "@/components/team/TeamMemberSpotlight";
 import "@/components/team/team-page.css";
 import { fetchTeam } from "@/hooks/useAdminTeam";
+import { getResponsiveImageSrcSet } from "@/lib/image-urls";
 
 const Team = () => {
   const {
@@ -52,7 +53,14 @@ const Team = () => {
                   <button type="button" className="team-tile" onClick={() => setActiveIndex(index)}>
                     <span className="team-tile-frame">
                       {portrait ? (
-                        <img src={portrait} alt="" />
+                        <img
+                          src={portrait}
+                          srcSet={getResponsiveImageSrcSet(portrait)}
+                          sizes="(max-width: 680px) 44vw, 280px"
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                        />
                       ) : (
                         <span className="team-tile-fallback" aria-hidden="true">
                           {member.name.charAt(0)}

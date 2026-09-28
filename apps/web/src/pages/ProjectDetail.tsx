@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LandingShell from "@/components/landing/landing-shell";
 import { get } from "@/lib/api";
+import { getResponsiveImageSrcSet } from "@/lib/image-urls";
 
 const isVideoUrl = (url: string) => /\.(mp4|webm|mov|ogg|ogv|m4v)(\?|$)/i.test(url);
 
@@ -84,6 +85,7 @@ const ProjectDetail = () => {
 
   const cs = project.case_study || {};
   const heroImage = project.image_urls?.[0] || project.image_url;
+  const heroImageSrcSet = heroImage ? getResponsiveImageSrcSet(heroImage) : undefined;
 
   return (
     <LandingShell>
@@ -170,8 +172,13 @@ const ProjectDetail = () => {
                 ) : (
                   <img
                     src={heroImage}
+                    srcSet={heroImageSrcSet}
+                    sizes="(max-width: 896px) 94vw, 896px"
                     alt={project.title}
                     className="w-full h-full object-cover object-top"
+                    loading="eager"
+                    decoding="async"
+                    fetchPriority="high"
                   />
                 )}
               </div>

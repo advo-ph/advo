@@ -10,7 +10,7 @@ const stages = [
     id: "discovery",
     number: "01",
     title: "Start with the real problem.",
-    image: "/landing/process/discover.jpg",
+    image: "/landing/process/discover.webp",
     imageAlt: "A team mapping out a project together",
     description:
       "We learn how the work happens today: who uses the system, where time gets lost, and what a better outcome would look like. That gives us a shared goal before we settle on a solution.",
@@ -20,7 +20,7 @@ const stages = [
     id: "plan",
     number: "02",
     title: "Agree on the shape of the work.",
-    image: "/landing/rw/plan.jpg",
+    image: "/landing/rw/plan.webp",
     imageAlt: "A designer laying out the structure of a digital product",
     description:
       "We turn the goal into a practical scope: the key workflows, the first release, the systems it needs to connect to, and the decisions that can wait. You can see what is included before build work begins.",
@@ -30,7 +30,7 @@ const stages = [
     id: "design",
     number: "03",
     title: "Make the experience clear.",
-    image: "/landing/process/design.jpg",
+    image: "/landing/process/design.webp",
     imageAlt: "A working digital product taking shape",
     description:
       "We shape the screens and the path between them around the way your team works. We share the direction early, so questions about layout and flow are answered while they are still easy to change.",
@@ -40,7 +40,7 @@ const stages = [
     id: "build",
     number: "04",
     title: "Build in visible steps.",
-    image: "/landing/process/build.jpg",
+    image: "/landing/process/build.webp",
     imageAlt: "A developer working on a product interface",
     description:
       "We build the agreed work in useful pieces and keep project updates, files, and decisions together in the Client Hub. When a preview is ready, you can see the work in context and share feedback against the scope.",
@@ -50,7 +50,7 @@ const stages = [
     id: "review",
     number: "05",
     title: "Review, refine, and sign off.",
-    image: "/landing/process/review.jpg",
+    image: "/landing/process/review.webp",
     imageAlt: "A client reviewing a digital project before release",
     description:
       "We check the agreed workflows, test the experience across screen sizes, and gather feedback in one place. Requested changes are compared with the agreed scope, then we resolve the final issues and record sign-off.",
@@ -60,7 +60,7 @@ const stages = [
     id: "handoff",
     number: "06",
     title: "Launch with a clean handoff.",
-    image: "/landing/process/support.jpg",
+    image: "/landing/process/support.webp",
     imageAlt: "A team supporting a client after launch",
     description:
       "We deploy to the environment agreed for your project and walk through the finished system. If VPS hosting and ongoing support are part of the engagement, we cover the operating setup and support path too.",
@@ -111,7 +111,7 @@ const HowItShips = () => {
             <li className="how-it-ships-stage" id={stage.id} key={stage.id}>
               <div className="how-it-ships-stage-number">{stage.number}</div>
               <div className="how-it-ships-stage-image">
-                <img src={stage.image} alt={stage.imageAlt} loading="lazy" />
+                <img src={stage.image} alt={stage.imageAlt} loading="lazy" decoding="async" />
               </div>
               <div className="how-it-ships-stage-copy">
                 <h2>{stage.title}</h2>

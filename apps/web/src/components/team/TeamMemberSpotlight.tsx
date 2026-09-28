@@ -3,6 +3,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import ScrambleText from "./ScrambleText";
+import { getResponsiveImageSrcSet } from "@/lib/image-urls";
 
 export interface TeamMember {
   team_member_id: number;
@@ -158,7 +159,13 @@ const TeamMemberSpotlight = ({
                     transition={{ duration: reduceMotion ? 0.12 : 0.58, ease: EASE }}
                   >
                     {portrait ? (
-                      <img src={portrait} alt={shown.name} />
+                      <img
+                        src={portrait}
+                        srcSet={getResponsiveImageSrcSet(portrait)}
+                        sizes="(max-width: 760px) 82vw, 480px"
+                        alt={shown.name}
+                        decoding="async"
+                      />
                     ) : (
                       <span className="team-spotlight-fallback" aria-hidden="true">
                         {shown.name.charAt(0)}

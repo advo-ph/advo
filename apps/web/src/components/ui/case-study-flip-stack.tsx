@@ -9,6 +9,8 @@ export interface CaseStudyFlipItem {
   title?: string;
   description?: string;
   image: string;
+  imageSrcSet?: string;
+  imageSizes?: string;
   imageAlt: string;
   background?: string;
   foreground?: string;
@@ -100,10 +102,13 @@ function FlipCard({
     >
       <img
         src={item.image}
+        srcSet={item.imageSrcSet}
+        sizes={item.imageSizes}
         alt={item.imageAlt}
         className="h-full w-full"
-        loading={index < 2 ? "eager" : "lazy"}
+        loading="lazy"
         decoding="async"
+        fetchPriority="low"
         draggable={false}
       />
     </motion.div>

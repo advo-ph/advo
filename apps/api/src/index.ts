@@ -5,6 +5,7 @@ import { cors } from "hono/cors";
 import { rateLimiter } from "hono-rate-limiter";
 import { HTTPException } from "hono/http-exception";
 import { serveStatic } from "@hono/node-server/serve-static";
+import { extname, resolve } from "node:path";
 
 import { loadEnv, env } from "./utils/env.js";
 import { logger, createLogger } from "./utils/logger.js";
@@ -16,6 +17,7 @@ import { cleanExpiredSessions } from "./services/auth.service.js";
 import { startPlaudPoll, stopPlaudPoll } from "./services/plaud-poll.service.js";
 import { startRetentionSweep, stopRetentionSweep } from "./services/retention.service.js";
 import { startRunner, stopRunner, crashRecovery } from "./services/job-runner.service.js";
+import { getOptimizedUploadImage } from "./services/image-optimization.service.js";
 // Import handlers so they register themselves before the runner starts
 import "./services/signoff-draft.service.js";
 import "./services/transcription.service.js";
@@ -107,7 +109,48 @@ app.use(
   })
 );
 
-// Serve uploaded files as static
+// Serve resized WebP variants for public portfolio screenshots and team
+// portraits. Original uploads remain available as a fallback for browsers
+// that do not advertise WebP support.
+app.get("/uploads/:bucket/:filename", async (c, next) => {
+  const bucket = c.req.param("bucket");
+  const filename = c.req.param("filename");
+  const supportedBuckets = ["portfolio", "avatars"];
+  const supportedWidths = bucket === "avatars" ? [160, 320] : [480, 960, 1440];
+  const width = Number(c.req.query("width"));
+  const imageExtension = extname(filename).toLowerCase();
+
+  if (
+    !supportedBuckets.includes(bucket) ||
+    !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(filename) ||
+    ![".jpg", ".jpeg", ".png", ".webp", ".avif"].includes(imageExtension) ||
+    !supportedWidths.includes(width) ||
+    !c.req.header("Accept")?.toLowerCase().includes("image/webp")
+  ) {
+    return next();
+  }
+
+  const bucketPath = resolve(e.UPLOAD_DIR, bucket);
+  const imagePath = resolve(bucketPath, filename);
+  if (!imagePath.startsWith(`${bucketPath}/`)) return next();
+
+  try {
+    const image = await getOptimizedUploadImage(imagePath, width);
+    return c.body(image, 200, {
+      "Content-Type": "image/webp",
+      "Cache-Control": "public, max-age=31536000, immutable",
+      "Vary": "Accept",
+      "X-Content-Type-Options": "nosniff",
+    });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      log.warn({ err: error, bucket }, "Could not create optimized image; serving original");
+    }
+    return next();
+  }
+});
+
+// Serve original uploads as a fallback.
 app.use("/uploads/*", serveStatic({ root: e.UPLOAD_DIR.replace("./uploads", ".") }));
 
 // ─── Rate Limiting ────────────────────────────────────

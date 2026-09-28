@@ -48,7 +48,7 @@ interface Industry {
 const industry: Industry[] = [
   {
     key: "flood",
-    image: "/landing/industry/flood.png",
+    image: "/landing/industry/flood.webp",
     title: "Flood",
     heading: "Know flooded roads in real-time",
     copy: "Navigational map of real-time flooded roads",
@@ -67,7 +67,7 @@ const industry: Industry[] = [
   },
   {
     key: "education",
-    image: "/landing/industry/education.jpg",
+    image: "/landing/industry/education.webp",
     title: "School",
     heading: "A safer, more connected campus.",
     copy: "Campus access, safety, and school operations in one system.",
@@ -79,7 +79,7 @@ const industry: Industry[] = [
   },
   {
     key: "parking",
-    image: "/landing/industry/parking.jpg",
+    image: "/landing/industry/parking.webp",
     title: "Parking",
     heading: "A convenient parking experience.",
     copy: "A fully automated car park for drivers, managers, and owners.",
@@ -95,7 +95,7 @@ const industry: Industry[] = [
   },
   {
     key: "medical",
-    image: "/landing/industry/medical.jpg",
+    image: "/landing/industry/medical.webp",
     title: "Medical",
     heading: "Connected care for clinics, labs, and pharmacies.",
     copy: "Clinic management for appointments, queueing, billing, and stock; EMR for doctors; and hospital integration without a fax machine.",
@@ -156,13 +156,13 @@ const industryTab: IndustryTab[] = [
     title: "Food",
     heading: "Restaurants, cafes, and food stalls",
     copy: "QR code ordering from the table, kiosk ordering with payment, and table management for seating, waitlists, and turn times.",
-    still: "/landing/industry/food.jpg",
+    still: "/landing/industry/food.webp",
   },
   {
     title: "Medical",
     heading: "Clinics, labs, and pharmacies",
     copy: "Clinic management for appointments, queueing, billing, and stock; EMR for doctors; and hospital integration without a fax machine.",
-    still: "/landing/industry/medical.jpg",
+    still: "/landing/industry/medical.webp",
   },
   {
     // Construction still is a stand-in until a real photo lands in
@@ -170,13 +170,13 @@ const industryTab: IndustryTab[] = [
     title: "Construction",
     heading: "Contractors and developers",
     copy: "Site progress and manpower tracking, delivery coordination, and progress billing in one system.",
-    still: "/landing/hero-building.jpg",
+    still: "/landing/hero-building.webp",
   },
   {
     title: "Business",
     heading: "Offices, retail, and services",
     copy: "Inventory and point of sale; scheduling and customer records; fleet tracking, dispatch, and proof of delivery.",
-    still: "/landing/industry/business.jpg",
+    still: "/landing/industry/business.webp",
   },
 ];
 
@@ -267,6 +267,8 @@ const IndustryExplorer = ({
               key={current.still + current.title}
               src={current.still}
               alt=""
+              loading="lazy"
+              decoding="async"
               initial={reduceMotion ? false : { opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={reduceMotion ? undefined : { opacity: 0 }}
@@ -319,13 +321,13 @@ const marqueeLogos = [
   { src: "/landing/logo/vbe-eye-center.png", alt: "VBE Eye Center", scale: 1.2 },
   { src: "/landing/logo/fourlinq.png", alt: "FourlinQ", scale: 1 },
   {
-    src: "/landing/logo/philippine-college-endocrinology.png",
+    src: "/landing/logo/philippine-college-endocrinology.webp",
     alt: "Philippine College of Endocrinology, Diabetes and Metabolism",
     scale: 1.55,
   },
-  { src: "/landing/logo/nokoji.png", alt: "Nokoji Matcha and Doughnuts", scale: 1.08 },
-  { src: "/landing/logo/felici.png", alt: "Felici Artisan Gelato", scale: 1.55 },
-  { src: "/landing/logo/felici-italian-cafe.png", alt: "Felici Italian Café", scale: 1.18 },
+  { src: "/landing/logo/nokoji.webp", alt: "Nokoji Matcha and Doughnuts", scale: 1.08 },
+  { src: "/landing/logo/felici.webp", alt: "Felici Artisan Gelato", scale: 1.55 },
+  { src: "/landing/logo/felici-italian-cafe.webp", alt: "Felici Italian Café", scale: 1.18 },
 ] as const;
 
 /** Scroll distance (px) over which the phone hero settles into its card. Matches --landing-strip-height. */
@@ -334,6 +336,17 @@ const HERO_SETTLE = 120;
 const heroCopy = {
   hidden: { opacity: 0, y: 18 },
   show: { opacity: 1, y: 0 },
+};
+
+type NetworkInformation = EventTarget & {
+  effectiveType?: string;
+  saveData?: boolean;
+};
+
+const prefersReducedData = () => {
+  if (typeof navigator === "undefined") return false;
+  const connection = (navigator as Navigator & { connection?: NetworkInformation }).connection;
+  return connection?.saveData === true || ["slow-2g", "2g"].includes(connection?.effectiveType ?? "");
 };
 
 const LandingPage = () => {
@@ -346,6 +359,7 @@ const LandingPage = () => {
   );
   const [tabIndex, setTabIndex] = useState(0);
   const [solutionTabIndex, setSolutionTabIndex] = useState(0);
+  const [reduceData, setReduceData] = useState(prefersReducedData);
   const heroRef = useRef<HTMLDivElement>(null);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
   const pageRef = useRef<HTMLElement>(null);
@@ -366,6 +380,15 @@ const LandingPage = () => {
     handleChange();
     mediaQuery.addEventListener("change", handleChange);
     return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    const connection = (navigator as Navigator & { connection?: NetworkInformation }).connection;
+    if (!connection) return;
+
+    const updateDataPreference = () => setReduceData(prefersReducedData());
+    connection.addEventListener("change", updateDataPreference);
+    return () => connection.removeEventListener("change", updateDataPreference);
   }, []);
 
   // Section attention + scroll-depth milestones. A no-op until the visitor grants
@@ -390,15 +413,23 @@ const LandingPage = () => {
   const heroSettle = useTransform(scrollY, [0, HERO_SETTLE], [0, 1], { clamp: true });
   const smoothHeroSettle = useSpring(heroSettle, { stiffness: 140, damping: 30, mass: 0.8 });
 
-  // Keep the hero video muted and inline so browsers can autoplay it. If a
-  // browser waits for enough media data before starting, retry on canplay; the
-  // poster stays visible while loading and native controls stay hidden.
+  // Keep the hero video muted and inline so browsers can autoplay it. Attempt
+  // playback immediately and retry once media data is ready; the poster stays
+  // visible while loading or if the browser blocks autoplay, with no controls.
   useEffect(() => {
     const video = heroVideoRef.current;
     if (!video) return;
+    if (reduceData) {
+      video.pause();
+      video.load();
+      return;
+    }
+
+    video.defaultMuted = true;
+    video.muted = true;
+    video.playsInline = true;
 
     const startPlayback = () => {
-      if (video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) return;
       void video.play().catch(() => {
         // Keep the poster in place if autoplay is blocked; there are no controls.
       });
@@ -407,7 +438,7 @@ const LandingPage = () => {
     video.addEventListener("canplay", startPlayback);
     startPlayback();
     return () => video.removeEventListener("canplay", startPlayback);
-  }, [isMobileViewport]);
+  }, [isMobileViewport, reduceData]);
 
   return (
     <main className={reduceMotion ? "landing-page is-reduce-motion" : "landing-page"} ref={pageRef}>
@@ -432,14 +463,14 @@ const LandingPage = () => {
               ref={heroVideoRef}
               key={isMobileViewport ? "mobile" : "desktop"}
               className="landing-hero-video"
-              src={isMobileViewport ? "/landing/hero-building-mobile.mp4" : "/landing/hero-building.mp4"}
-              poster={isMobileViewport ? "/landing/hero-building-mobile.jpg" : "/landing/hero-building.jpg"}
-              autoPlay
+              src={reduceData ? undefined : isMobileViewport ? "/landing/hero-building-mobile.mp4" : "/landing/hero-building.mp4"}
+              poster={isMobileViewport ? "/landing/hero-building-mobile.webp" : "/landing/hero-building.webp"}
+              autoPlay={!reduceData}
               muted
               loop
               playsInline
               controls={false}
-              preload="auto"
+              preload={reduceData ? "none" : "auto"}
               aria-hidden="true"
             />
           </motion.div>
@@ -475,6 +506,7 @@ const LandingPage = () => {
                       src={logo.src}
                       alt={groupIndex === 0 ? logo.alt : ""}
                       style={{ "--landing-logo-scale": logo.scale } as CSSProperties}
+                      decoding="async"
                     />
                   </span>
                 ))}
@@ -518,7 +550,12 @@ const LandingPage = () => {
               <Reveal as="article" className="landing-industry-card" key={item.key}>
                 <p className="landing-industry-label">{item.title}</p>
                 <div className="landing-industry-media">
-                  <img src={item.image} alt={`${item.title} — an ADVO solution`} loading="lazy" />
+                  <img
+                    src={item.image}
+                    alt={`${item.title} — an ADVO solution`}
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
                 <div className="landing-industry-content">
                   <h3>{item.heading}</h3>
