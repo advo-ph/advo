@@ -136,7 +136,7 @@ app.get("/uploads/:bucket/:filename", async (c, next) => {
 
   try {
     const image = await getOptimizedUploadImage(imagePath, width);
-    return c.body(image, 200, {
+    return c.body(new Uint8Array(image), 200, {
       "Content-Type": "image/webp",
       "Cache-Control": "public, max-age=31536000, immutable",
       "Vary": "Accept",
