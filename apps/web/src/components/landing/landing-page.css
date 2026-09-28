@@ -414,6 +414,12 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-hero-media img,
 .landing-hero-media video { width: 100%; height: 100%; object-fit: cover; }
 .landing-hero-video { pointer-events: none; }
+.landing-hero-poster {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
 .landing-hero-video::-webkit-media-controls-start-playback-button,
 .landing-hero-video::-webkit-media-controls-overlay-play-button {
   display: none !important;
@@ -1375,6 +1381,10 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-hero-media { inset: 0; transform-origin: 50% 100%; }
   .landing-hero-media img,
   .landing-hero-media video { object-position: 100% 100%; }
+  .landing-hero-media img.landing-hero-poster {
+    transform: scaleY(1.02);
+    transform-origin: top center;
+  }
   /* Top-anchored overscan crops the encoded bottom edge without a gap. */
   .landing-hero-media video.landing-hero-video {
     position: absolute;

@@ -359,6 +359,7 @@ const LandingPage = () => {
   );
   const [tabIndex, setTabIndex] = useState(0);
   const [solutionTabIndex, setSolutionTabIndex] = useState(0);
+  const [playingHeroVideoKey, setPlayingHeroVideoKey] = useState<string | null>(null);
   const [reduceData, setReduceData] = useState(prefersReducedData);
   const heroRef = useRef<HTMLDivElement>(null);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
@@ -412,6 +413,8 @@ const LandingPage = () => {
   const { scrollY } = useScroll();
   const heroSettle = useTransform(scrollY, [0, HERO_SETTLE], [0, 1], { clamp: true });
   const smoothHeroSettle = useSpring(heroSettle, { stiffness: 140, damping: 30, mass: 0.8 });
+  const heroVideoKey = `${isMobileViewport ? "mobile" : "desktop"}-${reduceData ? "poster" : "autoplay"}`;
+  const heroPoster = isMobileViewport ? "/landing/hero-building-mobile.webp" : "/landing/hero-building.webp";
 
   // Keep the hero video muted and inline so browsers can autoplay it. Attempt
   // playback immediately and retry once media data is ready; the poster stays
@@ -461,10 +464,10 @@ const LandingPage = () => {
           >
             <video
               ref={heroVideoRef}
-              key={isMobileViewport ? "mobile" : "desktop"}
+              key={heroVideoKey}
               className="landing-hero-video"
               src={reduceData ? undefined : isMobileViewport ? "/landing/hero-building-mobile.mp4" : "/landing/hero-building.mp4"}
-              poster={isMobileViewport ? "/landing/hero-building-mobile.webp" : "/landing/hero-building.webp"}
+              poster={heroPoster}
               autoPlay={!reduceData}
               muted
               loop
@@ -472,7 +475,22 @@ const LandingPage = () => {
               controls={false}
               preload={reduceData ? "none" : "auto"}
               aria-hidden="true"
+              onPlaying={() => setPlayingHeroVideoKey(heroVideoKey)}
+              onPause={() => setPlayingHeroVideoKey((activeKey) => (activeKey === heroVideoKey ? null : activeKey))}
+              onWaiting={() => setPlayingHeroVideoKey((activeKey) => (activeKey === heroVideoKey ? null : activeKey))}
+              onError={() => setPlayingHeroVideoKey((activeKey) => (activeKey === heroVideoKey ? null : activeKey))}
             />
+            {/* iOS can paint a native play control even with controls disabled. Keep the still above it until video frames are playing. */}
+            {(!reduceData && playingHeroVideoKey === heroVideoKey) ? null : (
+              <img
+                className="landing-hero-poster"
+                src={heroPoster}
+                alt=""
+                aria-hidden="true"
+                loading="eager"
+                fetchPriority="high"
+              />
+            )}
           </motion.div>
           <div className="landing-hero-shade" />
           <motion.div
