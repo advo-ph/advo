@@ -494,6 +494,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 }
 .landing-marquee-item img {
   display: block;
+  flex: 0 0 auto;
   width: auto;
   height: auto;
   max-width: 132px;
@@ -1475,11 +1476,11 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
    Ported from the WorkShowcase / CardSwap deck. A tall section whose contents
    are sticky. The height is the scroll budget: one screen to read the deck,
    plus a step for every card after the first. --work-steps is set on the
-   element by WorkShowcase from the row count. 40svh per step keeps scrolling
-   tight — enough dwell to read each card without a long journey to the next. */
+   element by WorkShowcase from the row count. 24svh per step keeps each
+   project readable while shortening the scroll to the next one. */
 .work {
   position: relative;
-  height: calc(100svh + var(--work-steps, 0) * 40svh);
+  height: calc(100svh + var(--work-steps, 0) * 24svh);
   scroll-margin-top: 0;
 }
 
