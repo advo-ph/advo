@@ -52,6 +52,7 @@ const TEAM_ROLES = [
   "Externals & Operations",
   "Marketing & Partnerships",
   "Legal & Contracts",
+  "Finance & Compliance Lead",
   "Designer",
   "Content Creator",
   "Videographer",
