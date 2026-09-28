@@ -43,6 +43,7 @@ const TEAM_ROLES = [
   "Developer",
   "Senior Developer",
   "Junior Developer",
+  "Creatives Developer",
   "Intern",
   "Creatives Intern",
   "Junior Creatives",
