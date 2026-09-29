@@ -98,7 +98,7 @@ const industry: Industry[] = [
     image: "/landing/industry/medical.webp",
     title: "Medical",
     heading: "Connected care for clinics, labs, and pharmacies.",
-    copy: "Clinic management for appointments, queueing, billing, and stock; EMR for doctors; and hospital integration without a fax machine.",
+    copy: "Clinic management system with EMR for appointments, queueing, billing, inventory, and integration.",
     offer: [
       { name: "Clinic operations", copy: "Manage appointments, queueing, billing, and stock." },
       { name: "Electronic medical records", copy: "Give doctors EMR tools for patient records." },
@@ -161,7 +161,7 @@ const industryTab: IndustryTab[] = [
   {
     title: "Medical",
     heading: "Clinics, labs, and pharmacies",
-    copy: "Clinic management for appointments, queueing, billing, and stock; EMR for doctors; and hospital integration without a fax machine.",
+    copy: "Clinic management system with EMR for appointments, queueing, billing, inventory, and integration.",
     still: "/landing/industry/medical.webp",
   },
   {
@@ -318,16 +318,18 @@ const IndustryExplorer = ({
 };
 
 const marqueeLogos = [
-  { src: "/landing/logo/vbe-eye-center.png", alt: "VBE Eye Center", scale: 1.2 },
-  { src: "/landing/logo/fourlinq.png", alt: "FourlinQ", scale: 1 },
+  { src: "/landing/logo/vbe-eye-center.png", alt: "VBE Eye Center", scale: 1.2, width: 315, height: 155 },
+  { src: "/landing/logo/fourlinq.png", alt: "FourlinQ", scale: 1, width: 423, height: 141 },
   {
     src: "/landing/logo/philippine-college-endocrinology.webp",
     alt: "Philippine College of Endocrinology, Diabetes and Metabolism",
     scale: 1.55,
+    width: 720,
+    height: 720,
   },
-  { src: "/landing/logo/nokoji.webp", alt: "Nokoji Matcha and Doughnuts", scale: 1.08 },
-  { src: "/landing/logo/felici.webp", alt: "Felici Artisan Gelato", scale: 1.55 },
-  { src: "/landing/logo/felici-italian-cafe.webp", alt: "Felici Italian Café", scale: 1.18 },
+  { src: "/landing/logo/nokoji.webp", alt: "Nokoji Matcha and Doughnuts", scale: 1.08, width: 720, height: 720 },
+  { src: "/landing/logo/felici.webp", alt: "Felici Artisan Gelato", scale: 1.55, width: 720, height: 720 },
+  { src: "/landing/logo/felici-italian-cafe.webp", alt: "Felici Italian Café", scale: 1.18, width: 720, height: 720 },
 ] as const;
 
 /** Scroll distance (px) over which the phone hero settles into its card. Matches --landing-strip-height. */
@@ -523,6 +525,8 @@ const LandingPage = () => {
                     <img
                       src={logo.src}
                       alt={groupIndex === 0 ? logo.alt : ""}
+                      width={logo.width}
+                      height={logo.height}
                       style={{ "--landing-logo-scale": logo.scale } as CSSProperties}
                       decoding="async"
                     />

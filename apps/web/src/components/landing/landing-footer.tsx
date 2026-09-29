@@ -152,7 +152,9 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
         {footerCol.map((col) => (
           <div key={col.title}>
             <h3>{col.title}</h3>
-            {col.link.map(renderLink)}
+            {col.title === "Policies" ? (
+              <nav aria-label="Legal">{col.link.map(renderLink)}</nav>
+            ) : col.link.map(renderLink)}
           </div>
         ))}
       </div>
