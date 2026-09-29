@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, lazy, Suspense } from "react";
 import {
   Plus,
   Pencil,
@@ -37,6 +37,8 @@ import { useRoles } from "@/hooks/useRoles";
 import TeamMemberCard from "@/components/TeamMemberCard";
 import ImageCropDialog from "@/components/ImageCropDialog";
 import { PageHeader, Empty } from "./_ui";
+
+const AdminVpsMonitor = lazy(() => import("./AdminVpsMonitor"));
 
 const TEAM_ROLES = [
   "Founder & CEO",
@@ -80,6 +82,7 @@ const AdminTeam = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [localOrder, setLocalOrder] = useState<TeamMember[] | null>(null);
+  const [activeView, setActiveView] = useState<"members" | "vps">("members");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewFileInputRef = useRef<HTMLInputElement>(null);
   const [showInactive, setShowInactive] = useState(false);
@@ -258,6 +261,32 @@ const AdminTeam = () => {
 
   return (
     <div className="space-y-4">
+      {isOwner && (
+        <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-secondary/40 p-1" role="group" aria-label="Team page view">
+          <button
+            type="button"
+            aria-pressed={activeView === "members"}
+            onClick={() => setActiveView("members")}
+            className={`min-h-9 rounded-md px-3 text-sm font-medium transition-colors ${activeView === "members" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            Members
+          </button>
+          <button
+            type="button"
+            aria-pressed={activeView === "vps"}
+            onClick={() => setActiveView("vps")}
+            className={`min-h-9 rounded-md px-3 text-sm font-medium transition-colors ${activeView === "vps" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            VPS usage
+          </button>
+        </div>
+      )}
+
+      {isOwner && activeView === "vps" ? (
+        <Suspense fallback={<div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>}>
+          <AdminVpsMonitor />
+        </Suspense>
+      ) : <>
       <PageHeader
         title="Team"
         meta="Drag to reorder"
@@ -537,6 +566,7 @@ const AdminTeam = () => {
         onClose={() => setCropSrc(null)}
         onCropped={handleCropped}
       />
+      </>}
     </div>
   );
 };

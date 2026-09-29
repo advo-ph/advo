@@ -126,6 +126,12 @@ const envSchema = z.object({
    */
   ANALYTICS_RETENTION_DAY: z.string().optional(),
 
+  /** Optional server-side SSH target for reading the production VPS during local preview. */
+  VPS_MONITOR_SSH_TARGET: z.preprocess(
+    (value) => value === "" ? undefined : value,
+    z.string().regex(/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$/).optional(),
+  ),
+
   PORT: z.coerce.number().default(6407),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   UPLOAD_DIR: z.string().default("./uploads"),

@@ -60,6 +60,8 @@ import { corpusRoutes } from "./routes/corpus.routes.js";
 import jobRoutes from "./routes/jobs.routes.js";
 import financeRoutes from "./routes/finance.routes.js";
 import eventRoutes from "./routes/event.routes.js";
+import vpsMonitorRoutes from "./routes/vps-monitor.routes.js";
+import { startVpsMonitor, stopVpsMonitor } from "./services/vps-monitor.service.js";
 
 import type { Variables } from "./types/context.js";
 
@@ -294,6 +296,10 @@ app.route("/api/preview", previewRoutes);
 // after the visitor grants consent (apps/web/src/lib/track.ts).
 app.route("/api/event", eventRoutes);
 
+// VPS and deployed-project resource usage. The route is admin-only, while the
+// collector runs on the API host and keeps a bounded local seven-day history.
+app.route("/api/vps-monitor", vpsMonitorRoutes);
+
 // Internal library (team-wide catalog)
 app.route("/api/library", libraryRoutes);
 
@@ -354,6 +360,7 @@ serve({ fetch: app.fetch, port }, () => {
   // Bounded window on analytics_event + the rollup that outlives it. Same self-rescheduling
   // setTimeout shape as the Plaud poll — no new scheduler.
   startRetentionSweep();
+  startVpsMonitor();
   // Re-queue any jobs that were running when the previous process died.
   crashRecovery().catch((err) => log.error({ err }, "Crash recovery failed"));
   startRunner();
@@ -376,6 +383,7 @@ async function shutdown(signal: string) {
   log.info(`${signal} received, shutting down...`);
   stopPlaudPoll();
   stopRetentionSweep();
+  stopVpsMonitor();
   stopRunner();
   await closeDb();
   process.exit(0);
