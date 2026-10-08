@@ -23,15 +23,16 @@ function getCroppedBlob(imageSrc: string, crop: Area): Promise<Blob> {
     img.crossOrigin = "anonymous";
     img.onload = () => {
       const canvas = document.createElement("canvas");
-      canvas.width = crop.width;
-      canvas.height = crop.height;
+      canvas.width = Math.round(crop.width);
+      canvas.height = Math.round(crop.height);
       const ctx = canvas.getContext("2d");
       if (!ctx) return reject(new Error("Canvas not supported"));
-      ctx.drawImage(img, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height);
+      ctx.imageSmoothingQuality = "high";
+      ctx.drawImage(img, crop.x, crop.y, crop.width, crop.height, 0, 0, canvas.width, canvas.height);
       canvas.toBlob((blob) => {
         if (blob) resolve(blob);
         else reject(new Error("Failed to create blob"));
-      }, "image/jpeg", 0.92);
+      }, "image/jpeg", 0.95);
     };
     img.onerror = () => reject(new Error("Failed to load image"));
     img.src = imageSrc;
@@ -80,7 +81,7 @@ const ImageCropDialog = ({ open, imageSrc, aspect, onClose, onCropped }: ImageCr
               crop={crop}
               zoom={zoom}
               aspect={aspect}
-              objectFit="horizontal-cover"
+              objectFit="contain"
               onCropChange={setCrop}
               onZoomChange={setZoom}
               onCropComplete={onCropComplete}

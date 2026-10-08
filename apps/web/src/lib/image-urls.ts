@@ -1,5 +1,5 @@
 const PORTFOLIO_IMAGE_WIDTHS = [480, 960, 1440] as const;
-const AVATAR_IMAGE_WIDTHS = [160, 320] as const;
+const AVATAR_IMAGE_WIDTHS = [160, 320, 640, 960] as const;
 const UPLOAD_IMAGE_PATH = /\/uploads\/(portfolio|avatars)\/[^/?#]+\.(?:jpe?g|png|webp|avif)$/i;
 
 function getUploadBucket(source: string): "portfolio" | "avatars" | null {

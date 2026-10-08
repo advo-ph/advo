@@ -119,7 +119,7 @@ app.get("/api/images/:bucket/:filename", async (c, next) => {
   const bucket = c.req.param("bucket");
   const filename = c.req.param("filename");
   const supportedBuckets = ["portfolio", "avatars"];
-  const supportedWidths = bucket === "avatars" ? [160, 320] : [480, 960, 1440];
+  const supportedWidths = bucket === "avatars" ? [160, 320, 640, 960] : [480, 960, 1440];
   const width = Number(c.req.query("width"));
   const imageExtension = extname(filename).toLowerCase();
   const imageContentTypes: Record<string, string> = {
