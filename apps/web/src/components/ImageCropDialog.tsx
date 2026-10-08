@@ -74,14 +74,19 @@ const ImageCropDialog = ({ open, imageSrc, aspect, onClose, onCropped }: ImageCr
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="bg-card border-border max-w-lg rounded-lg p-0 gap-0 [&>button:last-child]:hidden">
-        <div className="relative w-full bg-black" style={{ aspectRatio: aspect, maxHeight: "70vh" }}>
+        {/* Width follows the height cap so the box always has the exact crop
+            ratio. The crop area then fills the box with no shaded margins. */}
+        <div
+          className="relative mx-auto bg-black"
+          style={{ aspectRatio: aspect, width: `min(100%, calc(70vh * ${aspect}))` }}
+        >
           {imageSrc && (
             <Cropper
               image={imageSrc}
               crop={crop}
               zoom={zoom}
               aspect={aspect}
-              objectFit="contain"
+              objectFit="cover"
               onCropChange={setCrop}
               onZoomChange={setZoom}
               onCropComplete={onCropComplete}

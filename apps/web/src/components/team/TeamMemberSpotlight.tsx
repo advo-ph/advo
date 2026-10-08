@@ -162,7 +162,7 @@ const TeamMemberSpotlight = ({
                       <img
                         src={portrait}
                         srcSet={getResponsiveImageSrcSet(portrait)}
-                        sizes="(max-width: 760px) 82vw, 480px"
+                        sizes="(max-width: 900px) 82vw, 480px"
                         alt={shown.name}
                         decoding="async"
                       />

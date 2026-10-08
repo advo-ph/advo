@@ -187,20 +187,7 @@ const AdminTeam = () => {
 
     const reader = new FileReader();
     reader.onload = () => {
-      const src = reader.result as string;
-      // Portraits open with the crop box covering the whole photo, so an
-      // upload with no edits keeps every pixel. Avatars stay square.
-      if (target === "preview") {
-        const img = new Image();
-        img.onload = () => {
-          setCropSrc(src);
-          setCropAspect(img.naturalWidth / img.naturalHeight || aspect);
-          setCropTarget(target);
-        };
-        img.src = src;
-        return;
-      }
-      setCropSrc(src);
+      setCropSrc(reader.result as string);
       setCropAspect(aspect);
       setCropTarget(target);
     };

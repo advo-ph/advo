@@ -254,8 +254,11 @@
 }
 .team-spotlight-media img {
   display: block;
-  width: auto;
+  /* Matches the img sizes attribute. A fixed width keeps every portrait the
+     same size, whatever pixel width the image server returns. */
+  width: 480px;
   height: auto;
+  object-fit: contain;
   max-width: 100%;
   max-height: calc(100dvh - 2 * clamp(72px, 10vh, 112px));
 }
@@ -386,7 +389,7 @@
     width: min(460px, 100%);
     margin: 0 auto;
   }
-  .team-spotlight-media img { max-height: 70dvh; }
+  .team-spotlight-media img { width: 82vw; max-height: 70dvh; }
   .team-spotlight .team-spotlight-name { font-size: clamp(24px, 7.4vw, 40px); }
   .team-spotlight .team-spotlight-role {
     margin-top: 12px;

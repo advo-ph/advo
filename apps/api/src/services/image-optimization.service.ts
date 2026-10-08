@@ -2,10 +2,33 @@ import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, stat, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { readdir } from "node:fs/promises";
 import sharp from "sharp";
 
 const cacheDirectory = join(tmpdir(), "advo-image-cache");
 const WEBP_QUALITY = 78;
+const IMAGE_FILE = /\.(?:jpe?g|png|webp|avif)$/i;
+
+export const UPLOAD_IMAGE_WIDTHS: Record<string, number[]> = {
+  avatars: [160, 320, 640, 960],
+  portfolio: [480, 960, 1440],
+};
+
+/** Builds every resized copy of one upload so the first visitor does not wait. */
+export async function warmUploadImage(bucket: string, imagePath: string): Promise<void> {
+  const widths = UPLOAD_IMAGE_WIDTHS[bucket];
+  if (!widths || !IMAGE_FILE.test(imagePath)) return;
+  for (const width of widths) await getOptimizedUploadImage(imagePath, width);
+}
+
+/** Builds missing resized copies for a whole bucket, one image at a time. */
+export async function warmUploadBucket(uploadDir: string, bucket: string): Promise<void> {
+  const bucketPath = join(uploadDir, bucket);
+  const filenames = await readdir(bucketPath).catch(() => [] as string[]);
+  for (const filename of filenames) {
+    await warmUploadImage(bucket, join(bucketPath, filename)).catch(() => undefined);
+  }
+}
 
 export async function getOptimizedUploadImage(
   imagePath: string,
