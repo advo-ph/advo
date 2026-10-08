@@ -160,18 +160,9 @@ const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps)
               {renderLink(entry)}
             </div>
           ))}
-
-          <div className="landing-nav-drawer-action">
-            <Link className="landing-button landing-button-ghost" to="/login" onClick={closeMenu}>
-              Log in
-            </Link>
-          </div>
         </nav>
 
         <div className="landing-nav-action">
-          <Link className="landing-login" to="/login" onClick={closeMenu}>
-            Log in
-          </Link>
           <button
             type="button"
             className="landing-menu"
