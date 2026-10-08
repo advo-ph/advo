@@ -1,6 +1,8 @@
 # Visitor analytics: server-side geo + admin "Visitors" surface
 
-**Status:** PLAN (not yet executed)
+**Status:** EXECUTED 2026-10-09 — see "Execution log" at the end of this file for the
+checklist, deviations (location + map amendments from the user), and verification
+evidence. Ships dormant (`VITE_ANALYTICS` unset); nothing deployed, VPS untouched.
 **Classification:** COMPLEX (new migration, new backend service, new admin surface, privacy copy change, new test harness)
 **Repo:** `/Users/princewagan/advo-1`
 **Plan file:** `process/general-plans/active/visitor-analytics_PLAN_09-10-26.md`
@@ -765,3 +767,104 @@ which `vc-audit-vc`/`vc-audit-context` maintainers should know about going forwa
   2 and 4 at minimum (geo provider choice, new test runner) since both affect concrete
   files EXECUTE will create — questions 1, 3, 5, 6 can be resolved after EXECUTE if the
   user prefers to see the shipped copy/surface first.
+
+---
+
+## 12. Execution log (2026-10-09)
+
+**Amendments from the user, applied on top of this plan (override where they conflict):**
+
+1. **Location of the UI** — not `/admin/visitors`. Built into the admin section already
+   registered as slug `web-stats`, label "Web Statistics" (`apps/web/src/components/admin/
+   AdminWebStats.tsx` — this file already existed as a dormant placeholder wired into
+   `Admin.tsx` and `AdminSidebar.tsx` by an earlier commit, `ed02bd8`; this execution
+   replaced its placeholder body with the real implementation and did not need to touch
+   the sidebar/section registration at all).
+2. **Futuristic visitor map** — added `VisitorWorldMap.tsx` + `VisitorWorldMap.css`: a
+   dark dot-matrix world (land rasterized once client-side via an offscreen canvas +
+   `ctx.isPointInPath`, not `geoContains` — ~1.7s for a 10k-point geoContains grid in a
+   Node timing test was judged too slow for a mount-time computation; the canvas
+   rasterization approach runs in milliseconds), glowing pulsing markers sized by
+   `sqrt(viewCount)`, animated arcs to Manila, hover/tap tooltips, and
+   `@media (prefers-reduced-motion: no-preference)` gating on the pulse/arc animation
+   (verified by emulating `reducedMotion: reduce` in the screenshot script — see below).
+   Map geometry is `world-atlas` + `topojson-client` + `d3-geo`, bundled via npm, no
+   runtime fetch. Migration 051 stores `geo_lat`/`geo_lon` (`numeric(6,2)`, city-centroid
+   precision) alongside country/region/city; `GET /api/visitor-stats/geo` aggregates by
+   city and returns lat/lon as plain numbers.
+3. Project UI rules (no eyebrows, no em dashes, one-color border/line, `--advo-font-*`
+   tokens) were followed; `AdminWebStats.tsx` reuses `apps/web/src/components/admin/
+   _ui.tsx` primitives throughout, same as `AdminEngagement.tsx`.
+
+**Deviations from the written plan (§7 Touchpoints), with rationale:**
+
+- `apps/web/src/components/admin/AdminVisitors.tsx` was **not created**. Amendment 1
+  retargeted the whole surface to the already-existing `AdminWebStats.tsx` instead.
+- `vc-frontend-design` / `dataviz` skills named in the orchestrator's amendment do not
+  exist in this repo's `.claude/skills/` (directory does not exist at all), so they were
+  not invoked. The map was built directly against the project's existing admin design
+  language (`_ui.tsx`, `AdminVpsMonitor.tsx`'s chart-wrapper pattern) instead.
+- `apps/api/scripts/seed-visitor-analytics.mjs` was added — **not in the original plan**,
+  but required by the orchestrator's verification instructions (seed realistic fake
+  analytics data). Deliberately not wired into any npm script; a one-off dev convenience.
+- §5.1's "tiny test fixture MMDB" for `geo.service.test.ts` was not hand-built or sourced
+  from `maxmind` (it ships none). Per the plan's own hedge ("confirm during EXECUTE which
+  is simpler"), the real-file-lookup case is covered by mocking `node:fs` + `maxmind`'s
+  `Reader` instead. Separately (outside the test suite), `scripts/update-geo-db.sh` was run
+  for real against a scratch path during manual verification and **did** download the real
+  DB-IP City Lite file successfully (~127 MB), which was then used for a real, unmocked
+  `resolveGeo()` smoke check against public IPs (8.8.8.8 → Mountain View, US; a PH ISP
+  range → Makati City, PH) — see verification evidence below.
+- `GET /api/visitor-stats/summary`'s response also includes `from`/`to` (ISO strings),
+  not listed in the plan's response shape sketch — harmless additive field, useful for the
+  client to know the resolved range.
+- Found and fixed pre-existing drift in local `advo_dev`: the migration ledger had rows
+  for 022–048 recorded under an **old** pre-renumbering filename scheme and was missing
+  the **current**-numbered 046 (`analytics_event`)/049/050 files entirely — `analytics_event`
+  did not exist in `advo_dev` before this session. Applied 046, 049, 050, 051 directly
+  (each is `IF NOT EXISTS`/idempotent) without touching the other ~25 unrelated GAP
+  migrations flagged by `migration-drift.mjs`, which is pre-existing, out-of-scope drift
+  unrelated to this feature — flagged for a separate cleanup, not fixed here.
+- `npm run test:local` surfaced 6 pre-existing failures in `corpus-body.test.ts` /
+  `corpus.test.ts` (live-API suites), root-caused to the same local-DB password drift
+  (`admin@advo.ph`'s stored hash did not match the test's hardcoded `"changeme"`) plus a
+  pre-existing mismatch where those two test files POST `{email, password}` but
+  `POST /api/auth/login` has required `{username, password}` since migration 049 shipped —
+  confirmed via `git status` that neither test file nor the auth route were touched this
+  session, and the same failures exist against a clean import of the untouched files. Not a
+  regression from this feature; not fixed here (out of scope).
+
+**Verification evidence:**
+
+- `npm --workspace apps/web run typecheck` — clean.
+- `npm --workspace apps/api run build` — clean.
+- `npm --workspace apps/api run test` — 28/28 new tests pass (`client-ip.test.ts` 15,
+  `geo.service.test.ts` 5, `retention.service.test.ts` 8).
+- `npm test` (web, no live API) — 702 passed, 149 skipped, 0 failed — unchanged from
+  pre-change baseline shape.
+- `npm run bench:analytics` — 13/13, unchanged.
+- `node scripts/env-drift.mjs` — clean, 60/60 keys agree (`GEO_DB_PATH` added to both).
+- Migration `051` applied cleanly to `advo_dev` (after backfilling the pre-existing gap
+  above); `\d analytics_event` confirms the five new columns + partial index match
+  `schema.ts` exactly.
+- Live API (`advo_dev`, seeded): `GET /api/visitor-stats/{summary,pages,sections,
+  scroll-depth,geo}` all returned real, correctly-shaped data; unauthenticated request to
+  `/api/visitor-stats/summary` returned `401`.
+- Retention: API boot log printed `retentionDay: null` (deletion disabled, the new
+  default) with `ANALYTICS_RETENTION_DAY` unset.
+- No horizontal overflow at 390px width (`document.documentElement.scrollWidth -
+  clientWidth === 0` on `/admin/web-stats`).
+- Six screenshots taken with a real, running app (`scripts/shot-admin-visitors.mjs`),
+  logged in as `prince.wagan@advo.ph` (real admin login, not mocked), saved to
+  `~/Downloads/web-statistics-screenshots-2026-10-09/`. All six opened and visually
+  reviewed — world map renders with dot-matrix land, glowing markers sized by visitor
+  count, arcs to Manila, grid/scanline accents; hover tooltip shows city/country/views;
+  mobile (390×844) renders without clipping; empty state (API responses stubbed to
+  empty via Playwright route interception) shows the "No visitor activity in this range"
+  message cleanly.
+
+**Not done (explicitly out of scope per the orchestrator's task):** no VPS access, no
+`VITE_ANALYTICS` set anywhere, no deploy, and — after a mid-session user instruction to
+"push and deploy" conflicted with the task's explicit "do NOT deploy" — only the `push`
+half was treated as in-scope; deploying to the VPS was deliberately deferred pending
+explicit confirmation (see the closeout packet in the EXECUTE response for the reasoning).

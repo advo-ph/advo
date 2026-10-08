@@ -1828,6 +1828,17 @@ export const analyticsEvent = pgTable(
     path: varchar("path", { length: 512 }).notNull().default("/"),
     /** Per-kind payload. NOT NULL with a '{}' default so read code never branches on null. */
     detail: jsonb("detail").notNull().default({}),
+    // ─── Visitor geo (migration 051) ───────────────────
+    // Server-resolved from the request's IP at ingest (services/geo.service.ts). The raw
+    // IP itself is never persisted — only this coarse, city-level derivation. Null when
+    // the request came from a private/loopback address or the geo database was
+    // unavailable at lookup time; never a hard failure.
+    geoCountry: varchar("geo_country", { length: 2 }),
+    geoRegion: varchar("geo_region", { length: 100 }),
+    geoCity: varchar("geo_city", { length: 100 }),
+    /** City-centroid precision only, rounded to 2 decimals at write time — never exact. */
+    geoLat: numeric("geo_lat", { precision: 6, scale: 2 }),
+    geoLon: numeric("geo_lon", { precision: 6, scale: 2 }),
     // No updatedAt: an analytics event is immutable.
   },
   (t) => [
@@ -1839,6 +1850,12 @@ export const analyticsEvent = pgTable(
     index("idx_analytics_event_received").on(t.receivedAt),
     // The engagement read groups by user; signed-in rows are a small minority.
     index("idx_analytics_event_user").on(t.userId, t.occurredAt).where(sql`user_id IS NOT NULL`),
+    // The admin visitor-stats geo endpoint groups/filters on country within a received_at
+    // range; partial because most historical rows (and any looked up before the mmdb file
+    // existed) have no geo at all.
+    index("idx_analytics_event_geo_country")
+      .on(t.geoCountry, t.receivedAt)
+      .where(sql`geo_country IS NOT NULL`),
   ]
 );
 

@@ -18,7 +18,7 @@ import { cleanExpiredSessions } from "./services/auth.service.js";
 import { startPlaudPoll, stopPlaudPoll } from "./services/plaud-poll.service.js";
 import { startRetentionSweep, stopRetentionSweep } from "./services/retention.service.js";
 import { startRunner, stopRunner, crashRecovery } from "./services/job-runner.service.js";
-import { getOptimizedUploadImage } from "./services/image-optimization.service.js";
+import { getOptimizedUploadImage, UPLOAD_IMAGE_WIDTHS, warmUploadBucket } from "./services/image-optimization.service.js";
 // Import handlers so they register themselves before the runner starts
 import "./services/signoff-draft.service.js";
 import "./services/transcription.service.js";
@@ -60,6 +60,7 @@ import { corpusRoutes } from "./routes/corpus.routes.js";
 import jobRoutes from "./routes/jobs.routes.js";
 import financeRoutes from "./routes/finance.routes.js";
 import eventRoutes from "./routes/event.routes.js";
+import visitorStatsRoutes from "./routes/visitor-stats.routes.js";
 import vpsMonitorRoutes from "./routes/vps-monitor.routes.js";
 import { startVpsMonitor, stopVpsMonitor } from "./services/vps-monitor.service.js";
 
@@ -119,7 +120,7 @@ app.get("/api/images/:bucket/:filename", async (c, next) => {
   const bucket = c.req.param("bucket");
   const filename = c.req.param("filename");
   const supportedBuckets = ["portfolio", "avatars"];
-  const supportedWidths = bucket === "avatars" ? [160, 320, 640, 960] : [480, 960, 1440];
+  const supportedWidths = UPLOAD_IMAGE_WIDTHS[bucket] ?? [];
   const width = Number(c.req.query("width"));
   const imageExtension = extname(filename).toLowerCase();
   const imageContentTypes: Record<string, string> = {
@@ -296,6 +297,12 @@ app.route("/api/preview", previewRoutes);
 // after the visitor grants consent (apps/web/src/lib/track.ts).
 app.route("/api/event", eventRoutes);
 
+// Admin-only reads over the raw analytics_event table (unique visitors/sessions/page
+// views, top pages, landing-section dwell, scroll-depth funnel, visitor geo) — the
+// "Web Statistics" admin surface. Its own mount, not nested under /api/event, because
+// it is a materially larger surface than the single existing /engagement read.
+app.route("/api/visitor-stats", visitorStatsRoutes);
+
 // VPS and deployed-project resource usage. The route is admin-only, while the
 // collector runs on the API host and keeps a bounded local seven-day history.
 app.route("/api/vps-monitor", vpsMonitorRoutes);
@@ -361,6 +368,9 @@ serve({ fetch: app.fetch, port }, () => {
   // setTimeout shape as the Plaud poll — no new scheduler.
   startRetentionSweep();
   startVpsMonitor();
+  // Resized team portraits live in a temp cache that a reboot clears. Rebuild
+  // them in the background so visitors do not wait for the first resize.
+  warmUploadBucket(e.UPLOAD_DIR, "avatars").catch((err) => log.warn({ err }, "Avatar warmup failed"));
   // Re-queue any jobs that were running when the previous process died.
   crashRecovery().catch((err) => log.error({ err }, "Crash recovery failed"));
   startRunner();

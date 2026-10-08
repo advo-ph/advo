@@ -14,6 +14,7 @@
     "build:api": "npm --workspace apps/api run build",
     "lint": "npm --workspace apps/web run lint",
     "test": "npm --workspace apps/web run test",
+    "test:api": "npm --workspace apps/api run test",
     "test:local": "bash scripts/test-local.sh",
     "outreach:preflight": "node scripts/outreach-preflight.mjs",
     "bench:landing-merge": "node bench/roadmap/landing-merge/scoring.mjs",

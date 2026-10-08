@@ -1,0 +1,75 @@
+/* Visitor world map accents — grid, scanline, pulse, arc draw. */
+
+.visitor-map {
+  color: hsl(var(--border));
+}
+
+.visitor-map-grid {
+  color: hsl(var(--border));
+  opacity: 0.35;
+}
+
+.visitor-map-land {
+  color: hsl(215 14% 34%);
+}
+
+.visitor-map-marker {
+  cursor: pointer;
+  outline: none;
+}
+
+.visitor-map-marker-glow {
+  filter: blur(2px);
+}
+
+/* A faint radar-sweep scanline texture over the whole panel. Decorative only, low
+   enough opacity that it never competes with the dots or markers for attention. */
+.visitor-map-scanline {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    hsl(var(--accent) / 0.05) 0px,
+    hsl(var(--accent) / 0.05) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+  mix-blend-mode: screen;
+}
+
+/* Pulse + arc-draw are both motion. Off by default; only on when the visitor has not
+   asked for reduced motion -- the plan's explicit requirement. */
+@media (prefers-reduced-motion: no-preference) {
+  .visitor-map-marker-pulse {
+    animation: visitor-map-pulse 2.4s ease-in-out infinite;
+    transform-origin: center;
+  }
+
+  .visitor-map-arc-path {
+    stroke-dasharray: 4 3;
+    animation: visitor-map-arc-flow 6s linear infinite;
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visitor-map-arc-path {
+    opacity: 0.3;
+  }
+}
+
+@keyframes visitor-map-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.25);
+    opacity: 0.5;
+  }
+}
+
+@keyframes visitor-map-arc-flow {
+  to {
+    stroke-dashoffset: -70;
+  }
+}

@@ -136,6 +136,25 @@ API_URL=http://localhost:6407
 FRONTEND_URL=http://localhost:6447        # Vite dev (proxies /api → :6407)
 ```
 
+### Geo database (visitor analytics)
+
+The admin "Web Statistics" surface resolves a visitor's approximate city from their IP at
+ingest (`apps/api/src/services/geo.service.ts`), using an offline MMDB file — no external
+API call per request, no account, and the raw IP is never persisted.
+
+- `GEO_DB_PATH` (default `./data/geo/dbip-city-lite.mmdb`, relative to the API's cwd,
+  matching the existing `UPLOAD_DIR` convention) points at the file. **The file is
+  gitignored and does not ship with a deploy** — it must exist on the VPS separately, or
+  every event simply gets a `null` geo (degrades gracefully, never fails ingest).
+- `scripts/update-geo-db.sh [target-path]` downloads the current month's DB-IP City Lite
+  database (CC BY 4.0, no account/key required) and atomically swaps it into place.
+- **On the VPS**, add a monthly root crontab entry that re-downloads it and restarts the
+  API so the new file is picked up (the reader opens once per process lifetime):
+
+  ```
+  0 3 1 * * /path/to/repo/scripts/update-geo-db.sh >> /var/log/advo-geo-update.log 2>&1 && pm2 restart advo-api --update-env
+  ```
+
 ## Database
 
 Schema is defined in `apps/api/src/db/schema.ts` using Drizzle ORM.

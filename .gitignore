@@ -53,3 +53,8 @@ pnpm-lock.yaml
 # bench run artifacts
 bench/roadmap/*/runs/
 apps/api/.data/
+
+# Offline geo database (DB-IP City Lite, ~80MB+, monthly download via
+# scripts/update-geo-db.sh) — never commit a binary this size, and it is
+# rebuilt on the box via cron, not via git.
+apps/api/data/geo/

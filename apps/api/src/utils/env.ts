@@ -126,6 +126,14 @@ const envSchema = z.object({
    */
   ANALYTICS_RETENTION_DAY: z.string().optional(),
 
+  /**
+   * Path to the offline IP-geolocation MMDB file (DB-IP City Lite), read by
+   * services/geo.service.ts directly off process.env (not through this parsed object, so a
+   * missing file degrades to null geo rather than failing env validation). Declared here
+   * only so scripts/env-drift.mjs holds this file and .env.example to the same key set.
+   */
+  GEO_DB_PATH: z.string().optional(),
+
   /** Optional server-side SSH target for reading the production VPS during local preview. */
   VPS_MONITOR_SSH_TARGET: z.preprocess(
     (value) => value === "" ? undefined : value,
