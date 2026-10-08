@@ -30,10 +30,13 @@ import {
   Banknote,
   Activity,
   ShieldCheck,
+  Server,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDrawerLock } from "@/hooks/useDrawerLock";
 import { useRoles } from "@/hooks/useRoles";
+import { useNavHidden } from "@/hooks/useNavHidden";
 
 /** Shared with the hamburger's aria-controls so focus returns to it on close. */
 export const ADMIN_DRAWER_ID = "admin-navigation-drawer";
@@ -69,6 +72,8 @@ export type AdminSection =
   | "library"
   | "brand-scraper"
   | "fb-scraper"
+  | "vps"
+  | "web-stats"
   | "settings";
 
 interface AdminSidebarProps {
@@ -82,7 +87,13 @@ interface AdminSidebarProps {
   onToggleTheme: () => void;
 }
 
-type NavItem = { id: AdminSection; label: string; icon: React.ElementType };
+type NavItem = {
+  id: AdminSection;
+  label: string;
+  icon: React.ElementType;
+  /** Shown to the owner only, whatever the visibility setting says. */
+  ownerOnly?: boolean;
+};
 
 const topItem: NavItem = { id: "dashboard", label: "Dashboard", icon: LayoutDashboard };
 
@@ -107,14 +118,13 @@ type NavGroup = {
  * and routes are kept so existing /admin/finance, /admin/contracts, and
  * /admin/library links still resolve instead of bouncing to the dashboard.
  */
-const navGroups: NavGroup[] = [
+export const navGroups: NavGroup[] = [
   {
     label: "Operations",
     items: [
       // First in Operations: this is the daily-driver screen.
       { id: "tasks", label: "Tasks", icon: ListChecks },
       { id: "projects", label: "Projects", icon: FolderKanban },
-      { id: "clients", label: "Clients", icon: Users },
       // Which clients have gone quiet — reads consented, signed-in analytics only.
       { id: "engagement", label: "Engagement", icon: Activity },
       { id: "calendar", label: "Calendar", icon: CalendarDays },
@@ -132,17 +142,10 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
-    label: "Marketing",
-    collapsible: true,
-    items: [
-      { id: "portfolio", label: "Portfolio", icon: Image },
-      { id: "social", label: "Social", icon: Instagram },
-    ],
-  },
-  {
     label: "Sales",
     collapsible: true,
     items: [
+      { id: "clients", label: "Clients", icon: Users },
       { id: "leads", label: "Leads", icon: UserPlus },
       { id: "proposals", label: "Proposals", icon: FileCheck2 },
       { id: "campaign", label: "Campaigns", icon: Send },
@@ -153,6 +156,10 @@ const navGroups: NavGroup[] = [
     label: "Tools",
     collapsible: true,
     items: [
+      { id: "portfolio", label: "Portfolio", icon: Image },
+      { id: "social", label: "Social", icon: Instagram },
+      { id: "vps", label: "VPS Usage", icon: Server, ownerOnly: true },
+      { id: "web-stats", label: "Web Statistics", icon: BarChart3, ownerOnly: true },
       { id: "brand-scraper", label: "Brand Research", icon: Scan },
       { id: "fb-scraper", label: "Facebook Research", icon: BookOpen },
     ],
@@ -186,7 +193,16 @@ const AdminSidebar = ({
   // isOwner starts false and flips true once /api/auth/me lands, so the
   // owner-only groups appear a beat after first paint rather than never.
   const { isOwner } = useRoles();
-  const visibleGroups = navGroups.filter((g) => !g.ownerOnly || isOwner);
+  // The owner picks which items everyone sees (Settings → Sidebar). Hiding is
+  // presentation only: the routes stay reachable by URL.
+  const { hidden } = useNavHidden();
+  const visibleGroups = navGroups
+    .filter((g) => !g.ownerOnly || isOwner)
+    .map((g) => ({
+      ...g,
+      items: g.items.filter((i) => !hidden.includes(i.id) && (!i.ownerOnly || isOwner)),
+    }))
+    .filter((g) => g.items.length > 0);
 
   // The nav list is taller than a laptop viewport, so the last group can sit
   // below the fold with nothing to hint at it. A group heading stranded at the
@@ -206,7 +222,7 @@ const AdminSidebar = ({
     syncNavOverflow();
     window.addEventListener("resize", syncNavOverflow);
     return () => window.removeEventListener("resize", syncNavOverflow);
-  }, [syncNavOverflow, expandedGroups, isCollapsed, isOwner]);
+  }, [syncNavOverflow, expandedGroups, isCollapsed, isOwner, hidden]);
 
   useEffect(() => {
     const owner = groupLabelFor(activeSection);

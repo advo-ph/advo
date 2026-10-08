@@ -23,6 +23,8 @@ import { useRoles } from "@/hooks/useRoles";
 import * as db from "@/lib/db";
 import { get, patch as apiPatch, post, del } from "@/lib/api";
 import { PageHeader, Panel, Dot } from "@/components/admin/_ui";
+import { navGroups, type AdminSection } from "@/components/admin/AdminSidebar";
+import { useNavHidden } from "@/hooks/useNavHidden";
 
 interface SocialLink {
   platform: string;
@@ -41,6 +43,13 @@ const AdminSettings = () => {
   const { toast } = useToast();
   const { isOwner, viewAsMember, setViewAsMember } = useRoles();
   const canToggleView = isOwner || viewAsMember;
+  const { hidden: navHidden, save: saveNavHidden } = useNavHidden();
+
+  const toggleNavItem = async (id: AdminSection, visible: boolean) => {
+    const next = visible ? navHidden.filter((h) => h !== id) : [...navHidden, id];
+    const res = await saveNavHidden(next);
+    if (res.error) toast({ title: "Could not save", description: res.error, variant: "destructive" });
+  };
 
   const [adminEmails, setAdminEmails] = useState<AdminMember[]>([]);
   const [newEmail, setNewEmail] = useState("");
@@ -278,6 +287,37 @@ const AdminSettings = () => {
           )}
         </div>
       </Panel>
+
+      {/* Sidebar visibility: owner only. Applies to every console user. */}
+      {isOwner && (
+        <Panel title="Sidebar" meta="Buttons everyone sees">
+          <div className="divide-y divide-border">
+            {navGroups.map((group) => (
+              <div key={group.label} className="px-4 py-3">
+                <div className="pb-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+                  {group.label}
+                </div>
+                <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
+                  {group.items.map((item) => (
+                    <label key={item.id} className="flex min-h-9 items-center justify-between gap-3 text-sm">
+                      <span className="flex items-center gap-2">
+                        <item.icon className="h-4 w-4 text-muted-foreground" />
+                        {item.label}
+                        {item.ownerOnly && <span className="text-xs text-muted-foreground">(you only)</span>}
+                      </span>
+                      <Switch
+                        checked={!navHidden.includes(item.id)}
+                        onCheckedChange={(on) => toggleNavItem(item.id, on)}
+                        aria-label={`Show ${item.label}`}
+                      />
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Panel>
+      )}
 
       {/* Security */}
       <Panel

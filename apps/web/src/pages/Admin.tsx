@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { LogOut, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,9 @@ import AdminFacebookScraper from "@/components/admin/AdminFacebookScraper";
 import AdminLibrary from "@/components/admin/AdminLibrary";
 import AdminEngagement from "@/components/admin/AdminEngagement";
 import AdminAccountability from "@/components/admin/AdminAccountability";
+import AdminWebStats from "@/components/admin/AdminWebStats";
+
+const AdminVpsMonitor = lazy(() => import("@/components/admin/AdminVpsMonitor"));
 import { useStaffTelemetry } from "@/lib/staff-telemetry";
 
 /**
@@ -75,6 +78,8 @@ const SECTION_LABEL: Record<AdminSection, string> = {
   library: "Library",
   "brand-scraper": "Brand Scraper",
   "fb-scraper": "FB Scraper",
+  vps: "VPS Usage",
+  "web-stats": "Web Statistics",
   settings: "Settings",
 };
 
@@ -309,6 +314,14 @@ const Admin = () => {
             {activeSection === "brand-scraper" && <AdminBrandScraper />}
 
             {activeSection === "fb-scraper" && <AdminFacebookScraper />}
+
+            {activeSection === "vps" && (
+              <Suspense fallback={null}>
+                <AdminVpsMonitor />
+              </Suspense>
+            )}
+
+            {activeSection === "web-stats" && <AdminWebStats />}
 
             {activeSection === "settings" && <AdminSettings />}
           </ErrorBoundary>

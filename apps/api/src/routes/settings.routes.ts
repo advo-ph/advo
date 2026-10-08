@@ -4,7 +4,7 @@ import { zValidator } from "@hono/zod-validator";
 import { eq, inArray } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { db } from "../db/connection.js";
-import { siteConfig } from "../db/schema.js";
+import { siteConfig, user } from "../db/schema.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin } from "../middleware/rbac.js";
 import type { Variables } from "../types/context.js";
@@ -12,6 +12,9 @@ import type { Variables } from "../types/context.js";
 // Keys safe to expose to anonymous landing visitors (footer, hero, etc.).
 // Anything not in this list stays admin-only.
 const PUBLIC_KEYS = ["social_links", "brand_name", "team_order"] as const;
+
+// Keys every admin may read but only the owner account may change.
+const OWNER_WRITE_KEYS = ["nav_hidden"];
 
 const settings = new Hono<{ Variables: Variables }>();
 
@@ -58,6 +61,16 @@ settings.patch(
     const key = c.req.param("key");
     const { value } = c.req.valid("json");
     const d = db();
+
+    if (OWNER_WRITE_KEYS.includes(key)) {
+      const caller = c.get("user");
+      const [account] = caller
+        ? await d.select({ isOwner: user.isOwner }).from(user).where(eq(user.userId, caller.userId)).limit(1)
+        : [];
+      if (!account?.isOwner) {
+        throw new HTTPException(403, { message: "Owner access required" });
+      }
+    }
 
     const [existing] = await d
       .select()
