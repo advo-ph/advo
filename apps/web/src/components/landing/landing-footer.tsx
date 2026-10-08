@@ -61,14 +61,6 @@ const socialIcon: Record<string, typeof IconMail> = {
  */
 const footerCol: { title: string; link: FooterLink[] }[] = [
   {
-    title: "The system",
-    link: [
-      { label: "Public site", href: "#solutions" },
-      { label: "Client Hub", href: "/login" },
-      { label: "Admin Console", href: "/login" },
-    ],
-  },
-  {
     title: "How it ships",
     link: [
       { label: "Discovery", href: "/how-it-ships#discovery" },
@@ -100,6 +92,14 @@ const footerCol: { title: string; link: FooterLink[] }[] = [
       { label: "Privacy Policy", href: "/privacy" },
       { label: "Return and Refund Policy", href: "/refund" },
       { label: "Dispute Resolution Policy", href: "/dispute" },
+    ],
+  },
+  {
+    title: "The system",
+    link: [
+      { label: "Public site", href: "#solutions" },
+      { label: "Client Hub", href: "/login" },
+      { label: "Members Hub", href: "/login" },
     ],
   },
 ];
