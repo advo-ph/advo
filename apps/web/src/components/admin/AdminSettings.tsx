@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import {
   Plus,
   Save,
-  X,
   Loader2,
   Check,
   Trash2,
+  LogOut,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +23,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useRoles } from "@/hooks/useRoles";
 import * as db from "@/lib/db";
-import { get, patch as apiPatch, post, del } from "@/lib/api";
+import { get, patch as apiPatch, post } from "@/lib/api";
 import { PageHeader, Panel, Dot } from "@/components/admin/_ui";
 import { navGroups, type AdminSection } from "@/components/admin/AdminSidebar";
 import { useNavHidden } from "@/hooks/useNavHidden";
@@ -31,16 +33,25 @@ interface SocialLink {
   url: string;
 }
 
-interface AdminMember {
-  id: number;
+interface MemberAccount {
+  teamMemberId: number;
   name: string;
-  email: string;
-  /** False when the account exists but is switched off. */
-  canLogin: boolean;
+  role: string;
+  userId: number | null;
+  username: string | null;
+  /** Null when the member has no account yet. */
+  canLogin: boolean | null;
+  isOwner: boolean | null;
 }
 
 const AdminSettings = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
   const { isOwner, viewAsMember, setViewAsMember } = useRoles();
   const canToggleView = isOwner || viewAsMember;
   const { hidden: navHidden, save: saveNavHidden } = useNavHidden();
@@ -51,9 +62,12 @@ const AdminSettings = () => {
     if (res.error) toast({ title: "Could not save", description: res.error, variant: "destructive" });
   };
 
-  const [adminEmails, setAdminEmails] = useState<AdminMember[]>([]);
-  const [newEmail, setNewEmail] = useState("");
-  const [isAddEmailOpen, setIsAddEmailOpen] = useState(false);
+  // Member accounts (owner only)
+  const [accounts, setAccounts] = useState<MemberAccount[]>([]);
+  const [editing, setEditing] = useState<MemberAccount | null>(null);
+  const [editUsername, setEditUsername] = useState("");
+  const [editPassword, setEditPassword] = useState("");
+  const [isSavingAccount, setIsSavingAccount] = useState(false);
 
   // Password change
   const [isPasswordOpen, setIsPasswordOpen] = useState(false);
@@ -71,27 +85,53 @@ const AdminSettings = () => {
 
   useEffect(() => {
     checkApiConnection();
-    fetchAdminEmails();
     fetchSocialLinks();
   }, []);
 
-  const fetchAdminEmails = async () => {
-    const res = await get<Array<Record<string, unknown>>>("/api/team");
-    if (!res.data) return;
-    // People who hold an admin LOGIN account. This used to list every roster row that had an
-    // email address in a column, under the title "Admin users", which meant the panel named
-    // one thing and showed another. loginRole comes from the user table, so the filter now
-    // matches the title. team_member_id is kept so removal can target the row.
-    setAdminEmails(
-      res.data
-        .filter((m) => m.loginRole === "admin" && !!m.loginEmail)
-        .map((m) => ({
-          id: Number(m.teamMemberId),
-          name: (m.name as string) || (m.loginEmail as string),
-          email: m.loginEmail as string,
-          canLogin: m.canLogin !== false,
-        }))
-    );
+  useEffect(() => {
+    if (isOwner) fetchAccounts();
+  }, [isOwner]);
+
+  const fetchAccounts = async () => {
+    const res = await get<MemberAccount[]>("/api/team/accounts");
+    if (res.data) setAccounts(res.data);
+  };
+
+  const openAccount = (account: MemberAccount) => {
+    setEditing(account);
+    setEditUsername(account.username ?? "");
+    setEditPassword("");
+  };
+
+  const saveAccount = async () => {
+    if (!editing) return;
+    const isNew = editing.userId == null;
+    const username = editUsername.trim();
+    const body: { username?: string; password?: string } = {};
+    if (username && username !== editing.username) body.username = username;
+    if (editPassword) body.password = editPassword;
+    if (isNew && (!body.username || !body.password)) {
+      toast({ title: "Enter a username and a password", variant: "destructive" });
+      return;
+    }
+    if (!body.username && !body.password) {
+      setEditing(null);
+      return;
+    }
+    if (body.password && body.password.length < 8) {
+      toast({ title: "Password must be at least 8 characters", variant: "destructive" });
+      return;
+    }
+    setIsSavingAccount(true);
+    const res = await apiPatch(`/api/team/${editing.teamMemberId}/account`, body);
+    setIsSavingAccount(false);
+    if (res.error) {
+      toast({ title: "Could not save", description: res.error, variant: "destructive" });
+      return;
+    }
+    toast({ title: isNew ? `Login created for ${editing.name}` : `Login updated for ${editing.name}` });
+    setEditing(null);
+    fetchAccounts();
   };
 
   const fetchSocialLinks = async () => {
@@ -172,86 +212,17 @@ const AdminSettings = () => {
 
   const removeSocialLink = (idx: number) => setSocialLinks(socialLinks.filter((_, i) => i !== idx));
 
-  const addAdminEmail = async () => {
-    if (!newEmail || !newEmail.includes("@")) {
-      toast({ title: "Invalid email", variant: "destructive" });
-      return;
-    }
-    if (adminEmails.some((m) => m.email === newEmail)) {
-      toast({ title: "Email already exists", variant: "destructive" });
-      return;
-    }
-    // Creates a login-capable user with role: "admin" plus a directory row.
-    try {
-      const res = await post<Record<string, unknown>>("/api/team", {
-        name: newEmail.split("@")[0],
-        role: "Admin",
-        email: newEmail,
-        permissionRole: "admin",
-      });
-      if (res.error || !res.data) {
-        toast({ title: "Error", description: res.error || "Failed to add admin", variant: "destructive" });
-        return;
-      }
-      setAdminEmails([
-        ...adminEmails,
-        {
-          id: Number(res.data.teamMemberId),
-          name: (res.data.name as string) || newEmail,
-          email: newEmail,
-          canLogin: res.data.canLogin !== false,
-        },
-      ]);
-      setNewEmail("");
-      setIsAddEmailOpen(false);
-      const defaultPassword =
-        typeof res.data.defaultPassword === "string" ? res.data.defaultPassword : null;
-      toast({
-        title: "Admin user created",
-        description: defaultPassword
-          ? `They can log in with the password ${defaultPassword}, and change it in Settings.`
-          : "This email already had an account. It now has admin access.",
-      });
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : "Unable to add admin",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const removeAdminEmail = async (member: AdminMember) => {
-    // Count the ones who can actually get in. A list of five admins where four are switched
-    // off is one admin, and removing that one locks everybody out.
-    const usableAdmins = adminEmails.filter((m) => m.canLogin).length;
-    if (member.canLogin && usableAdmins <= 1) {
-      toast({ title: "This is the last admin who can log in", variant: "destructive" });
-      return;
-    }
-    try {
-      const res = await del(`/api/team/${member.id}`);
-      if (res.error) {
-        toast({ title: "Error", description: res.error, variant: "destructive" });
-        return;
-      }
-      setAdminEmails(adminEmails.filter((m) => m.id !== member.id));
-      toast({
-        title: "Admin removed",
-        description: `${member.name} was hidden from the website and can no longer log in.`,
-      });
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : "Unable to remove admin",
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <div className="space-y-4">
       <PageHeader title="Settings" meta="Admin preferences" />
+
+      <Panel title="Account" meta={user?.email}>
+        <div className="p-4">
+          <Button variant="outline" size="sm" className="h-9" onClick={handleSignOut}>
+            <LogOut className="h-3.5 w-3.5 mr-1.5" /> Log out
+          </Button>
+        </div>
+      </Panel>
 
       {/* Social Links */}
       <Panel
@@ -336,43 +307,36 @@ const AdminSettings = () => {
         </div>
       </Panel>
 
-      {/* Admin Users */}
-      <Panel
-        title="Admin users"
-        meta="Accounts with admin access. Turn a login on or off under Team."
-        action={
-          <Button variant="outline" size="sm" className="h-8" onClick={() => setIsAddEmailOpen(true)}>
-            <Plus className="h-3.5 w-3.5 mr-1.5" /> Add admin
-          </Button>
-        }
-      >
-        <div className="divide-y divide-border">
-          {adminEmails.length === 0 && (
-            <div className="px-4 py-3 text-sm text-muted-foreground">No admin accounts yet.</div>
-          )}
-          {adminEmails.map((member) => (
-            <div key={member.id} className="flex items-center justify-between gap-3 px-4 h-11">
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="text-sm truncate">{member.email}</span>
-                {!member.canLogin && (
-                  <Badge variant="outline" className="shrink-0 text-destructive border-destructive/30">
-                    No access
-                  </Badge>
-                )}
+      {/* Member accounts: owner only. Username and password each member logs in with. */}
+      {isOwner && (
+        <Panel title="Member accounts" meta="Logins for team members">
+          <div className="divide-y divide-border">
+            {accounts.length === 0 && (
+              <div className="px-4 py-3 text-sm text-muted-foreground">No team members yet.</div>
+            )}
+            {accounts.map((account) => (
+              <div key={account.teamMemberId} className="flex items-center justify-between gap-3 px-4 min-h-12 py-2">
+                <div className="min-w-0">
+                  <div className="text-sm truncate">{account.name}</div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {account.username ?? "No login"}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {account.canLogin === false && (
+                    <Badge variant="outline" className="text-destructive border-destructive/30">
+                      No access
+                    </Badge>
+                  )}
+                  <Button variant="outline" size="sm" className="h-8" onClick={() => openAccount(account)}>
+                    {account.userId == null ? "Add login" : "Edit"}
+                  </Button>
+                </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 shrink-0"
-                title="Remove admin. Hides them from the website and turns off their login."
-                onClick={() => removeAdminEmail(member)}
-              >
-                <X className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      </Panel>
+            ))}
+          </div>
+        </Panel>
+      )}
 
       {/* Integrations */}
       <Panel title="Integrations" meta="Connection status for services">
@@ -454,23 +418,33 @@ const AdminSettings = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Admin Email Dialog */}
-      <Dialog open={isAddEmailOpen} onOpenChange={setIsAddEmailOpen}>
+      {/* Member Account Dialog */}
+      <Dialog open={editing !== null} onOpenChange={(open) => !open && setEditing(null)}>
         <DialogContent className="bg-card border-border max-w-sm rounded-lg">
           <DialogHeader>
-            <DialogTitle>Add Admin User</DialogTitle>
+            <DialogTitle>{editing?.name}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-1.5">
-              <label className="text-xs text-muted-foreground block">Email address</label>
-              <Input className="h-9" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)}
-                placeholder="admin@example.com" onKeyDown={(e) => e.key === "Enter" && addAdminEmail()} />
+              <label className="text-xs text-muted-foreground block">Username</label>
+              <Input className="h-9" value={editUsername} autoComplete="off"
+                onChange={(e) => setEditUsername(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-xs text-muted-foreground block">
+                {editing?.userId == null ? "Password" : "New password"}
+              </label>
+              <Input className="h-9" type="password" value={editPassword} autoComplete="new-password"
+                onChange={(e) => setEditPassword(e.target.value)}
+                placeholder={editing?.userId == null ? "Min 8 characters" : "Leave empty to keep"}
+                onKeyDown={(e) => e.key === "Enter" && saveAccount()} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddEmailOpen(false)}>Cancel</Button>
-            <Button onClick={addAdminEmail}>
-              <Plus className="h-4 w-4 mr-2" /> Add
+            <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button onClick={saveAccount} disabled={isSavingAccount}>
+              {isSavingAccount ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Save
             </Button>
           </DialogFooter>
         </DialogContent>

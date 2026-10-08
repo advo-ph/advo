@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { LogOut, Menu } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminData } from "@/hooks/useAdminData";
@@ -12,7 +12,8 @@ import { formatCurrency } from "@/types/admin";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 // Admin Components
-import AdminSidebar, { ADMIN_DRAWER_ID, type AdminSection } from "@/components/admin/AdminSidebar";
+import AdminSidebar, { type AdminSection } from "@/components/admin/AdminSidebar";
+import AdminBottomNav from "@/components/admin/AdminBottomNav";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import AdminRiskPanel from "@/components/admin/AdminRiskPanel";
 import AdminCommandPalette from "@/components/admin/AdminCommandPalette";
@@ -93,7 +94,7 @@ function isAdminSection(value: string | undefined): value is AdminSection {
 }
 
 const Admin = () => {
-  const { user, isLoading: authLoading, signOut } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { theme, toggle: toggleTheme } = useTheme(user?.userId);
 
@@ -109,7 +110,6 @@ const Admin = () => {
   useStaffTelemetry(activeSection);
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // An unknown or missing section settles on the dashboard, and rewrites the
   // address so a stale bookmark repairs itself instead of lingering.
@@ -139,11 +139,6 @@ const Admin = () => {
   // team that is under-loaded, which is the opposite of the truth.
   const { activeMembers } = useAdminTeam();
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/");
-  };
-
   // Calculate sidebar width for main content offset
   const sidebarWidth = isSidebarCollapsed ? 72 : 240;
 
@@ -153,18 +148,6 @@ const Admin = () => {
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            {/* Mobile menu toggle */}
-            <button
-              onClick={() => setIsMobileMenuOpen(true)}
-              // useDrawerLock finds this by aria-controls to hand focus back
-              // when the drawer closes.
-              aria-controls={ADMIN_DRAWER_ID}
-              aria-expanded={isMobileMenuOpen}
-              className="lg:hidden min-h-11 min-w-11 p-2 -ml-2 flex items-center justify-center text-foreground hover:bg-secondary/60 rounded-lg transition-colors"
-              aria-label="Open menu"
-            >
-              <Menu className="h-5 w-5" />
-            </button>
 
             <Link to="/" className="shrink-0">
               <img
@@ -185,9 +168,10 @@ const Admin = () => {
               variant="ghost"
               size="sm"
               className="rounded-full"
-              onClick={handleSignOut}
+              onClick={toggleTheme}
+              aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             >
-              <LogOut className="h-4 w-4" />
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </Button>
           </div>
         </div>
@@ -204,15 +188,16 @@ const Admin = () => {
         onSectionChange={setActiveSection}
         isCollapsed={isSidebarCollapsed}
         onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-        isMobileOpen={isMobileMenuOpen}
-        onMobileClose={() => setIsMobileMenuOpen(false)}
-        theme={theme}
-        onToggleTheme={toggleTheme}
+        // Phones use the bottom bar and its "More" sheet; the drawer never opens.
+        isMobileOpen={false}
+        onMobileClose={() => {}}
       />
+
+      <AdminBottomNav activeSection={activeSection} onSectionChange={setActiveSection} />
 
       {/* Main Content */}
       <main
-        className="pt-24 pb-16 px-4 sm:px-6 transition-all duration-200 lg:ml-[var(--sidebar-w)]"
+        className="pt-24 pb-32 lg:pb-16 px-4 sm:px-6 transition-all duration-200 lg:ml-[var(--sidebar-w)]"
         style={{ ["--sidebar-w" as string]: `${sidebarWidth}px` }}
       >
         <div className="max-w-6xl mx-auto">

@@ -11,7 +11,7 @@ import { hashPassword, revokeAllUserSessions } from "../services/auth.service.js
 import { sendAdminInviteEmail } from "../services/email.service.js";
 import type { Variables } from "../types/context.js";
 import { looseUrl } from "../utils/validators.js";
-import { usernameFromEmail } from "../utils/username.js";
+import { normalizeUsername, usernameFromEmail } from "../utils/username.js";
 
 const team = new Hono<{ Variables: Variables }>();
 
@@ -138,6 +138,120 @@ team.get("/", optionalAuth, async (c) => {
     .orderBy(teamMember.teamMemberId);
 
   return c.json({ data: rows, error: null });
+});
+
+// ─── Member accounts (owner only) ────────────────────
+//
+// MUST stay above "/:id" for the same reason as accountability below.
+//
+// The owner manages the username and password each roster member logs in with. A member
+// without an account gets one here, linked to their roster row in the same request.
+
+async function requireOwnerCaller(caller: Variables["user"] | undefined) {
+  const [account] = caller
+    ? await db().select({ isOwner: user.isOwner }).from(user).where(eq(user.userId, caller.userId)).limit(1)
+    : [];
+  if (!account?.isOwner) {
+    throw new HTTPException(403, { message: "Owner access required" });
+  }
+}
+
+team.get("/accounts", requireAuth, requireAdmin, async (c) => {
+  await requireOwnerCaller(c.get("user"));
+  const rows = await db()
+    .select({
+      teamMemberId: teamMember.teamMemberId,
+      name: teamMember.name,
+      role: teamMember.role,
+      userId: user.userId,
+      username: user.username,
+      canLogin: user.isActive,
+      isOwner: user.isOwner,
+    })
+    .from(teamMember)
+    .leftJoin(user, eq(teamMember.userId, user.userId))
+    .where(eq(teamMember.isActive, true))
+    .orderBy(teamMember.teamMemberId);
+  c.header("Cache-Control", "no-store");
+  return c.json({ data: rows, error: null });
+});
+
+const accountSchema = z.object({
+  username: z
+    .string()
+    .trim()
+    .transform(normalizeUsername)
+    .pipe(z.string().min(3, "Username must be at least 3 letters or numbers").max(255))
+    .optional(),
+  password: z.string().min(8, "Password must be at least 8 characters").max(255).optional(),
+});
+
+team.patch("/:id/account", requireAuth, requireAdmin, zValidator("json", accountSchema), async (c) => {
+  await requireOwnerCaller(c.get("user"));
+  const id = Number(c.req.param("id"));
+  if (!Number.isInteger(id)) throw new HTTPException(400, { message: "Invalid team member id" });
+
+  const { username, password } = c.req.valid("json");
+  const d = db();
+
+  const [member] = await d.select().from(teamMember).where(eq(teamMember.teamMemberId, id)).limit(1);
+  if (!member) throw new HTTPException(404, { message: "Team member not found" });
+
+  if (username) {
+    const [taken] = await d
+      .select({ userId: user.userId })
+      .from(user)
+      .where(eq(user.username, username))
+      .limit(1);
+    if (taken && taken.userId !== member.userId) {
+      throw new HTTPException(409, { message: "That username is already in use" });
+    }
+  }
+
+  let userId = member.userId;
+  if (userId == null) {
+    // New account. Both fields are needed, because there is nothing to fall back on.
+    if (!username || !password) {
+      throw new HTTPException(400, { message: "Enter a username and a password" });
+    }
+    // user.email is required and unique. Use the roster email when it is free, otherwise a
+    // placeholder that can never collide with a real address.
+    let email = member.email?.trim().toLowerCase() || null;
+    if (email) {
+      const [emailOwner] = await d.select({ userId: user.userId }).from(user).where(eq(user.email, email)).limit(1);
+      if (emailOwner) email = null;
+    }
+    const [created] = await d
+      .insert(user)
+      .values({
+        email: email ?? `${username}.${id}@accounts.advo.invalid`,
+        username,
+        passwordHash: await hashPassword(password),
+        role: "admin",
+      })
+      .returning({ userId: user.userId });
+    if (!created) throw new HTTPException(500, { message: "Could not create the login account" });
+    userId = created.userId;
+    await d.update(teamMember).set({ userId, updatedAt: new Date() }).where(eq(teamMember.teamMemberId, id));
+  } else {
+    const changes: Partial<typeof user.$inferInsert> = { updatedAt: new Date() };
+    if (username) changes.username = username;
+    if (password) changes.passwordHash = await hashPassword(password);
+    await d.update(user).set(changes).where(eq(user.userId, userId));
+    // A new password ends every open session, except the owner's own one.
+    if (password && c.get("user")?.userId !== userId) {
+      invalidateUserActive(userId);
+      await revokeAllUserSessions(userId);
+    }
+  }
+
+  const [row] = await d
+    .select({ username: user.username, canLogin: user.isActive })
+    .from(user)
+    .where(eq(user.userId, userId))
+    .limit(1);
+
+  return c.json({ data: { teamMemberId: id, userId, ...row }, error: null });
 });
 
 // ─── Accountability (derived, read-only) ──────────────
