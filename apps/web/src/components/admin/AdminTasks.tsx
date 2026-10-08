@@ -40,6 +40,7 @@ import { upload } from "@/lib/api";
 import { PageHeader } from "@/components/admin/_ui";
 import { useToast } from "@/hooks/use-toast";
 import { moveTaskId } from "@/lib/task-order";
+import TaskCoach from "@/components/admin/tasks/TaskCoach";
 
 // ─── Status order and labels ──────────────────────────────────────────────────
 
@@ -75,7 +76,7 @@ const TASK_TEMPLATES: { label: string; title: string }[] = [
 
 const PDF_GATE_RE = /proposal|sign.?off|contract signing/i;
 
-function requiresPdfUpload(title: string): boolean {
+export function requiresPdfUpload(title: string): boolean {
   return PDF_GATE_RE.test(title);
 }
 
@@ -131,7 +132,7 @@ interface PdfDialogProps {
   onConfirm: (url: string) => Promise<void>;
 }
 
-const PdfUploadDialog = ({ open, existingUrl, onClose, onConfirm }: PdfDialogProps) => {
+export const PdfUploadDialog = ({ open, existingUrl, onClose, onConfirm }: PdfDialogProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [useExisting, setUseExisting] = useState(false);
@@ -624,6 +625,31 @@ const AdminTasks = () => {
   const { projects } = useOrgProjects();
   const { toast } = useToast();
 
+  // Focus = one task with the coach. Board = the full kanban.
+  const [mode, setMode] = useState<"focus" | "board">("focus");
+  const [coachPdfTask, setCoachPdfTask] = useState<Deliverable | null>(null);
+  const coachPdfResolve = useRef<((ok: boolean) => void) | null>(null);
+
+  const myTasks = useMemo(
+    () =>
+      viewerTeamMemberId === null
+        ? []
+        : deliverables.filter((d) => d.assigned_to === viewerTeamMemberId),
+    [deliverables, viewerTeamMemberId],
+  );
+
+  const advanceFromCoach = async (task: Deliverable, next: DeliverableStatus) => {
+    if (next === "review" && requiresPdfUpload(task.title)) {
+      const ok = await new Promise<boolean>((resolve) => {
+        coachPdfResolve.current = resolve;
+        setCoachPdfTask(task);
+      });
+      if (!ok) throw new Error("cancelled");
+      return;
+    }
+    await updateStatus(task.deliverable_id, next);
+  };
+
   // "My Tasks / All Tasks" toggle — default is "My Tasks"
   const [taskView, setTaskView] = useState<"mine" | "all">("mine");
 
@@ -846,6 +872,49 @@ const AdminTasks = () => {
     }
   };
 
+  const modeToggle = (
+    <div className="inline-flex rounded-lg bg-secondary p-0.5">
+      {(["focus", "board"] as const).map((m) => (
+        <button
+          key={m}
+          onClick={() => setMode(m)}
+          aria-pressed={mode === m}
+          className={cn(
+            "h-8 px-3 rounded-md text-sm font-medium transition-colors",
+            mode === m ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {m === "focus" ? "Focus" : "Board"}
+        </button>
+      ))}
+    </div>
+  );
+
+  if (mode === "focus") {
+    return (
+      <div className="space-y-4">
+        <PageHeader title="Tasks" action={modeToggle} />
+        <TaskCoach tasks={myTasks} isLoading={isLoading} onAdvance={advanceFromCoach} />
+        <PdfUploadDialog
+          open={!!coachPdfTask}
+          existingUrl={coachPdfTask?.attachment_url ?? null}
+          onClose={() => {
+            setCoachPdfTask(null);
+            coachPdfResolve.current?.(false);
+            coachPdfResolve.current = null;
+          }}
+          onConfirm={async (url) => {
+            if (!coachPdfTask) return;
+            await updateStatus(coachPdfTask.deliverable_id, "review", { attachmentUrl: url });
+            coachPdfResolve.current?.(true);
+            coachPdfResolve.current = null;
+            setCoachPdfTask(null);
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -857,6 +926,7 @@ const AdminTasks = () => {
         }
         action={
           <div className="flex items-center gap-2">
+            {modeToggle}
             {/* My Tasks / All Tasks segmented control */}
             <div className="inline-flex rounded-lg bg-secondary p-0.5">
               <button

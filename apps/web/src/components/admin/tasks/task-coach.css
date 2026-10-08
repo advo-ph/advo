@@ -1,0 +1,173 @@
+/* Task coach: one task at a time, a small roaming buddy, soft moving light. */
+
+.tc-stage {
+  position: relative;
+  min-height: min(640px, calc(100dvh - 180px));
+  border-radius: 16px;
+  overflow: hidden;
+  isolation: isolate;
+  background: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+}
+
+/* ── Moving light ── */
+.tc-lights {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  filter: blur(60px);
+}
+.tc-light {
+  position: absolute;
+  width: 46%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  opacity: 0.16;
+  background: #fff;
+  will-change: transform;
+}
+.tc-light-a { left: -8%; top: -12%; animation: tc-drift-a 16s ease-in-out infinite alternate; }
+.tc-light-b { right: -10%; top: 20%; opacity: 0.1; animation: tc-drift-b 20s ease-in-out infinite alternate; }
+.tc-light-c { left: 30%; bottom: -25%; opacity: 0.08; animation: tc-drift-c 24s ease-in-out infinite alternate; }
+
+.admin-light .tc-light-a { background: hsl(var(--accent)); opacity: 0.22; }
+.admin-light .tc-light-b { background: #7aa7ff; opacity: 0.2; }
+.admin-light .tc-light-c { background: #b58cff; opacity: 0.16; }
+
+@keyframes tc-drift-a { to { transform: translate(40%, 30%) scale(1.2); } }
+@keyframes tc-drift-b { to { transform: translate(-45%, 25%) scale(0.85); } }
+@keyframes tc-drift-c { to { transform: translate(-30%, -40%) scale(1.15); } }
+
+/* ── Content ── */
+.tc-center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 64px 16px 32px;
+}
+.tc-column {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  /* Room for the buddy (44px) to stand on each item without covering the one above. */
+  gap: 48px;
+  text-align: center;
+}
+.tc-headline {
+  align-self: center;
+  font-family: var(--advo-font-title, inherit);
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: hsl(var(--foreground));
+}
+.tc-card {
+  text-align: left;
+  padding: 18px 20px;
+  border-radius: 14px;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card) / 0.7);
+  backdrop-filter: blur(12px);
+}
+.tc-project {
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+  margin-bottom: 6px;
+}
+.tc-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+.tc-desc {
+  margin-top: 6px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: hsl(var(--muted-foreground));
+  white-space: pre-wrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tc-action {
+  height: 48px;
+  min-width: 44px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.95rem;
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.tc-action:hover:not(:disabled) { transform: translateY(-1px); }
+.tc-action:active:not(:disabled) { transform: translateY(1px); }
+.tc-action:disabled { opacity: 0.6; }
+.tc-action:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
+.tc-count {
+  margin-top: -32px;
+  font-size: 0.8rem;
+  color: hsl(var(--muted-foreground));
+}
+
+/* ── Mascot ── */
+.tc-mascot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 5;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  color: hsl(var(--foreground));
+}
+.tc-mascot:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; border-radius: 50%; }
+.tc-mascot-inner {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-origin: 50% 100%;
+}
+.tc-mascot-svg { width: 100%; height: 100%; overflow: visible; }
+.tc-mascot-body { fill: hsl(var(--foreground)); }
+.tc-mascot-face { fill: hsl(var(--background)); }
+.tc-mascot-line { stroke: hsl(var(--background)); }
+/* Thin cut line so arms, body and feet read as separate shapes in one ink. */
+.tc-mascot-edge { stroke: hsl(var(--background)); stroke-width: 0.9; }
+.tc-mascot-cheek { fill: hsl(var(--background)); opacity: 0.28; }
+
+.tc-bubble {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  translate: -50% 0;
+  white-space: nowrap;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 5px 10px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  pointer-events: none;
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
+}
+.tc-bubble[data-align="left"] { left: 0; translate: 0 0; }
+.tc-bubble[data-align="right"] { left: auto; right: 0; translate: 0 0; }
+
+@media (max-width: 1023px) {
+  .tc-stage { min-height: min(600px, calc(100dvh - 260px)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tc-light { animation: none; }
+}
