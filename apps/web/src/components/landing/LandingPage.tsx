@@ -24,6 +24,7 @@ import WorkShowcase from "./WorkShowcase";
 import ProjectInquiry from "./ProjectInquiry";
 import LandingFooter from "./landing-footer";
 import FlowingBackground from "./FlowingBackground";
+import ServicesScroll from "./ServicesScroll";
 import { instrumentLanding } from "@/lib/track";
 import "./landing-page.css";
 
@@ -103,41 +104,6 @@ const industry: Industry[] = [
       { name: "Clinic operations", copy: "Manage appointments, queueing, billing, and stock." },
       { name: "Electronic medical records", copy: "Give doctors EMR tools for patient records." },
       { name: "Hospital integration", copy: "Connect care systems without relying on fax machines." },
-    ],
-  },
-];
-
-interface Service {
-  title: string;
-  items: string[];
-}
-
-const services: Service[] = [
-  {
-    title: "Connect your business operations into a unified system",
-    items: [
-      "Client or member management and billing",
-      "POS, inventory, scheduling, and staff workflows",
-      "CRM, mobile apps, check-in, and access",
-      "Data migration from the tools you already use",
-    ],
-  },
-  {
-    title: "Integrate AI into your workflow",
-    items: [
-      "Handle customer records and  everyday tasks",
-      "Answer calls and book appointments",
-      "Answer customer questions by text or on your website",
-      "Send promotions and follow up with customers",
-    ],
-  },
-  {
-    title: "Convert customers and increase sales",
-    items: [
-      "Conversion-focused websites and landing pages",
-      "Digital forms, intake, and lead capture",
-      "Booking, onboarding, and online join flows",
-      "Attribution and reporting that shows what is working",
     ],
   },
 ];
@@ -610,36 +576,7 @@ const LandingPage = () => {
         )}
       </section>
 
-      <section className="landing-services" id="services" aria-labelledby="services-heading">
-        <div className="landing-services-frame">
-          <Reveal className="landing-services-intro">
-            <h2 id="services-heading">Prepare your business for the modern AI world.</h2>
-            <p className="landing-services-lede">
-              Bring your customer experience, day-to-day operations, and business data into one system.
-              Integrated AI to optimize workflows and minimize manual effort.
-            </p>
-            <a className="landing-services-cta" href="#start">
-              <span>Plan your modernization</span>
-              <ArrowUpRight size={17} strokeWidth={1.5} aria-hidden="true" />
-            </a>
-          </Reveal>
-
-          <RevealGroup className="landing-services-list" stagger={0.08}>
-            {services.map((service) => (
-              <Reveal as="article" className="landing-service-row" key={service.title}>
-                <div className="landing-service-body">
-                  <h3>{service.title}</h3>
-                  <ul className="landing-service-items">
-                    {service.items.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
-                </div>
-              </Reveal>
-            ))}
-          </RevealGroup>
-        </div>
-      </section>
+      <ServicesScroll />
 
       {!isMobileViewport ? (
         <section className="landing-process" id="process">
