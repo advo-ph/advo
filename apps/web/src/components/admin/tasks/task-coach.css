@@ -1,43 +1,10 @@
-/* Task coach: one task at a time, a small roaming buddy, soft moving light. */
+/* Task coach: one task at a time and a small roaming buddy, straight on the page. */
 
 .tc-stage {
   position: relative;
   min-height: min(640px, calc(100dvh - 180px));
-  border-radius: 16px;
   overflow: hidden;
-  isolation: isolate;
-  background: hsl(var(--background));
-  border: 1px solid hsl(var(--border));
 }
-
-/* ── Moving light ── */
-.tc-lights {
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  filter: blur(60px);
-}
-.tc-light {
-  position: absolute;
-  width: 46%;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  opacity: 0.16;
-  background: #fff;
-  will-change: transform;
-}
-.tc-light-a { left: -8%; top: -12%; animation: tc-drift-a 16s ease-in-out infinite alternate; }
-.tc-light-b { right: -10%; top: 20%; opacity: 0.1; animation: tc-drift-b 20s ease-in-out infinite alternate; }
-.tc-light-c { left: 30%; bottom: -25%; opacity: 0.08; animation: tc-drift-c 24s ease-in-out infinite alternate; }
-
-.admin-light .tc-light-a { background: hsl(var(--accent)); opacity: 0.22; }
-.admin-light .tc-light-b { background: #7aa7ff; opacity: 0.2; }
-.admin-light .tc-light-c { background: #b58cff; opacity: 0.16; }
-
-@keyframes tc-drift-a { to { transform: translate(40%, 30%) scale(1.2); } }
-@keyframes tc-drift-b { to { transform: translate(-45%, 25%) scale(0.85); } }
-@keyframes tc-drift-c { to { transform: translate(-30%, -40%) scale(1.15); } }
 
 /* ── Content ── */
 .tc-center {
@@ -45,7 +12,8 @@
   inset: 0;
   display: grid;
   place-items: center;
-  padding: 64px 16px 32px;
+  /* Side room so the buddy can climb the edge of the card and button. */
+  padding: 64px 32px 32px;
 }
 .tc-column {
   width: 100%;
@@ -140,9 +108,6 @@
 .tc-mascot-body { fill: hsl(var(--foreground)); }
 .tc-mascot-face { fill: hsl(var(--background)); }
 .tc-mascot-line { stroke: hsl(var(--background)); }
-/* Thin cut line so arms, body and feet read as separate shapes in one ink. */
-.tc-mascot-edge { stroke: hsl(var(--background)); stroke-width: 0.9; }
-.tc-mascot-cheek { fill: hsl(var(--background)); opacity: 0.28; }
 
 .tc-bubble {
   position: absolute;
@@ -166,8 +131,4 @@
 
 @media (max-width: 1023px) {
   .tc-stage { min-height: min(600px, calc(100dvh - 260px)); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tc-light { animation: none; }
 }

@@ -87,12 +87,6 @@ const TaskCoach = ({ tasks, isLoading, onAdvance }: TaskCoachProps) => {
 
   return (
     <div ref={stageRef} className="tc-stage">
-      <div className="tc-lights" aria-hidden>
-        <span className="tc-light tc-light-a" />
-        <span className="tc-light tc-light-b" />
-        <span className="tc-light tc-light-c" />
-      </div>
-
       {isLoading ? (
         <div className="tc-center">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />

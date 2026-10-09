@@ -1,6 +1,8 @@
 import { useMemo, useState, useRef, type DragEvent } from "react";
 import {
+  Focus,
   GripVertical,
+  Kanban,
   Paperclip,
   Pencil,
   Loader2,
@@ -872,22 +874,20 @@ const AdminTasks = () => {
     }
   };
 
+  // One button. It names the view it opens, so a press always does what it says.
+  const nextMode = mode === "focus" ? "board" : "focus";
+  const ModeIcon = nextMode === "board" ? Kanban : Focus;
   const modeToggle = (
-    <div className="inline-flex rounded-lg bg-secondary p-0.5">
-      {(["focus", "board"] as const).map((m) => (
-        <button
-          key={m}
-          onClick={() => setMode(m)}
-          aria-pressed={mode === m}
-          className={cn(
-            "h-8 px-3 rounded-md text-sm font-medium transition-colors",
-            mode === m ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          {m === "focus" ? "Focus" : "Board"}
-        </button>
-      ))}
-    </div>
+    <Button
+      variant="secondary"
+      size="sm"
+      onClick={() => setMode(nextMode)}
+      aria-label={nextMode === "board" ? "Switch to board" : "Switch to focus"}
+      className="h-9 gap-1.5 rounded-lg hover:bg-border"
+    >
+      <ModeIcon />
+      {nextMode === "board" ? "Board" : "Focus"}
+    </Button>
   );
 
   if (mode === "focus") {
@@ -926,7 +926,12 @@ const AdminTasks = () => {
         }
         action={
           <div className="flex items-center gap-2">
-            {modeToggle}
+            {/* Icon only on phones so the row fits next to the title. */}
+            <Button onClick={openAdd} size="sm" className="h-9 w-9 px-0 sm:w-auto sm:px-3" aria-label="Add task">
+              <Plus className="h-4 w-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">Add task</span>
+            </Button>
+
             {/* My Tasks / All Tasks segmented control */}
             <div className="inline-flex rounded-lg bg-secondary p-0.5">
               <button
@@ -955,10 +960,8 @@ const AdminTasks = () => {
               </button>
             </div>
 
-            <Button onClick={openAdd} size="sm" className="h-9">
-              <Plus className="h-4 w-4 mr-1.5" />
-              Add task
-            </Button>
+            {/* Last, so it sits in the same spot as on the focus screen. */}
+            {modeToggle}
           </div>
         }
       />
