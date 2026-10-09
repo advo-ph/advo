@@ -6,7 +6,8 @@ import * as THREE from "three";
  * intro title, which bursts into loose dust. The dust pulls into a globe (Connect),
  * the globe unwinds into a looping knot with light running through it
  * (Automate), then the points land on a floor grid and the bars of a chart
- * step up from smallest to biggest, then all grow taller, on a loop (Grow).
+ * spring up from smallest to biggest, then a wave runs through them, on a
+ * loop while the model keeps spinning (Grow).
  * anime.js writes `state` from scroll; the scene only reads it. Every shape
  * is computed in the vertex shader, so a frame costs one draw call.
  */
@@ -19,7 +20,7 @@ export interface SceneState {
 }
 
 const FLOOR = -1.9;
-const GROW_CYCLE = 7; // seconds per build, grow, hold, sink loop
+const GROW_CYCLE = 8; // seconds per build, grow, hold, sink loop
 const INTRO_Y = -2.2; // where the dot sits, below the intro title
 const BAR_HEIGHTS = [0.7, 1.1, 1.6, 2.2, 2.9];
 const BAR_W = 0.56;
@@ -129,6 +130,12 @@ const vertexShader = /* glsl */ `
   varying float vGlow;
   varying float vAlpha;
 
+  // Ease out with a small overshoot, so a bar springs past its height and settles.
+  float backOut(float t) {
+    float u = t - 1.0;
+    return 1.0 + 2.70158 * u * u * u + 1.70158 * u * u;
+  }
+
   // Each point starts its move a little later than the last: a swarm, not a tween.
   float stage(float v, float s) {
     float t = clamp(v * 1.6 - s * 0.6, 0.0, 1.0);
@@ -158,18 +165,21 @@ const vertexShader = /* glsl */ `
     float kt = fract(aSeed.y + uTime * 0.035);
     vec3 loop = knot(kt) + normalize(aSphere) * 0.16 * aSeed.z;
     // Grow: points land flat on the floor first. Then, on a loop, the bars
-    // step up one at a time from smallest to biggest, all grow taller
-    // together, hold, and sink back to start again.
+    // spring up one at a time from smallest to biggest, ripple in a wave
+    // one after another, and pour back down to start again. Every point keeps a small
+    // lag of its own, so the bars fill and drain like a stream, not a block.
     float idx = aBar.w;
     float isBar = step(0.0, idx);
     float bi = max(idx, 0.0);
     float c = mod(uGrow, ${GROW_CYCLE.toFixed(1)});
-    float rise = clamp((c - bi * 0.35) / 0.8, 0.0, 1.0);
-    rise = 1.0 - pow(1.0 - rise, 3.0);
-    float boost = smoothstep(2.6, 4.2, c) * (0.15 + 0.07 * bi);
-    float sink = 1.0 - smoothstep(6.3, 7.0, c);
-    float h = uHeights[int(bi)] * rise * (1.0 + boost) * sink * isBar;
-    vec3 chart = vec3(aBar.x, uFloor + aBar.y * h, aBar.z);
+    float rise = backOut(clamp((c - bi * 0.3 - s * 0.18) / 1.1, 0.0, 1.0));
+    // Once every bar is up, a wave rolls from the first bar to the last:
+    // each one lifts and dips a little just after the one before it.
+    float waveIn = smoothstep(1.6, 2.6, c);
+    float breathe = 1.0 + 0.1 * sin((c - 1.6) * 2.4 - bi * 0.9) * waveIn;
+    float sink = 1.0 - smoothstep(6.3 + s * 0.4, 7.4 + s * 0.4, c);
+    float h = uHeights[int(bi)] * rise * breathe * sink * isBar;
+    vec3 chart = vec3(aBar.x, uFloor + aBar.y * h, aBar.z) + drift * 0.015;
 
     vec3 pos = mix(dust, globe, j);
     pos = mix(pos, loop, f);
@@ -179,7 +189,7 @@ const vertexShader = /* glsl */ `
     float wave = pow(0.5 + 0.5 * sin((aSeed.y - uTime * 0.22) * 6.2831853 * 3.0), 10.0);
     vGlow = wave * f * (1.0 - g);
     // Bars glow orange, brightest on the top face. The floor stays white.
-    float top = step(0.999, aBar.y) * rise;
+    float top = step(0.999, aBar.y) * clamp(rise, 0.0, 1.0);
     vOrange = mix(1.0, step(aSeed.w, 0.2), b) * (1.0 - g) + g * isBar * (step(aSeed.w, 0.55) + top);
 
     vec4 mv = modelViewMatrix * vec4(pos, 1.0);
@@ -248,6 +258,7 @@ export function createServicesScene(canvas: HTMLCanvasElement, state: SceneState
   // Seconds since the chart landed. Restarts when you scroll back up, so
   // the bars always build from the first step when Grow comes into view.
   let growTime = 0;
+  let spinAngle = 0;
   let last = 0;
   let frame = 0;
   let running = false;
@@ -286,9 +297,9 @@ export function createServicesScene(canvas: HTMLCanvasElement, state: SceneState
     const y = INTRO_Y + (layout.y - INTRO_Y) * shown.join;
     model.position.set(x, y, 0);
     model.scale.setScalar(layout.scale);
-    // Free spin while forming, then ease to a fixed angle so the chart reads.
-    const freeSpin = t * 0.1 + shown.spin * Math.PI * 1.2;
-    model.rotation.y = freeSpin * (1 - settle) + (-0.32 + Math.sin(t * 0.35) * 0.06) * settle;
+    // Always spinning. The chart turns a little faster so its bars show depth.
+    spinAngle += dt * (0.1 + 0.12 * settle);
+    model.rotation.y = spinAngle + shown.spin * Math.PI * 1.2;
     model.rotation.x = 0.18 + settle * 0.04;
 
     camera.position.x += (pointer.x * 0.7 - camera.position.x) * 0.04;

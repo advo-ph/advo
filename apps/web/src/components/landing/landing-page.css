@@ -557,32 +557,26 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   width: 100%;
   height: 100%;
 }
-/* Scroll progress: a vertical line down the left edge of the chapter text. */
-.landing-services-progress {
-  position: absolute;
-  top: calc(var(--landing-nav-height) + 72px);
-  bottom: 64px;
-  left: var(--landing-gutter);
-  width: 1px;
-  background: rgba(255, 255, 255, 0.14);
-  opacity: 0;
-}
-.landing-services-progress span {
-  display: block;
-  height: 100%;
-  background: var(--advo-orange-hex);
-  transform: scaleY(0);
-  transform-origin: top;
-}
 .landing-services-panel {
   position: relative;
   display: flex;
   align-items: center;
   min-height: 100svh;
-  padding: calc(var(--landing-nav-height) + 72px) var(--landing-gutter) 64px calc(var(--landing-gutter) + 40px);
+  padding: calc(var(--landing-nav-height) + 72px) var(--landing-gutter) 64px;
   pointer-events: none;
 }
 .landing-services-panel-copy { max-width: min(42vw, 600px); }
+/* Tall screens: text is clear below the model and fades to nothing as it
+   scrolls up into it. --landing-fade-line is set from scroll in JS. */
+.landing-services.is-tall .landing-services-panel-copy {
+  --landing-fade-mask: linear-gradient(
+    to bottom,
+    transparent calc(var(--landing-fade-line, -100vh) - 6svh),
+    #000 var(--landing-fade-line, -100vh)
+  );
+  -webkit-mask-image: var(--landing-fade-mask);
+  mask-image: var(--landing-fade-mask);
+}
 .landing-services-panel h3 {
   font-size: clamp(64px, 8.4vw, 140px);
   line-height: 0.95;
@@ -1441,13 +1435,17 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-faq,
   .landing-process,
   .landing-start { width: calc(100% - 32px); }
-  .landing-services-panel { align-items: flex-end; padding: 0 16px 48px 36px; }
+  .landing-services-panel { align-items: flex-end; padding: 0 16px 48px; }
   .landing-services-panel-copy { max-width: none; }
+  /* Each chapter rises into view while the text above it is still leaving
+     (the title off the top, a chapter into the fade at 56-62% of the
+     screen), so there is never a scroll without text. */
+  .landing-services.is-tall .landing-services-panel { min-height: 0; padding-top: 22svh; }
+  .landing-services.is-tall .landing-services-intro + .landing-services-panel { padding-top: 34svh; }
   .landing-services-panel h3 { font-size: clamp(56px, 17vw, 80px); }
   .landing-services-panel p { margin-top: 10px; font-size: 20px; }
   .landing-services-chips { gap: 8px; margin-top: 16px; }
   .landing-services-chips li { padding: 6px 12px; font-size: var(--landing-text-small); }
-  .landing-services-progress { left: 16px; top: calc(var(--landing-nav-height) + 16px); bottom: 48px; }
   .landing-page .landing-services-cta { width: 100%; justify-content: center; margin-top: 24px; }
   .landing-surface-grid { margin-top: 40px; }
   .landing-workflow-section { overflow-x: auto; scrollbar-width: none; font-size: var(--landing-text-body); }
