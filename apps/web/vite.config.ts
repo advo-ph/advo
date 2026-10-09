@@ -77,6 +77,16 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Keep the services graphics libraries below the PWA precache file limit.
+        manualChunks: {
+          "services-graphics": ["three", "animejs"],
+        },
+      },
+    },
+  },
   define: {
     "import.meta.env.VITE_APP_VERSION": JSON.stringify(appVersion),
     "import.meta.env.VITE_APP_COMMIT": JSON.stringify(appCommit),
