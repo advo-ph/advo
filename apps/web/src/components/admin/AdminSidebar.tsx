@@ -130,9 +130,6 @@ export const navGroups: NavGroup[] = [
       { id: "corpus", label: "Corpus", icon: BookOpenCheck },
       { id: "time", label: "Time", icon: Clock },
       { id: "finance", label: "Finance", icon: Banknote },
-      // Last in Operations: consulted, not driven. The owner-only controls on
-      // the screen itself are what gate the roster, not this nav item.
-      { id: "team", label: "Team", icon: Users2 },
       // Derived from deliverable rows only — no telemetry behind this view.
       { id: "accountability", label: "Accountability", icon: ShieldCheck },
     ],
@@ -152,6 +149,9 @@ export const navGroups: NavGroup[] = [
     label: "Tools",
     collapsible: true,
     items: [
+      // Consulted, not driven. The owner-only controls on the screen itself
+      // are what gate the roster, not this nav item.
+      { id: "team", label: "Team", icon: Users2 },
       { id: "portfolio", label: "Portfolio", icon: Image },
       { id: "social", label: "Social", icon: Instagram },
       { id: "vps", label: "VPS Usage", icon: Server, ownerOnly: true },

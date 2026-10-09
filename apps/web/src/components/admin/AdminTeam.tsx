@@ -398,7 +398,7 @@ const AdminTeam = () => {
               role={formData.role || "Role"}
               avatar_url={formData.avatar_url || null}
               preview_image_url={formData.preview_image_url || null}
-              className="w-full aspect-auto h-full"
+              className="w-full self-start mx-auto"
             />
             <input ref={previewFileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => openCropFromFile(e, 3 / 4, "preview")} />
           </div>
