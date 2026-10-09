@@ -121,6 +121,9 @@ export function useVisitorStats(windowDay = 30) {
     staleTime: 5 * 60 * 1000,
   });
 
+  const errorOf = (q: { error: unknown }): string | null =>
+    q.error instanceof Error ? q.error.message : null;
+
   return {
     summary: summary.data ?? null,
     pages: pages.data ?? [],
@@ -129,12 +132,15 @@ export function useVisitorStats(windowDay = 30) {
     geo: geo.data ?? null,
     isLoading:
       summary.isLoading || pages.isLoading || sections.isLoading || scrollDepth.isLoading || geo.isLoading,
-    error:
-      summary.error instanceof Error
-        ? summary.error.message
-        : geo.error instanceof Error
-          ? geo.error.message
-          : null,
+    /** Per query, so one failing read (e.g. geo on a database without migration 051) does
+     * not blank the sections that loaded fine. */
+    error: {
+      summary: errorOf(summary),
+      pages: errorOf(pages),
+      sections: errorOf(sections),
+      scrollDepth: errorOf(scrollDepth),
+      geo: errorOf(geo),
+    },
     refetch: () => {
       void summary.refetch();
       void pages.refetch();
