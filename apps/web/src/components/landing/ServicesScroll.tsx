@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useReducedMotion } from "framer-motion";
-import { createTimeline, onScroll, splitText, stagger, type Timeline, type TextSplitter } from "animejs";
+import { createTimeline, onScroll, stagger, type Timeline } from "animejs";
 import { ArrowUpRight } from "lucide-react";
 import { createServicesScene, type SceneState } from "./services-scene";
 
@@ -19,7 +19,10 @@ interface Chapter {
 }
 
 // Where text finishes fading in, as a share of the screen height from the top.
+// Phones put it lower, so the text clears the model with more room.
 const FADE_LINE = 0.62;
+const PHONE_FADE_LINE = 0.68;
+const PHONE = "(max-width: 680px)";
 
 const chapters: Chapter[] = [
   {
@@ -73,7 +76,7 @@ export default function ServicesScroll() {
       const tall = box.width / box.height <= 1.1;
       section.classList.toggle("is-tall", tall);
       if (!tall) return;
-      const line = box.top + box.height * FADE_LINE;
+      const line = box.top + box.height * (matchMedia(PHONE).matches ? PHONE_FADE_LINE : FADE_LINE);
       copies.forEach((el) => el.style.setProperty("--landing-fade-line", `${line - el.getBoundingClientRect().top}px`));
     };
     const queueFade = () => {
@@ -88,7 +91,7 @@ export default function ServicesScroll() {
     // CSS), which makes the section shorter than four screens. There each
     // morph plays while its chapter rises from the bottom of the screen to
     // the fade line, and the dust bursts as the title scrolls away.
-    const phone = !!stage && section.classList.contains("is-tall") && matchMedia("(max-width: 680px)").matches;
+    const phone = !!stage && section.classList.contains("is-tall") && matchMedia(PHONE).matches;
     let burstAt = [230, 170];
     let joinAt = [400, 110];
     let flowAt = [590, 150];
@@ -100,7 +103,7 @@ export default function ServicesScroll() {
       // Timeline position where the point `y` px into the section sits at
       // `share` of the screen height from the top.
       const when = (y: number, share: number) => ((y + (1 - share) * screen) / length) * 1000;
-      const rise = (y: number) => [when(y, 1), when(y, FADE_LINE) - when(y, 1)];
+      const rise = (y: number) => [when(y, 1), when(y, PHONE_FADE_LINE) - when(y, 1)];
       const [connect, automate, grow] = copies.map((el) => el.getBoundingClientRect().top - sectionTop);
       burstAt = [when(0, 0.08), when(connect, 1) - when(0, 0.08)];
       joinAt = rise(connect);
@@ -126,14 +129,10 @@ export default function ServicesScroll() {
       .add(state, { flow: [0, 1], duration: flowAt[1] }, flowAt[0])
       .add(state, { settle: [0, 1], duration: settleAt[1] }, settleAt[0]);
 
-    // Each panel reveals its own text as it rises into view.
-    const splitters: TextSplitter[] = [];
+    // Each panel reveals its line, list, and button as it rises into view.
+    // The chapter title stays still.
     const reveals: Timeline[] = [];
     section.querySelectorAll<HTMLElement>(".landing-services-panel").forEach((panel) => {
-      const title = panel.querySelector<HTMLElement>("h3");
-      if (!title) return;
-      const split = splitText(title, { words: { wrap: "clip" }, chars: true });
-      splitters.push(split);
       // Phones key the reveal to the text itself, which sits low in a short
       // panel, so it is whole well before it reaches the fade line.
       const reveal = createTimeline({
@@ -141,11 +140,10 @@ export default function ServicesScroll() {
         autoplay: onScroll({
           target: phone ? panel.querySelector<HTMLElement>(".landing-services-panel-copy")! : panel,
           enter: { target: "top", container: "bottom" },
-          leave: { target: "top", container: phone ? "70%" : "top" },
+          leave: { target: "top", container: phone ? "76%" : "top" },
           sync: true,
         }),
       })
-        .add(split.chars, { y: ["110%", "0%"], rotate: [8, 0], duration: 500, delay: stagger(40) }, 0)
         .add(panel.querySelector("p")!, { opacity: [0, 1], y: [28, 0], duration: 400 }, 300)
         .add(panel.querySelectorAll("li"), { opacity: [0, 1], y: [20, 0], scale: [0.9, 1], duration: 300, delay: stagger(60) }, 450);
       const cta = panel.querySelector(".landing-services-cta");
@@ -157,12 +155,11 @@ export default function ServicesScroll() {
     const io = new IntersectionObserver(([entry]) => scene?.setRunning(entry.isIntersecting), { rootMargin: "100px 0px" });
     io.observe(section);
 
-    // The title lights up from its center once it is well on screen.
+    // Reset the shadowed title as it leaves the reveal threshold, so the
+    // center-out lighting replays whenever the intro comes back into view.
     const intro = introRef.current;
     const lightIo = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting) return;
-      intro?.classList.add("is-lit");
-      lightIo.disconnect();
+      intro?.classList.toggle("is-lit", entry.isIntersecting && entry.intersectionRatio >= 0.6);
     }, { threshold: 0.6 });
     if (intro) lightIo.observe(intro);
 
@@ -173,9 +170,9 @@ export default function ServicesScroll() {
       section.classList.remove("is-tall");
       io.disconnect();
       lightIo.disconnect();
+      intro?.classList.remove("is-lit");
       // revert() also drops each timeline's scroll observer.
       [master, ...reveals].forEach((tl) => tl.revert());
-      splitters.forEach((s) => s.revert());
       scene?.dispose();
     };
   }, [reduceMotion]);

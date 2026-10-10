@@ -5,15 +5,7 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  AnimatePresence,
-  motion,
-  useReducedMotion,
-  useScroll,
-  useSpring,
-  useTransform,
-  type MotionStyle,
-} from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import LandingNav from "@/components/LandingNav";
@@ -25,6 +17,7 @@ import ProjectInquiry from "./ProjectInquiry";
 import LandingFooter from "./landing-footer";
 import FlowingBackground from "./FlowingBackground";
 import ServicesScroll from "./ServicesScroll";
+import SolutionExplorer from "./SolutionExplorer";
 import { instrumentLanding } from "@/lib/track";
 import "./landing-page.css";
 
@@ -145,15 +138,6 @@ const industryTab: IndustryTab[] = [
     still: "/landing/industry/business.webp",
   },
 ];
-
-const solutionExplorerItems: IndustryTab[] = industry.map((item) => ({
-  title: item.title,
-  heading: item.heading,
-  copy: item.copy,
-  still: item.image,
-  offer: item.offer,
-  href: item.href,
-}));
 
 interface IndustryExplorerProps {
   items: IndustryTab[];
@@ -293,18 +277,10 @@ const marqueeLogos = [
     width: 720,
     height: 720,
   },
-  { src: "/landing/logo/nokoji.webp", alt: "Nokoji Matcha and Doughnuts", scale: 1.08, width: 720, height: 720 },
+  { src: "/landing/logo/nokoji.webp", alt: "Nokoji Matcha and Doughnuts", scale: 1.08, width: 720, height: 296 },
   { src: "/landing/logo/felici.webp", alt: "Felici Artisan Gelato", scale: 1.55, width: 720, height: 720 },
-  { src: "/landing/logo/felici-italian-cafe.webp", alt: "Felici Italian Café", scale: 1.18, width: 720, height: 720 },
+  { src: "/landing/logo/felici-italian-cafe.webp", alt: "Felici Italian Café", scale: 1.18, width: 720, height: 345 },
 ] as const;
-
-/** Scroll distance (px) over which the phone hero settles into its card. Matches --landing-strip-height. */
-const HERO_SETTLE = 120;
-
-const heroCopy = {
-  hidden: { opacity: 0, y: 18 },
-  show: { opacity: 1, y: 0 },
-};
 
 type NetworkInformation = EventTarget & {
   effectiveType?: string;
@@ -326,10 +302,8 @@ const LandingPage = () => {
     typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches,
   );
   const [tabIndex, setTabIndex] = useState(0);
-  const [solutionTabIndex, setSolutionTabIndex] = useState(0);
   const [playingHeroVideoKey, setPlayingHeroVideoKey] = useState<string | null>(null);
   const [reduceData, setReduceData] = useState(prefersReducedData);
-  const heroRef = useRef<HTMLDivElement>(null);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
   const pageRef = useRef<HTMLElement>(null);
 
@@ -371,16 +345,6 @@ const LandingPage = () => {
   // drive the projects section below.
   const { project: shippedProject } = usePortfolio();
 
-  // The hero still drifts a little slower than the page. Small on purpose: the
-  // photo is the point, the motion only keeps it from reading as a poster.
-  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
-  // Phones anchor the video to its bottom edge, so the drift stays off there.
-  const heroShift = useTransform(scrollYProgress, [0, 1], ["0%", reduceMotion || isMobileViewport ? "0%" : "14%"]);
-  // Phones open on a full-bleed hero. The first HERO_SETTLE px of scroll pull it in
-  // to the guttered, rounded card; the CSS reads the 0 → 1 progress from --hero-settle.
-  const { scrollY } = useScroll();
-  const heroSettle = useTransform(scrollY, [0, HERO_SETTLE], [0, 1], { clamp: true });
-  const smoothHeroSettle = useSpring(heroSettle, { stiffness: 140, damping: 30, mass: 0.8 });
   const heroVideoKey = `${isMobileViewport ? "mobile" : "desktop"}-${reduceData ? "poster" : "autoplay"}`;
   const heroPoster = isMobileViewport ? "/landing/hero-building-mobile.webp" : "/landing/hero-building.webp";
 
@@ -414,22 +378,13 @@ const LandingPage = () => {
   return (
     <main className={reduceMotion ? "landing-page is-reduce-motion" : "landing-page"} ref={pageRef}>
       <FlowingBackground />
-      <LandingNav overlayHero={isMobileViewport} />
+      <LandingNav />
       <LandingScrollbar />
 
+      {/* A still card on every screen size: no scroll or load motion here. */}
       <section className="landing-hero" id="top">
-        <motion.div
-          className="landing-hero-frame"
-          ref={heroRef}
-          style={isMobileViewport ? ({ "--hero-settle": smoothHeroSettle } as unknown as MotionStyle) : undefined}
-        >
-          <motion.div
-            className="landing-hero-media"
-            style={{ y: heroShift }}
-            initial={reduceMotion ? false : { scale: 1.06 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 1.8, ease: EASE }}
-          >
+        <div className="landing-hero-frame">
+          <div className="landing-hero-media">
             <video
               ref={heroVideoRef}
               key={heroVideoKey}
@@ -459,22 +414,12 @@ const LandingPage = () => {
                 fetchPriority="high"
               />
             )}
-          </motion.div>
-          <div className="landing-hero-shade" />
-          <motion.div
-            className="landing-hero-copy"
-            initial={reduceMotion ? false : "hidden"}
-            animate="show"
-            transition={{ staggerChildren: 0.1, delayChildren: 0.25 }}
-          >
-            <motion.h1 variants={heroCopy} transition={{ duration: 0.7, ease: EASE }}>
-              We digitalize it for you.
-            </motion.h1>
-            <motion.p variants={heroCopy} transition={{ duration: 0.7, ease: EASE }}>
-              Our vision is to build the technological infrastructure for industries across the Philippines.
-            </motion.p>
-          </motion.div>
-        </motion.div>
+          </div>
+          <div className="landing-hero-copy">
+            <h1>We digitalize it for you.</h1>
+            <p>Our vision is to build the technological infrastructure for industries across the Philippines.</p>
+          </div>
+        </div>
       </section>
 
       <section className="landing-marquee" aria-label="Businesses running on ADVO">
@@ -521,17 +466,7 @@ const LandingPage = () => {
         </Reveal>
 
         {isMobileViewport ? (
-          <div className="landing-mobile-industry-explorer">
-            <IndustryExplorer
-              items={solutionExplorerItems}
-              activeIndex={solutionTabIndex}
-              onSelect={setSolutionTabIndex}
-              idPrefix="solutions-industry"
-              tablistLabel="Choose a solution"
-              orientation="horizontal"
-              reduceMotion={reduceMotion}
-            />
-          </div>
+          <SolutionExplorer items={industry} reduceMotion={reduceMotion} />
         ) : (
           <RevealGroup className="landing-industry-grid" stagger={0.08}>
             {industry.map((item) => (
