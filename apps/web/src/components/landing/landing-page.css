@@ -682,7 +682,6 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 }
 .landing-solutions-title {
   font-size: clamp(14px, 4.3vw, 56px);
-  font-weight: 500;
   line-height: 1.04;
   letter-spacing: -0.035em;
 }
@@ -1669,7 +1668,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   width: min(1240px, calc(100vw - var(--landing-gutter) * 2));
   margin: 0;
   font-size: clamp(14px, 4.3vw, 56px);
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.04;
   letter-spacing: -0.035em;
   text-align: center;
