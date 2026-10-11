@@ -1680,7 +1680,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 
 .work-track {
   --work-step: 50svh;
-  --work-lift: clamp(8px, 2.5svh, 28px);
+  --work-lift: 4px;
   position: relative;
   height: calc(100svh + var(--work-count, 1) * var(--work-step));
   margin-top: calc(-1 * var(--work-lift));
@@ -1722,7 +1722,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   flex: 1 1 0;
   min-height: 0;
   width: 100%;
-  margin: clamp(12px, 2.5svh, 28px) 0;
+  margin: clamp(24px, 5svh, 52px) 0 clamp(12px, 2.5svh, 28px);
 }
 /* Covers the middle of the canvas, where the device sits. */
 .work-device-link {
@@ -1811,6 +1811,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
     --work-lift: 12px;
   }
   .work-info { height: 176px; }
+  .work-device-view { margin: clamp(12px, 2.5svh, 28px) 0; }
   .landing-page .work-title { font-size: clamp(28px, 7.6vw, 36px); }
   .landing-page .work-info-title { font-size: clamp(26px, 7vw, 32px); letter-spacing: -0.035em; }
   .landing-page .work-info-desc { margin-top: 10px; }

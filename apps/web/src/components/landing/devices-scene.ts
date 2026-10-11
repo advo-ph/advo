@@ -49,7 +49,7 @@ const CAMERA_TILT = THREE.MathUtils.degToRad(9);
  * past the sides; on a wide screen the heading and caption bound it instead.
  */
 const MAC_ZOOM_NARROW = 1.35;
-const MAC_ZOOM_WIDE = 1.15;
+const MAC_ZOOM_WIDE = 1.04;
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const smooth = (a: number, b: number, v: number) => {
