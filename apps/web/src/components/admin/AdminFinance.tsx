@@ -23,7 +23,7 @@ import {
   PauseCircle,
   PlayCircle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { FinanceButton as Button } from "./shared/finance/FinanceButton";
 import {
   Select,
   SelectContent,
