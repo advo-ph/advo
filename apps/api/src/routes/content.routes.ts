@@ -108,6 +108,7 @@ const portfolioSchema = z.object({
   slug: z.string().max(100).optional(),
   isFeatured: z.boolean().optional(),
   displayOrder: z.number().int().optional(),
+  deviceType: z.enum(["laptop", "phone"]).optional(),
   caseStudy: z.record(z.unknown()).optional(),
 });
 
@@ -120,6 +121,27 @@ content.post(
     const data = c.req.valid("json");
     const [created] = await db().insert(portfolioProject).values(data).returning();
     return c.json({ data: created, error: null }, 201);
+  }
+);
+
+// Saves the full list order. Position in the array becomes display_order,
+// so every item gets its own number.
+content.patch(
+  "/portfolio/order",
+  requireAuth,
+  requireAdmin,
+  zValidator("json", z.object({ ids: z.array(z.number().int()).max(500) })),
+  async (c) => {
+    const { ids } = c.req.valid("json");
+    await db().transaction(async (tx) => {
+      for (const [idx, id] of ids.entries()) {
+        await tx
+          .update(portfolioProject)
+          .set({ displayOrder: idx, updatedAt: new Date() })
+          .where(eq(portfolioProject.portfolioProjectId, id));
+      }
+    });
+    return c.json({ data: { ids }, error: null });
   }
 );
 

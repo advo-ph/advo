@@ -10,6 +10,8 @@ export interface CaseStudy {
   github_url?: string;
 }
 
+export type DeviceType = "laptop" | "phone";
+
 export interface PortfolioProject {
   portfolio_project_id: number;
   title: string;
@@ -21,6 +23,7 @@ export interface PortfolioProject {
   tech_stack: string[] | null;
   is_featured: boolean;
   display_order: number;
+  device_type: DeviceType;
   case_study: CaseStudy | null;
   created_at: string;
 }
@@ -37,6 +40,7 @@ function mapPortfolio(p: Record<string, unknown>): PortfolioProject {
     tech_stack: (p.techStack ?? p.tech_stack ?? null) as string[] | null,
     is_featured: Boolean(p.isFeatured ?? p.is_featured),
     display_order: Number(p.displayOrder ?? p.display_order ?? 0),
+    device_type: (p.deviceType ?? p.device_type) === "phone" ? "phone" : "laptop",
     case_study: (p.caseStudy ?? p.case_study ?? null) as CaseStudy | null,
     created_at: (p.createdAt ?? p.created_at) as string,
   };
@@ -52,6 +56,7 @@ export interface PortfolioInput {
   tech_stack?: string[];
   is_featured?: boolean;
   display_order?: number;
+  device_type?: DeviceType;
   case_study?: CaseStudy | null;
 }
 
@@ -67,6 +72,7 @@ function toApiPayload(input: PortfolioInput) {
     techStack: input.tech_stack,
     isFeatured: input.is_featured,
     displayOrder: input.display_order,
+    deviceType: input.device_type,
     caseStudy: input.case_study || undefined,
   };
 }
@@ -179,8 +185,38 @@ export function useAdminPortfolio() {
     },
   });
 
+  // Saves a full list order. Each item gets its index as display_order.
+  const reorderMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      const res = await patch(`/api/content/portfolio/order`, { ids });
+      if (res.error) throw new Error(res.error);
+    },
+    onMutate: async (ids) => {
+      await queryClient.cancelQueries({ queryKey: QUERY_KEY });
+      const prev = queryClient.getQueryData<PortfolioProject[]>(QUERY_KEY);
+      const byId = new Map((prev ?? []).map((p) => [p.portfolio_project_id, p]));
+      queryClient.setQueryData<PortfolioProject[]>(
+        QUERY_KEY,
+        ids.flatMap((id, idx) => {
+          const p = byId.get(id);
+          return p ? [{ ...p, display_order: idx }] : [];
+        }),
+      );
+      return { prev };
+    },
+    onError: (err: Error, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(QUERY_KEY, ctx.prev);
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: PUBLIC_QUERY_KEY });
+    },
+  });
+
   return {
     projects,
+    reorderPortfolio: reorderMutation.mutateAsync,
     isLoading,
     createPortfolio: createMutation.mutateAsync,
     updatePortfolio: (id: number, input: PortfolioInput) =>

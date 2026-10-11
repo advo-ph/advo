@@ -15,6 +15,8 @@ import {
   ChevronDown,
   ChevronUp,
   BookOpen,
+  Laptop,
+  Smartphone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +44,7 @@ import { useToast } from "@/hooks/use-toast";
 import {
   useAdminPortfolio,
   type CaseStudy,
+  type DeviceType,
   type PortfolioProject,
 } from "@/hooks/useAdminPortfolio";
 import { PageHeader, Empty } from "@/components/admin/_ui";
@@ -90,10 +93,10 @@ const MediaList = ({
     <div className="space-y-2">
       <label className="text-sm font-medium">Media</label>
       <p className="text-xs text-muted-foreground">
-        First item is the main thumbnail. Drag to reorder.
+        First image is what's shown on the portfolio
       </p>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2 items-start">
         {items.map((url, idx) => (
           <div
             key={`${url}-${idx}`}
@@ -101,7 +104,7 @@ const MediaList = ({
             onDragStart={() => handleDragStart(idx)}
             onDragOver={(e) => handleDragOver(e, idx)}
             onDragEnd={handleDragEnd}
-            className={`relative group rounded-lg overflow-hidden border-2 aspect-video cursor-grab active:cursor-grabbing ${
+            className={`relative group rounded-lg overflow-hidden border-2 bg-secondary cursor-grab active:cursor-grabbing ${
               idx === 0
                 ? "border-accent ring-1 ring-accent/30"
                 : "border-border"
@@ -114,7 +117,7 @@ const MediaList = ({
                   muted
                   playsInline
                   preload="metadata"
-                  className="w-full h-full object-cover"
+                  className="block w-full h-auto"
                   draggable={false}
                 />
                 <Film className="absolute bottom-1 right-1 h-3.5 w-3.5 text-white drop-shadow" />
@@ -123,7 +126,7 @@ const MediaList = ({
               <img
                 src={url}
                 alt={`Media ${idx + 1}`}
-                className="w-full h-full object-cover"
+                className="block w-full h-auto"
                 draggable={false}
               />
             )}
@@ -185,8 +188,39 @@ const AdminPortfolio = () => {
     createPortfolio,
     updatePortfolio,
     deletePortfolio,
+    reorderPortfolio,
     isSaving,
   } = useAdminPortfolio();
+
+  const [dragId, setDragId] = useState<number | null>(null);
+  const [dragList, setDragList] = useState<PortfolioProject[] | null>(null);
+  const listed = dragList ?? projects;
+
+  const handleRowDragOver = (e: React.DragEvent, overId: number) => {
+    e.preventDefault();
+    if (dragId === null || dragId === overId) return;
+    const next = [...listed];
+    const from = next.findIndex((p) => p.portfolio_project_id === dragId);
+    const to = next.findIndex((p) => p.portfolio_project_id === overId);
+    if (from < 0 || to < 0) return;
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    setDragList(next);
+  };
+
+  const handleRowDragEnd = async () => {
+    const next = dragList;
+    setDragId(null);
+    setDragList(null);
+    if (!next) return;
+    const ids = next.map((p) => p.portfolio_project_id);
+    if (ids.every((id, i) => id === projects[i]?.portfolio_project_id)) return;
+    try {
+      await reorderPortfolio(ids);
+    } catch {
+      // Hook surfaces the toast
+    }
+  };
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -202,9 +236,9 @@ const AdminPortfolio = () => {
     description: "",
     preview_url: "",
     image_urls: [] as string[],
-    tech_stack: "",
     is_featured: true,
     display_order: 0,
+    device_type: "laptop" as DeviceType,
     cs_overview: "",
     cs_challenge: "",
     cs_solution: "",
@@ -221,9 +255,9 @@ const AdminPortfolio = () => {
       description: "",
       preview_url: "",
       image_urls: [],
-      tech_stack: "",
       is_featured: true,
       display_order: projects.length,
+      device_type: "laptop",
       cs_overview: "",
       cs_challenge: "",
       cs_solution: "",
@@ -251,9 +285,9 @@ const AdminPortfolio = () => {
       description: project.description || "",
       preview_url: project.preview_url || "",
       image_urls: imgs,
-      tech_stack: (project.tech_stack || []).join(", "),
       is_featured: project.is_featured,
-      display_order: project.display_order,
+      display_order: projects.findIndex((p) => p.portfolio_project_id === project.portfolio_project_id),
+      device_type: project.device_type,
       cs_overview: cs.overview || "",
       cs_challenge: cs.challenge || "",
       cs_solution: cs.solution || "",
@@ -323,23 +357,24 @@ const AdminPortfolio = () => {
       preview_url: formData.preview_url || undefined,
       image_url: formData.image_urls[0] || undefined,
       image_urls: formData.image_urls,
-      tech_stack: formData.tech_stack
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean),
       is_featured: formData.is_featured,
-      display_order: formData.display_order,
+      device_type: formData.device_type,
       case_study: Object.keys(caseStudy).length > 0 ? caseStudy : undefined,
     };
 
     setIsDialogOpen(false);
 
     try {
-      if (editingProject) {
-        await updatePortfolio(editingProject.portfolio_project_id, input);
-      } else {
-        await createPortfolio(input);
-      }
+      const saved = editingProject
+        ? await updatePortfolio(editingProject.portfolio_project_id, input)
+        : await createPortfolio(input);
+      // One item per position: put this item at its slot, shift the rest.
+      const ids = projects
+        .map((p) => p.portfolio_project_id)
+        .filter((id) => id !== saved.portfolio_project_id);
+      const slot = Math.min(Math.max(formData.display_order, 0), ids.length);
+      ids.splice(slot, 0, saved.portfolio_project_id);
+      await reorderPortfolio(ids);
     } catch {
       // Hook surfaces the toast; nothing extra to do here
     }
@@ -383,12 +418,19 @@ const AdminPortfolio = () => {
         </div>
       ) : (
         <div className="border border-border rounded-lg bg-card overflow-hidden divide-y divide-border">
-          {projects.map((project) => (
+          {listed.map((project, position) => (
             <div
               key={project.portfolio_project_id}
-              className="flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-secondary/40 transition-colors"
+              draggable
+              onDragStart={() => setDragId(project.portfolio_project_id)}
+              onDragOver={(e) => handleRowDragOver(e, project.portfolio_project_id)}
+              onDragEnd={handleRowDragEnd}
+              className={`flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-secondary/40 transition-colors cursor-grab active:cursor-grabbing ${
+                dragId === project.portfolio_project_id ? "opacity-50" : ""
+              }`}
             >
               <div className="flex items-center gap-3 min-w-0">
+                <GripVertical className="h-4 w-4 text-muted-foreground shrink-0" />
                 {/* Thumbnail */}
                 <div className="w-16 h-11 rounded-md bg-secondary overflow-hidden shrink-0">
                   {(() => {
@@ -399,10 +441,10 @@ const AdminPortfolio = () => {
                       </div>
                     );
                     if (isVideoUrl(thumb)) return (
-                      <video src={thumb} muted playsInline preload="metadata" className="w-full h-full object-cover" />
+                      <video src={thumb} muted playsInline preload="metadata" className="w-full h-full object-contain" />
                     );
                     return (
-                      <img src={thumb} alt={project.title} className="w-full h-full object-cover" />
+                      <img src={thumb} alt={project.title} className="w-full h-full object-contain" draggable={false} />
                     );
                   })()}
                 </div>
@@ -417,7 +459,7 @@ const AdminPortfolio = () => {
                       </Badge>
                     )}
                     <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
-                      #{project.display_order}
+                      #{position + 1}
                     </span>
                     {(project.image_urls?.length || 0) > 1 && (
                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
@@ -526,17 +568,26 @@ const AdminPortfolio = () => {
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">
-                Tech Stack (comma-separated)
-              </label>
-              <Input
-                value={formData.tech_stack}
-                onChange={(e) =>
-                  setFormData({ ...formData, tech_stack: e.target.value })
-                }
-                placeholder="React, Postgres, Tailwind"
-              />
+            <div className="flex flex-col items-start gap-2">
+              <label className="text-sm font-medium">Device</label>
+              <div className="inline-flex rounded-md border border-border p-0.5">
+                {([
+                  { value: "laptop", label: "Laptop", icon: Laptop },
+                  { value: "phone", label: "Phone", icon: Smartphone },
+                ] as const).map(({ value, label, icon: Icon }) => (
+                  <Button
+                    key={value}
+                    type="button"
+                    size="sm"
+                    variant={formData.device_type === value ? "default" : "ghost"}
+                    onClick={() => setFormData({ ...formData, device_type: value })}
+                    className="h-8 gap-1.5"
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {label}
+                  </Button>
+                ))}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -544,11 +595,13 @@ const AdminPortfolio = () => {
                 <label className="text-sm font-medium">Display Order</label>
                 <Input
                   type="number"
-                  value={formData.display_order}
+                  min={1}
+                  max={editingProject ? projects.length : projects.length + 1}
+                  value={formData.display_order + 1}
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      display_order: parseInt(e.target.value) || 0,
+                      display_order: Math.max((parseInt(e.target.value) || 1) - 1, 0),
                     })
                   }
                 />
