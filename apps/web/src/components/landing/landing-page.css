@@ -320,6 +320,31 @@ body:has(.landing-shell) {
 .landing-menu:focus-visible,
 .landing-nav-link a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 
+.landing-nav-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: var(--landing-ground);
+  color: var(--landing-ink);
+  font-family: var(--advo-font-body);
+  font-size: var(--landing-text-body);
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: inset 0 0 0 1px var(--landing-line);
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.2s var(--landing-ease);
+}
+.landing-nav-cta svg { transition: transform 0.2s var(--landing-ease); }
+.landing-nav-cta:hover { background: #e9e9ea; }
+.landing-nav-cta:hover svg { transform: translate(2px, -2px); }
+.landing-nav-cta:focus:not(:focus-visible) { outline: none; }
+.landing-nav-cta:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.landing-nav.is-at-footer .landing-nav-cta { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24); }
+
 /* ---------------------------------------------------------------- Buttons */
 .landing-button {
   display: inline-flex;
@@ -1452,6 +1477,13 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
  * phone width, so the drawer takes over here, not at 680. */
 @media (max-width: 900px) {
   .landing-menu { display: block; }
+  .landing-nav-action { gap: 6px; }
+  /* The full lockup stays in flow at a fixed width even once scrolled (the
+   * cross-fade to the mark is opacity-only, so layout never reflows), which
+   * leaves very little room beside the hamburger below ~450px. Drop to an
+   * icon-only CTA there instead of wrapping or overflowing the bar. */
+  .landing-nav-cta { width: 36px; height: 34px; padding: 0; justify-content: center; gap: 0; }
+  .landing-nav-cta span { display: none; }
 
   /* The drawer hangs off the bar itself, not the gutter-limited inner row,
    * so it runs edge to edge. */
@@ -1481,6 +1513,11 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-nav-item { padding-block: 0; border-bottom: 1px solid var(--landing-line); }
   .landing-nav-item > a { width: 100%; padding: 16px 12px; font-size: var(--landing-text-lead); font-weight: 400; }
   .landing-nav-item > a:hover { opacity: 1; }
+}
+
+/* Below this, the CTA plus hamburger no longer both fit without wrapping. */
+@media (max-width: 360px) {
+  .landing-nav-cta { display: none; }
 }
 
 /* Consent sheet (components/ConsentGate.tsx). Below 900px it is a full-width bottom
@@ -1625,48 +1662,49 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-page.is-reduce-motion .landing-button:active,
 .landing-page.is-reduce-motion .landing-still img { transition: none; transform: none; }
 
-/* ---------------------------------------------------------------- showcase (scroll flight through the portfolio)
-   A tall section with a sticky stage. --showcase-travel is the scroll budget
-   in screens, set by WorkShowcase from the project count. WorkShowcase writes
-   every transform from scroll; these rules only build the boxes it moves.
-   All boxes sit on the vanishing point (the middle of the area under the nav),
-   so a transform of zero puts a thing dead center. */
-.showcase {
+/* ---------------------------------------------------------------- work (projects on a turning ring)
+   The track is as tall as the scroll the projects need. The stage inside it is
+   sticky, so it holds still while the track scrolls past, and leaves with the
+   track's bottom edge. The ring inside the stage never holds still:
+   WorkShowcase sets --d on each card (its distance from the front, as a
+   fraction) on every scroll frame, and the rules below place the card on the
+   ring from that number alone.
+
+   --work-count is set by WorkShowcase: the steps of scroll the projects need
+   (one per gap between projects, less where the device swaps).
+   --work-lift is the room above the title while the stage is pinned. The
+   track is pulled up by the same amount, so that room costs no extra scroll
+   on the way in. The stage lets clicks through its empty top, which can
+   overlap the section above. */
+.work { overflow-x: clip; }
+
+.work-track {
+  --work-step: 50svh;
+  --work-lift: clamp(8px, 2.5svh, 28px);
   position: relative;
-  height: calc(100svh + var(--showcase-travel, 0) * 100svh);
-  scroll-margin-top: 0;
+  height: calc(100svh + var(--work-count, 1) * var(--work-step));
+  margin-top: calc(-1 * var(--work-lift));
 }
-.showcase-stage {
+
+/* The title sits at the top and the project text at the bottom, so the
+   device gets all the room between them. */
+.work-stage {
   position: sticky;
   top: 0;
+  display: flex;
+  flex-direction: column;
   height: 100svh;
-  min-height: 560px;
-  overflow: hidden;
+  padding-top: calc(var(--landing-nav-height) + var(--work-lift));
+  padding-bottom: clamp(16px, 3.5svh, 40px);
+  pointer-events: none;
 }
-.showcase-scene {
-  position: absolute;
-  inset: var(--landing-nav-height) 0 0;
-  perspective: 1400px;
-}
-.showcase-world,
-.showcase-grid {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 0;
-  height: 0;
-  transform-style: preserve-3d;
-}
-.showcase-grid { left: 0; top: 0; }
+.work-stage > * { position: relative; z-index: 1; pointer-events: auto; }
 
 /* Same type as the Solutions title ("Building Real-World Technological
    Solutions"), so the two section heads read as one system. */
-.landing-page .showcase-title {
-  position: absolute;
-  left: 0;
-  top: 0;
+.landing-page .work-title {
   width: min(1240px, calc(100vw - var(--landing-gutter) * 2));
-  margin: 0;
+  margin: 0 auto;
   font-size: clamp(14px, 4.3vw, 56px);
   font-weight: 400;
   line-height: 1.04;
@@ -1674,92 +1712,131 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   text-align: center;
   text-wrap: balance;
   color: var(--landing-ink);
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-}
-@media (max-width: 680px) {
-  .landing-page .showcase-title { font-size: clamp(30px, 8vw, 38px); }
 }
 
-/* No outline, only a soft drop so a white screenshot still reads as a card
-   against the white page while it flies. */
-.showcase-card {
-  position: absolute;
-  left: calc(var(--showcase-card-w, 520px) / -2);
-  top: calc(var(--showcase-card-w, 520px) / -3.52);
-  display: block;
-  width: var(--showcase-card-w, 520px);
-  aspect-ratio: 1.76;
-  overflow: hidden;
-  border-radius: 14px;
-  background: var(--landing-ground-soft);
-  box-shadow: 0 30px 70px -34px rgba(12, 12, 12, 0.4), 0 2px 10px rgba(12, 12, 12, 0.05);
-  opacity: 0;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  -webkit-tap-highlight-color: transparent;
-  /* Moved every frame from JS: keep each card on its own layer instead of
-     repainting the screenshot and its shadow at every new size. */
-  will-change: transform, opacity;
+/* The 3D devices (devices-scene.ts). The canvas covers the whole stage, under
+   the text, so the MacBook can slide out and the iPhone swing in from the
+   screen edges, and a device may run past its box. The box is what the scene
+   frames the device in, so its screen always shows in full. */
+.work-device-view {
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  margin: clamp(12px, 2.5svh, 28px) 0;
 }
-.showcase-card img {
+/* Covers the middle of the canvas, where the device sits. */
+.work-device-link {
+  position: absolute;
+  inset: 0 max(var(--landing-gutter), 50% - 460px);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.work-stage > .work-device-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: top center;
-  user-select: none;
-  transition: transform 0.6s var(--landing-ease);
+  pointer-events: none;
 }
-@media (hover: hover) {
-  .showcase-card:hover img { transform: scale(1.04); }
+.work-device-fallback {
+  display: block;
+  height: 100%;
+  margin: 0 auto;
+  border-radius: 12px;
+  object-fit: contain;
 }
-.showcase-card:focus-visible { outline: 2px solid var(--landing-ink); outline-offset: 4px; }
 
-/* Less motion: no flight. The title and the wall, laid out flat. */
-.showcase.is-static {
-  height: auto;
-  padding-block: var(--landing-section-rhythm);
-}
-.showcase.is-static .showcase-stage {
-  position: static;
-  height: auto;
-  min-height: 0;
-  overflow: visible;
-}
-.showcase.is-static .showcase-scene,
-.showcase.is-static .showcase-world,
-.showcase.is-static .showcase-grid {
-  position: static;
-  width: auto;
-  height: auto;
-  perspective: none;
-  transform: none;
-}
-.showcase.is-static .showcase-world {
-  width: min(1180px, calc(100% - var(--landing-gutter) * 2));
-  margin-inline: auto;
-}
-.landing-page .showcase.is-static .showcase-title {
-  position: static;
-  width: auto;
-  margin-bottom: clamp(24px, 3vw, 40px);
-  transform: none;
-}
-.showcase.is-static .showcase-grid {
+/* The text for the card in front. A new block and the leaving one share
+   one grid cell, so they cross over instead of one waiting for the other.
+   A fixed height keeps the device box, and so the device, from resizing when
+   a longer or shorter text swaps in. */
+.work-info {
+  flex: none;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 20px;
+  align-content: start;
+  height: 164px;
+  width: min(640px, calc(100% - var(--landing-gutter) * 2));
+  margin: 0 auto;
+  text-align: center;
 }
-.showcase.is-static .showcase-card {
-  position: relative;
-  left: auto;
-  top: auto;
-  width: auto;
-  opacity: 1;
-  will-change: auto;
+.work-info-item {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
-.showcase.is-static .showcase-card img { transition: none; }
+.landing-page .work-info-title {
+  font-size: clamp(30px, 3vw, 46px);
+  font-weight: 400;
+  line-height: 1.06;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+  color: var(--landing-ink);
+}
+.work-word { display: inline-block; }
+.landing-page .work-info-desc {
+  max-width: 52ch;
+  margin-top: 12px;
+  font-size: var(--landing-text-body);
+  line-height: 1.5;
+  color: var(--landing-muted);
+}
+
+/* Underlined words and a travelling icon, no chrome. */
+.work-info-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  font-size: var(--landing-text-body);
+  font-weight: 500;
+  color: var(--landing-ink);
+}
+.work-info-link > span {
+  text-decoration: underline;
+  text-underline-offset: 6px;
+  text-decoration-thickness: 1px;
+  transition: text-underline-offset .22s ease;
+}
+.work-info-link:hover > span { text-underline-offset: 10px; }
+.work-info-link svg { flex: none; transition: transform .22s ease; }
+.work-info-link:hover svg { transform: translate(3px, -3px); }
+
+/* Phones: smaller type and a shorter scroll per project. */
 @media (max-width: 760px) {
-  .showcase.is-static .showcase-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .work-track {
+    --work-step: 42svh;
+    --work-lift: 12px;
+  }
+  .work-info { height: 176px; }
+  .landing-page .work-title { font-size: clamp(28px, 7.6vw, 36px); }
+  .landing-page .work-info-title { font-size: clamp(26px, 7vw, 32px); letter-spacing: -0.035em; }
+  .landing-page .work-info-desc { margin-top: 10px; }
+  .work-info-link { margin-top: 14px; }
+}
+
+/* Short phones (small screens, or a browser bar taking room): tighten the
+   column so the text still fits under the ring. */
+@media (max-width: 760px) and (max-height: 640px) {
+  .work-track { --work-lift: 10px; }
+  .work-info { height: 120px; }
+  .landing-page .work-title { font-size: 24px; }
+  .landing-page .work-info-title { font-size: 24px; }
+  .landing-page .work-info-desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .work-info-link { margin-top: 10px; }
+}
+
+/* Less motion: WorkShowcase places the cards at whole steps with no turning;
+   this drops the hover moves. */
+.landing-page.is-reduce-motion .work-info-link:hover > span { text-underline-offset: 6px; }
+.landing-page.is-reduce-motion .work-info-link:hover svg { transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .work-info-link:hover svg { transform: none; }
 }

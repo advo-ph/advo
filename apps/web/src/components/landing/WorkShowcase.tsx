@@ -1,405 +1,273 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { useReducedMotion } from "framer-motion";
+import {
+  AnimatePresence,
+  motion,
+  useMotionValueEvent,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+  useTransform,
+  type Variants,
+} from "framer-motion";
+import { ArrowUpRight } from "lucide-react";
 import type { ShippedProject } from "@/hooks/usePortfolio";
+import { Reveal } from "@/components/motion/Reveal";
+import { EASE } from "@/lib/motion";
+import { getResponsiveImageUrl } from "@/lib/image-urls";
+import { createDevicesScene } from "./devices-scene";
 
 /**
- * The portfolio as a scroll flight. The title holds the center with the
- * screenshots far behind it. Scrolling flies the camera through the title and
- * then through a spiral of screenshots, each passing beside you. At the end the
- * screenshots come back out of the distance and lock into one wall under the
- * title. Scroll position is the only clock, so scrolling back plays it in
- * reverse. The stage is sticky; scrolling itself is never taken over.
+ * The portfolio on a real 3D MacBook and iPhone (devices-scene.ts). The stage
+ * pins while the page scrolls past it. Each project's screenshot wipes up over
+ * the last one on the device screen and holds a while before the next one, but
+ * the device turns in one slow sweep that follows the scroll from the first
+ * project to the last, never holding or snapping back between projects. Phone projects show on the iPhone: where the scroll
+ * crosses from a laptop project to a phone one, the MacBook closes and slides
+ * away as the iPhone swings in.
  *
- * Every number below is in "screens" of scroll (1 = one stage height), so the
- * pacing reads the same on a phone and on a desktop.
+ * The screens and the device swap run off `pos`: the project in front, as a
+ * fraction, with a hold at each project. The turn runs off `turn`: the same
+ * span, straight off the scroll with no holds.
+ * The text under the device follows whichever project is in front.
  */
-const INTRO = 0.3;
-const PER_CARD = 0.24;
-const ASSEMBLE = 0.4;
-/** Barely any: once the wall is up, the page moves on. */
-const HOLD = 0.04;
-const ASSEMBLE_STAGGER = 0.035;
-/** The wall starts forming this early, behind the last cards still flying. */
-const WALL_LEAD = 0.2;
+const ENTER = 1.3;
+const EXIT = 1;
+/** The share of each step's scroll where the project holds still in front. */
+const DWELL = 0.52;
+/** The scroll for a laptop to phone swap, as a share of a normal step. */
+const HANDOFF = 0.5;
 
-/** Screenshots cluster around this ratio. */
-const CARD_RATIO = 1.76;
-/** Golden angle: each card lands on the opposite side from the one before it. */
-const SPIRAL_STEP = (137.5 * Math.PI) / 180;
-const SPIRAL_START = (200 * Math.PI) / 180;
-/** How far a card orbits per depth gap as it flies in. */
-const SPIRAL_TWIST = (40 * Math.PI) / 180;
-const NAV_HEIGHT = 68;
+/** Projects shown on a phone, matched on the start of the title. */
+const PHONE_PROJECTS = ["nokohi", "floodpass", "pcedm"];
+const isPhone = (item: ShippedProject) => {
+  const key = item.title.toLowerCase().replace(/[^a-z0-9]/g, "");
+  return PHONE_PROJECTS.some((name) => key.startsWith(name));
+};
+
+/**
+ * How the scroll spreads over the projects. Each gap between two projects
+ * gets one step of scroll, or less where the device swaps. Within a step the
+ * project in front holds still for a while at each end, and the move between
+ * them runs in the middle.
+ */
+function scrollPlan(phones: boolean[]) {
+  const steps = phones.slice(1).map((phone, k) => (phone === phones[k] ? 1 : HANDOFF));
+  const total = steps.reduce((sum, step) => sum + step, 0);
+  /** Pin progress (0 to 1) to the project in front, as a fraction. */
+  const posAt = (pin: number) => {
+    let left = Math.min(1, Math.max(0, pin)) * total;
+    for (const [k, step] of steps.entries()) {
+      if (left <= step || k === steps.length - 1) {
+        const hold = DWELL / 2;
+        const t = Math.min(1, Math.max(0, (left / step - hold) / (1 - 2 * hold)));
+        return k + t * t * (3 - 2 * t);
+      }
+      left -= step;
+    }
+    return 0;
+  };
+  return { total, posAt };
+}
+
+const infoBlock: Variants = {
+  enter: (dir: number) => ({ opacity: 0, x: dir * 48 }),
+  show: { opacity: 1, x: 0, transition: { duration: 0.55, ease: EASE, staggerChildren: 0.04 } },
+  exit: (dir: number) => ({ opacity: 0, x: dir * -48, transition: { duration: 0.25, ease: EASE } }),
+};
+
+const wordIn: Variants = {
+  enter: { opacity: 0, y: "0.35em" },
+  show: { opacity: 1, y: "0em", transition: { duration: 0.5, ease: EASE } },
+};
+
+const fadeIn: Variants = {
+  enter: { opacity: 0 },
+  show: { opacity: 1, transition: { duration: 0.5, ease: EASE } },
+};
 
 interface WorkShowcaseProps {
   project: ShippedProject[];
 }
 
-interface Layout {
-  w: number;
-  h: number;
-  /** Perspective distance. */
-  persp: number;
-  /** Depth gap between two cards in the flight. */
-  gap: number;
-  cardW: number;
-  rx: number;
-  ry: number;
-  titleY: number;
-  cells: { x: number; y: number; scale: number }[];
-}
-
-const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
-const span = (v: number, from: number, to: number) => clamp01((v - from) / (to - from));
-const easeOut = (t: number) => 1 - (1 - t) ** 3;
-const easeIn = (t: number) => t * t;
-const smooth = (t: number) => t * t * (3 - 2 * t);
-
-/**
- * When card i sets off for the wall: in order, but never while it is still
- * flying. A card has faded out 0.56 of a slot after it crosses the screen plane
- * (fade ends at persp * 0.42, and a slot is persp * 0.75 deep), plus a margin.
- */
-function wallStart(i: number, total: number) {
-  const flightEnd = INTRO + total * PER_CARD;
-  const leftFlight = INTRO + PER_CARD * (i + 1.2);
-  return Math.max(flightEnd - WALL_LEAD + i * ASSEMBLE_STAGGER, leftFlight);
-}
-
-function travelFor(total: number) {
-  return wallStart(total - 1, total) + ASSEMBLE + HOLD;
-}
-
-function measure(stage: HTMLElement, title: HTMLElement, total: number): Layout {
-  const w = stage.clientWidth;
-  const h = stage.clientHeight - NAV_HEIGHT;
-  const wide = w / h > 1.1;
-  const persp = wide ? Math.max(w, h) * 0.9 : h;
-  const cardW = wide ? Math.min(700, Math.max(320, w * 0.4)) : w * 0.84;
-
-  // The closing wall: three across on wide screens, two on tall ones.
-  const cols = Math.min(total, wide ? 3 : 2);
-  const rows = Math.ceil(total / cols);
-  const pad = wide ? 48 : 24;
-  const gutter = wide ? 40 : 20;
-  const cellGap = wide ? 20 : 10;
-  const titleH = title.offsetHeight;
-  const titleGap = wide ? 40 : 24;
-  const maxGridW = Math.min(1180, w - gutter * 2);
-  const maxGridH = h - pad * 2 - titleH - titleGap;
-  const cellW = Math.max(
-    80,
-    Math.min(
-      (maxGridW - (cols - 1) * cellGap) / cols,
-      ((maxGridH - (rows - 1) * cellGap) / rows) * CARD_RATIO,
-    ),
-  );
-  const cellH = cellW / CARD_RATIO;
-  const gridH = rows * cellH + (rows - 1) * cellGap;
-  const top = -(titleH + titleGap + gridH) / 2;
-
-  const cells = Array.from({ length: total }, (_, i) => {
-    const row = Math.floor(i / cols);
-    const inRow = row === rows - 1 ? total - row * cols : cols;
-    const col = i - row * cols;
-    const rowW = inRow * cellW + (inRow - 1) * cellGap;
-    return {
-      x: -rowW / 2 + cellW / 2 + col * (cellW + cellGap),
-      y: top + titleH + titleGap + cellH / 2 + row * (cellH + cellGap),
-      scale: cellW / cardW,
-    };
-  });
-
-  return {
-    w,
-    h,
-    persp,
-    gap: persp * 0.75,
-    cardW,
-    rx: wide ? w * 0.24 : w * 0.14,
-    ry: wide ? h * 0.2 : h * 0.2,
-    titleY: top + titleH / 2,
-    cells,
-  };
+/** The project's live site when it has one, else its own page, else nothing. */
+function ProjectLink({
+  item,
+  className,
+  children,
+  hidden,
+}: {
+  item: ShippedProject;
+  className: string;
+  children: ReactNode;
+  hidden?: boolean;
+}) {
+  // The screenshot repeats the text link, so it stays out of the tab order.
+  const extra = hidden ? { tabIndex: -1, "aria-hidden": true } : {};
+  if (item.live_url) {
+    return (
+      <a className={className} href={item.live_url} target="_blank" rel="noopener noreferrer" {...extra}>
+        {children}
+      </a>
+    );
+  }
+  if (item.slug) {
+    return (
+      <Link className={className} to={`/project/${item.slug}`} {...extra}>
+        {children}
+      </Link>
+    );
+  }
+  return <div className={className}>{children}</div>;
 }
 
 const WorkShowcase = ({ project }: WorkShowcaseProps) => {
   const reduceMotion = Boolean(useReducedMotion());
-  const sectionRef = useRef<HTMLElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<HTMLDivElement>(null);
-  const titleRef = useRef<HTMLHeadingElement>(null);
-  const cardRefs = useRef<(HTMLElement | null)[]>([]);
-  const layoutRef = useRef<Layout | null>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [{ active, dir }, setFront] = useState({ active: 0, dir: 1 });
 
-  const total = project.length;
-  const travel = travelFor(total);
+  const count = project.length;
+  const shotKey = project.map((card) => `${card.screenshotUrl}|${isPhone(card) ? 1 : 0}`).join(",");
+  // shotKey stands in for `project`, whose identity changes on every fetch.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const plan = useMemo(() => scrollPlan(project.map(isPhone)), [shotKey]);
+  const { scrollYProgress: enterProgress } = useScroll({ target: trackRef, offset: ["start end", "start start"] });
+  const { scrollYProgress: pinProgress } = useScroll({ target: trackRef, offset: ["start start", "end end"] });
+  const { scrollYProgress: exitProgress } = useScroll({ target: trackRef, offset: ["end end", "end start"] });
 
-  useLayoutEffect(() => {
-    const stage = stageRef.current;
-    const title = titleRef.current;
-    if (reduceMotion || !stage || !title || total === 0) return;
-    const update = () => {
-      const layout = measure(stage, title, total);
-      layoutRef.current = layout;
-      stage.style.setProperty("--showcase-card-w", `${layout.cardW}px`);
-    };
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(stage);
-    observer.observe(title);
-    return () => observer.disconnect();
-  }, [reduceMotion, total]);
+  const rawPos = useTransform(
+    [enterProgress, pinProgress, exitProgress],
+    ([enter, pin, exit]: number[]) => (enter - 1) * ENTER + plan.posAt(pin) + exit * EXIT,
+  );
+  // The turn runs straight off the scroll, with no hold at each project, so
+  // the device keeps turning while a screenshot sits still.
+  const rawTurn = useTransform(
+    [enterProgress, pinProgress, exitProgress],
+    ([enter, pin, exit]: number[]) => (enter - 1) * ENTER + pin * (count - 1) + exit * EXIT,
+  );
+  // A little lag behind the scrollbar gives the device weight.
+  const spring = { stiffness: 140, damping: 26, mass: 0.6, restDelta: 0.0005 };
+  const pos = useSpring(rawPos, spring);
+  const turn = useSpring(rawTurn, spring);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [noWebGL, setNoWebGL] = useState(false);
 
   useEffect(() => {
-    const section = sectionRef.current;
-    const scene = sceneRef.current;
-    const title = titleRef.current;
-    const world = scene?.firstElementChild as HTMLElement | null;
-    if (reduceMotion || !section || !scene || !world || !title || total === 0) return;
-
-    const cards = cardRefs.current.slice(0, total);
-    const flightEnd = INTRO + total * PER_CARD;
-    const fine = matchMedia("(pointer: fine)").matches;
-
-    // Smoothed values chase their targets every frame, which gives the flight
-    // its weight. The loop sleeps once everything has caught up.
-    let shown = -1;
-    let velocity = 0;
-    const pointer = { x: 0, y: 0, tx: 0, ty: 0 };
-    let raf = 0;
-    let last = 0;
-    let visible = false;
-
-    const target = () => {
-      const rect = section.getBoundingClientRect();
-      const run = rect.height - window.innerHeight;
-      return run > 0 ? clamp01(-rect.top / run) * travel : 0;
-    };
-
-    const render = (s: number) => {
-      const layout = layoutRef.current;
-      if (!layout) return;
-      const { persp, gap, rx, ry } = layout;
-      // Scrolling fast widens the lens a little, like picking up speed.
-      const warp = Math.min(1, Math.abs(velocity) * 10);
-      scene.style.perspective = `${persp * (1 - warp * 0.22)}px`;
-
-      // The mouse moves the camera: near cards shift, far ones hold still.
-      const wallIn = easeOut(span(s, flightEnd - WALL_LEAD, travel - HOLD));
-      const tilt = (1 - wallIn) * 6;
-      world.style.transform = `translate3d(${(-pointer.x * 24).toFixed(2)}px, ${(-pointer.y * 16).toFixed(2)}px, 0) rotateX(${(tilt - pointer.y * 2).toFixed(3)}deg) rotateY(${(pointer.x * 3).toFixed(3)}deg)`;
-
-      // Title: zoom through it on the way in, it settles above the wall at the end.
-      let tz = 0;
-      let ty = 0;
-      let tOpacity = 1;
-      if (s < flightEnd / 2) {
-        tz = easeIn(span(s, 0.04, INTRO * 0.9)) * persp * 0.55;
-        tOpacity = 1 - span(s, INTRO * 0.3, INTRO * 0.8);
+    const canvas = canvasRef.current;
+    const frame = frameRef.current;
+    if (!canvas || !frame || project.length === 0) return;
+    let scene: ReturnType<typeof createDevicesScene>;
+    try {
+      scene = createDevicesScene(
+        canvas,
+        frame,
+        project.map((card) => ({
+          url: getResponsiveImageUrl(card.screenshotUrl ?? "", isPhone(card) ? 960 : 1440),
+          phone: isPhone(card),
+        })),
+      );
+    } catch {
+      setNoWebGL(true);
+      return;
+    }
+    // Less motion: the device holds still on the project in front.
+    const update = () => {
+      if (reduceMotion) {
+        const front = Math.round(rawPos.get());
+        scene.setPos(front, front);
       } else {
-        // After the last card has flown off, so nothing crosses the title.
-        const titleIn = Math.max(wallStart(0, total) + ASSEMBLE * 0.25, wallStart(total - 1, total) - ASSEMBLE * 0.1);
-        const t = easeOut(span(s, titleIn, titleIn + ASSEMBLE * 0.6));
-        tz = -(1 - t) * persp * 0.4;
-        ty = layout.titleY;
-        tOpacity = t;
+        scene.setPos(pos.get(), turn.get());
       }
-      title.style.transform = `translate3d(-50%, calc(-50% + ${ty.toFixed(2)}px), ${tz.toFixed(2)}px)`;
-      title.style.opacity = tOpacity.toFixed(3);
-      title.style.visibility = tOpacity < 0.01 ? "hidden" : "visible";
-
-      // Camera depth: card i crosses the screen plane halfway through its slot.
-      const cam = gap * (1 + (s - INTRO - PER_CARD / 2) / PER_CARD);
-      // The title stands alone at first; the cards arrive as you fly through it.
-      const arrive = smooth(span(s, INTRO * 0.25, INTRO * 0.8));
-
-      cards.forEach((card, i) => {
-        if (!card) return;
-        const cell = layout.cells[i];
-        const start = wallStart(i, total);
-        const assemble = easeOut(span(s, start, start + ASSEMBLE));
-
-        let x: number;
-        let y: number;
-        let z: number;
-        let scale: number;
-        let rotY: number;
-        let rotX: number;
-        let rotZ = 0;
-        let opacity: number;
-
-        if (assemble > 0) {
-          // The wall: each card returns from deep space and locks into its cell.
-          x = cell.x;
-          y = cell.y;
-          z = -(1 - assemble) * persp * 1.8;
-          scale = cell.scale;
-          rotY = 0;
-          rotX = (1 - assemble) * -18;
-          opacity = smooth(span(assemble, 0, 0.45));
-        } else {
-          // Capped short of the camera: past it, the projection blows the card
-          // up without limit and the browser runs out of memory drawing it.
-          z = Math.min(cam - gap * (i + 1), persp * 0.42);
-          const angle = SPIRAL_START + i * SPIRAL_STEP + (z / gap) * SPIRAL_TWIST;
-          // Far cards tumble; they square up as they come close, then swing
-          // wide past your shoulders instead of through your face.
-          const far = clamp01(-z / (gap * 3));
-          const pass = 1 + (Math.max(0, z + gap * 0.5) / persp) * 2.4;
-          x = Math.cos(angle) * rx * pass;
-          y = Math.sin(angle) * ry * pass;
-          scale = 1;
-          rotY = -Math.cos(angle) * (14 + 26 * far);
-          rotX = Math.sin(angle) * (8 + 14 * far) + velocity * 260;
-          rotZ = (i % 2 ? 1 : -1) * 16 * far;
-          // Fog in from the far end, gone just before it reaches the viewer.
-          opacity =
-            arrive * smooth(span(z, -gap * 4.2, -gap * 3)) * (1 - smooth(span(z, persp * 0.18, persp * 0.42)));
-        }
-
-        card.style.transform = `translate3d(${x.toFixed(2)}px, ${y.toFixed(2)}px, ${z.toFixed(2)}px) rotateY(${rotY.toFixed(2)}deg) rotateX(${rotX.toFixed(2)}deg) rotateZ(${rotZ.toFixed(2)}deg) scale(${scale.toFixed(4)})`;
-        card.style.opacity = opacity.toFixed(3);
-        card.style.visibility = opacity < 0.01 ? "hidden" : "visible";
-        card.style.pointerEvents = opacity > 0.6 ? "auto" : "none";
-      });
     };
-
-    const frame = (now: number) => {
-      raf = 0;
-      const dt = last ? Math.min(0.05, (now - last) / 1000) : 1 / 60;
-      last = now;
-      const goal = target();
-      if (shown < 0) shown = goal;
-      const ease = 1 - Math.exp(-dt * 7);
-      const step = (goal - shown) * ease;
-      shown += step;
-      velocity += (step / Math.max(dt * 60, 0.5) - velocity) * 0.2;
-      pointer.x += (pointer.tx - pointer.x) * ease;
-      pointer.y += (pointer.ty - pointer.y) * ease;
-      render(shown);
-
-      const settled =
-        Math.abs(goal - shown) < 0.0005 &&
-        Math.abs(velocity) < 0.0002 &&
-        Math.abs(pointer.tx - pointer.x) < 0.001 &&
-        Math.abs(pointer.ty - pointer.y) < 0.001;
-      if (visible && !settled) raf = requestAnimationFrame(frame);
-      else last = 0;
-    };
-
-    const kick = () => {
-      if (visible && !raf) raf = requestAnimationFrame(frame);
-    };
-
-    const onPointer = (event: PointerEvent) => {
-      if (event.pointerType !== "mouse") return;
-      pointer.tx = (event.clientX / window.innerWidth) * 2 - 1;
-      pointer.ty = (event.clientY / window.innerHeight) * 2 - 1;
-      kick();
-    };
-
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        visible = entry.isIntersecting;
-        if (visible) {
-          shown = -1;
-          kick();
-        }
-      },
-      { rootMargin: "200px 0px" },
-    );
-    io.observe(section);
-
-    window.addEventListener("scroll", kick, { passive: true });
-    window.addEventListener("resize", kick);
-    if (fine) window.addEventListener("pointermove", onPointer, { passive: true });
-
+    update();
+    const stops = (reduceMotion ? [rawPos] : [pos, turn]).map((value) => value.on("change", update));
+    const stop = () => stops.forEach((off) => off());
+    const io = new IntersectionObserver(([entry]) => scene.setRunning(entry.isIntersecting), { rootMargin: "200px 0px" });
+    io.observe(canvas);
     return () => {
-      if (raf) cancelAnimationFrame(raf);
+      stop();
       io.disconnect();
-      window.removeEventListener("scroll", kick);
-      window.removeEventListener("resize", kick);
-      window.removeEventListener("pointermove", onPointer);
+      scene.dispose();
     };
-  }, [reduceMotion, total, travel]);
+    // shotKey stands in for `project`, whose identity changes on every fetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shotKey, reduceMotion, pos, rawPos, turn]);
 
-  if (total === 0) return null;
+  // The text follows the raw scroll so it never trails a fast flick.
+  useMotionValueEvent(rawPos, "change", (value) => {
+    const next = Math.min(count - 1, Math.max(0, Math.round(value)));
+    setFront((current) =>
+      current.active === next ? current : { active: next, dir: next > current.active ? 1 : -1 },
+    );
+  });
 
-  // A keyboard user tabbing onto a card jumps to the wall, where every card shows.
-  const showWall = () => {
-    const section = sectionRef.current;
-    if (reduceMotion || !section) return;
-    const top = section.getBoundingClientRect().top + window.scrollY;
-    window.scrollTo({ top: top + section.offsetHeight - window.innerHeight, behavior: "instant" });
-  };
+  if (count === 0) return null;
+
+  const item = project[Math.min(active, count - 1)];
+  const label = item.live_url ? "View site" : "View project";
+  const words = item.title.split(/\s+/).filter(Boolean);
+  const trackStyle = { "--work-count": plan.total } as CSSProperties;
 
   return (
-    <section
-      ref={sectionRef}
-      className={`showcase${reduceMotion ? " is-static" : ""}`}
-      id="work"
-      aria-labelledby="showcase-title"
-      style={{ ["--showcase-travel" as string]: travel }}
-    >
-      <div className="showcase-stage" ref={stageRef}>
-        <div className="showcase-scene" ref={sceneRef}>
-          <div className="showcase-world">
-            <h2 className="showcase-title" id="showcase-title" ref={titleRef}>
-              Businesses running on our technology
-            </h2>
-            <div className="showcase-grid">
-              {project.map((item, i) => {
-                const setRef = (node: HTMLElement | null) => {
-                  cardRefs.current[i] = node;
-                };
-                const image = (
-                  <img
-                    src={item.screenshotUrl ?? ""}
-                    srcSet={item.screenshotSrcSet}
-                    sizes="(max-width: 760px) 100vw, 1200px"
-                    alt={`${item.title} website`}
-                    loading="lazy"
-                    decoding="async"
-                    draggable={false}
-                  />
-                );
-                if (item.live_url) {
-                  return (
-                    <a
-                      key={item.portfolio_project_id}
-                      ref={setRef}
-                      className="showcase-card"
-                      href={item.live_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onFocus={showWall}
-                    >
-                      {image}
-                    </a>
-                  );
-                }
-                if (item.slug) {
-                  return (
-                    <Link
-                      key={item.portfolio_project_id}
-                      ref={setRef}
-                      className="showcase-card"
-                      to={`/project/${item.slug}`}
-                      onFocus={showWall}
-                    >
-                      {image}
-                    </Link>
-                  );
-                }
-                return (
-                  <div key={item.portfolio_project_id} ref={setRef} className="showcase-card">
-                    {image}
-                  </div>
-                );
-              })}
-            </div>
+    <section className="work" id="work" aria-labelledby="work-title">
+      <div className="work-track" ref={trackRef} style={trackStyle}>
+        <div className="work-stage">
+          <Reveal as="h2" className="work-title" id="work-title">
+            Businesses running on our technology
+          </Reveal>
+
+          {/* The canvas covers the whole stage so a device can run past its
+              box; the box below is what the device is framed in. */}
+          {noWebGL ? null : <canvas ref={canvasRef} className="work-device-canvas" aria-hidden="true" />}
+
+          <div className="work-device-view" ref={frameRef}>
+            {noWebGL ? (
+              <img className="work-device-fallback" src={item.screenshotUrl ?? ""} alt="" draggable={false} />
+            ) : null}
+            {/* A sibling, not a wrapper: the link's element type changes per
+                project, and wrapping would remount the canvas. */}
+            <ProjectLink item={item} className="work-device-link" hidden>
+              {null}
+            </ProjectLink>
+          </div>
+
+          <div className="work-info" aria-live="polite">
+            <AnimatePresence initial={false} custom={dir}>
+              <motion.div
+                key={item.portfolio_project_id}
+                className="work-info-item"
+                custom={dir}
+                variants={infoBlock}
+                initial={reduceMotion ? false : "enter"}
+                animate="show"
+                exit={reduceMotion ? undefined : "exit"}
+              >
+                <h3 className="work-info-title">
+                  {words.map((word, i) => (
+                    <Fragment key={`${word}-${i}`}>
+                      <motion.span className="work-word" variants={wordIn}>
+                        {word}
+                      </motion.span>
+                      {i < words.length - 1 ? " " : null}
+                    </Fragment>
+                  ))}
+                </h3>
+                {item.blurb ? (
+                  <motion.p className="work-info-desc" variants={fadeIn}>
+                    {item.blurb}
+                  </motion.p>
+                ) : null}
+                {item.live_url || item.slug ? (
+                  <motion.div variants={fadeIn}>
+                    <ProjectLink item={item} className="work-info-link">
+                      <span>{label}</span>
+                      <ArrowUpRight size={17} aria-hidden="true" />
+                    </ProjectLink>
+                  </motion.div>
+                ) : null}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
       </div>
