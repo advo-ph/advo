@@ -1684,7 +1684,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 
 .work-track {
   --work-step: 50svh;
-  --work-lift: 4px;
+  --work-lift: clamp(6px, 1.4svh, 16px);
   position: relative;
   height: calc(100svh + var(--work-count, 1) * var(--work-step));
   margin-top: calc(-1 * var(--work-lift));
