@@ -29,7 +29,8 @@ import { createDevicesScene } from "./devices-scene";
  * The screens and the device swap run off `pos`: the project in front, as a
  * fraction, with a hold at each project. The turn runs off `turn`: the same
  * span, straight off the scroll with no holds.
- * The text under the device follows whichever project is in front.
+ * The text under the device follows whichever project is in front. A project
+ * with a logo shows the logo in place of its title.
  */
 const ENTER = 1.3;
 const EXIT = 1;
@@ -37,6 +38,13 @@ const EXIT = 1;
 const DWELL = 0.52;
 /** The scroll for a laptop to phone swap, as a share of a normal step. */
 const HANDOFF = 0.5;
+
+/**
+ * Logos come in every shape. The height runs with (width / height) to this
+ * power, so a wide logo gets shorter and a square one taller until they read
+ * as one size.
+ */
+const LOGO_SHAPE = -0.25;
 
 /** Projects shown on a phone, matched on the start of the title. */
 const PHONE_PROJECTS = ["nokohi", "floodpass", "pcedm"];
@@ -153,6 +161,28 @@ const WorkShowcase = ({ project }: WorkShowcaseProps) => {
   const frameRef = useRef<HTMLDivElement>(null);
   const [noWebGL, setNoWebGL] = useState(false);
 
+  // Load every logo up front so none pops in mid-scroll, and keep each one's
+  // width / height to size it. 0 marks a logo that failed: the title shows.
+  const logoKey = project.map((card) => card.logoUrl ?? "").join(",");
+  const [logoRatio, setLogoRatio] = useState<Record<string, number>>({});
+  useEffect(() => {
+    let live = true;
+    for (const url of new Set(project.flatMap((card) => (card.logoUrl ? [card.logoUrl] : [])))) {
+      const img = new Image();
+      const done = (ratio: number) => {
+        if (live) setLogoRatio((all) => (all[url] === ratio ? all : { ...all, [url]: ratio }));
+      };
+      img.onload = () => done(img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : 1);
+      img.onerror = () => done(0);
+      img.src = url;
+    }
+    return () => {
+      live = false;
+    };
+    // logoKey stands in for `project`, whose identity changes on every fetch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [logoKey]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     const frame = frameRef.current;
@@ -207,6 +237,7 @@ const WorkShowcase = ({ project }: WorkShowcaseProps) => {
   const item = project[Math.min(active, count - 1)];
   const label = item.live_url ? "View site" : "View project";
   const words = item.title.split(/\s+/).filter(Boolean);
+  const logo = item.logoUrl && logoRatio[item.logoUrl] !== 0 ? item.logoUrl : null;
   const trackStyle = { "--work-count": plan.total } as CSSProperties;
 
   return (
@@ -244,14 +275,25 @@ const WorkShowcase = ({ project }: WorkShowcaseProps) => {
                 exit={reduceMotion ? undefined : "exit"}
               >
                 <h3 className="work-info-title">
-                  {words.map((word, i) => (
-                    <Fragment key={`${word}-${i}`}>
-                      <motion.span className="work-word" variants={wordIn}>
-                        {word}
-                      </motion.span>
-                      {i < words.length - 1 ? " " : null}
-                    </Fragment>
-                  ))}
+                  {logo ? (
+                    <motion.img
+                      className="work-info-logo"
+                      src={logo}
+                      alt={item.title}
+                      draggable={false}
+                      variants={wordIn}
+                      style={{ "--work-logo-k": (logoRatio[logo] ?? 2) ** LOGO_SHAPE } as CSSProperties}
+                    />
+                  ) : (
+                    words.map((word, i) => (
+                      <Fragment key={`${word}-${i}`}>
+                        <motion.span className="work-word" variants={wordIn}>
+                          {word}
+                        </motion.span>
+                        {i < words.length - 1 ? " " : null}
+                      </Fragment>
+                    ))
+                  )}
                 </h3>
                 {item.blurb ? (
                   <motion.p className="work-info-desc" variants={fadeIn}>

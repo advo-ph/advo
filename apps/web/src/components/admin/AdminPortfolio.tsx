@@ -178,6 +178,103 @@ const MediaList = ({
   );
 };
 
+/* ─── Logo ───────────────────────────────────────── */
+
+// Formats that can hold a transparent background.
+const LOGO_TYPES = ["image/png", "image/webp", "image/svg+xml"];
+
+/** False when every corner pixel is solid, so the logo likely has a filled background. */
+const hasClearCorners = (file: File) =>
+  new Promise<boolean>((resolve) => {
+    if (file.type === "image/svg+xml") return resolve(true);
+    const src = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d");
+      URL.revokeObjectURL(src);
+      if (!ctx) return resolve(true);
+      ctx.drawImage(img, 0, 0);
+      const { width: w, height: h } = canvas;
+      const corners = [[0, 0], [w - 1, 0], [0, h - 1], [w - 1, h - 1]];
+      resolve(corners.some(([x, y]) => ctx.getImageData(x, y, 1, 1).data[3] < 250));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(src);
+      resolve(true);
+    };
+    img.src = src;
+  });
+
+const LogoField = ({
+  url,
+  onUpload,
+  onRemove,
+  isUploading,
+}: {
+  url: string;
+  onUpload: (file: File) => void;
+  onRemove: () => void;
+  isUploading: boolean;
+}) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-medium">Logo</label>
+      <p className="text-xs text-muted-foreground">
+        PNG, WebP or SVG with a transparent background. Shows in place of the title on the site.
+      </p>
+      <div className="flex items-center gap-3">
+        {/* White with a light check, like the site, so a filled background shows. */}
+        <div
+          className="flex h-20 w-44 shrink-0 items-center justify-center rounded-lg border border-border p-2"
+          style={{ background: "repeating-conic-gradient(#efefef 0% 25%, #ffffff 0% 50%) 50% / 14px 14px" }}
+        >
+          {url ? (
+            <img src={url} alt="Logo" className="max-h-full max-w-full object-contain" draggable={false} />
+          ) : (
+            <span className="text-[10px] text-neutral-500">No logo</span>
+          )}
+        </div>
+        <div className="flex flex-col items-start gap-1.5">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="h-8 gap-1.5"
+          >
+            {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+            {url ? "Replace" : "Upload"}
+          </Button>
+          {url && (
+            <Button type="button" variant="ghost" size="sm" onClick={onRemove} className="h-8 gap-1.5 text-destructive">
+              <X className="h-3.5 w-3.5" />
+              Remove
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={LOGO_TYPES.join(",")}
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onUpload(file);
+          e.target.value = "";
+        }}
+      />
+    </div>
+  );
+};
+
 /* ─── Main Component ─────────────────────────────── */
 
 const AdminPortfolio = () => {
@@ -227,6 +324,7 @@ const AdminPortfolio = () => {
   const [editingProject, setEditingProject] = useState<PortfolioProject | null>(null);
   const [deletingProject, setDeletingProject] = useState<PortfolioProject | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isLogoUploading, setIsLogoUploading] = useState(false);
 
   const [showCaseStudy, setShowCaseStudy] = useState(false);
 
@@ -236,6 +334,7 @@ const AdminPortfolio = () => {
     description: "",
     preview_url: "",
     image_urls: [] as string[],
+    logo_url: "",
     is_featured: true,
     display_order: 0,
     device_type: "laptop" as DeviceType,
@@ -255,6 +354,7 @@ const AdminPortfolio = () => {
       description: "",
       preview_url: "",
       image_urls: [],
+      logo_url: "",
       is_featured: true,
       display_order: projects.length,
       device_type: "laptop",
@@ -285,6 +385,7 @@ const AdminPortfolio = () => {
       description: project.description || "",
       preview_url: project.preview_url || "",
       image_urls: imgs,
+      logo_url: project.logo_url || "",
       is_featured: project.is_featured,
       display_order: projects.findIndex((p) => p.portfolio_project_id === project.portfolio_project_id),
       device_type: project.device_type,
@@ -334,6 +435,43 @@ const AdminPortfolio = () => {
     }
   };
 
+  const handleLogoUpload = async (file: File) => {
+    if (!LOGO_TYPES.includes(file.type)) {
+      toast({ title: "Error", description: "Use a PNG, WebP or SVG logo", variant: "destructive" });
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Error", description: "Logo must be under 5MB", variant: "destructive" });
+      return;
+    }
+
+    setIsLogoUploading(true);
+
+    try {
+      const [result, clear] = await Promise.all([upload(file, "portfolio"), hasClearCorners(file)]);
+
+      if (result.error) {
+        toast({ title: "Upload failed", description: result.error, variant: "destructive" });
+        return;
+      }
+
+      setFormData((prev) => ({ ...prev, logo_url: result.url }));
+      toast(
+        clear
+          ? { title: "Uploaded", description: "Logo added" }
+          : { title: "Logo added", description: "It looks like it has a solid background. A transparent one looks best." },
+      );
+    } catch (err) {
+      toast({
+        title: "Upload failed",
+        description: err instanceof Error ? err.message : "Unable to upload logo",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLogoUploading(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!formData.title) {
       toast({ title: "Error", description: "Title is required", variant: "destructive" });
@@ -357,6 +495,7 @@ const AdminPortfolio = () => {
       preview_url: formData.preview_url || undefined,
       image_url: formData.image_urls[0] || undefined,
       image_urls: formData.image_urls,
+      logo_url: formData.logo_url || null,
       is_featured: formData.is_featured,
       device_type: formData.device_type,
       case_study: Object.keys(caseStudy).length > 0 ? caseStudy : undefined,
@@ -536,6 +675,13 @@ const AdminPortfolio = () => {
                 placeholder="Project title"
               />
             </div>
+
+            <LogoField
+              url={formData.logo_url}
+              onUpload={handleLogoUpload}
+              onRemove={() => setFormData({ ...formData, logo_url: "" })}
+              isUploading={isLogoUploading}
+            />
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Description</label>

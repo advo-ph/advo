@@ -338,6 +338,7 @@ body:has(.landing-shell) {
   -webkit-tap-highlight-color: transparent;
   transition: background-color 0.2s var(--landing-ease);
 }
+.landing-nav-cta-short { display: none; }
 .landing-nav-cta svg { transition: transform 0.2s var(--landing-ease); }
 .landing-nav-cta:hover { background: #e9e9ea; }
 .landing-nav-cta:hover svg { transform: translate(2px, -2px); }
@@ -914,9 +915,18 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   height: 100%;
   object-fit: cover;
 }
-.landing-solution-body { overflow: hidden; }
-.landing-solution-measure { position: relative; }
-.landing-solution-copy { padding: 22px 12px 12px; }
+.landing-solution-body {
+  position: relative;
+  display: grid;
+  overflow: hidden;
+}
+.landing-solution-copy {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  padding: 22px 12px 12px;
+}
+.landing-solution-sizer { visibility: hidden; pointer-events: none; }
 .landing-solution-copy h3 {
   font-size: var(--landing-text-title);
   font-weight: 500;
@@ -941,7 +951,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-solution-offer li { display: flex; flex-direction: column; gap: 2px; }
 /* The link spans the inset like the photo does, so the card opens and closes
    on the same rounded shape. */
-.landing-solution-actions { margin: 22px -12px -12px; }
+.landing-solution-actions { margin: auto -12px -12px; padding-top: 22px; }
 .landing-solution-more {
   display: flex;
   align-items: center;
@@ -1476,14 +1486,12 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 /* The bar: four links and three buttons stop fitting on one line well before
  * phone width, so the drawer takes over here, not at 680. */
 @media (max-width: 900px) {
-  .landing-menu { display: block; }
-  .landing-nav-action { gap: 6px; }
-  /* The full lockup stays in flow at a fixed width even once scrolled (the
-   * cross-fade to the mark is opacity-only, so layout never reflows), which
-   * leaves very little room beside the hamburger below ~450px. Drop to an
-   * icon-only CTA there instead of wrapping or overflowing the bar. */
-  .landing-nav-cta { width: 36px; height: 34px; padding: 0; justify-content: center; gap: 0; }
-  .landing-nav-cta span { display: none; }
+  /* No drawer on mobile: the bar is just the lockup and a short CTA. */
+  .landing-menu { display: none; }
+  .landing-nav-cta { height: 34px; padding: 0 14px; font-size: 13px; }
+  .landing-nav-cta svg { display: none; }
+  .landing-nav-cta-full { display: none; }
+  .landing-nav-cta-short { display: inline; }
 
   /* The drawer hangs off the bar itself, not the gutter-limited inner row,
    * so it runs edge to edge. */
@@ -1515,9 +1523,11 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-nav-item > a:hover { opacity: 1; }
 }
 
-/* Below this, the CTA plus hamburger no longer both fit without wrapping. */
-@media (max-width: 360px) {
-  .landing-nav-cta { display: none; }
+
+/* Phones: a smaller lockup leaves room for the CTA label. */
+@media (max-width: 480px) {
+  .landing-nav-inner { gap: 12px; }
+  .landing-brand { --landing-brand-height: 18px; }
 }
 
 /* Consent sheet (components/ConsentGate.tsx). Below 900px it is a full-width bottom
@@ -1757,6 +1767,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
    A fixed height keeps the device box, and so the device, from resizing when
    a longer or shorter text swaps in. */
 .work-info {
+  --work-logo-size: 72px;
   flex: none;
   display: grid;
   align-content: start;
@@ -1780,6 +1791,15 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   color: var(--landing-ink);
 }
 .work-word { display: inline-block; }
+/* The logo stands in for the title. --work-logo-k (WorkShowcase) sizes a wide
+   logo down and a square one up, so they read as one size. */
+.work-info-logo {
+  display: block;
+  width: auto;
+  height: calc(var(--work-logo-size) * var(--work-logo-k, 0.84));
+  max-width: min(100%, 240px);
+  object-fit: contain;
+}
 .landing-page .work-info-desc {
   max-width: 52ch;
   margin-top: 12px;
@@ -1814,7 +1834,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
     --work-step: 42svh;
     --work-lift: 12px;
   }
-  .work-info { height: 176px; }
+  .work-info { height: 176px; --work-logo-size: 64px; }
   .work-device-view { margin: clamp(12px, 2.5svh, 28px) 0; }
   .landing-page .work-title { font-size: clamp(28px, 7.6vw, 36px); }
   .landing-page .work-info-title { font-size: clamp(26px, 7vw, 32px); letter-spacing: -0.035em; }
@@ -1826,7 +1846,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
    column so the text still fits under the ring. */
 @media (max-width: 760px) and (max-height: 640px) {
   .work-track { --work-lift: 10px; }
-  .work-info { height: 120px; }
+  .work-info { height: 120px; --work-logo-size: 44px; }
   .landing-page .work-title { font-size: 24px; }
   .landing-page .work-info-title { font-size: 24px; }
   .landing-page .work-info-desc {

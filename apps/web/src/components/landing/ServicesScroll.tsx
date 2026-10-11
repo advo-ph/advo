@@ -23,6 +23,9 @@ interface Chapter {
 const FADE_LINE = 0.62;
 const PHONE_FADE_LINE = 0.68;
 const PHONE = "(max-width: 680px)";
+// On phones the dust bursts once the section top has scrolled this share of
+// the screen height past the top, so the title is read first.
+const BURST_TOP = -0.12;
 
 const chapters: Chapter[] = [
   {
@@ -62,11 +65,87 @@ export default function ServicesScroll() {
       canvas.hidden = true;
     }
 
+    const stage = section.querySelector<HTMLElement>(".landing-services-stage");
+    const copies = [...section.querySelectorAll<HTMLElement>(".landing-services-panel-copy")];
+    const isPhone = () => !!stage && section.classList.contains("is-tall") && matchMedia(PHONE).matches;
+
+    // The scroll timings, built for phone or for wider screens. Built again
+    // when the window crosses between the two, so a page opened at phone
+    // width and then widened does not keep the phone timings.
+    let timelines: Timeline[] = [];
+    let phone: boolean | null = null;
+    const build = () => {
+      timelines.forEach((tl) => tl.revert());
+      phone = isPhone();
+
+      // Phones overlap the chapters so there is no scroll without text (see the
+      // CSS), which makes the section shorter than four screens. There each
+      // morph plays while its chapter rises from the bottom of the screen to
+      // the fade line, and the dust bursts as the title scrolls away.
+      let burstAt = [230, 170];
+      let joinAt = [400, 110];
+      let flowAt = [590, 150];
+      let settleAt = [770, 190];
+      if (phone && stage) {
+        const screen = stage.offsetHeight;
+        const length = section.offsetHeight;
+        const sectionTop = section.getBoundingClientRect().top;
+        // Timeline position where the point `y` px into the section sits at
+        // `share` of the screen height from the top.
+        const when = (y: number, share: number) => ((y + (1 - share) * screen) / length) * 1000;
+        const rise = (y: number) => [when(y, 1), when(y, PHONE_FADE_LINE) - when(y, 1)];
+        const [connect, automate, grow] = copies.map((el) => el.getBoundingClientRect().top - sectionTop);
+        const burst = when(0, BURST_TOP);
+        burstAt = [burst, when(connect, 1) - burst];
+        joinAt = rise(connect);
+        flowAt = rise(automate);
+        settleAt = rise(grow);
+      }
+
+      // One timeline, 1000 units long, scrubbed by the whole section's scroll:
+      // from the section's top entering the screen to its bottom reaching the
+      // bottom of the screen.
+      const master: Timeline = createTimeline({
+        defaults: { ease: "inOutSine" },
+        autoplay: onScroll({
+          target: section,
+          enter: { target: "top", container: "bottom" },
+          leave: { target: "bottom", container: "bottom" },
+          sync: true,
+        }),
+      })
+        .add(state, { burst: [0, 1], duration: burstAt[1] }, burstAt[0])
+        .add(state, { join: [0, 1], duration: joinAt[1] }, joinAt[0])
+        .add(state, { spin: [0, 1], duration: 1000, ease: "linear" }, 0)
+        .add(state, { flow: [0, 1], duration: flowAt[1] }, flowAt[0])
+        .add(state, { settle: [0, 1], duration: settleAt[1] }, settleAt[0]);
+      timelines = [master];
+
+      // Each panel reveals its line, list, and button as it rises into view.
+      // The chapter title stays still.
+      section.querySelectorAll<HTMLElement>(".landing-services-panel").forEach((panel) => {
+        // Phones key the reveal to the text itself, which sits low in a short
+        // panel, so it is whole well before it reaches the fade line.
+        const reveal = createTimeline({
+          defaults: { ease: "outQuart" },
+          autoplay: onScroll({
+            target: phone ? panel.querySelector<HTMLElement>(".landing-services-panel-copy")! : panel,
+            enter: { target: "top", container: "bottom" },
+            leave: { target: "top", container: phone ? "76%" : "top" },
+            sync: true,
+          }),
+        })
+          .add(panel.querySelector("p")!, { opacity: [0, 1], y: [28, 0], duration: 400 }, 300)
+          .add(panel.querySelectorAll("li"), { opacity: [0, 1], y: [20, 0], scale: [0.9, 1], duration: 300, delay: stagger(60) }, 450);
+        const cta = panel.querySelector(".landing-services-cta");
+        if (cta) reveal.add(cta, { opacity: [0, 1], y: [20, 0], duration: 300 }, 650);
+        timelines.push(reveal);
+      });
+    };
+
     // Tall screens put the model in the upper half, so the chapters scroll up
     // through it. Each chapter's text fades out as it rises past the model's
     // bottom edge. Only a mask moves; scrolling stays free.
-    const stage = section.querySelector<HTMLElement>(".landing-services-stage");
-    const copies = [...section.querySelectorAll<HTMLElement>(".landing-services-panel-copy")];
     let fadeFrame = 0;
     const updateFade = () => {
       fadeFrame = 0;
@@ -75,6 +154,7 @@ export default function ServicesScroll() {
       // Same rule the scene uses to pick its layout.
       const tall = box.width / box.height <= 1.1;
       section.classList.toggle("is-tall", tall);
+      if (phone !== null && isPhone() !== phone) build();
       if (!tall) return;
       const line = box.top + box.height * (matchMedia(PHONE).matches ? PHONE_FADE_LINE : FADE_LINE);
       copies.forEach((el) => el.style.setProperty("--landing-fade-line", `${line - el.getBoundingClientRect().top}px`));
@@ -86,70 +166,7 @@ export default function ServicesScroll() {
     window.addEventListener("scroll", queueFade, { passive: true, capture: true });
     window.addEventListener("resize", queueFade);
     updateFade();
-
-    // Phones overlap the chapters so there is no scroll without text (see the
-    // CSS), which makes the section shorter than four screens. There each
-    // morph plays while its chapter rises from the bottom of the screen to
-    // the fade line, and the dust bursts as the title scrolls away.
-    const phone = !!stage && section.classList.contains("is-tall") && matchMedia(PHONE).matches;
-    let burstAt = [230, 170];
-    let joinAt = [400, 110];
-    let flowAt = [590, 150];
-    let settleAt = [770, 190];
-    if (phone) {
-      const screen = stage.offsetHeight;
-      const length = section.offsetHeight;
-      const sectionTop = section.getBoundingClientRect().top;
-      // Timeline position where the point `y` px into the section sits at
-      // `share` of the screen height from the top.
-      const when = (y: number, share: number) => ((y + (1 - share) * screen) / length) * 1000;
-      const rise = (y: number) => [when(y, 1), when(y, PHONE_FADE_LINE) - when(y, 1)];
-      const [connect, automate, grow] = copies.map((el) => el.getBoundingClientRect().top - sectionTop);
-      burstAt = [when(0, 0.08), when(connect, 1) - when(0, 0.08)];
-      joinAt = rise(connect);
-      flowAt = rise(automate);
-      settleAt = rise(grow);
-    }
-
-    // One timeline, 1000 units long, scrubbed by the whole section's scroll:
-    // from the section's top entering the screen to its bottom reaching the
-    // bottom of the screen.
-    const master: Timeline = createTimeline({
-      defaults: { ease: "inOutSine" },
-      autoplay: onScroll({
-        target: section,
-        enter: { target: "top", container: "bottom" },
-        leave: { target: "bottom", container: "bottom" },
-        sync: true,
-      }),
-    })
-      .add(state, { burst: [0, 1], duration: burstAt[1] }, burstAt[0])
-      .add(state, { join: [0, 1], duration: joinAt[1] }, joinAt[0])
-      .add(state, { spin: [0, 1], duration: 1000, ease: "linear" }, 0)
-      .add(state, { flow: [0, 1], duration: flowAt[1] }, flowAt[0])
-      .add(state, { settle: [0, 1], duration: settleAt[1] }, settleAt[0]);
-
-    // Each panel reveals its line, list, and button as it rises into view.
-    // The chapter title stays still.
-    const reveals: Timeline[] = [];
-    section.querySelectorAll<HTMLElement>(".landing-services-panel").forEach((panel) => {
-      // Phones key the reveal to the text itself, which sits low in a short
-      // panel, so it is whole well before it reaches the fade line.
-      const reveal = createTimeline({
-        defaults: { ease: "outQuart" },
-        autoplay: onScroll({
-          target: phone ? panel.querySelector<HTMLElement>(".landing-services-panel-copy")! : panel,
-          enter: { target: "top", container: "bottom" },
-          leave: { target: "top", container: phone ? "76%" : "top" },
-          sync: true,
-        }),
-      })
-        .add(panel.querySelector("p")!, { opacity: [0, 1], y: [28, 0], duration: 400 }, 300)
-        .add(panel.querySelectorAll("li"), { opacity: [0, 1], y: [20, 0], scale: [0.9, 1], duration: 300, delay: stagger(60) }, 450);
-      const cta = panel.querySelector(".landing-services-cta");
-      if (cta) reveal.add(cta, { opacity: [0, 1], y: [20, 0], duration: 300 }, 650);
-      reveals.push(reveal);
-    });
+    build();
 
     // Only draw frames while the section is on screen.
     const io = new IntersectionObserver(([entry]) => scene?.setRunning(entry.isIntersecting), { rootMargin: "100px 0px" });
@@ -172,7 +189,7 @@ export default function ServicesScroll() {
       lightIo.disconnect();
       intro?.classList.remove("is-lit");
       // revert() also drops each timeline's scroll observer.
-      [master, ...reveals].forEach((tl) => tl.revert());
+      timelines.forEach((tl) => tl.revert());
       scene?.dispose();
     };
   }, [reduceMotion]);

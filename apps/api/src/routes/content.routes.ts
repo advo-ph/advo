@@ -104,6 +104,8 @@ const portfolioSchema = z.object({
   previewUrl: z.string().max(500).optional(),
   imageUrl: z.string().max(500).optional(),
   imageUrls: z.array(z.string()).optional(),
+  // Null clears the logo, and the landing shows the title text again.
+  logoUrl: z.string().max(500).nullable().optional(),
   techStack: z.array(z.string()).optional(),
   slug: z.string().max(100).optional(),
   isFeatured: z.boolean().optional(),

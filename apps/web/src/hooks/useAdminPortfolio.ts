@@ -20,6 +20,7 @@ export interface PortfolioProject {
   preview_url: string | null;
   image_url: string | null;
   image_urls: string[] | null;
+  logo_url: string | null;
   tech_stack: string[] | null;
   is_featured: boolean;
   display_order: number;
@@ -37,6 +38,7 @@ function mapPortfolio(p: Record<string, unknown>): PortfolioProject {
     preview_url: (p.previewUrl ?? p.preview_url ?? null) as string | null,
     image_url: (p.imageUrl ?? p.image_url ?? null) as string | null,
     image_urls: (p.imageUrls ?? p.image_urls ?? null) as string[] | null,
+    logo_url: (p.logoUrl ?? p.logo_url ?? null) as string | null,
     tech_stack: (p.techStack ?? p.tech_stack ?? null) as string[] | null,
     is_featured: Boolean(p.isFeatured ?? p.is_featured),
     display_order: Number(p.displayOrder ?? p.display_order ?? 0),
@@ -53,6 +55,8 @@ export interface PortfolioInput {
   preview_url?: string;
   image_url?: string;
   image_urls?: string[];
+  /** Null removes the logo. */
+  logo_url?: string | null;
   tech_stack?: string[];
   is_featured?: boolean;
   display_order?: number;
@@ -69,6 +73,7 @@ function toApiPayload(input: PortfolioInput) {
     previewUrl: input.preview_url || undefined,
     imageUrl: input.image_url || undefined,
     imageUrls: input.image_urls,
+    logoUrl: input.logo_url === undefined ? undefined : input.logo_url || null,
     techStack: input.tech_stack,
     isFeatured: input.is_featured,
     displayOrder: input.display_order,

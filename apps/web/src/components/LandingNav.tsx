@@ -165,12 +165,14 @@ const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps)
         <div className="landing-nav-action">
           {anchorPrefix === "" ? (
             <a className="landing-nav-cta" href="#start" onClick={closeMenu} aria-label="Start a project">
-              <span>Start a project</span>
+              <span className="landing-nav-cta-full">Start a project</span>
+              <span className="landing-nav-cta-short">Start project</span>
               <ArrowUpRight size={16} strokeWidth={1.5} aria-hidden="true" />
             </a>
           ) : (
             <Link className="landing-nav-cta" to={`${anchorPrefix}#start`} onClick={closeMenu} aria-label="Start a project">
-              <span>Start a project</span>
+              <span className="landing-nav-cta-full">Start a project</span>
+              <span className="landing-nav-cta-short">Start project</span>
               <ArrowUpRight size={16} strokeWidth={1.5} aria-hidden="true" />
             </Link>
           )}

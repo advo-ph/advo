@@ -13,6 +13,7 @@ import LandingScrollbar from "@/components/LandingScrollbar";
 import { Reveal, RevealGroup } from "@/components/motion/Reveal";
 import { EASE } from "@/lib/motion";
 import WorkShowcase from "./WorkShowcase";
+import LandingTeam from "./LandingTeam";
 import ProjectInquiry from "./ProjectInquiry";
 import LandingFooter from "./landing-footer";
 import FlowingBackground from "./FlowingBackground";
@@ -280,6 +281,7 @@ const marqueeLogos = [
   { src: "/landing/logo/nokoji.webp", alt: "Nokoji Matcha and Doughnuts", scale: 1.08, width: 720, height: 296 },
   { src: "/landing/logo/felici.webp", alt: "Felici Artisan Gelato", scale: 1.55, width: 720, height: 720 },
   { src: "/landing/logo/felici-italian-cafe.webp", alt: "Felici Italian Café", scale: 1.18, width: 720, height: 345 },
+  { src: "/landing/logo/floodpass.webp", alt: "FloodPASS PH", scale: 1.12, width: 960, height: 139 },
 ] as const;
 
 type NetworkInformation = EventTarget & {
@@ -528,6 +530,7 @@ const LandingPage = () => {
         </section>
       ) : null}
       {shippedProject.length > 0 ? <WorkShowcase project={shippedProject} /> : null}
+      <LandingTeam />
       <ProjectInquiry embedded />
       <LandingFooter />
     </main>

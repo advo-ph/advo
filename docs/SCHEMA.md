@@ -285,6 +285,7 @@ Indexes: `(commission_plan_id)`, `(team_member_id)`, UNIQUE `(commission_plan_id
 | `preview_url`          | VARCHAR(500)        |                                                            |
 | `image_url`            | VARCHAR(500)        |                                                            |
 | `image_urls`           | TEXT[]              | Multi-image support                                        |
+| `logo_url`             | VARCHAR(500)        | Transparent logo shown in place of the title on the landing |
 | `tech_stack`           | TEXT[]              |                                                            |
 | `slug`                 | VARCHAR(100) UNIQUE | URL slug                                                   |
 | `is_featured`          | BOOLEAN             |                                                            |

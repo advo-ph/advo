@@ -655,6 +655,7 @@ export const portfolioProject = pgTable(
     previewUrl: varchar("preview_url", { length: 500 }),
     imageUrl: varchar("image_url", { length: 500 }),
     imageUrls: text("image_urls").array(),
+    logoUrl: varchar("logo_url", { length: 500 }),
     techStack: text("tech_stack").array(),
     slug: varchar("slug", { length: 100 }).unique(),
     isFeatured: boolean("is_featured").notNull().default(true),

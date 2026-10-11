@@ -433,11 +433,231 @@
   .team-tile-role { margin-top: 6px; font-size: clamp(13px, 3.6vw, 15px); }
 }
 
+/* ---------------------------------------------------------------- Landing strip */
+
+/* The roster on the home page (LandingTeam.tsx). Desktop: every member in one
+   row that runs nearly edge to edge, past the page's content width, so ten or
+   more people still get room for a first name. The hovered or focused portrait
+   widens and shows the full name and role; with nothing hovered the first
+   portrait stays open. */
+.landing-team {
+  --landing-team-edge: clamp(16px, 1.6vw, 28px);
+  padding: var(--landing-section-rhythm) var(--landing-team-edge) clamp(56px, 6vw, 96px);
+}
+/* Type comes from .landing-display.landing-solutions-title, the same as the
+   Solutions heading; this rule only places it. */
+.landing-team-title {
+  max-width: none;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.landing-team-strip {
+  display: flex;
+  gap: clamp(6px, 0.6vw, 10px);
+  width: 100%;
+  height: clamp(380px, 34vw, 560px);
+  margin: clamp(36px, 4vw, 56px) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.landing-team-item {
+  flex: 1 1 0;
+  min-width: 0;
+  transition: flex-grow 0.6s var(--landing-ease);
+}
+.landing-team-item:hover,
+.landing-team-item:focus-within,
+.landing-team-strip:not(:hover):not(:focus-within) .landing-team-item:first-child {
+  flex-grow: 2.6;
+}
+
+.landing-team-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 12px;
+  background: var(--landing-ground-soft);
+  color: #ffffff;
+  text-align: left;
+  cursor: pointer;
+}
+.landing-team-card:focus-visible { outline: 2px solid var(--landing-ink); outline-offset: 4px; }
+.landing-team-card:focus:not(:focus-visible) { outline: none; }
+
+.landing-team-frame {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+.landing-team-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 12%;
+  transition: transform 0.8s var(--landing-ease);
+}
+.landing-team-card:hover .landing-team-frame img { transform: scale(1.03); }
+.landing-team-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: #1a1a1a;
+  font-family: var(--advo-font-title);
+  font-size: clamp(40px, 4vw, 64px);
+  color: var(--advo-orange-hex);
+}
+
+/* A dark fade under the caption keeps white text readable on any photo. */
+.landing-team-caption {
+  position: absolute;
+  inset: auto 0 0;
+  display: block;
+  padding: 56px 12px 16px;
+  background: linear-gradient(to top, rgba(6, 6, 6, 0.72), rgba(6, 6, 6, 0));
+}
+.landing-team-name {
+  display: block;
+  font-family: var(--advo-font-title);
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.landing-team-name-short { font-size: clamp(12px, 0.95vw, 16px); }
+.landing-team-name-full {
+  display: none;
+  overflow: hidden;
+  font-size: clamp(18px, 1.5vw, 26px);
+  text-overflow: ellipsis;
+}
+.landing-team-role {
+  display: block;
+  max-height: 0;
+  margin-top: 0;
+  overflow: hidden;
+  opacity: 0;
+  font-family: var(--advo-font-body);
+  font-size: clamp(11px, 0.85vw, 13px);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition: opacity 0.3s var(--landing-ease), margin-top 0.3s var(--landing-ease), max-height 0.3s var(--landing-ease);
+}
+
+/* The open portrait: full name and role, with a wider inset. */
+.landing-team-item:hover .landing-team-caption,
+.landing-team-item:focus-within .landing-team-caption,
+.landing-team-strip:not(:hover):not(:focus-within) .landing-team-item:first-child .landing-team-caption {
+  padding-inline: clamp(14px, 1.4vw, 22px);
+}
+.landing-team-item:hover .landing-team-name-full,
+.landing-team-item:focus-within .landing-team-name-full,
+.landing-team-strip:not(:hover):not(:focus-within) .landing-team-item:first-child .landing-team-name-full {
+  display: block;
+}
+.landing-team-item:hover .landing-team-name-short,
+.landing-team-item:focus-within .landing-team-name-short,
+.landing-team-strip:not(:hover):not(:focus-within) .landing-team-item:first-child .landing-team-name-short {
+  display: none;
+}
+.landing-team-item:hover .landing-team-role,
+.landing-team-item:focus-within .landing-team-role,
+.landing-team-strip:not(:hover):not(:focus-within) .landing-team-item:first-child .landing-team-role {
+  max-height: 2em;
+  margin-top: 8px;
+  opacity: 1;
+  transition-delay: 0.15s;
+}
+
+/* Tablets and phones: one row stops leaving room for a name, so the strip
+   becomes a grid of small portraits with the first name under each. A tap
+   opens the spotlight with the rest. Phones get four per row so the whole team
+   fits on about one screen. */
+@media (max-width: 1200px) {
+  .landing-team { padding-inline: var(--landing-gutter); }
+  .landing-team-strip {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 22px 10px;
+    height: auto;
+    margin-top: 32px;
+  }
+  .landing-team-item,
+  .landing-team-item:hover,
+  .landing-team-item:focus-within,
+  .landing-team-strip:not(:hover):not(:focus-within) .landing-team-item:first-child {
+    flex: 0 0 calc((100% - 5 * 10px) / 6);
+  }
+  .landing-team-card {
+    height: auto;
+    overflow: visible;
+    background: none;
+    color: var(--landing-ink);
+    border-radius: 10px;
+  }
+  .landing-team-frame {
+    position: relative;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    border-radius: 10px;
+    background: var(--landing-ground-soft);
+  }
+  .landing-team-fallback { font-size: 32px; }
+  .landing-team-caption,
+  .landing-team-item:hover .landing-team-caption,
+  .landing-team-item:focus-within .landing-team-caption,
+  .landing-team-strip:not(:hover):not(:focus-within) .landing-team-item:first-child .landing-team-caption {
+    position: static;
+    padding: 8px 0 0;
+    background: none;
+    text-align: center;
+  }
+  .landing-team-name-short,
+  .landing-team-item .landing-team-name-short,
+  .landing-team-strip:not(:hover):not(:focus-within) .landing-team-item:first-child .landing-team-name-short {
+    display: inline;
+    font-size: 14px;
+  }
+  .landing-team-item .landing-team-name-full,
+  .landing-team-strip:not(:hover):not(:focus-within) .landing-team-item:first-child .landing-team-name-full,
+  .landing-team-item .landing-team-role,
+  .landing-team-strip:not(:hover):not(:focus-within) .landing-team-item:first-child .landing-team-role {
+    display: none;
+  }
+  .landing-team-card:hover .landing-team-frame img { transform: none; }
+}
+
+@media (max-width: 680px) {
+  .landing-team-strip { gap: 18px 8px; margin-top: 28px; }
+  .landing-team-item,
+  .landing-team-item:hover,
+  .landing-team-item:focus-within,
+  .landing-team-strip:not(:hover):not(:focus-within) .landing-team-item:first-child {
+    flex-basis: calc((100% - 3 * 8px) / 4);
+  }
+  .landing-team-name-short,
+  .landing-team-item .landing-team-name-short,
+  .landing-team-strip:not(:hover):not(:focus-within) .landing-team-item:first-child .landing-team-name-short {
+    font-size: 13px;
+  }
+}
+
 /* ---------------------------------------------------------------- Reduced motion */
 
 /* The shell's .is-reduce-motion covers the page; the overlay is portalled out
    of it and carries its own copy of the class. */
-.landing-page.is-reduce-motion .team-tile-frame img { transition: none; }
+.landing-page.is-reduce-motion .team-tile-frame img,
+.landing-page.is-reduce-motion .landing-team-item,
+.landing-page.is-reduce-motion .landing-team-frame img,
+.landing-page.is-reduce-motion .landing-team-role { transition: none; }
 .landing-page.is-reduce-motion .team-tile:hover .team-tile-frame img { transform: none; }
 .team-scrim.is-reduce-motion {
   background: rgba(6, 6, 6, 0.94);
@@ -447,6 +667,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .team-tile-frame img,
+  .landing-team-item,
+  .landing-team-frame img,
+  .landing-team-role,
   .team-spotlight-links a,
   .team-spotlight-close,
   .team-spotlight-arrow,

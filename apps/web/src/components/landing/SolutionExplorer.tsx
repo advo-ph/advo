@@ -1,9 +1,4 @@
-import {
-  type KeyboardEvent as ReactKeyboardEvent,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { type KeyboardEvent as ReactKeyboardEvent, useState } from "react";
 import { AnimatePresence, motion, type Transition, type Variants } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { Reveal } from "@/components/motion/Reveal";
@@ -26,8 +21,8 @@ interface SolutionExplorerProps {
 
 const ID_PREFIX = "solutions-industry";
 
-/* One spring for everything that moves with the selection: the pill, the card
- * height, and the copy. Shared so the bar and the card land on the same beat. */
+/* One spring for everything that moves with the selection: the pill and the
+ * copy. Shared so the bar and the card land on the same beat. */
 const SPRING: Transition = { type: "spring", stiffness: 380, damping: 36, mass: 0.9 };
 
 /* The new photo wipes in from the side the visitor moved toward while the old
@@ -72,6 +67,36 @@ const lineVariants: Variants = {
 
 const still: Variants = { enter: {}, center: {}, exit: {} };
 
+/* The text of one vertical. Used for the live copy and for the hidden copies
+ * that hold the card at the height of the longest vertical. */
+const SolutionCopy = ({ item, line }: { item: SolutionItem; line?: Variants }) => (
+  <>
+    <motion.h3 variants={line}>{item.heading}</motion.h3>
+    <motion.p variants={line} className="landing-solution-lede">{item.copy}</motion.p>
+    <ul className="landing-solution-offer">
+      {item.offer.map((offer) => (
+        <motion.li variants={line} key={offer.name}>
+          <span className="landing-industry-offer-name">{offer.name}</span>
+          <span className="landing-industry-offer-copy">{offer.copy}</span>
+        </motion.li>
+      ))}
+    </ul>
+    {item.href ? (
+      <motion.div variants={line} className="landing-solution-actions">
+        <a
+          className="landing-solution-more"
+          href={item.href}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span>See more</span>
+          <ArrowUpRight size={17} strokeWidth={1.5} aria-hidden="true" />
+        </a>
+      </motion.div>
+    ) : null}
+  </>
+);
+
 /**
  * Phone view of the Solutions section: one card that swaps between the
  * verticals, with the selector docked under it. The selector stays reachable
@@ -80,21 +105,7 @@ const still: Variants = { enter: {}, center: {}, exit: {} };
 const SolutionExplorer = ({ items, reduceMotion }: SolutionExplorerProps) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [direction, setDirection] = useState(1);
-  const [bodyHeight, setBodyHeight] = useState<number | "auto">("auto");
-  const measureRef = useRef<HTMLDivElement>(null);
   const current = items[activeIndex] ?? items[0];
-
-  // The copy differs in length per vertical. Track the live height so the card
-  // grows or shrinks on the spring instead of jumping.
-  useLayoutEffect(() => {
-    const node = measureRef.current;
-    if (!node) return;
-    const observer = new ResizeObserver(([entry]) => {
-      if (entry) setBodyHeight(entry.borderBoxSize[0]?.blockSize ?? entry.contentRect.height);
-    });
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
 
   if (!current) return null;
 
@@ -147,50 +158,29 @@ const SolutionExplorer = ({ items, reduceMotion }: SolutionExplorerProps) => {
           </AnimatePresence>
         </div>
 
-        <motion.div
-          className="landing-solution-body"
-          initial={false}
-          animate={{ height: bodyHeight }}
-          transition={motionOn ? SPRING : { duration: 0 }}
-        >
-          <div className="landing-solution-measure" ref={measureRef}>
-            <AnimatePresence mode="popLayout" initial={false} custom={direction}>
-              <motion.div
-                key={current.key}
-                className="landing-solution-copy"
-                custom={direction}
-                variants={copy}
-                initial="enter"
-                animate="center"
-                exit="exit"
-              >
-                <motion.h3 variants={line}>{current.heading}</motion.h3>
-                <motion.p variants={line} className="landing-solution-lede">{current.copy}</motion.p>
-                <ul className="landing-solution-offer">
-                  {current.offer.map((offer) => (
-                    <motion.li variants={line} key={offer.name}>
-                      <span className="landing-industry-offer-name">{offer.name}</span>
-                      <span className="landing-industry-offer-copy">{offer.copy}</span>
-                    </motion.li>
-                  ))}
-                </ul>
-                {current.href ? (
-                  <motion.div variants={line} className="landing-solution-actions">
-                    <a
-                      className="landing-solution-more"
-                      href={current.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <span>See more</span>
-                      <ArrowUpRight size={17} strokeWidth={1.5} aria-hidden="true" />
-                    </a>
-                  </motion.div>
-                ) : null}
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </motion.div>
+        {/* The copy differs in length per vertical. Every vertical sits hidden in
+            the same grid cell, so the card is always as tall as the longest one
+            and does not change height on a switch. */}
+        <div className="landing-solution-body">
+          {items.map((item) => (
+            <div className="landing-solution-copy landing-solution-sizer" aria-hidden="true" key={item.key}>
+              <SolutionCopy item={item} />
+            </div>
+          ))}
+          <AnimatePresence mode="popLayout" initial={false} custom={direction}>
+            <motion.div
+              key={current.key}
+              className="landing-solution-copy"
+              custom={direction}
+              variants={copy}
+              initial="enter"
+              animate="center"
+              exit="exit"
+            >
+              <SolutionCopy item={current} line={line} />
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
 
       <div

@@ -22,6 +22,8 @@ export interface ShippedProject {
   live_url: string | null;
   screenshotUrl: string | null;
   screenshotSrcSet?: string;
+  /** A transparent logo shown in place of the title, when the project has one. */
+  logoUrl: string | null;
   display_order: number;
 }
 
@@ -47,6 +49,7 @@ function mapShipped(row: Record<string, unknown>): ShippedProject {
     live_url: (((row.previewUrl ?? row.preview_url) as string) || null),
     screenshotUrl,
     screenshotSrcSet: screenshotUrl ? getResponsiveImageSrcSet(screenshotUrl) : undefined,
+    logoUrl: ((row.logoUrl ?? row.logo_url) as string) || null,
     display_order: Number(row.displayOrder ?? row.display_order ?? 0),
   };
 }

@@ -22,6 +22,7 @@ export interface SceneState {
 const FLOOR = -1.9;
 const GROW_CYCLE = 8; // seconds per build, grow, hold, sink loop
 const INTRO_Y = -2.2; // where the dot sits, below the intro title
+const PHONE_INTRO_Y = -3.6; // phones drop it lower, clear of the bigger title
 const BAR_HEIGHTS = [0.7, 1.1, 1.6, 2.2, 2.9];
 const BAR_W = 0.56;
 const BAR_GAP = 0.86;
@@ -253,7 +254,7 @@ export function createServicesScene(canvas: HTMLCanvasElement, state: SceneState
   // Smoothed copy of state, so fast scroll flicks still glide.
   const shown: SceneState = { ...state };
   const pointer = { x: 0, y: 0 };
-  const layout = { x: 0, y: 0, scale: 1 };
+  const layout = { x: 0, y: 0, scale: 1, introY: INTRO_Y };
   const clock = new THREE.Clock();
   // Seconds since the chart landed. Restarts when you scroll back up, so
   // the bars always build from the first step when Grow comes into view.
@@ -275,6 +276,7 @@ export function createServicesScene(canvas: HTMLCanvasElement, state: SceneState
     layout.x = wide ? 2.9 : 0;
     layout.y = wide ? 0 : 1.9;
     layout.scale = wide ? 1 : 0.56;
+    layout.introY = !wide && w <= 680 ? PHONE_INTRO_Y : INTRO_Y;
   }
 
   function render() {
@@ -294,7 +296,7 @@ export function createServicesScene(canvas: HTMLCanvasElement, state: SceneState
 
     // The dot starts centered under the title, then moves to its side.
     const x = layout.x * shown.join;
-    const y = INTRO_Y + (layout.y - INTRO_Y) * shown.join;
+    const y = layout.introY + (layout.y - layout.introY) * shown.join;
     model.position.set(x, y, 0);
     model.scale.setScalar(layout.scale);
     // Always spinning. The chart turns a little faster so its bars show depth.
