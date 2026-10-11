@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { ArrowUpRight, Menu, X } from "lucide-react";
 
 interface NavLink {
   label: string;
@@ -163,6 +163,17 @@ const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps)
         </nav>
 
         <div className="landing-nav-action">
+          {anchorPrefix === "" ? (
+            <a className="landing-nav-cta" href="#start" onClick={closeMenu} aria-label="Start a project">
+              <span>Start a project</span>
+              <ArrowUpRight size={16} strokeWidth={1.5} aria-hidden="true" />
+            </a>
+          ) : (
+            <Link className="landing-nav-cta" to={`${anchorPrefix}#start`} onClick={closeMenu} aria-label="Start a project">
+              <span>Start a project</span>
+              <ArrowUpRight size={16} strokeWidth={1.5} aria-hidden="true" />
+            </Link>
+          )}
           <button
             type="button"
             className="landing-menu"
