@@ -25,11 +25,11 @@ const BUDGET_RANGES = [
 ];
 
 const PROJECT_TYPES = [
-  "Landing Page",
-  "E-commerce",
-  "SaaS Platform",
-  "Web Application",
-  "Mobile App",
+  "Business Website",
+  "Online Store",
+  "Members App",
+  "Queueing System",
+  "Ordering System",
   "Software and Hardware",
 ];
 

@@ -32,7 +32,7 @@ const chapters: Chapter[] = [
   },
   {
     title: "Automate",
-    line: "AI that answers, books, and follows up.",
+    line: "AI answers calls, books clients, and follows up.",
     chips: ["Calls", "Bookings", "Website chat", "Follow-ups"],
   },
   {
