@@ -1638,6 +1638,10 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-band { padding: 0 16px; }
   .landing-band-inner { width: 100%; gap: 40px; }
   .landing-footer { padding-inline: 20px; }
+  .landing-page .landing-footer-tagline {
+    font-size: clamp(9px, 3.2vw, 22px);
+    white-space: nowrap;
+  }
   /* Five short link columns pair up on phones. Stacking them one per row turns
    * the footer into a scroll of its own. */
   .landing-footer-grid { grid-template-columns: repeat(2, 1fr); gap: 28px 20px; }
