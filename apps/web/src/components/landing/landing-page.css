@@ -557,13 +557,30 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   text-align: center;
   pointer-events: none;
 }
-.landing-services-intro h2 {
-  --landing-reveal: 0;
+/* The glow sits in the same grid cell as the title, so both wrap the same. */
+.landing-services-title { display: grid; }
+.landing-services-title > * { grid-area: 1 / 1; }
+.landing-services-intro h2,
+.landing-services-glow {
   max-width: 14ch;
   font-size: clamp(44px, 7.2vw, 124px);
+  font-weight: 400;
   line-height: 0.98;
   letter-spacing: -0.05em;
   text-wrap: balance;
+}
+/* Its text-shadow is drawn once; only its opacity moves, on the GPU. The
+   blur is 64px to match the old drop-shadow(32px): that blur is a standard
+   deviation, a text-shadow blur is twice one. */
+.landing-services-glow {
+  color: transparent;
+  text-shadow: 0 0 64px rgba(230, 122, 58, 0.42);
+  opacity: 0;
+  transition: opacity 2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.landing-services-intro.is-lit .landing-services-glow { opacity: 1; }
+.landing-services-intro h2 {
+  --landing-reveal: 0;
   color: transparent;
   background: radial-gradient(
     closest-side at 50% 50%,
@@ -572,12 +589,12 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   );
   -webkit-background-clip: text;
   background-clip: text;
-  filter: drop-shadow(0 0 calc(var(--landing-reveal) * 32px) rgba(230, 122, 58, 0.42));
   transition: --landing-reveal 2s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .landing-services-intro.is-lit h2 { --landing-reveal: 1; }
 .landing-services.is-static .landing-services-intro { min-height: 0; padding-block: 96px 24px; }
 .landing-services.is-static .landing-services-intro h2 { --landing-reveal: 1; transition: none; }
+.landing-services.is-static .landing-services-glow { opacity: 1; transition: none; }
 .landing-services-stage-wrap {
   position: absolute;
   inset: 0;

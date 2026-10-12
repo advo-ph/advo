@@ -219,14 +219,16 @@ const fragmentShader = /* glsl */ `
 
 export function createServicesScene(canvas: HTMLCanvasElement, state: SceneState) {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: true, powerPreference: "high-performance" });
-  const pixelRatio = Math.min(window.devicePixelRatio, 2);
+  const small = Math.min(window.innerWidth, window.innerHeight) < 700;
+  // Phones draw at 1.5x. The points are soft glows, so the extra pixels of a
+  // 2x or 3x screen cost frame time and look no sharper.
+  const pixelRatio = Math.min(window.devicePixelRatio, small ? 1.5 : 2);
   renderer.setPixelRatio(pixelRatio);
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 60);
   camera.position.set(0, 0.6, 11);
 
-  const small = Math.min(window.innerWidth, window.innerHeight) < 700;
   const geometry = buildGeometry(small ? 4200 : 7500);
   const uniforms = {
     uTime: { value: 0 },
@@ -253,6 +255,7 @@ export function createServicesScene(canvas: HTMLCanvasElement, state: SceneState
 
   // Smoothed copy of state, so fast scroll flicks still glide.
   const shown: SceneState = { ...state };
+  const keys = Object.keys(shown) as (keyof SceneState)[];
   const pointer = { x: 0, y: 0 };
   const layout = { x: 0, y: 0, scale: 1, introY: INTRO_Y };
   const clock = new THREE.Clock();
@@ -263,6 +266,14 @@ export function createServicesScene(canvas: HTMLCanvasElement, state: SceneState
   let last = 0;
   let frame = 0;
   let running = false;
+  let disposed = false;
+  // The first frame does slow one-time setup (shader, point buffers). Draw it
+  // off screen while the page is idle, so it does not stall the scroll.
+  const warm = () => {
+    if (!disposed && !running) renderer.render(scene, camera);
+  };
+  if ("requestIdleCallback" in window) requestIdleCallback(warm, { timeout: 3000 });
+  else setTimeout(warm, 300);
 
   function resize() {
     const { clientWidth: w, clientHeight: h } = canvas;
@@ -285,7 +296,9 @@ export function createServicesScene(canvas: HTMLCanvasElement, state: SceneState
     last = t;
     growTime = shown.settle > 0.9 ? growTime + dt : shown.settle < 0.6 ? 0 : growTime;
     uniforms.uGrow.value = growTime;
-    for (const k of Object.keys(shown) as (keyof SceneState)[]) shown[k] += (state[k] - shown[k]) * 0.08;
+    // Eased by time, not by frame, so a slow frame does not slow the morph.
+    const ease = 1 - Math.pow(0.92, dt * 60);
+    for (const k of keys) shown[k] += (state[k] - shown[k]) * ease;
     const settle = shown.settle * shown.settle * (3 - 2 * shown.settle);
 
     uniforms.uTime.value = t;
@@ -332,6 +345,7 @@ export function createServicesScene(canvas: HTMLCanvasElement, state: SceneState
     },
     dispose() {
       running = false;
+      disposed = true;
       cancelAnimationFrame(frame);
       ro.disconnect();
       window.removeEventListener("pointermove", onPointer);

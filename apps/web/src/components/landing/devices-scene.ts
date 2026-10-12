@@ -468,12 +468,19 @@ export function createDevicesScene(canvas: HTMLCanvasElement, frameBox: HTMLElem
   const phonePivot = new THREE.Group();
   phonePivot.add(phone);
   scene.add(macPivot, phonePivot);
+  // Build every shader now, at page load. Built on the first frame instead,
+  // they stall the scroll while the section above is still animating.
+  renderer.compile(scene, camera);
 
-  // Screenshots
+  // Screenshots. Each one goes to the GPU when the page is idle, for the
+  // same reason, not on the frame its screen first shows.
   const loader = new THREE.TextureLoader();
   loader.setCrossOrigin("anonymous");
   const maxAniso = renderer.capabilities.getMaxAnisotropy();
   const textures: (THREE.Texture | null)[] = shots.map(() => null);
+  const whenIdle = (fn: () => void) =>
+    "requestIdleCallback" in window ? requestIdleCallback(fn, { timeout: 3000 }) : setTimeout(fn, 300);
+  let disposed = false;
   let dirty = true;
   shots.forEach((shot, i) => {
     loader.load(
@@ -484,6 +491,9 @@ export function createDevicesScene(canvas: HTMLCanvasElement, frameBox: HTMLElem
         tex.generateMipmaps = true;
         textures[i] = tex;
         dirty = true;
+        whenIdle(() => {
+          if (!disposed) renderer.initTexture(tex);
+        });
       },
       undefined,
       () => {
@@ -621,6 +631,11 @@ export function createDevicesScene(canvas: HTMLCanvasElement, frameBox: HTMLElem
 
   let running = false;
   let raf = 0;
+  // The first frame does slow one-time setup. Draw it off screen while the
+  // page is idle, so it does not stall the scroll of the section above.
+  whenIdle(() => {
+    if (!disposed && !running && width && height) frame();
+  });
   const tick = () => {
     raf = 0;
     if (!running) return;
@@ -645,6 +660,7 @@ export function createDevicesScene(canvas: HTMLCanvasElement, frameBox: HTMLElem
     },
     dispose() {
       running = false;
+      disposed = true;
       if (raf) cancelAnimationFrame(raf);
       ro.disconnect();
       scene.traverse((obj) => {

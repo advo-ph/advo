@@ -26,6 +26,7 @@ const PHONE = "(max-width: 680px)";
 // On phones the dust bursts once the section top has scrolled this share of
 // the screen height past the top, so the title is read first.
 const BURST_TOP = -0.12;
+const TITLE = "Prepare your business for AI modernization";
 
 const chapters: Chapter[] = [
   {
@@ -66,8 +67,10 @@ export default function ServicesScroll() {
     }
 
     const stage = section.querySelector<HTMLElement>(".landing-services-stage");
+    const stageWrap = section.querySelector<HTMLElement>(".landing-services-stage-wrap");
     const copies = [...section.querySelectorAll<HTMLElement>(".landing-services-panel-copy")];
-    const isPhone = () => !!stage && section.classList.contains("is-tall") && matchMedia(PHONE).matches;
+    const phoneQuery = matchMedia(PHONE);
+    const isPhone = () => !!stage && section.classList.contains("is-tall") && phoneQuery.matches;
 
     // The scroll timings, built for phone or for wider screens. Built again
     // when the window crosses between the two, so a page opened at phone
@@ -77,6 +80,7 @@ export default function ServicesScroll() {
     const build = () => {
       timelines.forEach((tl) => tl.revert());
       phone = isPhone();
+      stageWrap?.style.removeProperty("bottom");
 
       // Phones overlap the chapters so there is no scroll without text (see the
       // CSS), which makes the section shorter than four screens. There each
@@ -100,6 +104,10 @@ export default function ServicesScroll() {
         joinAt = rise(connect);
         flowAt = rise(automate);
         settleAt = rise(grow);
+        // The model stops following once the Grow title reaches the fade line,
+        // so the section scrolls away with Grow whole instead of fading it.
+        const unstick = grow + (1 - PHONE_FADE_LINE) * screen;
+        stageWrap?.style.setProperty("bottom", `${Math.max(0, length - unstick)}px`);
       }
 
       // One timeline, 1000 units long, scrubbed by the whole section's scroll:
@@ -147,6 +155,7 @@ export default function ServicesScroll() {
     // through it. Each chapter's text fades out as it rises past the model's
     // bottom edge. Only a mask moves; scrolling stays free.
     let fadeFrame = 0;
+    const fadeAt: number[] = [];
     const updateFade = () => {
       fadeFrame = 0;
       if (!stage) return;
@@ -156,8 +165,20 @@ export default function ServicesScroll() {
       section.classList.toggle("is-tall", tall);
       if (phone !== null && isPhone() !== phone) build();
       if (!tall) return;
-      const line = box.top + box.height * (matchMedia(PHONE).matches ? PHONE_FADE_LINE : FADE_LINE);
-      copies.forEach((el) => el.style.setProperty("--landing-fade-line", `${line - el.getBoundingClientRect().top}px`));
+      const line = box.top + box.height * (phoneQuery.matches ? PHONE_FADE_LINE : FADE_LINE);
+      // The mask looks the same anywhere past either end of its 6svh band, so
+      // the line is clamped there. Read every box first, then write only what
+      // changed: a chapter repaints only while it crosses the band.
+      const band = box.height * 0.06;
+      const next = copies.map((el) => {
+        const { top, height } = el.getBoundingClientRect();
+        return Math.round(Math.min(Math.max(line - top, 0), height + band));
+      });
+      next.forEach((at, i) => {
+        if (at === fadeAt[i]) return;
+        fadeAt[i] = at;
+        copies[i].style.setProperty("--landing-fade-line", `${at}px`);
+      });
     };
     const queueFade = () => {
       if (!fadeFrame) fadeFrame = requestAnimationFrame(updateFade);
@@ -185,6 +206,7 @@ export default function ServicesScroll() {
       window.removeEventListener("resize", queueFade);
       cancelAnimationFrame(fadeFrame);
       section.classList.remove("is-tall");
+      stageWrap?.style.removeProperty("bottom");
       io.disconnect();
       lightIo.disconnect();
       intro?.classList.remove("is-lit");
@@ -211,7 +233,12 @@ export default function ServicesScroll() {
       )}
 
       <div className="landing-services-intro" ref={introRef}>
-        <h2 id="services-heading">Prepare your business for AI modernization</h2>
+        <div className="landing-services-title">
+          {/* The glow is a still copy behind the title, so it fades in by
+              opacity alone instead of blurring the title on every frame. */}
+          <span className="landing-services-glow" aria-hidden="true">{TITLE}</span>
+          <h2 id="services-heading">{TITLE}</h2>
+        </div>
       </div>
 
       {chapters.map((c, i) => (
