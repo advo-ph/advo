@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import LandingShell from "@/components/landing/landing-shell";
 import TeamMemberSpotlight, { type TeamMember } from "@/components/team/TeamMemberSpotlight";
+import { preloadSpotlightPortrait } from "@/components/team/spotlight-portrait";
 import "@/components/team/team-page.css";
 import { fetchTeam } from "@/hooks/useAdminTeam";
 import { getResponsiveImageSrcSet } from "@/lib/image-urls";
@@ -50,7 +51,12 @@ const Team = () => {
               const portrait = member.preview_image_url || member.avatar_url;
               return (
                 <li key={member.team_member_id}>
-                  <button type="button" className="team-tile" onClick={() => setActiveIndex(index)}>
+                  <button
+                    type="button"
+                    className="team-tile"
+                    onPointerDown={() => preloadSpotlightPortrait(member)}
+                    onClick={() => setActiveIndex(index)}
+                  >
                     <span className="team-tile-frame">
                       {portrait ? (
                         <img

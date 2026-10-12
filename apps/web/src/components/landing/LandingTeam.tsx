@@ -2,6 +2,7 @@ import { useCallback, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Reveal } from "@/components/motion/Reveal";
 import TeamMemberSpotlight, { type TeamMember } from "@/components/team/TeamMemberSpotlight";
+import { preloadSpotlightPortrait } from "@/components/team/spotlight-portrait";
 import "@/components/team/team-page.css";
 import { fetchTeam } from "@/hooks/useAdminTeam";
 import { getResponsiveImageSrcSet } from "@/lib/image-urls";
@@ -42,6 +43,7 @@ const LandingTeam = () => {
               <button
                 type="button"
                 className="landing-team-card"
+                onPointerDown={() => preloadSpotlightPortrait(member)}
                 onClick={() => setActiveIndex(index)}
                 aria-label={`${member.name}, ${member.role}`}
               >

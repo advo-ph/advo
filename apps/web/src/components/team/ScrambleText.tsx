@@ -70,21 +70,22 @@ const ScrambleText = ({
 
     const tick = (now: number) => {
       if (!startedAt) startedAt = now;
-      if (now - churnedAt >= CHURN_MS) {
-        churnedAt = now;
-        glyphsRef.current = glyphsRef.current.map(randomGlyph);
-      }
-
       const elapsed = now - startedAt - delay;
       const progress = elapsed <= 0 ? 0 : Math.min(elapsed / duration, 1);
-      const head = progress * chars.length;
 
-      setDisplay(
-        chars
-          // Spaces stay spaces so the word shape survives the whole transition.
-          .map((char, i) => (char === " " ? " " : i < head ? char : glyphsRef.current[i]))
-          .join(""),
-      );
+      // Nothing on screen changes between churns, so the line only re-renders
+      // on the churn clock, plus once at the end to land the real string.
+      if (now - churnedAt >= CHURN_MS || progress === 1) {
+        churnedAt = now;
+        glyphsRef.current = glyphsRef.current.map(randomGlyph);
+        const head = progress * chars.length;
+        setDisplay(
+          chars
+            // Spaces stay spaces so the word shape survives the whole transition.
+            .map((char, i) => (char === " " ? " " : i < head ? char : glyphsRef.current[i]))
+            .join(""),
+        );
+      }
 
       if (progress < 1) frame = requestAnimationFrame(tick);
     };

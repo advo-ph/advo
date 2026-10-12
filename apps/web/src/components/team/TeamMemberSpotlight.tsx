@@ -1,8 +1,29 @@
-import { useCallback, useEffect, useRef, type KeyboardEvent, type MouseEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useSyncExternalStore,
+  type KeyboardEvent,
+  type MouseEvent,
+  type RefObject,
+} from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import {
+  AnimatePresence,
+  animate,
+  motion,
+  useMotionValue,
+  usePresence,
+  useReducedMotion,
+  useTransform,
+  type AnimationPlaybackControls,
+  type MotionValue,
+  type PanInfo,
+} from "framer-motion";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import ScrambleText from "./ScrambleText";
+import { PORTRAIT_SIZES, portraitOf } from "./spotlight-portrait";
 import { getResponsiveImageSrcSet } from "@/lib/image-urls";
 
 export interface TeamMember {
@@ -27,29 +48,379 @@ interface TeamMemberSpotlightProps {
 /** Same curve as --landing-ease, in the form framer needs. */
 const EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
 
+/** Must match the phone breakpoint in team-page.css: below it the portraits
+    become a carousel with the neighbours peeking in from the sides. */
+const COMPACT_QUERY = "(max-width: 900px)";
+
+/** Centre-to-centre distance between portraits, in portrait widths. On a
+    phone the neighbours sit close and shrink so they peek in at the edges; on
+    desktop the stage clips and the next portrait slides in from outside it. */
+const PEEK_STEP = 0.96;
+const SLIDE_STEP = 1.08;
+const PEEK_SHRINK = 0.18;
+/** How far a neighbour fades. On the dark scrim, fading reads as dimming, and
+    opacity on the slide's own layer is free where an overlay would repaint. */
+const PEEK_FADE = 0.62;
+
+/** Wait before the copy decrypts on open, so it starts once the wave is under it. */
+const OPEN_LEAD_MS = 220;
+
+/** Critically damped: the carousel settles without a bounce. */
+const SLIDE_SPRING = { type: "spring", stiffness: 300, damping: 35, mass: 1 } as const;
+
+const mod = (value: number, count: number) => ((value % count) + count) % count;
+
+/** Signed distance around a ring of `count` slots, in (-count/2, count/2]. */
+const ringOffset = (value: number, count: number) => {
+  const wrapped = mod(value, count);
+  return wrapped > count / 2 ? wrapped - count : wrapped;
+};
+
+const subscribeCompact = (onChange: () => void) => {
+  const query = window.matchMedia(COMPACT_QUERY);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+};
+const readCompact = () => window.matchMedia(COMPACT_QUERY).matches;
+const useCompact = () => useSyncExternalStore(subscribeCompact, readCompact, () => false);
+
+/* ---------------------------------------------------------------- Wave */
+
+const WAVE_POINTS = 72;
+const WAVE_SAMPLES = 18;
+const WAVE_OPEN_MS = 820;
+/** The close plays the same wave backwards, this much faster. */
+const WAVE_CLOSE_RATE = 1.7;
+
+type WaveFrame = { clipPath: string; opacity?: number; offset: number };
+
+/** Low harmonics only, so neighbouring directions move together and the edge
+    reads as one liquid front rather than a star. Roughly in [-1, 1]. */
+const waveNoise = (theta: number, phase: number[]) =>
+  0.55 * Math.sin(2 * theta + phase[0]) +
+  0.3 * Math.sin(3 * theta + phase[1]) +
+  0.15 * Math.sin(5 * theta + phase[2]);
+
+/**
+ * Keyframes for a polygon that grows from the middle of the screen to past its
+ * corners. Every direction has its own arrival time, so the shape bulges ahead
+ * in some directions and lags in others, and a small ripple on the edge dies
+ * away as it lands. `head` brings every arrival forward, which is what lets the
+ * orange front run ahead of the dark body. The front's shape is turned a little
+ * (`twist`), so the band between them is thick in some directions and thin in
+ * others.
+ */
+const waveFrames = (phase: number[], head: number, twist: number, fadeOut: boolean): WaveFrame[] => {
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight / 2;
+  const reach = Math.hypot(cx, cy) * 1.06;
+  const vertices = Array.from({ length: WAVE_POINTS }, (_, index) => {
+    const theta = (index / WAVE_POINTS) * Math.PI * 2;
+    return { theta, arrive: (0.72 + 0.22 * waveNoise(theta + twist, phase)) * (1 - head) };
+  });
+
+  return Array.from({ length: WAVE_SAMPLES + 1 }, (_, sample) => {
+    const t = sample / WAVE_SAMPLES;
+    const points = vertices.map(({ theta, arrive }) => {
+      const local = Math.min(t / arrive, 1);
+      const eased = 1 - (1 - local) ** 3;
+      const ripple = 1 + 0.05 * Math.sin(4 * theta + phase[3] + t * 7) * (1 - eased);
+      const radius = reach * eased * ripple;
+      return `${(cx + radius * Math.cos(theta)).toFixed(1)}px ${(cy + radius * Math.sin(theta)).toFixed(1)}px`;
+    });
+    const frame: WaveFrame = { clipPath: `polygon(${points.join(", ")})`, offset: t };
+    if (fadeOut) frame.opacity = t < 0.55 ? 1 : 1 - (t - 0.55) / 0.45;
+    return frame;
+  });
+};
+
+/**
+ * The open: an orange front and the dark scrim behind it spread out from the
+ * middle of the screen. The close plays the same animation backwards, and the
+ * overlay stays mounted until it has finished.
+ */
+const SpotlightWave = () => {
+  const frontRef = useRef<HTMLSpanElement>(null);
+  const bodyRef = useRef<HTMLSpanElement>(null);
+  const waves = useRef<Animation[]>([]);
+  const [isPresent, safeToRemove] = usePresence();
+
+  useLayoutEffect(() => {
+    const front = frontRef.current;
+    const body = bodyRef.current;
+    if (!front || !body || typeof body.animate !== "function") return;
+
+    const phase = Array.from({ length: 4 }, () => Math.random() * Math.PI * 2);
+    const timing: KeyframeAnimationOptions = { duration: WAVE_OPEN_MS, easing: "linear", fill: "both" };
+    waves.current = [
+      front.animate(waveFrames(phase, 0.16, 0.35, true), timing),
+      body.animate(waveFrames(phase, 0, 0, false), timing),
+    ];
+
+    // The polygon is drawn in pixels for this viewport. A rotation or resize
+    // drops it, which leaves the scrim covering the whole screen as it should.
+    const drop = () => {
+      waves.current.forEach((wave) => wave.cancel());
+      waves.current = [];
+      front.style.opacity = "0";
+    };
+    window.addEventListener("resize", drop);
+    return () => {
+      window.removeEventListener("resize", drop);
+      waves.current.forEach((wave) => wave.cancel());
+    };
+  }, []);
+
+  useEffect(() => {
+    const running = waves.current;
+    if (isPresent) {
+      // Reopened mid-close: play forwards again from wherever the close got to.
+      running.forEach((wave) => {
+        wave.onfinish = null;
+        wave.updatePlaybackRate(1);
+        wave.play();
+      });
+      return;
+    }
+    if (running.length === 0) {
+      safeToRemove?.();
+      return;
+    }
+    running.forEach((wave) => wave.updatePlaybackRate(-WAVE_CLOSE_RATE));
+    const body = running[running.length - 1];
+    body.onfinish = () => safeToRemove?.();
+    running.forEach((wave) => wave.play());
+  }, [isPresent, safeToRemove]);
+
+  return (
+    <>
+      <span ref={frontRef} className="team-wave is-front" aria-hidden="true" />
+      <span ref={bodyRef} className="team-wave is-body" aria-hidden="true" />
+    </>
+  );
+};
+
+/* ---------------------------------------------------------------- Fit */
+
+/** Shrinks a one-line element's font until its text fits the box. It never
+    grows past the size the stylesheet gives it. */
+const useFitLine = (ref: RefObject<HTMLElement>) => {
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const fit = () => {
+      element.style.fontSize = "";
+      const { clientWidth, scrollWidth } = element;
+      if (!clientWidth || scrollWidth <= clientWidth + 0.5) return;
+      const size = parseFloat(getComputedStyle(element).fontSize);
+      element.style.fontSize = `${Math.floor(((size * clientWidth * 0.99) / scrollWidth) * 10) / 10}px`;
+    };
+    fit();
+    let alive = true;
+    void document.fonts?.ready.then(() => {
+      if (alive) fit();
+    });
+    window.addEventListener("resize", fit);
+    return () => {
+      alive = false;
+      window.removeEventListener("resize", fit);
+    };
+  }, [ref]);
+};
+
+/* ---------------------------------------------------------------- Slides */
+
+interface SlideProps {
+  member: TeamMember;
+  index: number;
+  count: number;
+  /** Continuous carousel position: the index at the centre, fractional mid-swipe. */
+  position: MotionValue<number>;
+  compact: boolean;
+  /** Where this slide sits relative to the selected member once settled. */
+  slot: number;
+  onPick: (delta: number) => void;
+}
+
+const SpotlightSlide = ({ member, index, count, position, compact, slot, onPick }: SlideProps) => {
+  const distance = (p: number) => Math.min(Math.abs(ringOffset(index - p, count)), 1);
+  const x = useTransform(position, (p) => `${ringOffset(index - p, count) * (compact ? PEEK_STEP : SLIDE_STEP) * 100}%`);
+  const scale = useTransform(position, (p) => (compact ? 1 - PEEK_SHRINK * distance(p) : 1));
+  const opacity = useTransform(position, (p) => 1 - distance(p) * PEEK_FADE);
+  // Anything past the neighbours is off screen; skip painting it.
+  const visibility = useTransform(position, (p) =>
+    Math.abs(ringOffset(index - p, count)) > 1.5 ? "hidden" : "visible",
+  );
+
+  const portrait = portraitOf(member);
+  const isNeighbour = Math.abs(slot) === 1;
+  // The selected member and two either side load, so a swipe never lands on an empty frame.
+  const loadImage = Math.abs(slot) <= 2;
+
+  return (
+    <motion.div className="team-slide" style={{ x, scale, opacity, visibility }} aria-hidden={slot !== 0}>
+      {portrait && loadImage ? (
+        <img
+          src={portrait}
+          srcSet={getResponsiveImageSrcSet(portrait)}
+          sizes={PORTRAIT_SIZES}
+          alt={slot === 0 ? member.name : ""}
+          decoding="async"
+          draggable={false}
+        />
+      ) : (
+        <span className="team-spotlight-fallback">{portrait ? null : member.name.charAt(0)}</span>
+      )}
+      {isNeighbour && count > 1 ? (
+        <button
+          type="button"
+          className="team-slide-pick"
+          tabIndex={-1}
+          onClick={() => onPick(slot)}
+        >
+          <span className="team-sr-only">{member.name}</span>
+        </button>
+      ) : null}
+    </motion.div>
+  );
+};
+
+/* ---------------------------------------------------------------- Copy */
+
+interface CopyProps {
+  member: TeamMember;
+  /** ms to hold the decrypt so it starts once the overlay is drawn. */
+  lead: number;
+  reduceMotion: boolean;
+}
+
+const SpotlightCopy = ({ member, lead, reduceMotion }: CopyProps) => {
+  const nameRef = useRef<HTMLHeadingElement>(null);
+  const roleRef = useRef<HTMLParagraphElement>(null);
+  useFitLine(nameRef);
+  useFitLine(roleRef);
+
+  const fade = (delay: number) => ({
+    initial: { opacity: 0, y: reduceMotion ? 0 : 8 },
+    animate: { opacity: 1, y: 0 },
+    transition: {
+      duration: reduceMotion ? 0.12 : 0.4,
+      delay: reduceMotion ? 0 : lead / 1000 + delay,
+      ease: EASE,
+    },
+  });
+
+  return (
+    <div className="team-spotlight-text">
+      <Dialog.Title ref={nameRef} className="team-spotlight-name">
+        <ScrambleText text={member.name} delay={reduceMotion ? 0 : lead + 90} />
+      </Dialog.Title>
+      <p ref={roleRef} className="team-spotlight-role">
+        <ScrambleText text={member.role} delay={reduceMotion ? 0 : lead + 210} />
+      </p>
+
+      <div className="team-spotlight-body">
+        {member.bio ? (
+          <Dialog.Description asChild>
+            <motion.p className="team-spotlight-bio" {...fade(0.44)}>
+              {member.bio}
+            </motion.p>
+          </Dialog.Description>
+        ) : null}
+
+        {member.linkedin_url ? (
+          <motion.div className="team-spotlight-links" {...fade(0.54)}>
+            <a href={member.linkedin_url} target="_blank" rel="noreferrer">
+              LinkedIn
+            </a>
+          </motion.div>
+        ) : null}
+      </div>
+    </div>
+  );
+};
+
+/* ---------------------------------------------------------------- Spotlight */
+
 const TeamMemberSpotlight = ({
   members,
   activeIndex,
   onClose,
   onNavigate,
 }: TeamMemberSpotlightProps) => {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotion() ?? false;
+  const compact = useCompact();
   const open = activeIndex !== null;
   const member = activeIndex === null ? null : members[activeIndex] ?? null;
+  const count = members.length;
 
   // The exit animation outlives the selection, so the last opened member is
-  // held here to keep rendering while the overlay fades out.
+  // held here to keep rendering while the overlay closes.
   const lastMember = useRef<TeamMember | null>(null);
-  if (member) lastMember.current = member;
+  const lastIndex = useRef(0);
+  if (member) {
+    lastMember.current = member;
+    lastIndex.current = activeIndex ?? 0;
+  }
   const shown = member ?? lastMember.current;
+  const shownIndex = activeIndex ?? lastIndex.current;
+
+  // Only the first member after an open waits for the wave; a step decrypts at once.
+  const wasOpen = useRef(false);
+  const stepped = useRef(false);
+  if (open && !wasOpen.current) stepped.current = false;
+  wasOpen.current = open;
+
+  // The carousel position is continuous (it keeps counting past the last
+  // member), so a step from the end to the start still slides one slot.
+  const position = useMotionValue(activeIndex ?? 0);
+  const target = useRef(activeIndex ?? 0);
+  const slide = useRef<AnimationPlaybackControls | null>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const panFrom = useRef<number | null>(null);
+  const panned = useRef(false);
+
+  // An index set from outside (the roster tap that opens the overlay) jumps
+  // straight there; the steps below have already moved the carousel.
+  useLayoutEffect(() => {
+    if (activeIndex === null || count === 0) return;
+    if (mod(Math.round(target.current), count) !== activeIndex) {
+      slide.current?.stop();
+      target.current = activeIndex;
+      position.jump(activeIndex);
+    }
+  }, [activeIndex, count, position]);
+
+  const goTo = useCallback(
+    (next: number, velocity = 0) => {
+      if (count === 0) return;
+      target.current = next;
+      stepped.current = true;
+      const index = mod(next, count);
+      if (index !== activeIndex) onNavigate(index);
+      slide.current?.stop();
+      if (reduceMotion) {
+        slide.current = null;
+        position.jump(next);
+      } else {
+        slide.current = animate(position, next, { ...SLIDE_SPRING, velocity });
+      }
+    },
+    [activeIndex, count, onNavigate, position, reduceMotion],
+  );
 
   const step = useCallback(
     (delta: number) => {
-      if (activeIndex === null || members.length < 2) return;
-      onNavigate((activeIndex + delta + members.length) % members.length);
+      if (activeIndex === null || count < 2) return;
+      goTo(Math.round(target.current) + delta);
     },
-    [activeIndex, members.length, onNavigate],
+    [activeIndex, count, goTo],
   );
+
+  const jumpTo = (index: number) => {
+    const from = Math.round(target.current);
+    goTo(from + ringOffset(index - mod(from, count), count));
+  };
 
   // Landing routes scroll on <html> (landing-page.css), where Radix's
   // body-level lock is a no-op and the page keeps scrolling behind the scrim.
@@ -75,17 +446,53 @@ const TeamMemberSpotlight = ({
   // A tap anywhere that is not a control steps to the next member. With one
   // member there is nothing to step to, so a tap on the padding closes.
   const handleSurfaceClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (panned.current) return;
     if ((event.target as HTMLElement).closest("button, a")) return;
     if (window.getSelection()?.toString()) return;
-    if (members.length > 1) step(1);
+    if (count > 1) step(1);
     else if (event.target === event.currentTarget) onClose();
+  };
+
+  // Swipes are for touch and pen. A mouse drag stays free to select the bio.
+  const slideWidth = () => {
+    const first = stageRef.current?.querySelector<HTMLElement>(".team-slide");
+    return (first?.offsetWidth ?? window.innerWidth) * (compact ? PEEK_STEP : SLIDE_STEP);
+  };
+
+  const handlePanStart = (event: PointerEvent) => {
+    panned.current = false;
+    if (event.pointerType === "mouse" || count < 2) return;
+    slide.current?.stop();
+    panFrom.current = position.get();
+  };
+
+  const handlePan = (_event: PointerEvent, info: PanInfo) => {
+    if (panFrom.current === null) return;
+    panned.current = true;
+    position.set(panFrom.current - info.offset.x / slideWidth());
+  };
+
+  const handlePanEnd = (_event: PointerEvent, info: PanInfo) => {
+    if (panFrom.current === null) return;
+    const width = slideWidth();
+    const moved = -info.offset.x / width;
+    const flick = -info.velocity.x / width;
+    const base = Math.round(panFrom.current);
+    let delta = 0;
+    if (Math.abs(flick) > 0.6) delta = Math.sign(flick);
+    else if (Math.abs(moved) > 0.22) delta = Math.sign(moved);
+    panFrom.current = null;
+    goTo(base + delta, flick);
+    // The click that can follow a touch release must not also step.
+    window.setTimeout(() => {
+      panned.current = false;
+    }, 60);
   };
 
   if (!shown) return null;
 
-  const portrait = shown.preview_image_url || shown.avatar_url;
-  const hasLinks = Boolean(shown.linkedin_url);
   const motionClass = reduceMotion ? " is-reduce-motion" : "";
+  const lead = stepped.current || reduceMotion ? 0 : OPEN_LEAD_MS;
 
   // Radix warns about a missing description unless aria-describedby is passed
   // explicitly as undefined, which only applies when this member has no bio.
@@ -93,11 +500,7 @@ const TeamMemberSpotlight = ({
     ? {}
     : { "aria-describedby": undefined };
 
-  const fade = (delay: number) => ({
-    initial: { opacity: 0, y: reduceMotion ? 0 : 8 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: reduceMotion ? 0.12 : 0.4, delay: reduceMotion ? 0 : delay, ease: EASE },
-  });
+  const fadeTransition = { duration: reduceMotion ? 0.12 : 0.25, ease: EASE };
 
   return (
     <Dialog.Root
@@ -115,100 +518,72 @@ const TeamMemberSpotlight = ({
             <Dialog.Overlay asChild forceMount>
               <motion.div
                 className={`team-scrim${motionClass}`}
-                initial={{ opacity: 0 }}
+                initial={reduceMotion ? { opacity: 0 } : false}
                 animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: reduceMotion ? 0.12 : 0.25, ease: EASE }}
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, transition: { duration: 0.18, delay: 0.3 } }}
+                transition={fadeTransition}
               >
-                <span className="team-aura" aria-hidden="true" />
-                <span className="team-aura is-counter" aria-hidden="true" />
+                <span className="team-scrim-blur" aria-hidden="true" />
+                {reduceMotion ? null : <SpotlightWave />}
+                <span className="team-aura-wrap" aria-hidden="true">
+                  <span className="team-aura" />
+                  <span className="team-aura is-counter" />
+                </span>
               </motion.div>
             </Dialog.Overlay>
 
             <Dialog.Content asChild forceMount onKeyDown={handleKeyDown} {...describedBy}>
               <motion.div
-                className={`team-spotlight${members.length > 1 ? " is-steppable" : ""}${motionClass}`}
-                initial={{ opacity: 0 }}
+                className={`team-spotlight${count > 1 ? " is-steppable" : ""}${motionClass}`}
+                initial={reduceMotion ? { opacity: 0 } : false}
                 animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: reduceMotion ? 0.12 : 0.25, ease: EASE }}
+                exit={{ opacity: 0, transition: { duration: reduceMotion ? 0.12 : 0.16, ease: EASE } }}
+                transition={fadeTransition}
                 onClick={handleSurfaceClick}
+                onPanStart={handlePanStart}
+                onPan={handlePan}
+                onPanEnd={handlePanEnd}
               >
                 <button type="button" className="team-spotlight-close" onClick={onClose}>
-                  <X size={20} strokeWidth={1.5} aria-hidden="true" />
+                  <X size={24} strokeWidth={1.6} aria-hidden="true" />
                   <span className="team-sr-only">Close</span>
                 </button>
 
                 <div className="team-spotlight-panel">
-                  {/* Keyed on the member so arrowing to the next one remounts the
-                      portrait and the copy: the reveal and both scrambles replay.
-                      The nav row stays mounted so focus survives a step. */}
-                  <motion.div
-                    key={`media-${shown.team_member_id}`}
-                    className="team-spotlight-media"
-                    initial={
-                      reduceMotion
-                        ? { opacity: 0 }
-                        : { opacity: 0, scale: 1.06, clipPath: "inset(14% 14% 14% 14% round 16px)" }
-                    }
-                    animate={
-                      reduceMotion
-                        ? { opacity: 1 }
-                        : { opacity: 1, scale: 1, clipPath: "inset(0% 0% 0% 0% round 16px)" }
-                    }
-                    transition={{ duration: reduceMotion ? 0.12 : 0.58, ease: EASE }}
-                  >
-                    {portrait ? (
-                      <img
-                        src={portrait}
-                        srcSet={getResponsiveImageSrcSet(portrait)}
-                        sizes="(max-width: 900px) 82vw, 480px"
-                        alt={shown.name}
-                        decoding="async"
+                  <div ref={stageRef} className="team-spotlight-stage">
+                    {members.map((item, index) => (
+                      <SpotlightSlide
+                        key={item.team_member_id}
+                        member={item}
+                        index={index}
+                        count={count}
+                        position={position}
+                        compact={compact}
+                        slot={ringOffset(index - shownIndex, count)}
+                        onPick={step}
                       />
-                    ) : (
-                      <span className="team-spotlight-fallback" aria-hidden="true">
-                        {shown.name.charAt(0)}
-                      </span>
-                    )}
-                  </motion.div>
+                    ))}
+                  </div>
 
                   <div className="team-spotlight-copy">
-                    <div key={`copy-${shown.team_member_id}`}>
-                      <Dialog.Title className="team-spotlight-name">
-                        <ScrambleText text={shown.name} delay={reduceMotion ? 0 : 90} />
-                      </Dialog.Title>
-                      <p className="team-spotlight-role">
-                        <ScrambleText text={shown.role} delay={reduceMotion ? 0 : 210} />
-                      </p>
+                    {/* Keyed on the member so a step remounts the copy and both
+                        scrambles replay. The nav row stays mounted so focus
+                        survives a step. */}
+                    <SpotlightCopy
+                      key={`copy-${shown.team_member_id}`}
+                      member={shown}
+                      lead={lead}
+                      reduceMotion={reduceMotion}
+                    />
 
-                      {shown.bio ? (
-                        <Dialog.Description asChild>
-                          <motion.p className="team-spotlight-bio" {...fade(0.44)}>
-                            {shown.bio}
-                          </motion.p>
-                        </Dialog.Description>
-                      ) : null}
-
-                      {hasLinks ? (
-                        <motion.div className="team-spotlight-links" {...fade(0.54)}>
-                          {shown.linkedin_url ? (
-                            <a href={shown.linkedin_url} target="_blank" rel="noreferrer">
-                              LinkedIn
-                            </a>
-                          ) : null}
-                        </motion.div>
-                      ) : null}
-                    </div>
-
-                    {members.length > 1 ? (
+                    {count > 1 ? (
                       <div className="team-spotlight-nav">
                         <button
                           type="button"
                           className="team-spotlight-arrow is-prev"
                           onClick={() => step(-1)}
                         >
-                          <ArrowLeft size={20} strokeWidth={1.5} aria-hidden="true" />
+                          <ArrowLeft size={22} strokeWidth={1.5} aria-hidden="true" />
                           <span className="team-sr-only">Previous member</span>
                         </button>
                         <div className="team-spotlight-dots">
@@ -218,7 +593,7 @@ const TeamMemberSpotlight = ({
                               type="button"
                               className="team-spotlight-dot"
                               aria-current={index === activeIndex ? "true" : undefined}
-                              onClick={() => onNavigate(index)}
+                              onClick={() => jumpTo(index)}
                             >
                               <span className="team-sr-only">{item.name}</span>
                             </button>
@@ -229,7 +604,7 @@ const TeamMemberSpotlight = ({
                           className="team-spotlight-arrow is-next"
                           onClick={() => step(1)}
                         >
-                          <ArrowRight size={20} strokeWidth={1.5} aria-hidden="true" />
+                          <ArrowRight size={22} strokeWidth={1.5} aria-hidden="true" />
                           <span className="team-sr-only">Next member</span>
                         </button>
                       </div>
