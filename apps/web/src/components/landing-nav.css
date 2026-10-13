@@ -164,6 +164,20 @@
 }
 .landing-nav.landing-nav:not(.is-scrolled) .landing-nav-action { right: 0; }
 
+@media (max-width: 960px) {
+  /* Keep both states on the same horizontal tracks; only move vertically. */
+  .landing-nav.landing-nav:not(.is-scrolled) {
+    right: 12px;
+    width: calc(100% - 24px);
+  }
+  .landing-nav.landing-nav:not(.is-scrolled) .landing-brand { left: 20px; }
+  .landing-nav.landing-nav:not(.is-scrolled) .landing-nav-action { right: 8px; }
+}
+
+@media (max-width: 480px) {
+  .landing-nav.landing-nav:not(.is-scrolled) .landing-brand { left: 16px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .landing-nav.landing-nav,
   .landing-nav.landing-nav::before,

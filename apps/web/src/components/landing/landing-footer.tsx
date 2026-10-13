@@ -111,8 +111,26 @@ const auroraWave = [1, 2, 3].map((row) => (
 const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
   const [socialLink, setSocialLink] = useState<SocialLink[]>(socialDefault);
   const [isStageLive, setIsStageLive] = useState(false);
+  const footerRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const isSamePage = anchorPrefix === "";
+
+  // Mobile Safari paints the strip under its toolbar and the overscroll past
+  // the last pixel with the html background. Flag the page while the footer
+  // is on screen, so that ground turns as dark as the footer.
+  useEffect(() => {
+    const footer = footerRef.current;
+    if (!footer || typeof IntersectionObserver === "undefined") return;
+    const root = document.documentElement;
+    const observer = new IntersectionObserver(([entry]) => {
+      root.classList.toggle("is-footer-in-view", entry.isIntersecting);
+    });
+    observer.observe(footer);
+    return () => {
+      observer.disconnect();
+      root.classList.remove("is-footer-in-view");
+    };
+  }, []);
 
   // The waves only run while the footer is on screen.
   useEffect(() => {
@@ -158,7 +176,7 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
   };
 
   return (
-    <footer className="landing-footer" id="footer" data-nav-theme="dark">
+    <footer className="landing-footer" id="footer" data-nav-theme="dark" ref={footerRef}>
       <div className="landing-footer-grid landing-footer-grid-simplified">
         {footerCol.map((col) => (
           <div key={col.title}>

@@ -41,6 +41,8 @@ const DWELL = 0.76;
 const HANDOFF_DWELL = 0.46;
 /** The scroll for a laptop to phone swap, as a share of a normal step. */
 const HANDOFF = 0.5;
+/** Extra scroll after the last image settles before the sticky stage releases. */
+const END_DWELL = 0.4;
 
 /**
  * Fallback for new logos without optical calibration: wide logos get shorter
@@ -82,7 +84,11 @@ const isPhone = (item: ShippedProject) => {
  */
 function scrollPlan(phones: boolean[]) {
   const steps = phones.slice(1).map((phone, k) => (phone === phones[k] ? 1 : HANDOFF));
-  const total = steps.reduce((sum, step) => sum + step, 0);
+  const travel = steps.reduce((sum, step) => sum + step, 0);
+  const total = travel + END_DWELL;
+  const turnAt = (pin: number) => travel > 0
+    ? Math.min(1, Math.max(0, pin) * total / travel) * (phones.length - 1)
+    : 0;
   /** Pin progress (0 to 1) to the project in front, as a fraction. */
   const posAt = (pin: number) => {
     let left = Math.min(1, Math.max(0, pin)) * total;
@@ -96,7 +102,7 @@ function scrollPlan(phones: boolean[]) {
     }
     return 0;
   };
-  return { total, posAt };
+  return { total, posAt, turnAt };
 }
 
 const infoBlock: Variants = {
@@ -172,7 +178,7 @@ const WorkShowcase = ({ project }: WorkShowcaseProps) => {
   // the device keeps turning while a screenshot sits still.
   const rawTurn = useTransform(
     [enterProgress, pinProgress, exitProgress],
-    ([enter, pin, exit]: number[]) => (enter - 1) * ENTER + pin * (count - 1) + exit * EXIT,
+    ([enter, pin, exit]: number[]) => (enter - 1) * ENTER + plan.turnAt(pin) + exit * EXIT,
   );
   // A little lag behind the scrollbar gives the device weight.
   const spring = { stiffness: 140, damping: 26, mass: 0.6, restDelta: 0.0005 };

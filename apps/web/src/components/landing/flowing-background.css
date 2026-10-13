@@ -45,3 +45,9 @@
 }
 
 .is-reduce-motion .flowing-background path { animation: none; }
+
+/* This fixed layer also covers the strip under Safari's toolbar and the
+   overscroll past the footer, and Safari tints its bar from it. Step it
+   aside while the footer is on screen, so both match the dark footer. */
+.flowing-background { transition: opacity 0.4s ease; }
+.is-footer-in-view .flowing-background { opacity: 0; }

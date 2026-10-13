@@ -65,6 +65,13 @@ html:has(.landing-page) #root {
   height: auto;
   min-height: 100dvh;
 }
+/* With the footer on screen, the ground under Safari's toolbar and past the
+   last pixel matches the footer instead of flashing white. */
+html.is-footer-in-view:has(.landing-page),
+html.is-footer-in-view:has(.landing-page) body,
+html.is-footer-in-view:has(.landing-page) #root {
+  background: var(--landing-ink);
+}
 
 /* The track is a HIT AREA, wider than the thumb it draws.
    A 3px bar was unreadable and untouchable; a thumb you can see is a thumb
@@ -1909,7 +1916,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 @media (max-width: 760px) {
   .work-track {
     --work-step: 42svh;
-    --work-lift: 12px;
+    --work-lift: 36px;
   }
   .work-info { height: 184px; --work-logo-size: 64px; }
   .work-device-view { margin: clamp(12px, 2.5svh, 28px) 0; }
@@ -1922,7 +1929,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 /* Short phones (small screens, or a browser bar taking room): tighten the
    column so the text still fits under the ring. */
 @media (max-width: 760px) and (max-height: 640px) {
-  .work-track { --work-lift: 10px; }
+  .work-track { --work-lift: 34px; }
   .work-info { height: 136px; --work-logo-size: 44px; }
   .landing-page .work-title { font-size: 24px; }
   .landing-page .work-info-title { font-size: 24px; }
