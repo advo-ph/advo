@@ -14,16 +14,6 @@ import {
 import * as db from "@/lib/db";
 import { useToast } from "@/hooks/use-toast";
 
-const BUDGET_RANGES = [
-  { value: "under-50k", label: "Under ₱50,000" },
-  { value: "50k-100k", label: "₱50,000 – ₱100,000" },
-  { value: "100k-250k", label: "₱100,000 – ₱250,000" },
-  { value: "250k-500k", label: "₱250,000 – ₱500,000" },
-  { value: "500k-1m", label: "₱500,000 – ₱1,000,000" },
-  { value: "1m-plus", label: "₱1,000,000+" },
-  { value: "not-sure", label: "Not sure yet" },
-];
-
 const PROJECT_TYPES = [
   "Business Website",
   "Online Store",
@@ -42,18 +32,14 @@ const PERKS = [
 interface InquiryForm {
   name: string;
   email: string;
-  company: string;
   projectType: string;
-  budget: string;
   description: string;
 }
 
 const emptyForm: InquiryForm = {
   name: "",
   email: "",
-  company: "",
   projectType: "",
-  budget: "",
   description: "",
 };
 
@@ -91,9 +77,7 @@ const ProjectInquiry = ({ embedded = false }: ProjectInquiryProps) => {
       const { error } = await db.createLead({
         name: formData.name,
         email: formData.email,
-        company: formData.company || null,
         project_type: formData.projectType || null,
-        budget: formData.budget || null,
         description: formData.description,
       });
 
@@ -116,119 +100,86 @@ const ProjectInquiry = ({ embedded = false }: ProjectInquiryProps) => {
     }
   };
 
-  const fieldLabelClass = embedded
-    ? "landing-start-label"
-    : "text-xs font-medium text-muted-foreground uppercase tracking-wider";
   const formClass = embedded
-    ? "landing-start-form space-y-6"
-    : "p-6 md:p-8 bg-card border border-border rounded-2xl space-y-6";
+    ? "landing-start-form space-y-3"
+    : "p-6 md:p-8 bg-card border border-border rounded-2xl space-y-3";
 
+  // Placeholders carry the visible labels so the form stays one screen tall on phones.
   const form = (
     <form onSubmit={handleSubmit} className={formClass}>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <label className={fieldLabelClass}>
-            Your name <span className="text-[#a9491c]">*</span>
-          </label>
-          <Input
-            value={formData.name}
-            onChange={(event) => updateField("name", event.target.value)}
-            placeholder="Juan dela Cruz"
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <label className={fieldLabelClass}>
-            Email <span className="text-[#a9491c]">*</span>
-          </label>
-          <Input
-            type="email"
-            value={formData.email}
-            onChange={(event) => updateField("email", event.target.value)}
-            placeholder="juan@company.ph"
-            required
-          />
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <label className={fieldLabelClass}>Company</label>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <label className="sr-only" htmlFor="inquiry-name">Your name</label>
         <Input
-          value={formData.company}
-          onChange={(event) => updateField("company", event.target.value)}
-          placeholder="Optional"
+          id="inquiry-name"
+          value={formData.name}
+          onChange={(event) => updateField("name", event.target.value)}
+          placeholder="Your name"
+          autoComplete="name"
+          required
         />
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <label className={fieldLabelClass}>Project type</label>
-          <Select value={formData.projectType} onValueChange={(value) => updateField("projectType", value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select type" />
-            </SelectTrigger>
-            <SelectContent className="landing-start-select-content">
-              {PROJECT_TYPES.map((type) => (
-                <SelectItem key={type} value={type}>
-                  {type}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="space-y-2">
-          <label className={fieldLabelClass}>Budget</label>
-          <Select value={formData.budget} onValueChange={(value) => updateField("budget", value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select range" />
-            </SelectTrigger>
-            <SelectContent className="landing-start-select-content">
-              {BUDGET_RANGES.map((range) => (
-                <SelectItem key={range.value} value={range.value}>
-                  {range.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <label className={fieldLabelClass}>
-          Tell us about your project <span className="text-[#a9491c]">*</span>
-        </label>
-        <Textarea
-          value={formData.description}
-          onChange={(event) => updateField("description", event.target.value)}
-          rows={6}
-          className="min-h-[160px] resize-none"
+        <label className="sr-only" htmlFor="inquiry-email">Email</label>
+        <Input
+          id="inquiry-email"
+          type="email"
+          value={formData.email}
+          onChange={(event) => updateField("email", event.target.value)}
+          placeholder="Email"
+          autoComplete="email"
           required
         />
       </div>
 
-      <div className="pt-2">
-        <Button
-          type="submit"
-          disabled={isSubmitting}
-          className={
-            embedded
-              ? "landing-start-submit w-full btn-press h-12 rounded-md text-base font-medium bg-foreground text-background hover:bg-foreground/90"
-              : "w-full btn-press h-12 rounded-md text-base font-medium bg-foreground text-background hover:bg-foreground/90"
-          }
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Sending...
-            </>
-          ) : (
-            <>
-              <Send className="h-4 w-4 mr-2" />
-              Send inquiry
-            </>
-          )}
-        </Button>
-      </div>
+      <Select value={formData.projectType} onValueChange={(value) => updateField("projectType", value)}>
+        <SelectTrigger aria-label="Project type">
+          <SelectValue placeholder="Project type" />
+        </SelectTrigger>
+        <SelectContent className="landing-start-select-content">
+          {PROJECT_TYPES.map((type) => (
+            <SelectItem key={type} value={type}>
+              {type}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <label className="sr-only" htmlFor="inquiry-description">What do you need?</label>
+      <Textarea
+        id="inquiry-description"
+        value={formData.description}
+        onChange={(event) => updateField("description", event.target.value)}
+        placeholder="What do you need?"
+        rows={4}
+        className="min-h-[112px] resize-none"
+        required
+      />
+
+      <Button
+        type="submit"
+        disabled={isSubmitting}
+        className={
+          embedded
+            ? "landing-start-submit w-full btn-press h-12 rounded-md text-base font-medium bg-foreground text-background hover:bg-foreground/90"
+            : "w-full btn-press h-12 rounded-md text-base font-medium bg-foreground text-background hover:bg-foreground/90"
+        }
+      >
+        {isSubmitting ? (
+          <>
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            Sending...
+          </>
+        ) : (
+          <>
+            <Send className="h-4 w-4 mr-2" />
+            Send inquiry
+          </>
+        )}
+      </Button>
+
+      {embedded && (
+        <p className="landing-start-alt">
+          Prefer email? <a href="mailto:contact@advo.ph">contact@advo.ph</a>
+        </p>
+      )}
     </form>
   );
 
@@ -272,26 +223,8 @@ const ProjectInquiry = ({ embedded = false }: ProjectInquiryProps) => {
       <section className="landing-start" id="start" aria-labelledby="start-heading">
         <div className="landing-start-frame">
           <div className="landing-start-copy">
-            <p className="landing-kicker">Start a project</p>
             <h2 id="start-heading">Tell us what you need to modernize.</h2>
-
-            <ul className="landing-start-perks">
-              {PERKS.map((perk) => (
-                <li key={perk}>
-                  <span className="landing-start-check">
-                    <Check size={12} strokeWidth={3} aria-hidden="true" />
-                  </span>
-                  <span>{perk}</span>
-                </li>
-              ))}
-            </ul>
-
-            <div className="landing-start-contact">
-              <div>
-                <span>Prefer email?</span>
-                <a href="mailto:contact@advo.ph">contact@advo.ph</a>
-              </div>
-            </div>
+            <p>Scope, timeline, and price within 24 hours.</p>
           </div>
 
           <div>

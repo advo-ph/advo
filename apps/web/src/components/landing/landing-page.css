@@ -245,7 +245,11 @@ body:has(.landing-shell) {
   z-index: 40;
   height: var(--landing-nav-height);
   color: var(--landing-ink);
-  transition: color 0.25s var(--landing-ease);
+  transition: color 0.25s var(--landing-ease), transform 0.25s var(--landing-ease);
+}
+.landing-nav.is-hidden { transform: translateY(-100%); pointer-events: none; }
+@media (prefers-reduced-motion: reduce) {
+  .landing-nav { transition: none; }
 }
 .landing-nav::before {
   content: "";
@@ -320,7 +324,7 @@ body:has(.landing-shell) {
 .landing-menu:focus-visible,
 .landing-nav-link a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 
-.landing-nav-cta {
+.landing-nav .landing-nav-cta {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -340,10 +344,11 @@ body:has(.landing-shell) {
 }
 .landing-nav-cta-short { display: none; }
 .landing-nav-cta svg { transition: transform 0.2s var(--landing-ease); }
-.landing-nav-cta:hover { background: #e9e9ea; }
+.landing-nav .landing-nav-cta:hover { background: #e9e9ea; }
 .landing-nav-cta:hover svg { transform: translate(2px, -2px); }
 .landing-nav-cta:focus:not(:focus-visible) { outline: none; }
 .landing-nav-cta:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.landing-nav.is-at-footer .landing-nav-cta:focus-visible { outline-color: #fff; }
 .landing-nav.is-at-footer .landing-nav-cta { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.24); }
 
 /* ---------------------------------------------------------------- Buttons */
@@ -515,7 +520,8 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   max-width: 132px;
   max-height: 42px;
   object-fit: contain;
-  transform: scale(var(--landing-logo-scale, 1));
+  transform: scale(var(--landing-logo-scale, 1))
+    translate(var(--landing-logo-offset-x, 0%), var(--landing-logo-offset-y, 0%));
   transform-origin: center;
   filter: grayscale(1);
   opacity: 0.72;
@@ -1132,65 +1138,26 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-start-frame {
   display: grid;
   grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.22fr);
+  align-items: start;
   gap: clamp(32px, 7vw, 104px);
-  padding: clamp(28px, 5vw, 72px);
+  padding: clamp(24px, 4vw, 56px);
   border: 1px solid var(--landing-line);
   border-radius: 16px;
   background: var(--landing-ground-soft);
 }
-.landing-start-copy { padding-top: 4px; }
-.landing-start-copy .landing-kicker { color: var(--landing-ink-soft); }
 .landing-start-copy h2 {
   max-width: 12ch;
-  margin-top: 10px;
   font-size: clamp(32px, 4.2vw, 56px);
   line-height: 1.04;
   letter-spacing: -0.035em;
 }
 .landing-start-copy > p {
   max-width: 38ch;
-  margin-top: 20px;
+  margin-top: 12px;
   color: var(--landing-ink-soft);
   font-size: var(--landing-text-lead);
   line-height: 1.55;
 }
-.landing-start-perks {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin: 32px 0 0;
-  padding: 0;
-  list-style: none;
-  color: var(--landing-ink);
-  font-size: var(--landing-text-body);
-}
-.landing-start-perks li { display: flex; align-items: center; gap: 10px; }
-.landing-start-check {
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  flex: none;
-  border: 1px solid rgba(12, 12, 12, 0.18);
-  border-radius: 50%;
-  color: var(--landing-ink);
-}
-.landing-start-contact {
-  display: grid;
-  gap: 16px;
-  margin-top: 36px;
-  padding-top: 20px;
-  border-top: 1px solid var(--landing-line);
-}
-.landing-start-contact div { display: flex; flex-direction: column; gap: 3px; }
-.landing-start-contact span,
-.landing-start-label {
-  color: var(--landing-ink-soft);
-  font-size: var(--landing-text-small);
-}
-.landing-start-contact a,
-.landing-start-contact strong { font-size: var(--landing-text-body); font-weight: 500; }
-.landing-start-contact a:hover { color: var(--advo-orange-hex); }
 .landing-start-form {
   --background: 0 0% 100%;
   --foreground: 0 0% 5%;
@@ -1210,13 +1177,10 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   --accent-foreground: 0 0% 100%;
   --ring: 19 77% 36%;
   color: var(--landing-ink);
-  padding: clamp(20px, 3vw, 32px);
-  border: 1px solid var(--landing-line);
-  border-radius: 12px;
-  background: var(--landing-ground);
-  box-shadow: 0 24px 48px -32px rgba(12, 12, 12, 0.36);
 }
-.landing-start-form .text-accent { color: #a9491c; }
+.landing-start-alt { color: var(--landing-ink-soft); font-size: var(--landing-text-small); text-align: center; }
+.landing-start-alt a { color: var(--landing-ink); font-weight: 500; }
+.landing-start-alt a:hover { color: var(--advo-orange-hex); }
 .landing-start-select-content {
   --popover: 0 0% 100%;
   --popover-foreground: 0 0% 5%;
@@ -1238,6 +1202,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 .landing-start-form input:focus,
 .landing-start-form textarea:focus,
 .landing-start-form [role="combobox"]:focus { border-color: var(--landing-ink-mute); }
+.landing-start-form [role="combobox"][data-placeholder] { color: hsl(var(--muted-foreground)); }
 .landing-start-submit { transition: background-color 0.15s var(--landing-ease), transform 0.12s var(--landing-ease); }
 .landing-start-success { min-height: 100%; display: flex; flex-direction: column; justify-content: center; }
 .landing-start-success-mark {
@@ -1480,6 +1445,10 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
 @media (min-width: 901px) {
   .landing-process { display: none; }
 
+  .landing-start {
+    width: min(1120px, calc(100% - clamp(64px, 10vw, 160px) * 2));
+  }
+
   /* Desktop needs a readable editorial measure at arm's length. Keep the
    * compact scale on phones/tablets, but give the landing's supporting copy
    * enough presence beside the large stills and headings. */
@@ -1577,7 +1546,8 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-hero-copy > p { max-width: 32ch; }
   .landing-surface-grid { grid-template-columns: 1fr; gap: 48px; }
   .landing-surface-card { max-width: 560px; margin-inline: auto; width: 100%; }
-  .landing-start-frame { grid-template-columns: 1fr; gap: 48px; }
+  .landing-start-frame { grid-template-columns: 1fr; gap: 24px; }
+  .landing-start-copy h2 { max-width: none; }
   .landing-process-card { grid-template-columns: 1fr; gap: 24px; }
   .landing-process-tab { flex-direction: row; flex-wrap: wrap; gap: 6px 18px; }
   .landing-process-tab button { font-size: var(--landing-text-lead); }
@@ -1635,7 +1605,6 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-marquee-item img {
     max-width: 100px;
     max-height: 34px;
-    transform: scale(var(--landing-logo-scale, 1));
   }
   .landing-piece,
   .landing-work,
@@ -1660,8 +1629,7 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
   .landing-workflow-section span { gap: 10px; }
   .landing-workflow-section i { min-width: 16px; }
   .landing-process-card { padding: 16px; border-radius: 12px; }
-  .landing-start-frame { padding: 24px 16px 16px; border-radius: 12px; }
-  .landing-start-form { padding: 20px 16px; border-radius: 12px; }
+  .landing-start-frame { padding: 24px 16px 16px; gap: 20px; border-radius: 12px; }
   .landing-band { padding: 0 16px; }
   .landing-band-inner { width: 100%; gap: 40px; }
   .landing-footer { padding-inline: 20px; }
@@ -1812,10 +1780,21 @@ a:hover > .landing-text-link svg { transform: translate(2px, -1px); }
    logo down and a square one up, so they read as one size. */
 .work-info-logo {
   display: block;
+  /* Wide logos can be capped below their heading's intrinsic width. */
+  margin-inline: auto;
   width: auto;
-  height: calc(var(--work-logo-size) * var(--work-logo-k, 0.84));
+  height: calc(var(--work-logo-size) * var(--work-logo-k, 0.84) * var(--work-logo-scale, 1));
   max-width: min(100%, 240px);
   object-fit: contain;
+}
+.work-info-logo[src="/landing/logo/floodpass.webp"] {
+  /* Center the visible artwork within its asymmetrically padded canvas.
+     Keep this separate from the transform used by the entrance animation. */
+  translate: -1.615% 0;
+}
+.work-info-logo[src="/landing/logo/vbe-eye-center.png"] {
+  /* Balance the stacked symbol and wordmark against FourlinQ's wider lockup. */
+  --work-logo-scale: 1.2;
 }
 .landing-page .work-info-desc {
   max-width: 52ch;

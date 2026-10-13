@@ -269,7 +269,9 @@ const IndustryExplorer = ({
 };
 
 const marqueeLogos = [
-  { src: "/landing/logo/vbe-eye-center.png", alt: "VBE Eye Center", scale: 1.2, width: 315, height: 155 },
+  // The stacked VBE lockup hits the height cap first; match its wordmark width
+  // to FourlinQ rather than giving both images the same bounding-box scale.
+  { src: "/landing/logo/vbe-eye-center.png", alt: "VBE Eye Center", scale: 1.55, width: 315, height: 155 },
   { src: "/landing/logo/fourlinq.png", alt: "FourlinQ", scale: 1, width: 423, height: 141 },
   {
     src: "/landing/logo/philippine-college-endocrinology.webp",
@@ -279,9 +281,11 @@ const marqueeLogos = [
     height: 720,
   },
   { src: "/landing/logo/nokoji.webp", alt: "Nokoji Matcha and Doughnuts", scale: 1.08, width: 720, height: 296 },
-  { src: "/landing/logo/felici.webp", alt: "Felici Artisan Gelato", scale: 1.55, width: 720, height: 720 },
+  { src: "/landing/logo/felici-artisan-gelato.png", alt: "Felici Artisan Gelato", scale: 1.18, width: 829, height: 344 },
   { src: "/landing/logo/felici-italian-cafe.webp", alt: "Felici Italian Café", scale: 1.18, width: 720, height: 345 },
-  { src: "/landing/logo/floodpass.webp", alt: "FloodPASS PH", scale: 1.12, width: 960, height: 139 },
+  // Visible bounds are (41, 9)–(950, 128) on a 960×139 canvas.
+  // Offset the artwork's center, including its asymmetric transparent padding.
+  { src: "/landing/logo/floodpass.webp", alt: "FloodPASS PH", scale: 1.12, width: 960, height: 139, offsetX: "-1.615%", offsetY: "0.719%" },
 ] as const;
 
 type NetworkInformation = EventTarget & {
@@ -440,7 +444,13 @@ const LandingPage = () => {
                       alt={groupIndex === 0 ? logo.alt : ""}
                       width={logo.width}
                       height={logo.height}
-                      style={{ "--landing-logo-scale": logo.scale } as CSSProperties}
+                      style={{
+                        "--landing-logo-scale": logo.scale,
+                        ...("offsetX" in logo ? {
+                          "--landing-logo-offset-x": logo.offsetX,
+                          "--landing-logo-offset-y": logo.offsetY,
+                        } : {}),
+                      } as CSSProperties}
                       decoding="async"
                     />
                   </span>

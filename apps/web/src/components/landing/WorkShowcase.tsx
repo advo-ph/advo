@@ -34,8 +34,11 @@ import { createDevicesScene } from "./devices-scene";
  */
 const ENTER = 1.3;
 const EXIT = 1;
-/** The share of each step's scroll where the project holds still in front. */
-const DWELL = 0.52;
+/** Hold longer so each image wipe uses half its previous scroll distance.
+ * Step lengths and the independent device turn stay unchanged. */
+const DWELL = 0.76;
+/** Give the laptop/phone animation 12.5% more scroll without changing the turn. */
+const HANDOFF_DWELL = 0.46;
 /** The scroll for a laptop to phone swap, as a share of a normal step. */
 const HANDOFF = 0.5;
 
@@ -45,6 +48,10 @@ const HANDOFF = 0.5;
  * as one size.
  */
 const LOGO_SHAPE = -0.25;
+
+const projectLogoUrl = (url: string | null) => url === "/landing/logo/felici.webp"
+  ? "/landing/logo/felici-artisan-gelato.png"
+  : url;
 
 /** Projects shown on a phone, matched on the start of the title. */
 const PHONE_PROJECTS = ["nokohi", "floodpass", "pcedm"];
@@ -67,7 +74,7 @@ function scrollPlan(phones: boolean[]) {
     let left = Math.min(1, Math.max(0, pin)) * total;
     for (const [k, step] of steps.entries()) {
       if (left <= step || k === steps.length - 1) {
-        const hold = DWELL / 2;
+        const hold = (step === HANDOFF ? HANDOFF_DWELL : DWELL) / 2;
         const t = Math.min(1, Math.max(0, (left / step - hold) / (1 - 2 * hold)));
         return k + t * t * (3 - 2 * t);
       }
@@ -163,11 +170,14 @@ const WorkShowcase = ({ project }: WorkShowcaseProps) => {
 
   // Load every logo up front so none pops in mid-scroll, and keep each one's
   // width / height to size it. 0 marks a logo that failed: the title shows.
-  const logoKey = project.map((card) => card.logoUrl ?? "").join(",");
+  const logoKey = project.map((card) => projectLogoUrl(card.logoUrl) ?? "").join(",");
   const [logoRatio, setLogoRatio] = useState<Record<string, number>>({});
   useEffect(() => {
     let live = true;
-    for (const url of new Set(project.flatMap((card) => (card.logoUrl ? [card.logoUrl] : [])))) {
+    for (const url of new Set(project.flatMap((card) => {
+      const url = projectLogoUrl(card.logoUrl);
+      return url ? [url] : [];
+    }))) {
       const img = new Image();
       const done = (ratio: number) => {
         if (live) setLogoRatio((all) => (all[url] === ratio ? all : { ...all, [url]: ratio }));
@@ -237,7 +247,8 @@ const WorkShowcase = ({ project }: WorkShowcaseProps) => {
   const item = project[Math.min(active, count - 1)];
   const label = item.live_url ? "View site" : "View project";
   const words = item.title.split(/\s+/).filter(Boolean);
-  const logo = item.logoUrl && logoRatio[item.logoUrl] !== 0 ? item.logoUrl : null;
+  const logoUrl = projectLogoUrl(item.logoUrl);
+  const logo = logoUrl && logoRatio[logoUrl] !== 0 ? logoUrl : null;
   const trackStyle = { "--work-count": plan.total } as CSSProperties;
 
   return (

@@ -23,9 +23,9 @@ interface Chapter {
 const FADE_LINE = 0.62;
 const PHONE_FADE_LINE = 0.68;
 const PHONE = "(max-width: 680px)";
-// On phones the dust bursts once the section top has scrolled this share of
-// the screen height past the top, so the title is read first.
-const BURST_TOP = -0.12;
+// On phones the dust starts bursting while the title is still in view,
+// with the section top just below the top of the screen.
+const BURST_TOP = 0.12;
 const TITLE = "Prepare your business for AI modernization";
 
 const chapters: Chapter[] = [
@@ -86,8 +86,8 @@ export default function ServicesScroll() {
       // CSS), which makes the section shorter than four screens. There each
       // morph plays while its chapter rises from the bottom of the screen to
       // the fade line, and the dust bursts as the title scrolls away.
-      let burstAt = [230, 170];
-      let joinAt = [400, 110];
+      let burstAt = [180, 170];
+      let joinAt = [385, 110];
       let flowAt = [590, 150];
       let settleAt = [770, 190];
       if (phone && stage) {
@@ -100,8 +100,11 @@ export default function ServicesScroll() {
         const rise = (y: number) => [when(y, 1), when(y, PHONE_FADE_LINE) - when(y, 1)];
         const [connect, automate, grow] = copies.map((el) => el.getBoundingClientRect().top - sectionTop);
         const burst = when(0, BURST_TOP);
-        burstAt = [burst, when(connect, 1) - burst];
-        joinAt = rise(connect);
+        // Give Connect a small head start before its text enters.
+        const connectRise = rise(connect);
+        const joinStart = Math.max(burst + 1, when(connect, 1.03));
+        burstAt = [burst, joinStart - burst];
+        joinAt = [joinStart, connectRise[1]];
         flowAt = rise(automate);
         settleAt = rise(grow);
         // The model stops following once the Grow title reaches the fade line,

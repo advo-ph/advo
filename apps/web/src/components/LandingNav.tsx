@@ -42,6 +42,7 @@ const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps)
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isAtFooter, setIsAtFooter] = useState(false);
+  const [isHidden, setIsHidden] = useState(false);
   const { pathname } = useLocation();
   const drawerRef = useRef<HTMLElement>(null);
   const navRef = useRef<HTMLElement>(null);
@@ -74,24 +75,48 @@ const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps)
 
   useEffect(() => {
     closeMenu();
+    setIsHidden(false);
   }, [pathname, closeMenu]);
 
   useEffect(() => {
+    const root = document.getElementById("root");
+    const scrollPosition = () => Math.max(0, window.scrollY, root?.scrollTop ?? 0);
+    let previousY = scrollPosition();
+    let direction = 0;
+    let distance = 0;
+    const onScroll = () => {
+      const y = scrollPosition();
+      const delta = y - previousY;
+      previousY = y;
+      if (y <= 68) {
+        distance = 0;
+        setIsHidden(false);
+      } else if (delta !== 0) {
+        const nextDirection = Math.sign(delta);
+        distance = nextDirection === direction ? distance + Math.abs(delta) : Math.abs(delta);
+        direction = nextDirection;
+        if (distance >= 8) setIsHidden(direction > 0);
+      }
+      read();
+    };
     const read = () => {
-      setIsScrolled(window.scrollY > 8);
+      setIsScrolled(scrollPosition() > 8);
 
-      const navRect = navRef.current?.getBoundingClientRect();
+      // Use the bar's visible position even while it is translated off-screen.
+      const navHeight = navRef.current?.offsetHeight ?? 68;
       const footerRect = document.getElementById("footer")?.getBoundingClientRect();
       const footerOverlapsNav = Boolean(
-        navRect && footerRect && footerRect.top < navRect.bottom && footerRect.bottom > navRect.top,
+        footerRect && footerRect.top < navHeight && footerRect.bottom > 0,
       );
       setIsAtFooter((current) => current === footerOverlapsNav ? current : footerOverlapsNav);
     };
     read();
-    window.addEventListener("scroll", read, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
+    root?.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", read);
     return () => {
-      window.removeEventListener("scroll", read);
+      window.removeEventListener("scroll", onScroll);
+      root?.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", read);
     };
   }, []);
@@ -127,12 +152,13 @@ const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps)
     isOverlay ? "is-overlay" : "",
     isAtFooter ? "is-at-footer" : "",
     isMenuOpen ? "is-menu-open" : "",
+    isHidden && !isMenuOpen ? "is-hidden" : "",
   ]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <header className={className} ref={navRef}>
+    <header className={className} ref={navRef} onFocusCapture={() => setIsHidden(false)}>
       <div className="landing-nav-inner">
         <Link className="landing-brand" to="/" aria-label="ADVO home" onClick={closeMenu}>
           {/* Both marks sit at the same height and left edge, so the ADVO in the
