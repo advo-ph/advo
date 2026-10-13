@@ -50,7 +50,7 @@ const industry: Industry[] = [
     offer: [
       {
         name: "Live flood depth measurements",
-        copy: "Flood monitoring devices in flood-prone streets, PAGASA river gauges, live rainfall data, and UP NOAH hazard maps.",
+        copy: "Track floods with street sensors, PAGASA gauges, rainfall and flood hazard data.",
       },
       {
         name: "Navigation avoids flooded areas",
@@ -274,15 +274,14 @@ const marqueeLogos = [
   { src: "/landing/logo/vbe-eye-center.png", alt: "VBE Eye Center", scale: 1.55, width: 315, height: 155 },
   { src: "/landing/logo/fourlinq.png", alt: "FourlinQ", scale: 1, width: 423, height: 141 },
   {
-    src: "/landing/logo/philippine-college-endocrinology.webp",
-    alt: "Philippine College of Endocrinology, Diabetes and Metabolism",
-    scale: 1.55,
-    width: 720,
-    height: 720,
+    src: "/landing/logo/pcedm-members.png",
+    alt: "PCEDM Members",
+    scale: 1.18,
+    width: 718,
+    height: 298,
   },
   { src: "/landing/logo/nokoji.webp", alt: "Nokoji Matcha and Doughnuts", scale: 1.08, width: 720, height: 296 },
   { src: "/landing/logo/felici-artisan-gelato.png", alt: "Felici Artisan Gelato", scale: 1.18, width: 829, height: 344 },
-  { src: "/landing/logo/felici-italian-cafe.webp", alt: "Felici Italian Café", scale: 1.18, width: 720, height: 345 },
   // Visible bounds are (41, 9)–(950, 128) on a 960×139 canvas.
   // Offset the artwork's center, including its asymmetric transparent padding.
   { src: "/landing/logo/floodpass.webp", alt: "FloodPASS PH", scale: 1.12, width: 960, height: 139, offsetX: "-1.615%", offsetY: "0.719%" },

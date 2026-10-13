@@ -98,6 +98,10 @@ const LegalDocument = ({ kicker, title, summary, children }: LegalDocumentProps)
               value={identityValue("registration_number")}
             />
             <IdentityRow
+              label="BIR registration"
+              value={identityValue("bir_registration_status")}
+            />
+            <IdentityRow
               label="Business address"
               value={identityValue("business_address")}
             />

@@ -48,7 +48,7 @@ const CAMERA_TILT = THREE.MathUtils.degToRad(9);
  * How much larger than its frame box the MacBook shows. On a phone it may run
  * past the sides; on a wide screen the heading and caption bound it instead.
  */
-const MAC_ZOOM_NARROW = 1.35;
+const MAC_ZOOM_NARROW = 1.2;
 const MAC_ZOOM_WIDE = 1.04;
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));

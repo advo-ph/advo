@@ -43,14 +43,28 @@ const HANDOFF_DWELL = 0.46;
 const HANDOFF = 0.5;
 
 /**
- * Logos come in every shape. The height runs with (width / height) to this
- * power, so a wide logo gets shorter and a square one taller until they read
- * as one size.
+ * Fallback for new logos without optical calibration: wide logos get shorter
+ * and square ones taller. The known logos below use individually judged sizes.
  */
 const LOGO_SHAPE = -0.25;
 
+/** Optical sizes judged together on the page, rather than equal image bounds.
+ * Offsets center the artwork where the source canvas has uneven padding.
+ * Each height is relative to the shared responsive logo slot. */
+const LOGO_STYLE: Record<string, CSSProperties> = {
+  "/landing/logo/fourlinq.png": { "--work-logo-k": 0.89, "--work-logo-y": "2.48%" } as CSSProperties,
+  "/landing/logo/vbe-eye-center.png": { "--work-logo-k": 0.97 } as CSSProperties,
+  "/landing/logo/felici-artisan-gelato.png": { "--work-logo-k": 1.03, "--work-logo-x": "5.67%", "--work-logo-y": "-0.15%" } as CSSProperties,
+  "/landing/logo/camps-ph.png": { "--work-logo-k": 0.83, "--work-logo-x": "1.23%" } as CSSProperties,
+  "/landing/logo/floodpass.webp": { "--work-logo-k": 0.44, "--work-logo-x": "-1.615%", "--work-logo-y": "0.72%" } as CSSProperties,
+  "/landing/logo/nokoji.webp": { "--work-logo-k": 0.89, "--work-logo-y": "0.17%" } as CSSProperties,
+  "/landing/logo/pcedm-members.png": { "--work-logo-k": 0.89, "--work-logo-x": "0.84%" } as CSSProperties,
+};
+
 const projectLogoUrl = (url: string | null) => url === "/landing/logo/felici.webp"
   ? "/landing/logo/felici-artisan-gelato.png"
+  : url === "/landing/logo/philippine-college-endocrinology.webp"
+    ? "/landing/logo/pcedm-members.png"
   : url;
 
 /** Projects shown on a phone, matched on the start of the title. */
@@ -169,7 +183,7 @@ const WorkShowcase = ({ project }: WorkShowcaseProps) => {
   const [noWebGL, setNoWebGL] = useState(false);
 
   // Load every logo up front so none pops in mid-scroll, and keep each one's
-  // width / height to size it. 0 marks a logo that failed: the title shows.
+  // width / height for uncalibrated logos. 0 marks a failed logo: show the title.
   const logoKey = project.map((card) => projectLogoUrl(card.logoUrl) ?? "").join(",");
   const [logoRatio, setLogoRatio] = useState<Record<string, number>>({});
   useEffect(() => {
@@ -285,7 +299,7 @@ const WorkShowcase = ({ project }: WorkShowcaseProps) => {
                 animate="show"
                 exit={reduceMotion ? undefined : "exit"}
               >
-                <h3 className="work-info-title">
+                <h3 className={`work-info-title${logo ? " has-logo" : ""}`}>
                   {logo ? (
                     <motion.img
                       className="work-info-logo"
@@ -293,7 +307,7 @@ const WorkShowcase = ({ project }: WorkShowcaseProps) => {
                       alt={item.title}
                       draggable={false}
                       variants={wordIn}
-                      style={{ "--work-logo-k": (logoRatio[logo] ?? 2) ** LOGO_SHAPE } as CSSProperties}
+                      style={LOGO_STYLE[logo] ?? { "--work-logo-k": (logoRatio[logo] ?? 2) ** LOGO_SHAPE } as CSSProperties}
                     />
                   ) : (
                     words.map((word, i) => (

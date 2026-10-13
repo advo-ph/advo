@@ -569,12 +569,11 @@
 /* The roster on the home page (LandingTeam.tsx). Desktop: every member in one
    row that runs nearly edge to edge, past the page's content width, so ten or
    more people still get room for a first name. The hovered or focused portrait
-   widens and shows the full name and role; with nothing hovered the first
-   portrait stays open. Tablets and phones get a plain grid with no hover state
-   at all (see the 1200px block). */
+   widens and shows the full name and role. Tablets and phones get a grid with
+   first names always visible over the photos and no hover state. */
 .landing-team {
   --landing-team-edge: clamp(16px, 1.6vw, 28px);
-  padding: var(--landing-section-rhythm) var(--landing-team-edge) clamp(56px, 6vw, 96px);
+  padding: var(--landing-section-rhythm) var(--landing-team-edge) clamp(96px, 10vw, 160px);
 }
 /* Type comes from .landing-display.landing-solutions-title, the same as the
    Solutions heading; this rule only places it. */
@@ -599,6 +598,8 @@
   display: block;
   width: 100%;
   aspect-ratio: 4 / 5;
+  /* Keep the layout footprint while adding breathing room around the portrait. */
+  transform: scale(0.9);
   padding: 0;
   overflow: hidden;
   border: 0;
@@ -746,25 +747,31 @@
 /* Desktop starts with equal-width portraits across the section. Hover and
    keyboard focus widen only the active portrait and reveal its details. */
 @media (min-width: 1024px) {
-  .landing-team { padding-block: clamp(36px, 6svh, 64px); }
-  .landing-team-title { font-size: clamp(32px, 3.6vw, 52px); }
+  .landing-team {
+    min-height: 100svh;
+    padding-block: clamp(20px, 4svh, 48px);
+    padding-top: calc(var(--landing-nav-height) + 20px);
+    padding-bottom: clamp(96px, 10vw, 160px);
+  }
+  .landing-team-title { font-size: clamp(28px, min(3.6vw, 6svh), 52px); }
   .landing-team-lead {
-    grid-template-columns: clamp(220px, 33svh, 320px) minmax(0, 1fr);
-    width: min(100%, calc(clamp(220px, 33svh, 320px) + clamp(32px, 4vw, 64px) + 420px));
+    grid-template-columns: min(34svh, 340px) minmax(0, 1fr);
+    width: min(100%, calc(min(34svh, 340px) + clamp(32px, 4vw, 64px) + 460px));
     gap: clamp(32px, 4vw, 64px);
-    margin-top: clamp(20px, 3svh, 32px);
+    margin-top: clamp(12px, 2svh, 24px);
   }
   .landing-team-lead-name {
-    font-size: clamp(32px, 3.2vw, 48px);
+    font-size: clamp(32px, min(3.4vw, 6svh), 52px);
     white-space: nowrap;
   }
+  .landing-team-lead-role { font-size: clamp(12px, 0.95vw, 14px); }
   .landing-team-lead-quote {
-    margin-top: 20px;
-    font-size: clamp(20px, 2vw, 28px);
+    margin-top: clamp(16px, 2.5svh, 28px);
+    font-size: clamp(22px, min(2.2vw, 4svh), 30px);
   }
-  .landing-team-lead + .landing-team-strip { margin-top: clamp(20px, 3svh, 32px); }
+  .landing-team-lead + .landing-team-strip { margin-top: clamp(12px, 2svh, 24px); }
   .landing-team-strip {
-    --team-portrait-height: clamp(200px, 35svh, 330px);
+    --team-portrait-height: min(31svh, 330px);
     height: var(--team-portrait-height);
     margin-inline: auto;
   }
@@ -831,7 +838,7 @@
 }
 
 /* Tablets and phones: one row stops leaving room for a name, so the strip
-   becomes a grid of small portraits with the first name under each. A tap
+   becomes a grid with white first names over a dark fade inside each photo. A tap
    opens the spotlight with the rest. Phones get four per row so the whole team
    fits on about one screen. */
 @media (max-width: 1023px) {
@@ -839,15 +846,14 @@
   .landing-team-strip {
     flex-wrap: wrap;
     justify-content: center;
-    gap: 22px 10px;
+    gap: 10px;
     height: auto;
     margin-top: 32px;
   }
   .landing-team-item { flex: 0 0 calc((100% - 5 * 10px) / 6); }
   .landing-team-card {
     height: auto;
-    overflow: visible;
-    color: var(--landing-ink);
+    color: #ffffff;
     border-radius: 10px;
   }
   .landing-team-frame {
@@ -858,12 +864,10 @@
   }
   .landing-team-fallback { font-size: 32px; }
   .landing-team-caption {
-    position: static;
-    padding: 8px 0 0;
-    background: none;
-    text-align: center;
+    padding: 32px 6px 10px;
+    background: linear-gradient(to top, rgba(6, 6, 6, 0.88), rgba(6, 6, 6, 0));
   }
-  .landing-team-name-short { font-size: 14px; }
+  .landing-team-name-short { font-size: clamp(11px, 1.6vw, 14px); }
   .landing-team-role { display: none; }
   /* Press feedback only: a quick dim, no scale, nothing that moves the name. */
   .landing-team-card:active .landing-team-frame { opacity: 0.82; }
@@ -885,9 +889,9 @@
   .landing-team-lead-role { margin-top: 8px; font-size: 10px; letter-spacing: 0.2em; }
   .landing-team-lead-quote { margin-top: 16px; font-size: clamp(15px, 4.2vw, 17px); line-height: 1.3; letter-spacing: -0.01em; }
   .landing-team-lead + .landing-team-strip { margin-top: 36px; }
-  .landing-team-strip { gap: 18px 8px; margin-top: 28px; }
+  .landing-team-strip { gap: 8px; margin-top: 28px; }
   .landing-team-item { flex-basis: calc((100% - 3 * 8px) / 4); }
-  .landing-team-name-short { font-size: 13px; }
+  .landing-team-name-short { font-size: clamp(11px, 3vw, 13px); }
 }
 
 /* ---------------------------------------------------------------- Entrance */

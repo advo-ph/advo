@@ -42,7 +42,7 @@ const TeamPortrait = ({ member, sizes }: { member: TeamMember; sizes: string }) 
 };
 
 /**
- * The roster on the landing page. The founder leads with a compact portrait, the
+ * The roster on the landing page. The founder leads with a large portrait, the
  * name, role and a quote beside it. Everyone else runs below: desktop shows
  * them in an evenly sized strip that widens on hover; phones get a four-up
  * grid so the whole team fits on about one screen. A tap on any portrait opens
@@ -113,7 +113,7 @@ const LandingTeam = () => {
             onClick={() => setActiveIndex(founderIndex)}
             aria-label={`${founder.name}, ${founder.role}`}
           >
-            <TeamPortrait member={founder} sizes="(max-width: 680px) 42vw, (max-width: 1023px) 36vw, 320px" />
+            <TeamPortrait member={founder} sizes="(max-width: 680px) 42vw, (max-width: 1023px) 36vw, min(34svh, 340px)" />
           </button>
           <div className="landing-team-lead-copy">
             <h3 className="landing-team-lead-name">{founder.name}</h3>
