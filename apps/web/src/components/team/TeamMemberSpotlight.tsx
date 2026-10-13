@@ -43,6 +43,8 @@ interface TeamMemberSpotlightProps {
   activeIndex: number | null;
   onClose: () => void;
   onNavigate: (index: number) => void;
+  /** Runs once the close animation has finished and the overlay is gone. */
+  onExitComplete?: () => void;
 }
 
 /** Same curve as --landing-ease, in the form framer needs. */
@@ -84,6 +86,20 @@ const subscribeCompact = (onChange: () => void) => {
 const readCompact = () => window.matchMedia(COMPACT_QUERY).matches;
 const useCompact = () => useSyncExternalStore(subscribeCompact, readCompact, () => false);
 
+/**
+ * Runs once the frame after this commit has reached the screen. Opening the
+ * overlay costs a slow first frame (mounting it, drawing its layers), and an
+ * animation started before that frame keeps its clock running through it: on
+ * desktop the wave lost its first ~230ms and jumped from a dot to the full
+ * screen. Starting here, a slow frame only delays the open.
+ */
+const afterFirstPaint = (run: () => void) => {
+  let frame = requestAnimationFrame(() => {
+    frame = requestAnimationFrame(run);
+  });
+  return () => cancelAnimationFrame(frame);
+};
+
 /* ---------------------------------------------------------------- Wave */
 
 const WAVE_POINTS = 72;
@@ -91,6 +107,11 @@ const WAVE_SAMPLES = 18;
 const WAVE_OPEN_MS = 820;
 /** The close plays the same wave backwards, this much faster. */
 const WAVE_CLOSE_RATE = 1.7;
+/** Every direction has landed well before the open's last keyframe, so a
+    plain reverse holds a full dark screen for its first ~300ms. Ease-in on the
+    keyframes, played backwards, rushes through that hold and then slows into
+    the centre. */
+const WAVE_CLOSE_EASING = "cubic-bezier(0.32, 0, 0.67, 0)";
 
 type WaveFrame = { clipPath: string; opacity?: number; offset: number };
 
@@ -143,6 +164,8 @@ const SpotlightWave = () => {
   const frontRef = useRef<HTMLSpanElement>(null);
   const bodyRef = useRef<HTMLSpanElement>(null);
   const waves = useRef<Animation[]>([]);
+  const started = useRef(false);
+  const cancelStart = useRef<() => void>(() => {});
   const [isPresent, safeToRemove] = usePresence();
 
   useLayoutEffect(() => {
@@ -156,6 +179,12 @@ const SpotlightWave = () => {
       front.animate(waveFrames(phase, 0.16, 0.35, true), timing),
       body.animate(waveFrames(phase, 0, 0, false), timing),
     ];
+    // Held on the first keyframe (nothing drawn) until the overlay is on screen.
+    waves.current.forEach((wave) => wave.pause());
+    cancelStart.current = afterFirstPaint(() => {
+      started.current = true;
+      waves.current.forEach((wave) => wave.play());
+    });
 
     // The polygon is drawn in pixels for this viewport. A rotation or resize
     // drops it, which leaves the scrim covering the whole screen as it should.
@@ -166,6 +195,7 @@ const SpotlightWave = () => {
     };
     window.addEventListener("resize", drop);
     return () => {
+      cancelStart.current();
       window.removeEventListener("resize", drop);
       waves.current.forEach((wave) => wave.cancel());
     };
@@ -174,6 +204,8 @@ const SpotlightWave = () => {
   useEffect(() => {
     const running = waves.current;
     if (isPresent) {
+      // The first open is started by the layout effect above.
+      if (!started.current) return;
       // Reopened mid-close: play forwards again from wherever the close got to.
       running.forEach((wave) => {
         wave.onfinish = null;
@@ -182,11 +214,18 @@ const SpotlightWave = () => {
       });
       return;
     }
+    // Closed before the open got going: never start it.
+    cancelStart.current();
+    started.current = true;
     if (running.length === 0) {
       safeToRemove?.();
       return;
     }
-    running.forEach((wave) => wave.updatePlaybackRate(-WAVE_CLOSE_RATE));
+    running.forEach((wave) => {
+      // Only a finished open: changing the easing mid-wave would jump its shape.
+      if (wave.playState === "finished") wave.effect?.updateTiming({ easing: WAVE_CLOSE_EASING });
+      wave.updatePlaybackRate(-WAVE_CLOSE_RATE);
+    });
     const body = running[running.length - 1];
     body.onfinish = () => safeToRemove?.();
     running.forEach((wave) => wave.play());
@@ -347,6 +386,7 @@ const TeamMemberSpotlight = ({
   activeIndex,
   onClose,
   onNavigate,
+  onExitComplete,
 }: TeamMemberSpotlightProps) => {
   const reduceMotion = useReducedMotion() ?? false;
   const compact = useCompact();
@@ -377,6 +417,8 @@ const TeamMemberSpotlight = ({
   const target = useRef(activeIndex ?? 0);
   const slide = useRef<AnimationPlaybackControls | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const scrimRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
   const panFrom = useRef<number | null>(null);
   const panned = useRef(false);
 
@@ -422,9 +464,22 @@ const TeamMemberSpotlight = ({
     goTo(from + ringOffset(index - mod(from, count), count));
   };
 
+  // The entrance (CSS, team-page.css) waits on data-live the same way the wave
+  // waits on afterFirstPaint, so both start together on the first shown frame.
+  // A data attribute, not a class: React never rewrites it on a re-render.
+  useLayoutEffect(() => {
+    if (!open) return;
+    return afterFirstPaint(() => {
+      scrimRef.current?.setAttribute("data-live", "");
+      sheetRef.current?.setAttribute("data-live", "");
+    });
+  }, [open]);
+
   // Landing routes scroll on <html> (landing-page.css), where Radix's
   // body-level lock is a no-op and the page keeps scrolling behind the scrim.
-  useEffect(() => {
+  // A layout effect, so the relayout this costs lands in the first frame and
+  // not in the middle of the wave.
+  useLayoutEffect(() => {
     if (!open) return;
     const previous = document.documentElement.style.overflow;
     document.documentElement.style.overflow = "hidden";
@@ -512,28 +567,29 @@ const TeamMemberSpotlight = ({
       {/* AnimatePresence sits OUTSIDE the portal: Radix hands every direct child
           of Dialog.Portal a ref, and AnimatePresence has none to give. forceMount
           throughout hands presence to framer so the exit animations can run. */}
-      <AnimatePresence>
+      <AnimatePresence onExitComplete={onExitComplete}>
         {open ? (
           <Dialog.Portal forceMount key="team-spotlight">
             <Dialog.Overlay asChild forceMount>
               <motion.div
+                ref={scrimRef}
                 className={`team-scrim${motionClass}`}
                 initial={reduceMotion ? { opacity: 0 } : false}
                 animate={{ opacity: 1 }}
-                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, transition: { duration: 0.18, delay: 0.3 } }}
+                // The wave carries the close; this fade only clears what is left of it at the end.
+                exit={reduceMotion ? { opacity: 0 } : { opacity: 0, transition: { duration: 0.12, delay: 0.36 } }}
                 transition={fadeTransition}
               >
-                <span className="team-scrim-blur" aria-hidden="true" />
                 {reduceMotion ? null : <SpotlightWave />}
                 <span className="team-aura-wrap" aria-hidden="true">
                   <span className="team-aura" />
-                  <span className="team-aura is-counter" />
                 </span>
               </motion.div>
             </Dialog.Overlay>
 
             <Dialog.Content asChild forceMount onKeyDown={handleKeyDown} {...describedBy}>
               <motion.div
+                ref={sheetRef}
                 className={`team-spotlight${count > 1 ? " is-steppable" : ""}${motionClass}`}
                 initial={reduceMotion ? { opacity: 0 } : false}
                 animate={{ opacity: 1 }}
