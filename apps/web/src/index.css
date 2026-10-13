@@ -144,6 +144,13 @@
     height: 100dvh;
   }
 
+  /* The landing scrolls on the document; the rest of the app scrolls in #root.
+   * Stop the native rubber-band / scroll chaining at either page boundary. */
+  html,
+  #root {
+    overscroll-behavior-y: none;
+  }
+
   #root {
     height: 100svh;
     height: 100dvh;
