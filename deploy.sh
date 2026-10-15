@@ -93,7 +93,9 @@ fi
 
 if $DEPLOY_FRONTEND; then
   export VITE_API_URL="${VITE_API_URL:-https://api.${DOMAIN}}"
-  log "Building web (VITE_API_URL=${VITE_API_URL})..."
+  # Visitor analytics on the public site. Must match ci.yml, or the next CI deploy flips it.
+  export VITE_ANALYTICS="${VITE_ANALYTICS:-true}"
+  log "Building web (VITE_API_URL=${VITE_API_URL}, VITE_ANALYTICS=${VITE_ANALYTICS})..."
   npm run build:web || err "Web build failed"
   # Git tracks only the executable bit. Public assets copied from macOS can
   # still carry mode 0600, which makes nginx return 403 after the tar upload.

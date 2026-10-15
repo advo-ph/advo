@@ -47,6 +47,8 @@ jobs:
         env:
           # Production API target — same as VPS-side build
           VITE_API_URL: https://api.advo.ph
+          # Visitor analytics on the public site (consent prompt + tracker). Same as deploy.sh.
+          VITE_ANALYTICS: "true"
 
       - name: Upload frontend build
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
