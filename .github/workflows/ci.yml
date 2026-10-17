@@ -47,8 +47,6 @@ jobs:
         env:
           # Production API target — same as VPS-side build
           VITE_API_URL: https://api.advo.ph
-          # Visitor analytics on the public site (consent prompt + tracker). Same as deploy.sh.
-          VITE_ANALYTICS: "true"
 
       - name: Upload frontend build
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -102,6 +100,20 @@ jobs:
           ssh -i ~/.ssh/advo_deploy_key -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
             "test -f $VPS_WEB_ROOT/index.html"
           curl --fail --silent --show-error --location --max-time 20 https://advo.ph >/dev/null
+
+      # Only the one script; this job otherwise works from the build artifact.
+      - name: Fetch the post-deploy search script
+        uses: actions/checkout@v6
+        with:
+          path: repo
+          sparse-checkout: apps/web/scripts/post-deploy-seo.mjs
+          sparse-checkout-cone-mode: false
+
+      # Checks nginx serves each page its own HTML, and pings IndexNow (Bing, and
+      # through it ChatGPT search and Copilot). Warns, never fails the deploy.
+      - name: Notify search engines
+        continue-on-error: true
+        run: node repo/apps/web/scripts/post-deploy-seo.mjs dist
 
   audit:
     name: Security audit
