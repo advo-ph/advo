@@ -101,12 +101,80 @@ const advoMarkMask = `url("data:image/svg+xml,${encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 757 174"><path fill-rule="evenodd" d="${advoMarkPath}"/></svg>`,
 )}")`;
 
-/** Three wave rows at different widths and speeds. Their sum is the aurora. */
-const auroraWave = [1, 2, 3].map((row) => (
-  <span key={row} className={`landing-footer-wave is-row-${row}`}>
-    <i />
-  </span>
-));
+type GradientStop = [offset: number, alpha: number];
+
+/** One crest from its peak to its rim. CSS sets each row's strength. */
+const crestStop: GradientStop[] = [[0, 1], [0.18, 0.69], [0.36, 0.38], [0.55, 0.18], [0.75, 0.054], [1, 0]];
+/** The steady light: a rise from the bottom edge and a pool at its center. */
+const riseStop: GradientStop[] = [[0, 0.28], [0.1, 0.16], [0.22, 0.07], [0.36, 0.02], [0.55, 0]];
+const poolStop: GradientStop[] = [[0, 0.14], [0.72, 0]];
+
+const addWhiteStop = (gradient: CanvasGradient, stop: GradientStop[]) => {
+  stop.forEach(([offset, alpha]) => gradient.addColorStop(offset, `rgba(255, 255, 255, ${alpha})`));
+};
+
+/** Fills a half ellipse that sits on the bottom edge, centered at x. */
+const fillHalfEllipse = (ctx: CanvasRenderingContext2D, x: number, radiusX: number, radiusY: number, stop: GradientStop[]) => {
+  ctx.setTransform(radiusX, 0, 0, radiusY, x, ctx.canvas.height);
+  const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+  addWhiteStop(gradient, stop);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(-1, -1, 2, 1);
+};
+
+/** The light is painted once into small canvases. CSS stretches each canvas
+    over its box and the GPU scales it up. A soft glow loses nothing at low
+    resolution, and a full-size gradient layer per row was too much for
+    low-end devices: they painted the light late, and in pieces. */
+const startCanvas = (canvas: HTMLCanvasElement | null) => {
+  const ctx = canvas?.getContext("2d");
+  if (!ctx) return null;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  return ctx;
+};
+
+const paintWave = (canvas: HTMLCanvasElement | null, tileCount: number) => {
+  const ctx = startCanvas(canvas);
+  if (!ctx) return;
+  const { width, height } = ctx.canvas;
+  const tileWidth = width / tileCount;
+  for (let tile = 0; tile < tileCount; tile++) {
+    fillHalfEllipse(ctx, tileWidth * (tile + 0.5), tileWidth / 2, height, crestStop);
+  }
+};
+
+const paintGlow = (canvas: HTMLCanvasElement | null) => {
+  const ctx = startCanvas(canvas);
+  if (!ctx) return;
+  const { width, height } = ctx.canvas;
+  // The rise and the pool add up, the way two lights do.
+  ctx.globalCompositeOperation = "lighter";
+  const rise = ctx.createLinearGradient(0, height, 0, 0);
+  addWhiteStop(rise, riseStop);
+  ctx.fillStyle = rise;
+  ctx.fillRect(0, 0, width, height);
+  fillHalfEllipse(ctx, width / 2, width * 0.62, height * 0.58, poolStop);
+};
+
+/** Three wave rows at different widths and speeds over the steady glow.
+    Their sum is the aurora. Each strip is twice the row's width, so the
+    crest count stays even. Canvases stay above 256 × 256 pixels in area, so
+    browsers composite them straight from the bitmap. */
+const waveRow = [
+  { row: 1, paint: (canvas: HTMLCanvasElement | null) => paintWave(canvas, 4) },
+  { row: 2, paint: (canvas: HTMLCanvasElement | null) => paintWave(canvas, 6) },
+  { row: 3, paint: (canvas: HTMLCanvasElement | null) => paintWave(canvas, 10) },
+];
+
+const auroraLight = [
+  <canvas key="glow" className="landing-footer-glow" width={512} height={256} ref={paintGlow} />,
+  ...waveRow.map(({ row, paint }) => (
+    <span key={row} className={`landing-footer-wave is-row-${row}`}>
+      <canvas width={960} height={120} ref={paint} />
+    </span>
+  )),
+];
 
 const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
   const [socialLink, setSocialLink] = useState<SocialLink[]>(socialDefault);
@@ -217,8 +285,9 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
 
       {/* A dark gray ADVO mark with a faint aurora drifting along the bottom
           edge. A slightly widened reflection of the same waves is masked
-          into the letters, so they softly catch the light. Everything is
-          transform-only CSS, and it stops while the footer is off screen. */}
+          into the letters, so they softly catch the light. The waves are
+          small canvases moved by transform-only CSS, and they stop while the
+          footer is off screen. */}
       <div
         className="landing-footer-stage"
         ref={stageRef}
@@ -228,9 +297,9 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
         aria-label="ADVO"
       >
         <div className="landing-footer-mark" style={{ "--advo-mark": advoMarkMask } as CSSProperties}>
-          <div className="landing-footer-aurora" aria-hidden="true">{auroraWave}</div>
+          <div className="landing-footer-aurora" aria-hidden="true">{auroraLight}</div>
           <div className="landing-footer-glass" aria-hidden="true">
-            <div className="landing-footer-aurora is-refracted">{auroraWave}</div>
+            <div className="landing-footer-aurora is-refracted">{auroraLight}</div>
           </div>
           {/* Vector edges, so they stay sharp at any size: a faint glow just
               inside each edge for the thickness of the glass, then a thin rim.
@@ -242,6 +311,11 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
                 <stop offset="0.5" stopColor="#fff" stopOpacity="0.4" />
                 <stop offset="1" stopColor="#fff" stopOpacity="0.2" />
               </linearGradient>
+              <linearGradient id="landing-footer-glass-tint" x1="0" y1="174" x2="0" y2="0" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stopColor="#fff" stopOpacity="0.035" />
+                <stop offset="0.5" stopColor="#fff" stopOpacity="0.012" />
+                <stop offset="1" stopColor="#fff" stopOpacity="0.005" />
+              </linearGradient>
               <clipPath id="landing-footer-edge-clip">
                 <path d={advoMarkPath} clipRule="evenodd" />
               </clipPath>
@@ -249,22 +323,28 @@ const LandingFooter = ({ anchorPrefix = "" }: LandingFooterProps) => {
                 <feGaussianBlur stdDeviation="2.5" />
               </filter>
             </defs>
-            <path
-              d={advoMarkPath}
-              fill="none"
-              stroke="url(#landing-footer-edge-light)"
-              strokeWidth="8"
-              strokeOpacity="0.4"
-              filter="url(#landing-footer-edge-blur)"
-              clipPath="url(#landing-footer-edge-clip)"
-            />
-            <path
-              d={advoMarkPath}
-              fill="none"
-              stroke="url(#landing-footer-edge-light)"
-              strokeWidth="1.25"
-              vectorEffect="non-scaling-stroke"
-            />
+            {/* Smoked glass stays dark, with a little tint where the light
+                enters. It lives here, not on the glass, so the glass needs
+                no full-size layer of its own. */}
+            <path d={advoMarkPath} fillRule="evenodd" fill="url(#landing-footer-glass-tint)" />
+            <g opacity="0.08">
+              <path
+                d={advoMarkPath}
+                fill="none"
+                stroke="url(#landing-footer-edge-light)"
+                strokeWidth="8"
+                strokeOpacity="0.4"
+                filter="url(#landing-footer-edge-blur)"
+                clipPath="url(#landing-footer-edge-clip)"
+              />
+              <path
+                d={advoMarkPath}
+                fill="none"
+                stroke="url(#landing-footer-edge-light)"
+                strokeWidth="1.25"
+                vectorEffect="non-scaling-stroke"
+              />
+            </g>
           </svg>
         </div>
       </div>
