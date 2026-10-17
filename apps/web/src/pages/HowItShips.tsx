@@ -70,9 +70,9 @@ const stages = [
 
 const HowItShips = () => {
   useEffect(() => {
-    document.title = "How it ships — ADVO";
+    document.title = "How it ships | ADVO Technologies";
     return () => {
-      document.title = "ADVO. We digitalize it for you.";
+      document.title = "ADVO Technologies. We digitalize it for you.";
     };
   }, []);
 

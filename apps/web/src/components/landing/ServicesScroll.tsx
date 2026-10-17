@@ -3,6 +3,7 @@ import { useReducedMotion } from "framer-motion";
 import { createTimeline, onScroll, stagger, type Timeline } from "animejs";
 import { ArrowUpRight } from "lucide-react";
 import { createServicesScene, type SceneState } from "./services-scene";
+import { serviceChapters as chapters, servicesTitle as TITLE } from "./landing-content";
 
 /**
  * Services as a full-screen 3D scene. It opens on a centered title with a
@@ -12,12 +13,6 @@ import { createServicesScene, type SceneState } from "./services-scene";
  * anime.js maps scroll position to the scene state and the text reveals, so
  * scrolling back plays everything in reverse.
  */
-interface Chapter {
-  title: string;
-  line: string;
-  chips: string[];
-}
-
 // Where text finishes fading in, as a share of the screen height from the top.
 // Phones put it lower, so the text clears the model with more room.
 const FADE_LINE = 0.62;
@@ -26,25 +21,6 @@ const PHONE = "(max-width: 680px)";
 // On phones the dust starts bursting while the title is still in view,
 // with the section top just below the top of the screen.
 const BURST_TOP = 0.20;
-const TITLE = "Prepare your business for AI modernization";
-
-const chapters: Chapter[] = [
-  {
-    title: "Connect",
-    line: "Every part of your business in one system.",
-    chips: ["Billing", "POS", "Scheduling", "Data migration"],
-  },
-  {
-    title: "Automate",
-    line: "AI answers calls, books clients, and follows up.",
-    chips: ["Calls", "Bookings", "Website chat", "Follow-ups"],
-  },
-  {
-    title: "Grow",
-    line: "Turn visitors into paying customers.",
-    chips: ["Websites", "Lead capture", "Online booking", "Reporting"],
-  },
-];
 
 export default function ServicesScroll() {
   const reduceMotion = useReducedMotion();

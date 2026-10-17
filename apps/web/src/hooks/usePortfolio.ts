@@ -54,7 +54,7 @@ function mapShipped(row: Record<string, unknown>): ShippedProject {
   };
 }
 
-async function fetchShipped(): Promise<ShippedProject[]> {
+export async function fetchShipped(): Promise<ShippedProject[]> {
   const res = await get<Record<string, unknown>[]>("/api/content/portfolio");
   if (res.error) throw new Error(res.error);
 

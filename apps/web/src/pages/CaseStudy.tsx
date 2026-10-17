@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, ArrowUpRight } from "lucide-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
@@ -23,13 +22,6 @@ const CaseStudy = () => {
 
   const entry = project.find((item) => item.slug === slug);
   const study = getCaseStudy(slug);
-
-  useEffect(() => {
-    if (entry) document.title = `${entry.title} — ADVO`;
-    return () => {
-      document.title = "ADVO. We digitalize it for you.";
-    };
-  }, [entry]);
 
   const live = entry?.live_url ?? study?.liveUrl ?? null;
 

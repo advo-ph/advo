@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import LandingShell from "@/components/landing/landing-shell";
 import "./studio-pages.css";
@@ -6,10 +6,6 @@ import "./studio-pages.css";
 export default function StudioPage({ title, intro, note, children }: {
   title: string; intro: string; note?: ReactNode; children: ReactNode;
 }) {
-  useEffect(() => {
-    document.title = `${title} — ADVO`;
-    return () => { document.title = "ADVO. We digitalize it for you."; };
-  }, [title]);
   return <LandingShell>
     <main className="landing-shell-main studio-page">
       <header className="studio-hero">
