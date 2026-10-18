@@ -20,7 +20,12 @@ import {
 } from "./plaud-import.service.js";
 import { extract, ingestBundle } from "./corpus.service.js";
 import { routeCandidate, routeRecording } from "./meeting-route.service.js";
-import { getOpenFileDetail, hasOpenAuth, listOpenFile } from "./plaud-open.service.js";
+import {
+  getOpenFileDetail,
+  hasOpenAuth,
+  listOpenFile,
+  openTokenFilePaths,
+} from "./plaud-open.service.js";
 import {
   hasPlaudAuth,
   isTokenUsable,
@@ -135,7 +140,8 @@ function lookbackMillisecond(): number {
   return (Number.isFinite(day) && day > 0 ? day : 3) * 24 * 60 * 60 * 1000;
 }
 
-let isFirstOpenWalk = true;
+/** Grants already walked once since boot; only a grant's first walk reaches PLAUD_OPEN_SINCE. */
+const walkedGrant = new Set<string>();
 
 /**
  * A routed meeting also lands in the corpus, as POST /api/corpus/ingest/plaud does
@@ -181,20 +187,21 @@ async function ingestToCorpus(
  * Open API tick: list the new head, read each recording, route it, import the
  * ADVO ones under their project (Inbox when the project is unclear).
  */
-async function syncOpen(seenFileId: Set<string>): Promise<{
+async function syncOpen(seenFileId: Set<string>, grant: string): Promise<{
   imported: number;
   skipped: number;
   seen: number;
   importedMeetingId: number[];
+  routedFileId: string[];
 }> {
   // Walk by time, not to the first imported file. A recording still transcribing
   // when a newer one was imported used to sit below that watermark forever
   // (2026-10-18: Fun Ride and two clinic meetings were missed exactly so).
   const lookbackFloor = Date.now() - lookbackMillisecond();
-  const since = isFirstOpenWalk ? openSince() : null;
+  const since = walkedGrant.has(grant) ? null : openSince();
   const floor = since !== null ? Math.min(since, lookbackFloor) : lookbackFloor;
-  const listed = await listOpenFile((f: PlaudFile) => f.startAt !== null && Date.parse(f.startAt) < floor);
-  isFirstOpenWalk = false;
+  const listed = await listOpenFile((f: PlaudFile) => f.startAt !== null && Date.parse(f.startAt) < floor, grant);
+  walkedGrant.add(grant);
   const file = listed.filter((f) => !seenFileId.has(f.fileId));
   const fresh = file.filter((f) => !notAdvoFileId.has(f.fileId));
   const candidate = fresh.length > 0 ? await routeCandidate() : [];
@@ -203,11 +210,12 @@ async function syncOpen(seenFileId: Set<string>): Promise<{
   let imported = 0;
   let skipped = file.length - fresh.length;
   const importedMeetingId: number[] = [];
+  const routedFileId: string[] = [];
   for (const [index, f] of fresh.entries()) {
     // The Open API rate-limits detail reads; a first run walks months of files.
     if (index > 0) await new Promise((resolve) => setTimeout(resolve, OPEN_READ_GAP_MILLISECOND));
     try {
-      const payload = payloadFromDetail(await getOpenFileDetail(f.fileId), null);
+      const payload = payloadFromDetail(await getOpenFileDetail(f.fileId, grant), null);
       // No transcript yet: leave it unjudged so the next tick reads it again.
       if (!payload.transcript.trim()) {
         skipped += 1;
@@ -224,6 +232,7 @@ async function syncOpen(seenFileId: Set<string>): Promise<{
       if (result.created) {
         imported += 1;
         if (result.meeting?.meetingId) importedMeetingId.push(result.meeting.meetingId);
+        routedFileId.push(f.fileId);
         await ingestToCorpus(payload, f.fileId, route.projectId, result.meeting?.meetingId ?? null, createdBy);
         log.info(
           { fileId: f.fileId, projectId, matched: route.matched, score: route.score },
@@ -239,7 +248,7 @@ async function syncOpen(seenFileId: Set<string>): Promise<{
       throw err;
     }
   }
-  return { imported, skipped, seen: file.length, importedMeetingId };
+  return { imported, skipped, seen: file.length, importedMeetingId, routedFileId };
 }
 
 /** Plaud file ids already on a meeting row — the page walk's stop set. */
@@ -253,6 +262,33 @@ async function importedFileId(): Promise<Set<string>> {
     if (r.plaudFileId) id.add(r.plaudFileId);
   }
   return id;
+}
+
+/**
+ * One Open API walk per grant (Mar's account, Prince's, ...). A grant whose refresh
+ * token has expired is skipped, not fatal: the other accounts still import.
+ */
+async function syncEveryGrant(seenFileId: Set<string>): Promise<{
+  imported: number;
+  skipped: number;
+  seen: number;
+  importedMeetingId: number[];
+}> {
+  const total = { imported: 0, skipped: 0, seen: 0, importedMeetingId: [] as number[] };
+  for (const grant of openTokenFilePaths()) {
+    if (!hasOpenAuth(Date.now(), grant)) {
+      log.warn({ grant }, "Plaud grant has no usable refresh token; skipped");
+      continue;
+    }
+    const one = await syncOpen(seenFileId, grant);
+    total.imported += one.imported;
+    total.skipped += one.skipped;
+    total.seen += one.seen;
+    total.importedMeetingId.push(...one.importedMeetingId);
+    // A file imported through one account is not re-imported through another.
+    for (const id of one.routedFileId) seenFileId.add(id);
+  }
+  return total;
 }
 
 /** Consumer tick: every recording in the ADVO tag folder goes to Inbox. */
@@ -331,7 +367,7 @@ export async function syncPlaudFolder(): Promise<PlaudSyncStatus> {
     const via = transport();
     status.transport = via;
     const { imported, skipped, seen, importedMeetingId } =
-      via === "open" ? await syncOpen(seenFileId) : await syncConsumer(seenFileId);
+      via === "open" ? await syncEveryGrant(seenFileId) : await syncConsumer(seenFileId);
     status.seenCount = seen;
 
     status.importedCount = imported;

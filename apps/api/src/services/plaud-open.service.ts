@@ -65,12 +65,21 @@ function apiBase(): string {
   return (process.env.PLAUD_OPEN_API_BASE || DEFAULT_API_BASE).replace(/\/$/, "");
 }
 
-export function openTokenFilePath(): string {
-  return process.env.PLAUD_OPEN_TOKEN_FILE || DEFAULT_TOKEN_FILE;
+/**
+ * Every grant to poll. PLAUD_OPEN_TOKEN_FILE may list several files, comma-separated:
+ * one per Plaud account (Mar's, Prince's, ...). Each refreshes itself independently.
+ */
+export function openTokenFilePaths(): string[] {
+  const raw = process.env.PLAUD_OPEN_TOKEN_FILE || DEFAULT_TOKEN_FILE;
+  return raw.split(",").map((p) => p.trim()).filter(Boolean);
 }
 
-function readTokenFile(): TokenFile | null {
-  const path = openTokenFilePath();
+/** The first grant: the default for one-off reads such as a manual import. */
+export function openTokenFilePath(): string {
+  return openTokenFilePaths()[0] ?? DEFAULT_TOKEN_FILE;
+}
+
+function readTokenFile(path = openTokenFilePath()): TokenFile | null {
   if (!existsSync(path)) return null;
   try {
     return JSON.parse(readFileSync(path, "utf8")) as TokenFile;
@@ -79,8 +88,7 @@ function readTokenFile(): TokenFile | null {
   }
 }
 
-function writeTokenFile(token: TokenFile): void {
-  const path = openTokenFilePath();
+function writeTokenFile(token: TokenFile, path = openTokenFilePath()): void {
   writeFileSync(path, JSON.stringify(token, null, 2));
   try {
     chmodSync(path, 0o600);
@@ -103,29 +111,30 @@ export function jwtExpiryMillisecond(token: string | undefined): number | null {
 }
 
 /** A refresh token that has not expired yet — the only thing a poll needs to run. */
-export function hasOpenAuth(now = Date.now()): boolean {
-  const token = readTokenFile();
+export function hasOpenAuth(now = Date.now(), path?: string): boolean {
+  if (path === undefined) return openTokenFilePaths().some((p) => hasOpenAuth(now, p));
+  const token = readTokenFile(path);
   if (!token?.refresh_token) return false;
   const exp = jwtExpiryMillisecond(token.refresh_token);
   return exp === null || exp > now;
 }
 
-export function openAuthState(): {
+export function openAuthState(path = openTokenFilePath()): {
   isConfigured: boolean;
   accessExpiresAt: string | null;
   refreshExpiresAt: string | null;
 } {
-  const token = readTokenFile();
+  const token = readTokenFile(path);
   const access = jwtExpiryMillisecond(token?.access_token);
   const refresh = jwtExpiryMillisecond(token?.refresh_token);
   return {
-    isConfigured: hasOpenAuth(),
+    isConfigured: hasOpenAuth(Date.now(), path),
     accessExpiresAt: access ? new Date(access).toISOString() : null,
     refreshExpiresAt: refresh ? new Date(refresh).toISOString() : null,
   };
 }
 
-async function refreshToken(current: TokenFile): Promise<TokenFile> {
+async function refreshToken(current: TokenFile, path: string): Promise<TokenFile> {
   if (!current.refresh_token) throw new PlaudOpenError(401, "Plaud Open API: no refresh token");
   const res = await plaudFetch(`${apiBase()}/oauth/third-party/access-token/refresh`, {
     method: "POST",
@@ -148,19 +157,19 @@ async function refreshToken(current: TokenFile): Promise<TokenFile> {
     token_type: data.token_type ?? "bearer",
     expires_at: data.expires_in ? Date.now() + data.expires_in * 1000 : undefined,
   };
-  writeTokenFile(next);
+  writeTokenFile(next, path);
   return next;
 }
 
 /** The current access token, refreshed first when it is about to expire. */
-async function accessToken(force = false): Promise<string> {
-  const token = readTokenFile();
-  if (!token) throw new PlaudOpenError(401, `Plaud Open API: no token file at ${openTokenFilePath()}`);
+async function accessToken(force: boolean, path: string): Promise<string> {
+  const token = readTokenFile(path);
+  if (!token) throw new PlaudOpenError(401, `Plaud Open API: no token file at ${path}`);
   const exp = jwtExpiryMillisecond(token.access_token) ?? token.expires_at ?? 0;
   if (!force && token.access_token && exp - REFRESH_MARGIN_MILLISECOND > Date.now()) {
     return token.access_token;
   }
-  const fresh = await refreshToken(token);
+  const fresh = await refreshToken(token, path);
   return fresh.access_token as string;
 }
 
@@ -172,16 +181,16 @@ const RATE_LIMIT_RETRY = 3;
 
 const pause = (millisecond: number) => new Promise((resolve) => setTimeout(resolve, millisecond));
 
-async function openRequest<T>(path: string, retried = false, attempt = 0): Promise<T> {
-  const token = await accessToken(retried);
+async function openRequest<T>(path: string, grant: string, retried = false, attempt = 0): Promise<T> {
+  const token = await accessToken(retried, grant);
   const res = await plaudFetch(`${apiBase()}${path}`, {
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
   });
-  if (res.status === 401 && !retried) return openRequest<T>(path, true, attempt);
+  if (res.status === 401 && !retried) return openRequest<T>(path, grant, true, attempt);
   if (res.status === 429 && attempt < RATE_LIMIT_RETRY) {
     const after = Number(res.headers.get("retry-after"));
     await pause(Number.isFinite(after) && after > 0 ? after * 1000 : 2000 * 2 ** attempt);
-    return openRequest<T>(path, retried, attempt + 1);
+    return openRequest<T>(path, grant, retried, attempt + 1);
   }
   if (!res.ok) throw new PlaudOpenError(res.status, `Plaud Open API ${path.split("?")[0]} → ${res.status}`);
   return (await res.json()) as T;
@@ -214,11 +223,14 @@ export function fileFromOpenRow(row: OpenFileRow): PlaudFile | null {
  * Walk the account newest-first. `stopAt` ends the walk at the first file already
  * imported, so a steady-state tick reads one page.
  */
-export async function listOpenFile(stopAt?: (file: PlaudFile) => boolean): Promise<PlaudFile[]> {
+export async function listOpenFile(
+  stopAt?: (file: PlaudFile) => boolean,
+  grant = openTokenFilePath(),
+): Promise<PlaudFile[]> {
   const file: PlaudFile[] = [];
   for (let page = 1; page <= MAX_PAGE; page += 1) {
     const envl = await openRequest<{ data?: OpenFileRow[] }>(
-      `/open/third-party/files/?page=${page}&page_size=${PAGE_SIZE}`,
+      `/open/third-party/files/?page=${page}&page_size=${PAGE_SIZE}`, grant,
     );
     const row = envl.data ?? [];
     for (const one of row) {
@@ -233,9 +245,9 @@ export async function listOpenFile(stopAt?: (file: PlaudFile) => boolean): Promi
 }
 
 /** One recording, shaped as the consumer FileDetail so payloadFromDetail reads it unchanged. */
-export async function getOpenFileDetail(fileId: string): Promise<FileDetail> {
+export async function getOpenFileDetail(fileId: string, grant = openTokenFilePath()): Promise<FileDetail> {
   const openId = fileId.startsWith("of_") ? fileId : `of_${fileId}`;
-  const raw = await openRequest<OpenFileDetail>(`/open/third-party/files/${encodeURIComponent(openId)}`);
+  const raw = await openRequest<OpenFileDetail>(`/open/third-party/files/${encodeURIComponent(openId)}`, grant);
   const start = openTimeToIso(raw.start_at ?? raw.created_at);
   return hydrateDetail({
     file_id: hexFileId(openId),

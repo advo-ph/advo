@@ -2,7 +2,8 @@ import { Hono } from "hono";
 import { checkDb } from "../db/connection.js";
 import { errorCount, recentError } from "../utils/error-capture.js";
 import { plaudSyncStatus } from "../services/plaud-poll.service.js";
-import { openAuthState } from "../services/plaud-open.service.js";
+import { basename } from "node:path";
+import { openAuthState, openTokenFilePaths } from "../services/plaud-open.service.js";
 import { plaudAuthState } from "../services/plaud.service.js";
 import { mailHealth } from "../services/email.service.js";
 
@@ -67,6 +68,8 @@ health.get("/", async (c) => {
       isOpenTokenConfigured: openAuth.isConfigured,
       openAccessExpiresAt: openAuth.accessExpiresAt,
       openRefreshExpiresAt: openAuth.refreshExpiresAt,
+      // One entry per polled Plaud account (file name only, never the token).
+      openGrant: openTokenFilePaths().map((path) => ({ file: basename(path), ...openAuthState(path) })),
     },
 
     mail,

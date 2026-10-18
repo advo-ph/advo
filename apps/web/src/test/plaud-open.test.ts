@@ -4,6 +4,7 @@ import {
   hexFileId,
   jwtExpiryMillisecond,
   openTimeToIso,
+  openTokenFilePaths,
 } from "../../../api/src/services/plaud-open.service";
 import { keywordFor, routeRecording, type RouteCandidate } from "../../../api/src/services/meeting-route.service";
 import { payloadFromDetail } from "../../../api/src/services/plaud.service";
@@ -155,6 +156,14 @@ describe("Open API mapping", () => {
     expect(payload.recordedAt.toISOString()).toBe("2026-10-15T09:27:41.000Z");
     expect(payload.transcript).toContain("Speaker 1 — Okay.");
     expect(payload.summary).toBe("## 1. Menu");
+  });
+
+  it("polls every grant listed in PLAUD_OPEN_TOKEN_FILE", () => {
+    const before = process.env.PLAUD_OPEN_TOKEN_FILE;
+    process.env.PLAUD_OPEN_TOKEN_FILE = "/opt/a.json, /opt/prince.json,";
+    expect(openTokenFilePaths()).toEqual(["/opt/a.json", "/opt/prince.json"]);
+    if (before === undefined) delete process.env.PLAUD_OPEN_TOKEN_FILE;
+    else process.env.PLAUD_OPEN_TOKEN_FILE = before;
   });
 
   it("reads a JWT expiry", () => {
