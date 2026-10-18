@@ -105,6 +105,7 @@ export const libraryItemTypeEnum = pgEnum("library_item_type", [
 export const user = pgTable("user", {
   userId: bigserial("user_id", { mode: "number" }).primaryKey(),
   email: varchar("email", { length: 255 }).unique().notNull(),
+  username: varchar("username", { length: 255 }).notNull(),
   passwordHash: varchar("password_hash", { length: 255 }),
   role: userRoleEnum("role").notNull().default("client"),
   isActive: boolean("is_active").notNull().default(true),
@@ -114,7 +115,7 @@ export const user = pgTable("user", {
   magicTokenExpiresAt: timestamp("magic_token_expires_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => [uniqueIndex("idx_user_username").on(t.username)]);
 
 export const session = pgTable(
   "session",
@@ -297,6 +298,8 @@ export const deliverable = pgTable(
     title: varchar("title", { length: 255 }).notNull(),
     description: text("description"),
     priority: integer("priority").default(0),
+    /** Stable per-status position for the shared Tasks board (migration 048). */
+    sortOrder: integer("sort_order").notNull().default(0),
     status: deliverableStatusEnum("status").notNull().default("todo"),
     dueDate: timestamp("due_date", { withTimezone: true }),
     completedAt: timestamp("completed_at", { withTimezone: true }),
@@ -654,10 +657,12 @@ export const portfolioProject = pgTable(
     previewUrl: varchar("preview_url", { length: 500 }),
     imageUrl: varchar("image_url", { length: 500 }),
     imageUrls: text("image_urls").array(),
+    logoUrl: varchar("logo_url", { length: 500 }),
     techStack: text("tech_stack").array(),
     slug: varchar("slug", { length: 100 }).unique(),
-    isFeatured: boolean("is_featured").notNull().default(false),
+    isFeatured: boolean("is_featured").notNull().default(true),
     displayOrder: integer("display_order").default(0),
+    deviceType: varchar("device_type", { length: 10 }).notNull().default("laptop"),
     caseStudy: jsonb("case_study"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -1827,6 +1832,17 @@ export const analyticsEvent = pgTable(
     path: varchar("path", { length: 512 }).notNull().default("/"),
     /** Per-kind payload. NOT NULL with a '{}' default so read code never branches on null. */
     detail: jsonb("detail").notNull().default({}),
+    // ─── Visitor geo (migration 051) ───────────────────
+    // Server-resolved from the request's IP at ingest (services/geo.service.ts). The raw
+    // IP itself is never persisted — only this coarse, city-level derivation. Null when
+    // the request came from a private/loopback address or the geo database was
+    // unavailable at lookup time; never a hard failure.
+    geoCountry: varchar("geo_country", { length: 2 }),
+    geoRegion: varchar("geo_region", { length: 100 }),
+    geoCity: varchar("geo_city", { length: 100 }),
+    /** City-centroid precision only, rounded to 2 decimals at write time — never exact. */
+    geoLat: numeric("geo_lat", { precision: 6, scale: 2 }),
+    geoLon: numeric("geo_lon", { precision: 6, scale: 2 }),
     // No updatedAt: an analytics event is immutable.
   },
   (t) => [
@@ -1838,6 +1854,12 @@ export const analyticsEvent = pgTable(
     index("idx_analytics_event_received").on(t.receivedAt),
     // The engagement read groups by user; signed-in rows are a small minority.
     index("idx_analytics_event_user").on(t.userId, t.occurredAt).where(sql`user_id IS NOT NULL`),
+    // The admin visitor-stats geo endpoint groups/filters on country within a received_at
+    // range; partial because most historical rows (and any looked up before the mmdb file
+    // existed) have no geo at all.
+    index("idx_analytics_event_geo_country")
+      .on(t.geoCountry, t.receivedAt)
+      .where(sql`geo_country IS NOT NULL`),
   ]
 );
 

@@ -10,7 +10,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Upload, Loader2, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { FinanceButton as Button } from "./FinanceButton";
 import { Panel, Empty } from "@/components/admin/_ui";
 import { FileViewerDialog } from "@/components/admin/shared/FileViewerDialog";
 import { ConfirmDeleteDialog } from "@/components/admin/ConfirmDeleteDialog";

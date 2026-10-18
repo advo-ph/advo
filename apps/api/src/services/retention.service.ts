@@ -1,15 +1,22 @@
 /**
  * Retention + rollup for analytics_event (migration 046).
  *
- * analytics_event is the only firehose table in this schema and the production database
- * lives on a ~10 MB Contabo VPS. Unbounded, it becomes the whole database. So raw rows get
- * a WINDOW, and the aggregate that must outlive them gets written FIRST.
+ * DEFAULT AS OF THE visitor-analytics PLAN: raw rows are kept FOREVER unless an operator
+ * opts in by setting ANALYTICS_RETENTION_DAY to a positive integer, at which point the
+ * rollup-verify-then-delete sweep below applies at that many days. This was a deliberate
+ * scope change — the admin visitor-stats surface reads geo and page detail straight off
+ * the raw table for any date range, so there is no separate aggregate to preserve history
+ * once rows start ageing out. See the plan's Risks section for the storage-growth tradeoff
+ * this implies on a 20 GB VPS disk.
  *
- * The order is the entire safety property: rollup, verify, then delete. A sweep that
- * deleted before aggregating would silently erase history the moment the rollup threw. If
- * rollupAnalyticsEvent() fails, sweepAnalyticsEvent() does not run and the raw rows simply
- * stay another cycle — the table grows a little, which is recoverable; the history does not
- * disappear, which would not be.
+ * The daily rollup (rollupAnalyticsEvent) is UNCHANGED and keeps running regardless of the
+ * above — it is cheap and still what any future long-range chart reads for coarse trends.
+ *
+ * The order is the entire safety property, for the opt-in deletion path: rollup, verify,
+ * then delete. A sweep that deleted before aggregating would silently erase history the
+ * moment the rollup threw. If rollupAnalyticsEvent() fails, sweepAnalyticsEvent() does not
+ * run and the raw rows simply stay another cycle — the table grows a little, which is
+ * recoverable; the history does not disappear, which would not be.
  *
  * activity_log is NOT touched by any of this. It is a 24-row audit trail kept forever.
  */
@@ -22,11 +29,11 @@ import { createLogger } from "../utils/logger.js";
 const log = createLogger("retention");
 
 /**
- * How many days of RAW analytics_event rows are kept. Ninety days covers a full quarter's
- * session-level debugging — the only thing raw rows are actually needed for — and anything
- * older is answered from analytics_event_rollup, which is never swept. Override with
- * ANALYTICS_RETENTION_DAY; the constant is the shipped default and the value the sweep
- * falls back to when the env var is missing or nonsense.
+ * The legacy/example retention window, kept as a named constant so an operator opting
+ * into deletion has a documented starting point (ninety days covers a full quarter's
+ * session-level debugging — the only thing raw rows are actually needed for). NOT used as
+ * an implicit default any more: deletion is disabled unless ANALYTICS_RETENTION_DAY is
+ * explicitly set to a positive integer (see retentionDay() below).
  */
 export const RETENTION_DAY = 90;
 
@@ -40,17 +47,23 @@ const SWEEP_INTERVAL_HOUR = 24;
 const SWEEP_BATCH_SIZE = 5000;
 
 export type RetentionResult = {
-  retentionDay: number;
+  /** Null when deletion is disabled (the default) -- the rollup still ran regardless. */
+  retentionDay: number | null;
+  /** True when ANALYTICS_RETENTION_DAY opted into the delete sweep this pass. */
+  isRetentionEnabled: boolean;
   rolledDay: string[];
   rollupRowCount: number;
   deletedCount: number;
   isComplete: boolean;
 };
 
-function retentionDay(): number {
-  const raw = Number(process.env.ANALYTICS_RETENTION_DAY ?? RETENTION_DAY);
-  if (!Number.isFinite(raw) || raw < 1) return RETENTION_DAY;
-  return Math.floor(raw);
+/** Returns null when deletion is disabled (the default). A positive env value opts in. */
+export function retentionDay(): number | null {
+  const raw = process.env.ANALYTICS_RETENTION_DAY;
+  if (raw === undefined || raw.trim() === "") return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return Math.floor(n);
 }
 
 /** UTC midnight n days back. The rollup grain is a UTC date, matching `period`. */
@@ -140,7 +153,14 @@ export async function sweepAnalyticsEvent(): Promise<{
   isComplete: boolean;
   refusedDay: string[];
 }> {
-  const cutoff = dayStart(retentionDay());
+  const day = retentionDay();
+  if (day === null) {
+    // The default: deletion is disabled. Raw rows are kept forever until an operator
+    // opts in by setting ANALYTICS_RETENTION_DAY. No DB call is made.
+    return { deletedCount: 0, isComplete: true, refusedDay: [] };
+  }
+
+  const cutoff = dayStart(day);
 
   /**
    * REFUSE TO DELETE AN UNROLLED DAY.
@@ -165,12 +185,12 @@ export async function sweepAnalyticsEvent(): Promise<{
     .limit(1);
 
   if (!existingRollup) {
-    const written = await rollupAnalyticsEvent(retentionDay());
+    const written = await rollupAnalyticsEvent(day);
     if (written === 0) {
       const [orphan] = await db()
         .select({ orphanCount: count() })
         .from(analyticsEvent)
-        .where(and(gte(analyticsEvent.receivedAt, cutoff), lt(analyticsEvent.receivedAt, dayStart(retentionDay() - 1))));
+        .where(and(gte(analyticsEvent.receivedAt, cutoff), lt(analyticsEvent.receivedAt, dayStart(day - 1))));
 
       if ((orphan?.orphanCount ?? 0) > 0) {
         refusedDay.push(cutoffKey);
@@ -224,9 +244,11 @@ export async function runRetention(): Promise<RetentionResult> {
   }
 
   const swept = await sweepAnalyticsEvent();
+  const day = retentionDay();
 
   return {
-    retentionDay: retentionDay(),
+    retentionDay: day,
+    isRetentionEnabled: day !== null,
     rolledDay,
     rollupRowCount,
     deletedCount: swept.deletedCount,

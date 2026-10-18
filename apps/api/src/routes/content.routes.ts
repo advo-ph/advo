@@ -71,6 +71,16 @@ content.get("/portfolio", async (c) => {
   const rows = await db()
     .select()
     .from(portfolioProject)
+    .where(eq(portfolioProject.isFeatured, true))
+    .orderBy(asc(portfolioProject.displayOrder));
+
+  return c.json({ data: rows, error: null });
+});
+
+content.get("/portfolio/admin", requireAuth, requireAdmin, async (c) => {
+  const rows = await db()
+    .select()
+    .from(portfolioProject)
     .orderBy(asc(portfolioProject.displayOrder));
 
   return c.json({ data: rows, error: null });
@@ -94,10 +104,13 @@ const portfolioSchema = z.object({
   previewUrl: z.string().max(500).optional(),
   imageUrl: z.string().max(500).optional(),
   imageUrls: z.array(z.string()).optional(),
+  // Null clears the logo, and the landing shows the title text again.
+  logoUrl: z.string().max(500).nullable().optional(),
   techStack: z.array(z.string()).optional(),
   slug: z.string().max(100).optional(),
   isFeatured: z.boolean().optional(),
   displayOrder: z.number().int().optional(),
+  deviceType: z.enum(["laptop", "phone"]).optional(),
   caseStudy: z.record(z.unknown()).optional(),
 });
 
@@ -110,6 +123,27 @@ content.post(
     const data = c.req.valid("json");
     const [created] = await db().insert(portfolioProject).values(data).returning();
     return c.json({ data: created, error: null }, 201);
+  }
+);
+
+// Saves the full list order. Position in the array becomes display_order,
+// so every item gets its own number.
+content.patch(
+  "/portfolio/order",
+  requireAuth,
+  requireAdmin,
+  zValidator("json", z.object({ ids: z.array(z.number().int()).max(500) })),
+  async (c) => {
+    const { ids } = c.req.valid("json");
+    await db().transaction(async (tx) => {
+      for (const [idx, id] of ids.entries()) {
+        await tx
+          .update(portfolioProject)
+          .set({ displayOrder: idx, updatedAt: new Date() })
+          .where(eq(portfolioProject.portfolioProjectId, id));
+      }
+    });
+    return c.json({ data: { ids }, error: null });
   }
 );
 

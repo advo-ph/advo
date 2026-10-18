@@ -6,6 +6,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import ScrollProgress from "@/components/ui/ScrollProgress";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ScrollReset from "@/components/ScrollReset";
+import RouteSeo from "@/seo/RouteSeo";
 import ConsentGate from "@/components/ConsentGate";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import InstallPrompt from "@/components/InstallPrompt";
@@ -24,6 +25,9 @@ import Terms from "./pages/legal/Terms";
 import Privacy from "./pages/legal/Privacy";
 import Refund from "./pages/legal/Refund";
 import Dispute from "./pages/legal/Dispute";
+import ClientGuide from "./pages/ClientGuide";
+import BehindTheScenes from "./pages/BehindTheScenes";
+import About from "./pages/About";
 
 /** Preserves query string (token=, redirectTo=, …) when aliasing /login → /clients */
 const LoginAlias = () => {
@@ -35,9 +39,55 @@ const LoginAlias = () => {
  * The app scrolls inside #root (html/body are overflow-hidden), so a route
  * change kept the previous page's scroll offset — "Start a project" opened
  * /start already scrolled down. Reset the scroller to the top on every path
- * change. In-page anchors (/#work, /#services) carry a hash, so they are left
+ * change. In-page anchors (/#services, /#solutions, /#work, /#start) carry a hash, so they are left
  * alone and keep scrolling to their section.
  */
+/**
+ * Every page, by path. Exported so scripts/prerender.mjs can render the public
+ * pages to HTML at build time with the same table the browser uses.
+ */
+export const AppRoutes = () => (
+  <Routes>
+    <Route path="/" element={<Index />} />
+    <Route path="/login" element={<LoginAlias />} />
+    <Route path="/members" element={<Login variant="members" />} />
+    <Route path="/clients" element={<Login variant="clients" />} />
+    <Route path="/start" element={<Start />} />
+    <Route path="/team" element={<Team />} />
+    <Route path="/client-guide" element={<ClientGuide />} />
+    <Route path="/behind-the-scenes" element={<BehindTheScenes />} />
+    <Route path="/about" element={<About />} />
+    <Route path="/how-it-ships" element={<Navigate to="/client-guide" replace />} />
+    <Route path="/project/:slug" element={<ProjectDetail />} />
+    <Route path="/work/:slug" element={<CaseStudy />} />
+    <Route path="/p/:token" element={<PreviewLink />} />
+
+    {/* PayMongo merchant-review disclosures. Public on purpose — a
+        reviewer reads them signed out, so they stay outside every
+        ProtectedRoute block below. */}
+    <Route path="/terms" element={<Terms />} />
+    <Route path="/privacy" element={<Privacy />} />
+    <Route path="/refund" element={<Refund />} />
+    <Route path="/dispute" element={<Dispute />} />
+
+    {/* Protected: requires auth */}
+    <Route element={<ProtectedRoute requireAuth redirectAdminTo="/admin" />}>
+      <Route path="/hub" element={<Hub />} />
+    </Route>
+
+    {/* Protected: requires admin. The console section is a path
+        segment, so every page has its own address and browser back
+        moves between them. Bare /admin settles on the dashboard. */}
+    <Route element={<ProtectedRoute requireAdmin />}>
+      <Route path="/admin" element={<Admin />} />
+      <Route path="/admin/:section" element={<Admin />} />
+    </Route>
+
+    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+    <Route path="*" element={<NotFound />} />
+  </Routes>
+);
+
 // Last line of defence. Narrower boundaries inside the app (see pages/Admin.tsx)
 // should catch first, so this one only fires for a crash in the shell itself.
 const App = () => (
@@ -56,41 +106,8 @@ const App = () => (
           {/* Inside the router so it can read the location, and BEFORE <Routes> so the
               reset is queued before the new page's own effects run. Renders nothing. */}
           <ScrollReset />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<LoginAlias />} />
-            <Route path="/members" element={<Login variant="members" />} />
-            <Route path="/clients" element={<Login variant="clients" />} />
-            <Route path="/start" element={<Start />} />
-            <Route path="/team" element={<Team />} />
-            <Route path="/project/:slug" element={<ProjectDetail />} />
-            <Route path="/work/:slug" element={<CaseStudy />} />
-            <Route path="/p/:token" element={<PreviewLink />} />
-
-            {/* PayMongo merchant-review disclosures. Public on purpose — a
-                reviewer reads them signed out, so they stay outside every
-                ProtectedRoute block below. */}
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/refund" element={<Refund />} />
-            <Route path="/dispute" element={<Dispute />} />
-
-            {/* Protected: requires auth */}
-            <Route element={<ProtectedRoute requireAuth redirectAdminTo="/admin" />}>
-              <Route path="/hub" element={<Hub />} />
-            </Route>
-
-            {/* Protected: requires admin. The console section is a path
-                segment, so every page has its own address and browser back
-                moves between them. Bare /admin settles on the dashboard. */}
-            <Route element={<ProtectedRoute requireAdmin />}>
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/admin/:section" element={<Admin />} />
-            </Route>
-
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <RouteSeo />
+          <AppRoutes />
           {/* Non-modal analytics consent prompt (RA 10173). Inside the router — it reads
               the route to stay off /admin and /hub — but outside <Routes> so it
               survives navigation. Nothing is tracked until the visitor says yes. */}

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { get, post, patch, del } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { applyVisibleTaskOrder, type TaskOrderItem } from "@/lib/task-order";
 
 export type DeliverableStatus =
   | "todo"
@@ -23,6 +24,7 @@ export interface Deliverable {
   description?: string;
   status: DeliverableStatus;
   priority: number;
+  sort_order: number;
   due_date?: string | null;
   /** ISO timestamp when team verified; null/undefined = unverified. */
   verified_at?: string | null;
@@ -59,6 +61,7 @@ function mapDeliverable(t: Record<string, unknown>): Deliverable {
     description: (t.description ?? undefined) as string | undefined,
     status: ((t.status as DeliverableStatus) || "todo") as DeliverableStatus,
     priority: (t.priority as number) || 0,
+    sort_order: Number(t.sortOrder ?? t.sort_order ?? 0),
     due_date: (t.dueDate ?? t.due_date ?? null) as string | null,
     verified_at: (t.verifiedAt ?? t.verified_at ?? null) as string | null,
     assigned_to: (t.assignedTo ?? t.assigned_to ?? null) as number | null,
@@ -208,6 +211,36 @@ export function useAdminDeliverables() {
     onSettled: () => invalidateAll(),
   });
 
+  // Reorder only the requested status column. The API accepts a filtered
+  // subset, then keeps hidden tasks in their existing slots for "My Tasks".
+  const reorderMutation = useMutation({
+    mutationFn: async ({ status, order }: { status: DeliverableStatus; order: number[] }) => {
+      const res = await post("/api/deliverables/reorder", { status, order });
+      if (res.error) throw new Error(res.error);
+    },
+    onMutate: async ({ status, order }) => {
+      await queryClient.cancelQueries({ queryKey: QUERY_KEY });
+      const prev = queryClient.getQueryData<FetchResult>(QUERY_KEY);
+      queryClient.setQueryData<FetchResult>(QUERY_KEY, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          deliverables: applyVisibleTaskOrder(
+            old.deliverables as (Deliverable & TaskOrderItem)[],
+            status,
+            order,
+          ),
+        };
+      });
+      return { prev };
+    },
+    onError: (err: Error, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(QUERY_KEY, ctx.prev);
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+    onSettled: () => invalidateAll(),
+  });
+
   // Team QA verify / unverify — sets or clears verified_at only.
   const verifyMutation = useMutation({
     mutationFn: async ({ id, verified }: { id: number; verified: boolean }) => {
@@ -309,6 +342,8 @@ export function useAdminDeliverables() {
       status: DeliverableStatus,
       extra?: { attachmentUrl?: string | null },
     ) => statusMutation.mutateAsync({ id, status, extra }),
+    reorderDeliverables: (status: DeliverableStatus, order: number[]) =>
+      reorderMutation.mutateAsync({ status, order }),
     /** Set or clear verified_at (team QA). Does not change status. */
     setVerified: (id: number, verified: boolean) =>
       verifyMutation.mutateAsync({ id, verified }),
@@ -318,5 +353,6 @@ export function useAdminDeliverables() {
     isSaving: createMutation.isPending || updateMutation.isPending,
     isAddingComment: addCommentMutation.isPending,
     isMarkingRead: markReadMutation.isPending,
+    isReordering: reorderMutation.isPending,
   };
 }

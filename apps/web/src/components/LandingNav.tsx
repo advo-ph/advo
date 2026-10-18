@@ -1,15 +1,11 @@
-import { useEffect, useState, type MouseEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { ChevronDown, Menu, X } from "lucide-react";
-import { useDrawerLock } from "@/hooks/useDrawerLock";
+import "./landing-nav.css";
+import { landingNavLinks } from "@/lib/public-navigation";
 
 interface NavLink {
   label: string;
   href: string;
-}
-
-interface NavItem extends NavLink {
-  panel?: NavLink[];
 }
 
 interface LandingNavProps {
@@ -18,180 +14,127 @@ interface LandingNavProps {
    * native hash scroll; `/` on a shell route sends the anchor home first.
    */
   anchorPrefix?: string;
-  /**
-   * The landing hero runs full-bleed under the bar on phones. While the page
-   * is at the top the bar is transparent with light text; the first scroll
-   * (or an open drawer) brings the solid ground back.
-   */
+  /** Use a dark glass surface over a full-bleed hero. */
   overlayHero?: boolean;
 }
 
-const item: NavItem[] = [
-  {
-    label: "Product",
-    href: "#showcase",
-    panel: [
-      { label: "Public site", href: "#showcase" },
-      { label: "Client Hub", href: "/login" },
-      { label: "Admin console", href: "/login" },
-      { label: "Start a project", href: "/start" },
-    ],
-  },
-  { label: "Work", href: "#work" },
-  { label: "Process", href: "#process" },
-  { label: "Quotation", href: "#engagement" },
-];
 
-const DRAWER_ID = "mobile-navigation-drawer";
 
-/**
- * One nav for `/` and for every shell route. The drawer contract the a11y
- * bench drives — `#mobile-navigation-drawer` carrying `is-open`, the toggle's
- * aria-controls, Escape, scroll lock on both containers, close on route
- * change — lives here once instead of twice.
- */
+/** Page-aligned navigation that becomes a floating glass bar on scroll. */
 const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [openPanel, setOpenPanel] = useState<string | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isAtFooter, setIsAtFooter] = useState(false);
+  const [isAtDarkSection, setIsAtDarkSection] = useState(false);
   const { pathname } = useLocation();
-
-  const closeMenu = () => {
-    setIsMenuOpen(false);
-    setOpenPanel(null);
-  };
-
-  useDrawerLock(isMenuOpen, closeMenu, DRAWER_ID);
+  const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    closeMenu();
-  }, [pathname]);
+    const root = document.getElementById("root");
+    const scrollPosition = () => Math.max(0, window.scrollY, root?.scrollTop ?? 0);
+    const darkSections = [...document.querySelectorAll<HTMLElement>('[data-nav-theme="dark"]')];
+    const read = () => {
+      setIsScrolled(scrollPosition() > 0);
 
-  useEffect(() => {
-    const read = () => setIsScrolled(window.scrollY > 8);
+      const navRect = navRef.current?.getBoundingClientRect();
+      const navTop = navRect?.top ?? 0;
+      const navBottom = navRect?.bottom ?? 80;
+      const overlaps = (element: HTMLElement) => {
+        const rect = element.getBoundingClientRect();
+        return rect.top < navBottom && rect.bottom > navTop;
+      };
+      const footer = document.getElementById("footer");
+      const footerOverlapsNav = Boolean(
+        footer && overlaps(footer),
+      );
+      const darkSectionOverlapsNav = darkSections.some(overlaps);
+      setIsAtFooter((current) => current === footerOverlapsNav ? current : footerOverlapsNav);
+      setIsAtDarkSection((current) => current === darkSectionOverlapsNav ? current : darkSectionOverlapsNav);
+    };
     read();
     window.addEventListener("scroll", read, { passive: true });
-    return () => window.removeEventListener("scroll", read);
-  }, []);
-
-  // Hover cannot happen on touch, and a keyboard Enter deserves the same menu
-  // a mouse gets: the first activation of a panel parent opens the panel, the
-  // second follows the link.
-  const handlePanelNav = (entry: NavItem, event: MouseEvent<HTMLAnchorElement>) => {
-    if (!entry.panel || openPanel === entry.label) {
-      closeMenu();
-      return;
-    }
-    event.preventDefault();
-    setOpenPanel(entry.label);
-  };
+    root?.addEventListener("scroll", read, { passive: true });
+    window.addEventListener("resize", read);
+    return () => {
+      window.removeEventListener("scroll", read);
+      root?.removeEventListener("scroll", read);
+      window.removeEventListener("resize", read);
+    };
+  }, [pathname]);
 
   const renderLink = (
     link: NavLink,
-    extra: { className?: string; onClick?: (event: MouseEvent<HTMLAnchorElement>) => void; expanded?: boolean } = {},
+    extra: { className?: string } = {},
   ) => {
-    const { className, onClick, expanded } = extra;
+    const { className } = extra;
     const isHash = link.href.startsWith("#");
-    const chevron = "panel" in link && (link as NavItem).panel ? (
-      <ChevronDown className={openPanel === link.label ? "is-open" : ""} size={14} strokeWidth={1} absoluteStrokeWidth />
-    ) : null;
 
     if (isHash && anchorPrefix === "") {
-      return (
-        <a key={link.label} href={link.href} className={className} onClick={onClick} aria-expanded={expanded}>
-          {link.label}
-          {chevron}
-        </a>
-      );
+      return <a key={link.label} href={link.href} className={className}>{link.label}</a>;
     }
     return (
       <Link
         key={link.label}
         to={isHash ? `${anchorPrefix}${link.href}` : link.href}
         className={className}
-        onClick={onClick}
-        aria-expanded={expanded}
       >
         {link.label}
-        {chevron}
       </Link>
     );
   };
 
-  const isOverlay = overlayHero && !isScrolled && !isMenuOpen;
+  const isCompactBrand = pathname !== "/";
+  const isOverlay = overlayHero && !isScrolled;
   const className = [
     "landing-nav",
     isScrolled ? "is-scrolled" : "",
     isOverlay ? "is-overlay" : "",
-    isMenuOpen ? "is-menu-open" : "",
+    isAtFooter ? "is-at-footer" : "",
+    isAtDarkSection ? "is-at-dark-section" : "",
   ]
     .filter(Boolean)
     .join(" ");
 
   return (
-    <header className={className}>
+    <header className={className} ref={navRef}>
       <div className="landing-nav-inner">
-        <Link className="landing-brand" to="/" aria-label="ADVO home" onClick={closeMenu}>
-          <img src="/advo-wordmark.svg" alt="ADVO" />
+        <Link className="landing-brand" to="/" aria-label="ADVO home">
+          {/* Both marks sit at the same height and left edge, so the ADVO in the
+              lockup lands exactly on the standalone ADVO as they cross-fade. */}
+          <img
+            className={isCompactBrand ? "landing-brand-full" : "landing-brand-full is-visible"}
+            src="/advo-technologies-logo.png"
+            alt={isCompactBrand ? "" : "ADVO Technologies"}
+          />
+          <img
+            className={isCompactBrand ? "landing-brand-mark is-visible" : "landing-brand-mark"}
+            src="/advo-logo-black.png"
+            alt={isCompactBrand ? "ADVO" : ""}
+          />
         </Link>
 
         <nav
-          id={DRAWER_ID}
-          className={isMenuOpen ? "landing-nav-link is-open" : "landing-nav-link"}
+          className="landing-nav-link"
           aria-label="Main navigation"
         >
-          {item.map((entry) => (
-            <div
-              className="landing-nav-item"
-              key={entry.label}
-              onMouseEnter={() => entry.panel && setOpenPanel(entry.label)}
-              onMouseLeave={() => setOpenPanel(null)}
-            >
-              {renderLink(entry, {
-                onClick: entry.panel ? (event) => handlePanelNav(entry, event) : closeMenu,
-                expanded: entry.panel ? openPanel === entry.label : undefined,
-              })}
-              {entry.panel ? (
-                <div className={openPanel === entry.label ? "landing-nav-panel is-open" : "landing-nav-panel"}>
-                  {entry.panel.map((link) => renderLink(link, { onClick: closeMenu }))}
-                </div>
-              ) : null}
+          {landingNavLinks.map((entry) => (
+            <div className="landing-nav-item" key={entry.label}>
+              {renderLink(entry)}
             </div>
           ))}
-
-          <div className="landing-nav-drawer-action">
-            <Link className="landing-button landing-button-ghost" to="/login" onClick={closeMenu}>
-              Log in
-            </Link>
-            <Link className="landing-button landing-button-ghost" to="/team" onClick={closeMenu}>
-              Team
-            </Link>
-            <Link className="landing-button landing-button-primary" to="/start" onClick={closeMenu}>
-              Start a project
-            </Link>
-          </div>
         </nav>
 
         <div className="landing-nav-action">
-          <Link className="landing-login landing-login-wide" to="/team" onClick={closeMenu}>
-            Team
-          </Link>
-          <Link className="landing-login" to="/login" onClick={closeMenu}>
-            Log in
-          </Link>
-          <Link className="landing-button landing-button-primary landing-button-small" to="/start" onClick={closeMenu}>
-            Start a project
-          </Link>
-          <button
-            type="button"
-            className="landing-menu"
-            onClick={() => setIsMenuOpen((value) => !value)}
-            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-            aria-expanded={isMenuOpen}
-            aria-controls={DRAWER_ID}
-          >
-            {isMenuOpen ? <X size={20} strokeWidth={1} absoluteStrokeWidth /> : <Menu size={20} strokeWidth={1} absoluteStrokeWidth />}
-          </button>
+          {anchorPrefix === "" ? (
+            <a className="landing-nav-cta" href="#start" aria-label="Start a project" title="Start a project">
+              <span className="landing-nav-cta-full">Start a project</span>
+              <span className="landing-nav-cta-short">Start project</span>
+            </a>
+          ) : (
+            <Link className="landing-nav-cta" to={`${anchorPrefix}#start`} aria-label="Start a project" title="Start a project">
+              <span className="landing-nav-cta-full">Start a project</span>
+              <span className="landing-nav-cta-short">Start project</span>
+            </Link>
+          )}
         </div>
       </div>
     </header>

@@ -5,6 +5,8 @@ import { cors } from "hono/cors";
 import { rateLimiter } from "hono-rate-limiter";
 import { HTTPException } from "hono/http-exception";
 import { serveStatic } from "@hono/node-server/serve-static";
+import { readFile } from "node:fs/promises";
+import { extname, resolve } from "node:path";
 
 import { loadEnv, env } from "./utils/env.js";
 import { logger, createLogger } from "./utils/logger.js";
@@ -16,6 +18,7 @@ import { cleanExpiredSessions } from "./services/auth.service.js";
 import { startPlaudPoll, stopPlaudPoll } from "./services/plaud-poll.service.js";
 import { startRetentionSweep, stopRetentionSweep } from "./services/retention.service.js";
 import { startRunner, stopRunner, crashRecovery } from "./services/job-runner.service.js";
+import { getOptimizedUploadImage, UPLOAD_IMAGE_WIDTHS, warmUploadBucket } from "./services/image-optimization.service.js";
 // Import handlers so they register themselves before the runner starts
 import "./services/signoff-draft.service.js";
 import "./services/transcription.service.js";
@@ -57,6 +60,9 @@ import { corpusRoutes } from "./routes/corpus.routes.js";
 import jobRoutes from "./routes/jobs.routes.js";
 import financeRoutes from "./routes/finance.routes.js";
 import eventRoutes from "./routes/event.routes.js";
+import visitorStatsRoutes from "./routes/visitor-stats.routes.js";
+import vpsMonitorRoutes from "./routes/vps-monitor.routes.js";
+import { startVpsMonitor, stopVpsMonitor } from "./services/vps-monitor.service.js";
 
 import type { Variables } from "./types/context.js";
 
@@ -107,7 +113,72 @@ app.use(
   })
 );
 
-// Serve uploaded files as static
+// Serve resized WebP variants for public portfolio screenshots and team
+// portraits. This uses /api so nginx proxies the request to Hono instead of
+// its direct-to-disk /uploads alias.
+app.get("/api/images/:bucket/:filename", async (c, next) => {
+  const bucket = c.req.param("bucket");
+  const filename = c.req.param("filename");
+  const supportedBuckets = ["portfolio", "avatars"];
+  const supportedWidths = UPLOAD_IMAGE_WIDTHS[bucket] ?? [];
+  const width = Number(c.req.query("width"));
+  const imageExtension = extname(filename).toLowerCase();
+  const imageContentTypes: Record<string, string> = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+    ".avif": "image/avif",
+  };
+
+  if (
+    !supportedBuckets.includes(bucket) ||
+    !/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(filename) ||
+    !imageContentTypes[imageExtension] ||
+    !supportedWidths.includes(width)
+  ) {
+    return next();
+  }
+
+  const bucketPath = resolve(e.UPLOAD_DIR, bucket);
+  const imagePath = resolve(bucketPath, filename);
+  if (!imagePath.startsWith(`${bucketPath}/`)) return next();
+
+  const originalHeaders = {
+    "Content-Type": imageContentTypes[imageExtension],
+    "Cache-Control": "public, max-age=31536000, immutable",
+    "Vary": "Accept",
+    "X-Content-Type-Options": "nosniff",
+  };
+
+  try {
+    if (!c.req.header("Accept")?.toLowerCase().includes("image/webp")) {
+      const original = await readFile(imagePath);
+      return c.body(new Uint8Array(original), 200, originalHeaders);
+    }
+
+    const image = await getOptimizedUploadImage(imagePath, width);
+    return c.body(new Uint8Array(image), 200, {
+      "Content-Type": "image/webp",
+      "Cache-Control": "public, max-age=31536000, immutable",
+      "Vary": "Accept",
+      "X-Content-Type-Options": "nosniff",
+    });
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return next();
+
+    log.warn({ err: error, bucket }, "Could not create optimized image; serving original");
+    try {
+      const original = await readFile(imagePath);
+      return c.body(new Uint8Array(original), 200, originalHeaders);
+    } catch (fallbackError) {
+      if ((fallbackError as NodeJS.ErrnoException).code === "ENOENT") return next();
+      throw fallbackError;
+    }
+  }
+});
+
+// Serve original uploads as a fallback.
 app.use("/uploads/*", serveStatic({ root: e.UPLOAD_DIR.replace("./uploads", ".") }));
 
 // ─── Rate Limiting ────────────────────────────────────
@@ -226,6 +297,16 @@ app.route("/api/preview", previewRoutes);
 // after the visitor grants consent (apps/web/src/lib/track.ts).
 app.route("/api/event", eventRoutes);
 
+// Admin-only reads over the raw analytics_event table (unique visitors/sessions/page
+// views, top pages, landing-section dwell, scroll-depth funnel, visitor geo) — the
+// "Web Statistics" admin surface. Its own mount, not nested under /api/event, because
+// it is a materially larger surface than the single existing /engagement read.
+app.route("/api/visitor-stats", visitorStatsRoutes);
+
+// VPS and deployed-project resource usage. The route is admin-only, while the
+// collector runs on the API host and keeps a bounded local seven-day history.
+app.route("/api/vps-monitor", vpsMonitorRoutes);
+
 // Internal library (team-wide catalog)
 app.route("/api/library", libraryRoutes);
 
@@ -286,6 +367,10 @@ serve({ fetch: app.fetch, port }, () => {
   // Bounded window on analytics_event + the rollup that outlives it. Same self-rescheduling
   // setTimeout shape as the Plaud poll — no new scheduler.
   startRetentionSweep();
+  startVpsMonitor();
+  // Resized team portraits live in a temp cache that a reboot clears. Rebuild
+  // them in the background so visitors do not wait for the first resize.
+  warmUploadBucket(e.UPLOAD_DIR, "avatars").catch((err) => log.warn({ err }, "Avatar warmup failed"));
   // Re-queue any jobs that were running when the previous process died.
   crashRecovery().catch((err) => log.error({ err }, "Crash recovery failed"));
   startRunner();
@@ -308,6 +393,7 @@ async function shutdown(signal: string) {
   log.info(`${signal} received, shutting down...`);
   stopPlaudPoll();
   stopRetentionSweep();
+  stopVpsMonitor();
   stopRunner();
   await closeDb();
   process.exit(0);

@@ -8,6 +8,7 @@
  * Dense by default: page wrapper space-y-4/5, panel padding p-4, rows h-11 px-3.
  */
 import type { ReactNode, ElementType } from "react";
+import { cn } from "@/lib/utils";
 
 /** Page title row: title + optional meta + optional right-aligned action. */
 export const PageHeader = ({
@@ -15,13 +16,15 @@ export const PageHeader = ({
   subtitle,
   meta,
   action,
+  className,
 }: {
   title: string;
   subtitle?: ReactNode;
   meta?: ReactNode;
   action?: ReactNode;
+  className?: string;
 }) => (
-  <div className="flex items-center justify-between gap-4">
+  <div className={cn("flex items-center justify-between gap-4", className)}>
     <div className="flex items-baseline gap-3 min-w-0">
       <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
       {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}

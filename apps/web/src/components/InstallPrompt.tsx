@@ -49,7 +49,7 @@ const InstallPrompt = () => {
               alt=""
               width={40}
               height={40}
-              className="h-10 w-10 shrink-0 rounded-lg border border-border"
+              className="h-10 w-10 shrink-0 rounded-full"
             />
             <div className="min-w-0">
               <DrawerTitle>Install the ADVO app.</DrawerTitle>

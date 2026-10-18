@@ -10,6 +10,8 @@ export interface CaseStudy {
   github_url?: string;
 }
 
+export type DeviceType = "laptop" | "phone";
+
 export interface PortfolioProject {
   portfolio_project_id: number;
   title: string;
@@ -18,9 +20,11 @@ export interface PortfolioProject {
   preview_url: string | null;
   image_url: string | null;
   image_urls: string[] | null;
+  logo_url: string | null;
   tech_stack: string[] | null;
   is_featured: boolean;
   display_order: number;
+  device_type: DeviceType;
   case_study: CaseStudy | null;
   created_at: string;
 }
@@ -34,9 +38,11 @@ function mapPortfolio(p: Record<string, unknown>): PortfolioProject {
     preview_url: (p.previewUrl ?? p.preview_url ?? null) as string | null,
     image_url: (p.imageUrl ?? p.image_url ?? null) as string | null,
     image_urls: (p.imageUrls ?? p.image_urls ?? null) as string[] | null,
+    logo_url: (p.logoUrl ?? p.logo_url ?? null) as string | null,
     tech_stack: (p.techStack ?? p.tech_stack ?? null) as string[] | null,
     is_featured: Boolean(p.isFeatured ?? p.is_featured),
     display_order: Number(p.displayOrder ?? p.display_order ?? 0),
+    device_type: (p.deviceType ?? p.device_type) === "phone" ? "phone" : "laptop",
     case_study: (p.caseStudy ?? p.case_study ?? null) as CaseStudy | null,
     created_at: (p.createdAt ?? p.created_at) as string,
   };
@@ -49,9 +55,12 @@ export interface PortfolioInput {
   preview_url?: string;
   image_url?: string;
   image_urls?: string[];
+  /** Null removes the logo. */
+  logo_url?: string | null;
   tech_stack?: string[];
   is_featured?: boolean;
   display_order?: number;
+  device_type?: DeviceType;
   case_study?: CaseStudy | null;
 }
 
@@ -64,17 +73,20 @@ function toApiPayload(input: PortfolioInput) {
     previewUrl: input.preview_url || undefined,
     imageUrl: input.image_url || undefined,
     imageUrls: input.image_urls,
+    logoUrl: input.logo_url === undefined ? undefined : input.logo_url || null,
     techStack: input.tech_stack,
     isFeatured: input.is_featured,
     displayOrder: input.display_order,
+    deviceType: input.device_type,
     caseStudy: input.case_study || undefined,
   };
 }
 
 const QUERY_KEY = ["adminPortfolio"];
+const PUBLIC_QUERY_KEY = ["publicPortfolio"];
 
 async function fetchPortfolio(): Promise<PortfolioProject[]> {
-  const res = await get<Record<string, unknown>[]>("/api/content/portfolio");
+  const res = await get<Record<string, unknown>[]>("/api/content/portfolio/admin");
   return (res.data || []).map(mapPortfolio);
 }
 
@@ -103,6 +115,7 @@ export function useAdminPortfolio() {
         created,
       ]);
       toast({ title: "Created", description: `${created.title} added to portfolio` });
+      queryClient.invalidateQueries({ queryKey: PUBLIC_QUERY_KEY });
     },
     onError: (err: Error) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -144,7 +157,10 @@ export function useAdminPortfolio() {
     // server-assigned display_order, a slug the API normalised) come out wrong
     // until something re-reads. onSuccess only fixes the one row it was handed.
     // This fixes the list.
-    onSettled: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: PUBLIC_QUERY_KEY });
+    },
   });
 
   const deleteMutation = useMutation({
@@ -168,11 +184,44 @@ export function useAdminPortfolio() {
     onSuccess: (_data, _id, ctx) => {
       toast({ title: "Deleted", description: `${ctx?.removed?.title || "Project"} removed` });
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: QUERY_KEY }),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: PUBLIC_QUERY_KEY });
+    },
+  });
+
+  // Saves a full list order. Each item gets its index as display_order.
+  const reorderMutation = useMutation({
+    mutationFn: async (ids: number[]) => {
+      const res = await patch(`/api/content/portfolio/order`, { ids });
+      if (res.error) throw new Error(res.error);
+    },
+    onMutate: async (ids) => {
+      await queryClient.cancelQueries({ queryKey: QUERY_KEY });
+      const prev = queryClient.getQueryData<PortfolioProject[]>(QUERY_KEY);
+      const byId = new Map((prev ?? []).map((p) => [p.portfolio_project_id, p]));
+      queryClient.setQueryData<PortfolioProject[]>(
+        QUERY_KEY,
+        ids.flatMap((id, idx) => {
+          const p = byId.get(id);
+          return p ? [{ ...p, display_order: idx }] : [];
+        }),
+      );
+      return { prev };
+    },
+    onError: (err: Error, _vars, ctx) => {
+      if (ctx?.prev) queryClient.setQueryData(QUERY_KEY, ctx.prev);
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: PUBLIC_QUERY_KEY });
+    },
   });
 
   return {
     projects,
+    reorderPortfolio: reorderMutation.mutateAsync,
     isLoading,
     createPortfolio: createMutation.mutateAsync,
     updatePortfolio: (id: number, input: PortfolioInput) =>

@@ -38,14 +38,26 @@ import TeamMemberCard from "@/components/TeamMemberCard";
 import ImageCropDialog from "@/components/ImageCropDialog";
 import { PageHeader, Empty } from "./_ui";
 
+
 const TEAM_ROLES = [
-  "Founder",
+  "Founder & CEO",
   "Developer",
+  "Senior Developer",
   "Junior Developer",
+  "Creative Developer",
+  "Intern",
+  "Creatives Intern",
+  "Junior Creatives",
+  "Developer Intern",
   "Project Manager",
   "Externals & Operations",
   "Marketing & Partnerships",
+  "Financier & Partnerships",
+  "Financier",
+  "Partnerships",
   "Legal & Contracts",
+  "Legal & Finance",
+  "Finance & Compliance Lead",
   "Designer",
   "Content Creator",
   "Videographer",
@@ -250,6 +262,7 @@ const AdminTeam = () => {
 
   return (
     <div className="space-y-4">
+      <>
       <PageHeader
         title="Team"
         meta="Drag to reorder"
@@ -385,7 +398,7 @@ const AdminTeam = () => {
               role={formData.role || "Role"}
               avatar_url={formData.avatar_url || null}
               preview_image_url={formData.preview_image_url || null}
-              className="w-full aspect-auto h-full"
+              className="w-full self-start mx-auto"
             />
             <input ref={previewFileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => openCropFromFile(e, 3 / 4, "preview")} />
           </div>
@@ -529,6 +542,7 @@ const AdminTeam = () => {
         onClose={() => setCropSrc(null)}
         onCropped={handleCropped}
       />
+      </>
     </div>
   );
 };

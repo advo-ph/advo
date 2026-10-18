@@ -95,6 +95,10 @@ if $DEPLOY_FRONTEND; then
   export VITE_API_URL="${VITE_API_URL:-https://api.${DOMAIN}}"
   log "Building web (VITE_API_URL=${VITE_API_URL})..."
   npm run build:web || err "Web build failed"
+  # Git tracks only the executable bit. Public assets copied from macOS can
+  # still carry mode 0600, which makes nginx return 403 after the tar upload.
+  find apps/web/dist -type d -exec chmod 0755 {} +
+  find apps/web/dist -type f -exec chmod 0644 {} +
   if ! grep -Rql "api.${DOMAIN}" apps/web/dist/; then
     err "Built bundle does not reference api.${DOMAIN} — refusing to ship (check VITE_API_URL)."
   fi
@@ -156,6 +160,11 @@ if $DEPLOY_FRONTEND; then
   log "Verifying the staged bundle on the box..."
   ssh "${VPS_SSH}" "test -f ${WEB_STAGE}/index.html && grep -Rql 'api.${DOMAIN}' ${WEB_STAGE}" \
     || err "Staged bundle is incomplete or does not reference api.${DOMAIN}. Live site untouched."
+
+  # GitHub Actions syncs later releases as advo-deploy. Make the atomically
+  # staged tree writable by that account so its rsync can replace old assets.
+  ssh "${VPS_SSH}" "chown -R advo-deploy ${WEB_STAGE}" \
+    || err "Could not set web deploy ownership. Live site untouched."
 
   log "Swapping in ${WEB_STAGE} (previous kept as ${WEB_PREV})"
   ssh "${VPS_SSH}" bash -s <<EOF || err "Web swap failed. Check ${REMOTE_WEB} and ${WEB_PREV} on the box."
@@ -227,6 +236,11 @@ fi
 
 if ! $DEPLOY_OK; then
   err "Deploy finished but prod is not healthy — see the recovery commands above."
+fi
+
+if $DEPLOY_FRONTEND; then
+  # Warns only: checks nginx serves per-page HTML and pings IndexNow.
+  node apps/web/scripts/post-deploy-seo.mjs apps/web/dist || warn "Post-deploy search step failed; the deploy itself is fine."
 fi
 
 log "Done. Host ${VPS_SSH} · origin/${DEPLOY_BRANCH} · API cwd ${REMOTE_API} · web ${REMOTE_WEB}"

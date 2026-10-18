@@ -12,7 +12,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Upload, Loader2, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { FinanceButton as Button } from "./FinanceButton";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
@@ -168,7 +168,7 @@ function StartBillingDialog({ onConfirm, onClose, isConfirming }: StartBillingDi
           </div>
 
           <Button
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+            className="w-full"
             onClick={handleConfirm}
             disabled={isConfirming || !selectedDate || !amountRaw}
           >

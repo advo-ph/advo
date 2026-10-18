@@ -8,6 +8,7 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { get } from "@/lib/api";
+import { getResponsiveImageSrcSet } from "@/lib/image-urls";
 
 /** "short and concise and simple descs only" — one line, never a paragraph. */
 export const SHIPPED_DESC_LIMIT = 120;
@@ -20,6 +21,9 @@ export interface ShippedProject {
   blurb: string;
   live_url: string | null;
   screenshotUrl: string | null;
+  screenshotSrcSet?: string;
+  /** A transparent logo shown in place of the title, when the project has one. */
+  logoUrl: string | null;
   display_order: number;
 }
 
@@ -35,6 +39,7 @@ const clamp = (text: string) => {
 function mapShipped(row: Record<string, unknown>): ShippedProject {
   const primaryImage = (row.imageUrl ?? row.image_url ?? null) as string | null;
   const galleryImage = (row.imageUrls ?? row.image_urls ?? null) as string[] | null;
+  const screenshotUrl = primaryImage || galleryImage?.[0] || null;
 
   return {
     portfolio_project_id: (row.portfolioProjectId ?? row.portfolio_project_id) as number,
@@ -42,13 +47,17 @@ function mapShipped(row: Record<string, unknown>): ShippedProject {
     slug: ((row.slug as string) || null),
     blurb: clamp(((row.description as string) || "").trim()),
     live_url: (((row.previewUrl ?? row.preview_url) as string) || null),
-    screenshotUrl: primaryImage || galleryImage?.[0] || null,
+    screenshotUrl,
+    screenshotSrcSet: screenshotUrl ? getResponsiveImageSrcSet(screenshotUrl) : undefined,
+    logoUrl: ((row.logoUrl ?? row.logo_url) as string) || null,
     display_order: Number(row.displayOrder ?? row.display_order ?? 0),
   };
 }
 
-async function fetchShipped(): Promise<ShippedProject[]> {
+export async function fetchShipped(): Promise<ShippedProject[]> {
   const res = await get<Record<string, unknown>[]>("/api/content/portfolio");
+  if (res.error) throw new Error(res.error);
+
   return (res.data || [])
     .map(mapShipped)
     // A row with no screenshot is not "a large screenshot with one short line".
@@ -57,11 +66,11 @@ async function fetchShipped(): Promise<ShippedProject[]> {
 }
 
 export function usePortfolio() {
-  const { data: project = [], isLoading } = useQuery({
+  const { data: project = [], isLoading, isError } = useQuery({
     queryKey: ["publicPortfolio"],
     queryFn: fetchShipped,
     staleTime: 5 * 60 * 1000,
   });
 
-  return { project, isLoading };
+  return { project, isLoading, isError };
 }

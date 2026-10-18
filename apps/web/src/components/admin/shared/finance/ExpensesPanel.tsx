@@ -10,7 +10,7 @@
 
 import { useState, useEffect } from "react";
 import { Plus, Trash2, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { FinanceButton as Button } from "./FinanceButton";
 import { Input } from "@/components/ui/input";
 import {
   Select,

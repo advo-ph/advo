@@ -1,0 +1,992 @@
+/* The public roster at /team.
+ *
+ * Every colour, size and rhythm below comes from the landing token block in
+ * landing-page.css. The only new values are the on-dark set the spotlight
+ * needs, and they are scoped to the overlay rather than added to the shared
+ * :root — nothing outside this page renders white ink on a near-black scrim.
+ */
+
+.team-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------------------------------------------------------------- Scramble */
+
+.team-scramble {
+  /* A ligature forming between two random glyphs reads as a rendering fault. */
+  font-variant-ligatures: none;
+}
+.team-scramble-word { position: relative; display: inline-block; }
+.team-scramble-reserve { visibility: hidden; }
+/* Cipher glyphs are wider than the lowercase letters they stand in for, so the
+   live copy is clipped to the real word's width — that stops a scrambling word
+   bleeding into the next one, and stops the line rewrapping mid-decrypt. The
+   negative vertical inset leaves ascenders their room. */
+.team-scramble-live {
+  position: absolute;
+  inset: 0;
+  white-space: nowrap;
+  clip-path: inset(-0.4em 0);
+  /* clip-path only hides the overflow; this also keeps it out of the box's
+     scroll width, which is what the one-line fit in the spotlight measures. */
+  overflow-x: clip;
+}
+
+/* ---------------------------------------------------------------- Page */
+
+/* One gap sits above the heading and between the heading and the roster. */
+.team-page { --team-head-gap: clamp(44px, 5vw, 72px); }
+.landing-shell-main.team-page {
+  padding-top: var(--team-head-gap);
+  padding-bottom: var(--landing-section-rhythm);
+}
+
+.team-head { text-align: center; }
+.team-page .team-head h1 {
+  margin: 0;
+  font-size: var(--landing-text-display);
+  font-weight: 500;
+  line-height: 1.04;
+  letter-spacing: -0.03em;
+}
+
+.team-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding-block: var(--landing-section-rhythm);
+  color: var(--landing-ink-mute);
+  font-size: var(--landing-text-body);
+}
+.team-state-error {
+  flex-direction: column;
+  gap: 12px;
+  color: var(--landing-ink-soft);
+  text-align: center;
+}
+.team-state-error p { margin: 0; }
+.team-retry {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--landing-line);
+  border-radius: 6px;
+  background: var(--landing-ground);
+  color: var(--landing-ink);
+  font: inherit;
+  font-size: var(--landing-text-small);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s var(--landing-ease), border-color 0.15s var(--landing-ease);
+}
+.team-retry:hover { background: var(--landing-ground-soft); border-color: var(--landing-ink-mute); }
+.team-retry:focus-visible { outline: 2px solid var(--landing-ink); outline-offset: 3px; }
+
+/* ---------------------------------------------------------------- Roster */
+
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(32px, 3.4vw, 52px) clamp(16px, 2vw, 28px);
+  margin: var(--team-head-gap) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.team-tile {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: inherit;
+  text-align: left;
+}
+.team-tile:focus-visible { outline: 2px solid var(--landing-ink); outline-offset: 4px; }
+.team-tile:focus:not(:focus-visible) { outline: none; }
+
+.team-tile-frame {
+  position: relative;
+  display: block;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border: 1px solid var(--landing-line);
+  border-radius: 10px;
+  background: var(--landing-ground-soft);
+}
+.team-tile-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.8s var(--landing-ease);
+}
+@media (hover: hover) {
+  .team-tile:hover .team-tile-frame img { transform: scale(1.035); }
+}
+
+.team-tile-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: clamp(48px, 6vw, 84px);
+  font-weight: 500;
+  color: var(--landing-ink-soft);
+}
+
+/* Name and role use the same fonts and spacing as the spotlight, in black. */
+.team-tile-caption {
+  display: block;
+  padding-top: 16px;
+  color: var(--landing-ink);
+}
+.team-tile-name {
+  display: block;
+  font-family: var(--advo-font-title);
+  font-size: clamp(22px, 2vw, 30px);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  font-kerning: normal;
+}
+.team-tile-role {
+  display: block;
+  margin-top: 5px;
+  font-family: var(--advo-font-body);
+  font-size: clamp(11px, 0.9vw, 13px);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+/* ---------------------------------------------------------------- Spotlight */
+
+/* The scrim is only a frame for its layers. .team-wave paints the dark sheet
+   and grows out from the middle of the screen on open; the aura drifts on top
+   of it. There is no backdrop blur on any screen size. On desktop it made the
+   whole page go soft in one step before the wave reached it, and Chrome drops
+   a backdrop-filter the moment an ancestor fades, so the close flashed the
+   sharp page. It is also the costliest thing a scrim can ask of a phone. */
+.team-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  overflow: hidden;
+}
+.team-scrim.is-reduce-motion { background: rgba(6, 6, 6, 0.94); }
+
+.team-wave {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+/* The front runs just ahead of the dark body, so it shows as an orange band at
+   the edge of the wave, then fades. Hidden until its animation draws it. */
+.team-wave.is-front {
+  opacity: 0;
+  background: radial-gradient(circle at 50% 50%, #f29a5e, var(--advo-orange-hex) 55%, #c4561c);
+}
+/* Opaque: with no blur under it, even a few percent of a sharp page showing
+   through reads as noise behind the copy, and a see-through body let the
+   orange front tint it brown and then fade, which read as a flicker. */
+.team-wave.is-body { background: #060606; }
+
+/* Soft orange light that never stops moving. One layer only a little larger
+   than the screen, plain gradients, no filter: the old pair of 2x-screen
+   sheets cost a desktop ~40M pixels to draw on the open frame, which is what
+   held that frame back. A drift costs the compositor nothing but the move. */
+.team-aura-wrap {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  animation: team-fade-in 1s var(--landing-ease) 0.4s both;
+}
+.team-scrim[data-state="closed"] .team-aura-wrap { animation: team-fade-out 0.2s var(--landing-ease) both; }
+.team-aura {
+  position: absolute;
+  inset: -12%;
+  background:
+    radial-gradient(34% 30% at 26% 30%, rgba(230, 122, 58, 0.24), transparent 70%),
+    radial-gradient(30% 28% at 76% 62%, rgba(214, 98, 40, 0.18), transparent 70%),
+    radial-gradient(26% 24% at 42% 82%, rgba(240, 150, 90, 0.14), transparent 70%);
+  animation: team-aura-drift 26s ease-in-out infinite alternate;
+}
+
+@keyframes team-aura-drift {
+  0% { transform: translate3d(-4%, -3%, 0) scale(1); }
+  50% { transform: translate3d(3%, 2%, 0) scale(1.05); }
+  100% { transform: translate3d(-2%, 4%, 0) scale(0.98); }
+}
+/* Every entrance holds its first frame until the overlay is on screen
+   (data-live, set by TeamMemberSpotlight), so a slow first frame cannot eat it. */
+.team-scrim:not([data-live]) .team-aura-wrap,
+.team-scrim:not([data-live]) .team-aura,
+.team-spotlight:not([data-live]) .team-spotlight-stage,
+.team-spotlight:not([data-live]) .team-spotlight-copy,
+.team-spotlight:not([data-live]) .team-spotlight-close { animation-play-state: paused; }
+
+@keyframes team-fade-in { from { opacity: 0; } }
+@keyframes team-fade-out { to { opacity: 0; } }
+@keyframes team-stage-in { from { opacity: 0; transform: scale(0.9); } }
+
+.team-spotlight {
+  --team-on-dark: #ffffff;
+  --team-on-dark-soft: rgba(255, 255, 255, 0.82);
+  --team-on-dark-line: rgba(255, 255, 255, 0.16);
+  --team-ring: rgba(236, 214, 196, 0.72);
+  --team-pad-y: clamp(72px, 10vh, 112px);
+  /* Every portrait is 3:4 and drawn at one size, capped by the viewport
+     height, so nothing is ever cropped and nothing ever jumps. */
+  --team-frame-w: min(480px, (100dvh - 2 * var(--team-pad-y)) * 0.75);
+  /* How wide one slide is inside the stage. */
+  --team-slide-w: 100%;
+  position: fixed;
+  inset: 0;
+  z-index: 81;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--team-pad-y) clamp(96px, 10vw, 168px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Sideways swipes belong to the carousel. */
+  touch-action: pan-y;
+  font-family: var(--advo-font-public);
+  color: var(--team-on-dark);
+}
+.team-spotlight:focus { outline: none; }
+.team-spotlight.is-steppable { cursor: pointer; }
+
+.team-spotlight-panel {
+  display: grid;
+  /* The copy column gets the extra room so a full name fits at a large size. */
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  align-items: center;
+  gap: clamp(40px, 5.6vw, 88px);
+  width: min(1240px, 100%);
+  margin: auto;
+}
+
+/* The stage holds every portrait, stacked; the carousel position slides them.
+   Desktop clips to one portrait, so the next one slides in from outside. */
+.team-spotlight-stage {
+  position: relative;
+  justify-self: center;
+  width: min(var(--team-frame-w), 100%);
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: 16px;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  animation: team-stage-in 0.62s var(--landing-ease) 0.16s both;
+}
+/* Own layers, so a swipe only moves pixels and never repaints a photo. */
+.team-slide {
+  position: absolute;
+  top: 0;
+  left: calc(50% - var(--team-slide-w) / 2);
+  width: var(--team-slide-w);
+  aspect-ratio: 3 / 4;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  will-change: transform, opacity;
+}
+.team-slide img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  object-fit: cover;
+}
+.team-slide-pick {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  cursor: pointer;
+}
+.team-spotlight-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-family: var(--advo-font-title);
+  font-size: clamp(56px, 7vw, 96px);
+  color: var(--team-on-dark-line);
+}
+
+/* Opacity only: a transform here would make this column the containing block
+   of the desktop arrows, which are pinned to the viewport edges. */
+.team-spotlight-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  animation: team-fade-in 0.5s var(--landing-ease) 0.22s both;
+}
+
+/* Name and role are always one line. A long one shrinks to fit the column
+   (useFitLine) instead of wrapping, so every member's copy is the same height. */
+/* Line heights are fixed from the stylesheet size, so a name the fit shrinks
+   keeps the same line box and nothing under it moves. */
+.team-spotlight .team-spotlight-name {
+  --team-name-size: clamp(36px, 3.7vw, 64px);
+  margin: 0;
+  font-family: var(--advo-font-title);
+  font-size: var(--team-name-size);
+  font-weight: 400;
+  line-height: calc(var(--team-name-size) * 1.05);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  font-kerning: normal;
+}
+.team-spotlight .team-spotlight-role {
+  margin: clamp(18px, 1.8vw, 28px) 0 0;
+  padding-bottom: clamp(28px, 3vw, 44px);
+  border-bottom: 1px solid var(--team-on-dark-line);
+  --team-role-size: clamp(15px, 1.4vw, 22px);
+  font-family: var(--advo-font-body);
+  font-size: var(--team-role-size);
+  line-height: calc(var(--team-role-size) * 1.25);
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--team-on-dark);
+}
+/* Holds four lines of bio whatever the member has, so the row under it never
+   moves when you step from a long bio to a short one. */
+.team-spotlight-body {
+  --team-bio-size: clamp(18px, 1.6vw, 25px);
+  --team-bio-leading: 1.45;
+  padding-top: clamp(28px, 3vw, 44px);
+  min-height: calc(clamp(28px, 3vw, 44px) + 4 * var(--team-bio-leading) * var(--team-bio-size));
+}
+.team-spotlight .team-spotlight-bio {
+  margin: 0;
+  max-width: 34ch;
+  font-size: var(--team-bio-size);
+  line-height: var(--team-bio-leading);
+  color: var(--team-on-dark-soft);
+}
+
+.team-spotlight-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 24px;
+  margin-top: 20px;
+}
+/* border-bottom-color is a fixed value, not currentColor, so the rule under the
+   link holds one colour while the text itself carries the hover. */
+.team-spotlight-links a {
+  padding-bottom: 3px;
+  border-bottom: 1px solid var(--team-on-dark-line);
+  font-size: var(--landing-text-body);
+  color: var(--team-on-dark);
+  transition: color 0.18s var(--landing-ease);
+}
+.team-spotlight-links a:hover { color: var(--team-on-dark-soft); }
+.team-spotlight-links a:focus-visible { outline: 2px solid var(--team-on-dark); outline-offset: 4px; }
+
+/* Desktop: the arrows leave the flow and pin to the viewport edges (the copy
+   column is unpositioned, so .team-spotlight is their containing block). */
+.team-spotlight-nav { margin-top: clamp(36px, 4vw, 56px); }
+.team-spotlight-dots { display: flex; gap: 8px; }
+.team-spotlight-dot {
+  position: relative;
+  width: 40px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.team-spotlight-dot::before {
+  content: "";
+  position: absolute;
+  inset: 8px 0;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.22);
+  transition: background 0.25s var(--landing-ease);
+}
+.team-spotlight-dot[aria-current="true"]::before { background: var(--advo-orange-hex); }
+.team-spotlight-dot:focus-visible { outline: 2px solid var(--team-on-dark); outline-offset: 2px; }
+
+.team-spotlight-close,
+.team-spotlight-arrow {
+  position: absolute;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 1.5px solid var(--team-ring);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--team-on-dark);
+  transition: background 0.18s var(--landing-ease);
+  -webkit-tap-highlight-color: transparent;
+}
+.team-spotlight-close {
+  top: clamp(20px, 4vh, 36px);
+  right: clamp(20px, 2.4vw, 36px);
+  width: 56px;
+  height: 56px;
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.08);
+  animation: team-fade-in 0.4s var(--landing-ease) 0.28s both;
+}
+.team-spotlight-close:focus-visible,
+.team-spotlight-arrow:focus-visible { outline: 2px solid var(--team-on-dark); outline-offset: 3px; }
+@media (hover: hover) {
+  .team-spotlight-close:hover,
+  .team-spotlight-arrow:hover { background: rgba(255, 255, 255, 0.14); }
+  .team-spotlight-dot:hover::before { background: rgba(255, 255, 255, 0.42); }
+}
+.team-spotlight-close:active,
+.team-spotlight-arrow:active { background: rgba(255, 255, 255, 0.2); }
+
+.team-spotlight-arrow { top: 50%; transform: translateY(-50%); }
+.team-spotlight-arrow.is-prev { left: clamp(20px, 2.4vw, 38px); }
+.team-spotlight-arrow.is-next { right: clamp(20px, 2.4vw, 38px); }
+
+/* ---------------------------------------------------------------- Responsive */
+
+@media (max-width: 900px) {
+  .team-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  /* Phone sheet: one column that always fits the screen. The portrait is the
+     only part that gives: it takes what the fixed-height copy and controls
+     leave (--team-chrome), and the neighbours peek in at the sides. Every
+     member's sheet is the same height, so the arrows never move. */
+  .team-spotlight {
+    --team-chrome: calc(360px + env(safe-area-inset-top, 0px) + env(safe-area-inset-bottom, 0px));
+    --team-frame-w: clamp(120px, min(64vw, (100dvh - var(--team-chrome)) * 0.75), 320px);
+    --team-slide-w: var(--team-frame-w);
+    flex-direction: column;
+    align-items: stretch;
+    padding: calc(env(safe-area-inset-top, 0px) + 76px) 0 calc(env(safe-area-inset-bottom, 0px) + 14px);
+  }
+  .team-spotlight-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+    margin: auto 0;
+  }
+  .team-spotlight-stage {
+    flex: none;
+    width: 100%;
+    height: calc(var(--team-frame-w) * 4 / 3);
+    aspect-ratio: auto;
+    overflow: visible;
+    border-radius: 0;
+  }
+  .team-slide { border-radius: 14px; }
+  .team-spotlight-fallback { font-size: 64px; }
+
+  .team-spotlight-copy {
+    width: min(460px, 100%);
+    margin: 0 auto;
+    padding: 22px 24px 0;
+  }
+  .team-spotlight .team-spotlight-name { --team-name-size: 32px; }
+  .team-spotlight .team-spotlight-role {
+    --team-role-size: 13px;
+    margin-top: 10px;
+    padding-bottom: 16px;
+    letter-spacing: 0.32em;
+  }
+  .team-spotlight-body {
+    --team-bio-size: 15px;
+    --team-bio-leading: 1.4;
+    padding-top: 14px;
+    min-height: calc(14px + 4 * var(--team-bio-leading) * var(--team-bio-size));
+  }
+  .team-spotlight .team-spotlight-bio { max-width: none; }
+  .team-spotlight-links { margin-top: 12px; }
+
+  /* Arrows and dots share one row under the copy. */
+  .team-spotlight-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .team-spotlight-dots {
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 2px;
+  }
+  .team-spotlight-dot { flex: 1 1 0; width: auto; min-width: 0; max-width: 14px; }
+  .team-spotlight-dot::before { inset: 8.5px 1px; }
+  .team-spotlight-arrow {
+    position: static;
+    flex: none;
+    width: 52px;
+    height: 52px;
+    transform: none;
+  }
+  /* Bigger and filled, so it reads as a button and is easy to hit. */
+  .team-spotlight-close {
+    top: calc(env(safe-area-inset-top, 0px) + 12px);
+    right: 12px;
+    width: 52px;
+    height: 52px;
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+}
+
+@media (max-width: 680px) {
+  .team-grid { grid-template-columns: minmax(0, 1fr); }
+  .team-tile-name { font-size: clamp(26px, 7.6vw, 34px); }
+  .team-tile-role { margin-top: 6px; font-size: clamp(13px, 3.6vw, 15px); }
+}
+
+/* ---------------------------------------------------------------- Landing strip */
+
+/* The roster on the home page (LandingTeam.tsx). Desktop: every member in one
+   row that runs nearly edge to edge, past the page's content width, so ten or
+   more people still get room for a first name. The hovered or focused portrait
+   widens and shows the full name and role. Tablets and phones get a grid with
+   first names always visible over the photos and no hover state. */
+.landing-team {
+  --landing-team-edge: clamp(16px, 1.6vw, 28px);
+  padding: var(--landing-section-rhythm) var(--landing-team-edge) clamp(96px, 10vw, 160px);
+}
+/* Type comes from .landing-display.landing-solutions-title, the same as the
+   Solutions heading; this rule only places it. */
+.landing-team-title {
+  max-width: none;
+  margin: 0 auto;
+  text-align: center;
+}
+
+/* The founder leads: a large portrait with the name, role and quote to its
+   right. It stays side by side on phones too, just smaller. */
+.landing-team-lead {
+  display: grid;
+  grid-template-columns: clamp(300px, 32vw, 520px) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(36px, 5.5vw, 96px);
+  width: min(100%, 1080px);
+  margin: clamp(36px, 4vw, 56px) auto 0;
+}
+.landing-team-lead-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  /* Keep the layout footprint while adding breathing room around the portrait. */
+  transform: scale(0.9);
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 12px;
+  background: var(--landing-ground-soft);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.landing-team-lead-card:focus-visible { outline: 2px solid var(--landing-ink); outline-offset: 4px; }
+.landing-team-lead-card:focus:not(:focus-visible) { outline: none; }
+.landing-team-lead-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 16%;
+  transition: transform 0.8s var(--landing-ease);
+}
+.landing-team-lead-name {
+  margin: 0;
+  font-family: var(--advo-font-title);
+  font-size: clamp(34px, 3.8vw, 60px);
+  font-weight: inherit;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--landing-ink);
+}
+.landing-team-lead-role {
+  margin: clamp(12px, 1.2vw, 18px) 0 0;
+  font-family: var(--advo-font-body);
+  font-size: clamp(12px, 0.95vw, 14px);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--landing-ink-soft);
+}
+/* The quote sets in the page font, like the section heading: the body font
+   is capitals only, which made a whole sentence shout. */
+.landing-team-lead-quote {
+  max-width: 21ch;
+  margin: clamp(28px, 3.2vw, 52px) 0 0;
+  font-size: clamp(22px, 2.4vw, 38px);
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+  color: var(--landing-ink);
+}
+/* The opening mark hangs in the margin so the words line up with the name. */
+.landing-team-lead-quote p { margin: 0; text-indent: -0.42em; }
+
+.landing-team-lead + .landing-team-strip { margin-top: clamp(48px, 6vw, 96px); }
+
+.landing-team-strip {
+  display: flex;
+  gap: clamp(6px, 0.6vw, 10px);
+  width: 100%;
+  height: clamp(380px, 34vw, 560px);
+  margin: clamp(36px, 4vw, 56px) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.landing-team-item {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.landing-team-card {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 12px;
+  color: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.landing-team-card:focus-visible { outline: 2px solid var(--landing-ink); outline-offset: 4px; }
+.landing-team-card:focus:not(:focus-visible) { outline: none; }
+
+.landing-team-frame {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: var(--landing-ground-soft);
+}
+.landing-team-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 12%;
+}
+.landing-team-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: #1a1a1a;
+  font-family: var(--advo-font-title);
+  font-size: clamp(40px, 4vw, 64px);
+  color: var(--advo-orange-hex);
+}
+
+/* A dark fade under the caption keeps white text readable on any photo. */
+.landing-team-caption {
+  position: absolute;
+  inset: auto 0 0;
+  display: block;
+  padding: 56px 12px 16px;
+  background: linear-gradient(to top, rgba(6, 6, 6, 0.72), rgba(6, 6, 6, 0));
+}
+.landing-team-name {
+  display: block;
+  font-family: var(--advo-font-title);
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.landing-team-name-short { font-size: clamp(12px, 0.95vw, 16px); }
+.landing-team-name-full {
+  display: none;
+  overflow: hidden;
+  font-size: clamp(18px, 1.5vw, 26px);
+  text-overflow: ellipsis;
+}
+.landing-team-role {
+  display: block;
+  max-height: 0;
+  margin-top: 0;
+  overflow: hidden;
+  opacity: 0;
+  font-family: var(--advo-font-body);
+  font-size: clamp(11px, 0.85vw, 13px);
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Desktop starts with equal-width portraits across the section. Hover and
+   keyboard focus widen only the active portrait and reveal its details. */
+@media (min-width: 1024px) {
+  .landing-team {
+    min-height: 100svh;
+    padding-block: clamp(20px, 4svh, 48px);
+    padding-top: calc(var(--landing-nav-height) + 20px);
+    padding-bottom: clamp(96px, 10vw, 160px);
+  }
+  .landing-team-title { font-size: clamp(28px, min(3.6vw, 6svh), 52px); }
+  .landing-team-lead {
+    grid-template-columns: min(34svh, 340px) minmax(0, 1fr);
+    width: min(100%, calc(min(34svh, 340px) + clamp(32px, 4vw, 64px) + 460px));
+    gap: clamp(32px, 4vw, 64px);
+    margin-top: clamp(12px, 2svh, 24px);
+  }
+  .landing-team-lead-name {
+    font-size: clamp(32px, min(3.4vw, 6svh), 52px);
+    white-space: nowrap;
+  }
+  .landing-team-lead-role { font-size: clamp(12px, 0.95vw, 14px); }
+  .landing-team-lead-quote {
+    margin-top: clamp(16px, 2.5svh, 28px);
+    font-size: clamp(22px, min(2.2vw, 4svh), 30px);
+  }
+  .landing-team-lead + .landing-team-strip { margin-top: clamp(12px, 2svh, 24px); }
+  .landing-team-strip {
+    --team-portrait-height: min(31svh, 330px);
+    height: var(--team-portrait-height);
+    margin-inline: auto;
+  }
+  .landing-team-item { transition: flex-grow 0.6s var(--landing-ease), flex-basis 0.6s var(--landing-ease); }
+  .landing-team-item:has(.landing-team-card:focus-visible) {
+    flex: 0 0 calc(var(--team-portrait-height) * var(--portrait-ratio, 0.75));
+  }
+  /* Details use the final card width, so their line breaks stay stable
+     throughout expansion. Crossfade names as the portrait opens. */
+  .landing-team-name-full,
+  .landing-team-role {
+    width: calc(var(--team-portrait-height) * var(--portrait-ratio, 0.75) - 24px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s var(--landing-ease), visibility 0s 0.25s;
+  }
+  .landing-team-name-full {
+    display: block;
+    font-size: clamp(18px, 1.5vw, 26px);
+    white-space: normal;
+    overflow: visible;
+  }
+  .landing-team-name-short {
+    position: absolute;
+    left: 12px;
+    bottom: 16px;
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 0.18s var(--landing-ease);
+  }
+  .landing-team-role {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    max-height: none;
+    margin-top: 8px;
+  }
+  .landing-team-item:has(.landing-team-card:focus-visible) :is(.landing-team-name-full, .landing-team-role) {
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s;
+  }
+  .landing-team-item:has(.landing-team-card:focus-visible) .landing-team-name-short {
+    opacity: 0;
+    transition-delay: 0s;
+  }
+}
+
+@media (min-width: 1024px) and (hover: hover) {
+  .landing-team-item:hover {
+    flex: 0 0 calc(var(--team-portrait-height) * var(--portrait-ratio, 0.75));
+  }
+  .landing-team-item:hover :is(.landing-team-name-full, .landing-team-role) {
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s;
+  }
+  .landing-team-item:hover .landing-team-name-short {
+    opacity: 0;
+    transition-delay: 0s;
+  }
+}
+
+/* Tablets and phones: one row stops leaving room for a name, so the strip
+   becomes a grid with white first names over a dark fade inside each photo. A tap
+   opens the spotlight with the rest. Phones get four per row so the whole team
+   fits on about one screen. */
+@media (max-width: 1023px) {
+  .landing-team { padding-inline: var(--landing-gutter); }
+  .landing-team-strip {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    height: auto;
+    margin-top: 32px;
+  }
+  .landing-team-item { flex: 0 0 calc((100% - 5 * 10px) / 6); }
+  .landing-team-card {
+    height: auto;
+    color: #ffffff;
+    border-radius: 10px;
+  }
+  .landing-team-frame {
+    position: relative;
+    aspect-ratio: 3 / 4;
+    overflow: hidden;
+    border-radius: 10px;
+  }
+  .landing-team-fallback { font-size: 32px; }
+  .landing-team-caption {
+    padding: 32px 6px 10px;
+    background: linear-gradient(to top, rgba(6, 6, 6, 0.88), rgba(6, 6, 6, 0));
+  }
+  .landing-team-name-short { font-size: clamp(11px, 1.6vw, 14px); }
+  .landing-team-role { display: none; }
+  /* Press feedback only: a quick dim, no scale, nothing that moves the name. */
+  .landing-team-card:active .landing-team-frame { opacity: 0.82; }
+}
+
+@media (max-width: 1023px) and (min-width: 681px) {
+  .landing-team-lead { grid-template-columns: 38% minmax(0, 1fr); gap: 40px; }
+}
+
+@media (max-width: 680px) {
+  .landing-team-lead {
+    grid-template-columns: 44% minmax(0, 1fr);
+    gap: 18px;
+    margin-top: 28px;
+  }
+  .landing-team-lead-card { aspect-ratio: 3 / 4; border-radius: 10px; }
+  .landing-team-lead-card:active { opacity: 0.82; }
+  .landing-team-lead-name { font-size: clamp(19px, 5.6vw, 24px); }
+  .landing-team-lead-role { margin-top: 8px; font-size: 10px; letter-spacing: 0.2em; }
+  .landing-team-lead-quote { margin-top: 16px; font-size: clamp(15px, 4.2vw, 17px); line-height: 1.3; letter-spacing: -0.01em; }
+  .landing-team-lead + .landing-team-strip { margin-top: 36px; }
+  .landing-team-strip { gap: 8px; margin-top: 28px; }
+  .landing-team-item { flex-basis: calc((100% - 3 * 8px) / 4); }
+  .landing-team-name-short { font-size: clamp(11px, 3vw, 13px); }
+}
+
+/* ---------------------------------------------------------------- Entrance */
+
+/* LandingTeam.tsx sets [data-motion] on the section when motion is allowed,
+   and [data-revealed] on the founder block and the roster the first time each
+   scrolls into view. Until then the block waits, hidden. Every animation fills
+   backwards only, so when it ends the element is back on its plain rules and
+   hover works as before.
+
+   The title and the founder photo do not move. The founder's name, role and
+   quote rise in as three lines on one motion. Roster: an orange panel sweeps
+   up through each frame and uncovers the photo, which settles from a slow
+   zoom, as a wave left to right; the names then rise on the same motion as
+   the founder's lines. */
+.landing-team-lead-copy > :nth-child(2) { --i: 1; }
+.landing-team-lead-copy > :nth-child(3) { --i: 2; }
+
+.landing-team[data-motion] [data-team-reveal]:not([data-revealed]) :is(
+  .landing-team-lead-copy > *,
+  .landing-team-frame,
+  .landing-team-caption
+) { opacity: 0; }
+
+.landing-team[data-motion] .landing-team-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--advo-orange-hex);
+  transform: translateY(-101%);
+  pointer-events: none;
+}
+
+.landing-team[data-motion] [data-revealed] .landing-team-lead-copy > * {
+  animation: team-rise 0.9s var(--landing-ease) backwards;
+  animation-delay: calc(var(--i, 0) * 100ms);
+}
+.landing-team[data-motion] [data-revealed] .landing-team-frame {
+  animation: team-frame-open 0.8s var(--landing-ease) backwards;
+  animation-delay: calc(var(--i) * 70ms);
+}
+.landing-team[data-motion] [data-revealed] .landing-team-frame::after {
+  animation: team-curtain-lift 0.8s var(--landing-ease) backwards;
+  animation-delay: calc(0.4s + var(--i) * 70ms);
+}
+.landing-team[data-motion] [data-revealed] .landing-team-frame img {
+  animation: team-photo-settle 1.6s var(--landing-ease) backwards;
+  animation-delay: calc(0.4s + var(--i) * 70ms);
+}
+.landing-team[data-motion] [data-revealed] .landing-team-caption {
+  animation: team-rise 0.8s var(--landing-ease) backwards;
+  animation-delay: calc(0.95s + var(--i) * 70ms);
+}
+
+@keyframes team-rise { from { opacity: 0; transform: translateY(16px); } }
+@keyframes team-frame-open { from { clip-path: inset(100% 0 0 0); } to { clip-path: inset(0); } }
+@keyframes team-curtain-lift { from { transform: translateY(0); } }
+@keyframes team-photo-settle { from { transform: scale(1.3); } }
+
+/* ---------------------------------------------------------------- Reduced motion */
+
+/* The shell's .is-reduce-motion covers the page; the overlay is portalled out
+   of it and carries its own copy of the class. */
+.landing-page.is-reduce-motion .team-tile-frame img,
+.landing-page.is-reduce-motion .landing-team-item,
+.landing-page.is-reduce-motion .landing-team-frame img,
+.landing-page.is-reduce-motion .landing-team-lead-card img,
+.landing-page.is-reduce-motion .landing-team-role { transition: none; }
+.landing-page.is-reduce-motion .team-tile:hover .team-tile-frame img { transform: none; }
+.team-scrim.is-reduce-motion .team-aura-wrap,
+.team-spotlight.is-reduce-motion .team-spotlight-stage,
+.team-spotlight.is-reduce-motion .team-spotlight-copy,
+.team-spotlight.is-reduce-motion .team-spotlight-close { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .team-tile-frame img,
+  .landing-team-item,
+  .landing-team-frame img,
+  .landing-team-lead-card img,
+  .landing-team-role,
+  .team-spotlight-links a,
+  .team-spotlight-close,
+  .team-spotlight-arrow,
+  .team-spotlight-dot::before { transition: none; }
+  .team-tile:hover .team-tile-frame img { transform: none; }
+  .team-aura { animation: none; }
+  .team-scrim { background: rgba(6, 6, 6, 0.94); }
+}
+
+/* Reveal details immediately when card motion is disabled. */
+.landing-page.is-reduce-motion :is(.landing-team-name-full, .landing-team-name-short, .landing-team-role) {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-team-name-full,
+  .landing-team-name-short,
+  .landing-team-role { transition: none; }
+}

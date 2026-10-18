@@ -1,162 +1,216 @@
-import { useEffect, useRef, useState } from "react";
-import { Link } from "react-router-dom";
-import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
-import { ChevronRight, UtensilsCrossed, Stethoscope, GraduationCap, CircleParking, Building2 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import {
+  type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { ArrowUpRight } from "lucide-react";
 import { usePortfolio } from "@/hooks/usePortfolio";
 import LandingNav from "@/components/LandingNav";
 import LandingScrollbar from "@/components/LandingScrollbar";
 import { Reveal, RevealGroup } from "@/components/motion/Reveal";
 import { EASE } from "@/lib/motion";
 import WorkShowcase from "./WorkShowcase";
+import LandingTeam from "./LandingTeam";
+import ProjectInquiry from "./ProjectInquiry";
 import LandingFooter from "./landing-footer";
-import { instrumentLanding, trackPrimaryCta } from "@/lib/track";
+import FlowingBackground from "./FlowingBackground";
+import ServicesScroll from "./ServicesScroll";
+import SolutionExplorer from "./SolutionExplorer";
+import { instrumentLanding } from "@/lib/track";
+import {
+  heroCopy,
+  heroHeading,
+  industry,
+  industryTab,
+  marqueeLogos,
+  type IndustryTab,
+} from "./landing-content";
 import "./landing-page.css";
 
-/**
- * What ADVO builds, by industry, each with the products we actually sell into it.
- * Prince, 09-03: this reads to a restaurant or a clinic owner as "yes, they have
- * built the thing I need", where "Strategy / Design / Development" never does.
- */
-interface Offer {
-  name: string;
-  copy: string;
-}
-interface Industry {
-  key: string;
-  image: string;
-  title: string;
-  icon: LucideIcon;
-  copy: string;
-  offer: Offer[];
-}
-const industry: Industry[] = [
-  {
-    key: "food",
-    image: "/landing/industry/food.jpg",
-    icon: UtensilsCrossed,
-    title: "Food",
-    copy: "Ordering, seating, and the kitchen behind both.",
-    offer: [
-      { name: "QR code ordering", copy: "Guests scan the table code and order from their own phone." },
-      { name: "Kiosk ordering", copy: "Self-serve terminals that take the order and the payment." },
-      { name: "Table management", copy: "A live floor plan with seating, waitlist, and turn times." },
-    ],
-  },
-  {
-    key: "medical",
-    image: "/landing/industry/medical.jpg",
-    icon: Stethoscope,
-    title: "Medical",
-    copy: "Clinics, hospitals, and the records that move between them.",
-    offer: [
-      { name: "Clinic management", copy: "Appointments, queueing, billing, and stock in one system." },
-      { name: "EMR for doctors", copy: "Patient records a doctor reads and updates between consults." },
-      { name: "Hospital integration", copy: "Clinic data to and from hospital systems, no fax machine." },
-    ],
-  },
-  {
-    key: "education",
-    image: "/landing/industry/education.jpg",
-    icon: GraduationCap,
-    title: "Education",
-    copy: "Campus security, grading, and the school's own portal.",
-    offer: [
-      { name: "ID authentication", copy: "Student IDs that tap in at the gate and log who is on campus." },
-      { name: "Automated monitoring", copy: "Attendance tracked without a teacher counting heads." },
-      { name: "Grading system", copy: "Marks entered once, computed to the school's own rules." },
-    ],
-  },
-  {
-    key: "parking",
-    image: "/landing/industry/parking.jpg",
-    icon: CircleParking,
-    title: "Parking",
-    copy: "A fully automated car park for drivers, managers, and owners.",
-    offer: [
-      { name: "Plate recognition", copy: "A camera reads the plate at the gate and the barrier opens." },
-      { name: "Self-service payment", copy: "Pay at a kiosk in cash with coin change, or by e-wallet." },
-      { name: "Runs offline", copy: "The internet drops and the lane keeps working." },
-    ],
-  },
-  {
-    key: "business",
-    image: "/landing/industry/business.jpg",
-    icon: Building2,
-    title: "Businesses",
-    copy: "If it runs on spreadsheets and group chats, it can run on software.",
-    offer: [
-      { name: "Construction", copy: "Site progress, manpower, deliveries, and progress billing." },
-      { name: "Retail and services", copy: "Inventory, point of sale, scheduling, and customer records." },
-      { name: "Logistics", copy: "Fleet tracking, dispatch, and proof of delivery." },
-    ],
-  },
-];
 
-const step = [
-  {
-    title: "Discover",
-    heading: "Learn the floor before we write software",
-    copy: "We sit with how the shop actually runs today: paper, Viber, and tally sheets, then name the outcome.",
-    still: "/landing/process/discover.jpg",
-  },
-  {
-    title: "Design",
-    heading: "Make the system visible before we build it",
-    copy: "Screens, hardware, and handoffs are drawn together, so counter staff and the admin see one shared plan.",
-    still: "/landing/process/design.jpg",
-  },
-  {
-    title: "Build",
-    heading: "Ship in the shared workspace, not in email",
-    copy: "Design, development, and integration all happen in one place, so you watch the progress the week it lands.",
-    still: "/landing/process/build.jpg",
-  },
-  {
-    title: "Review",
-    heading: "Approve what is true, not what was attached",
-    copy: "Feedback and sign-off live on the work itself, so there are no lost versions and no mystery last file.",
-    still: "/landing/process/review.jpg",
-  },
-  {
-    title: "Launch",
-    heading: "Install, train, and stay on the floor",
-    copy: "We go live with the tablet, the printer, and the TV, and train the people who use them on a busy night.",
-    still: "/landing/process/launch.jpg",
-  },
-  {
-    title: "Support",
-    heading: "Stay after launch, because uptime is the product",
-    copy: "A care plan or hourly support keeps it running: the printer that dies at 8PM is covered that same night.",
-    still: "/landing/process/support.jpg",
-  },
-];
+interface IndustryExplorerProps {
+  items: IndustryTab[];
+  activeIndex: number;
+  onSelect: (index: number) => void;
+  idPrefix: string;
+  tablistLabel: string;
+  orientation: "horizontal" | "vertical";
+  reduceMotion: boolean | null;
+}
 
-/**
- * Real client marks, lifted from each client's own repository. Keyed by the
- * portfolio slug so the strip stays driven by the live portfolio table: a
- * client with no entry here shows its name as text, and removing a client
- * from the CMS removes it here too.
- */
-const clientLogo: Record<string, { src: string; filter?: string; wide?: boolean }> = {
-  fourlinq: { src: "/landing/logo/fourlinq.png" },
-  "felici-artisan-gelato": { src: "/landing/logo/felici.png", wide: true },
-  "tmc-registry": { src: "/landing/logo/tmc-registry.png", wide: true },
-  "camps-ph": { src: "/landing/logo/camps-ph.png" },
-  // Coffee Rush ships a white-on-transparent badge for their own dark site.
-  "coffee-rush-eastridge": { src: "/landing/logo/coffee-rush.png", filter: "invert(1)" },
+const IndustryExplorer = ({
+  items,
+  activeIndex,
+  onSelect,
+  idPrefix,
+  tablistLabel,
+  orientation,
+  reduceMotion,
+}: IndustryExplorerProps) => {
+  const current = items[activeIndex] ?? items[0];
+  if (!current) return null;
+
+  const handleTabKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const backwards = orientation === "horizontal" ? event.key === "ArrowLeft" : event.key === "ArrowUp";
+    const forwards = orientation === "horizontal" ? event.key === "ArrowRight" : event.key === "ArrowDown";
+    let nextIndex: number | null = null;
+
+    if (event.key === "Home") nextIndex = 0;
+    else if (event.key === "End") nextIndex = items.length - 1;
+    else if (backwards) nextIndex = (activeIndex - 1 + items.length) % items.length;
+    else if (forwards) nextIndex = (activeIndex + 1) % items.length;
+
+    if (nextIndex === null) return;
+
+    event.preventDefault();
+    onSelect(nextIndex);
+    document.getElementById(`${idPrefix}-tab-${nextIndex}`)?.focus();
+  };
+
+  return (
+    <Reveal className="landing-process-card" delay={0.1}>
+      <div
+        className="landing-process-tab"
+        role="tablist"
+        aria-orientation={orientation}
+        aria-label={tablistLabel}
+        onKeyDown={handleTabKeyDown}
+      >
+        {items.map((item, index) => (
+          <button
+            type="button"
+            role="tab"
+            id={`${idPrefix}-tab-${index}`}
+            aria-controls={`${idPrefix}-panel`}
+            aria-selected={index === activeIndex}
+            tabIndex={index === activeIndex ? 0 : -1}
+            key={item.title}
+            className={index === activeIndex ? "is-active" : ""}
+            onClick={() => onSelect(index)}
+          >
+            {item.title}
+          </button>
+        ))}
+      </div>
+
+      <div
+        className="landing-process-panel"
+        id={`${idPrefix}-panel`}
+        role="tabpanel"
+        aria-labelledby={`${idPrefix}-tab-${activeIndex}`}
+        tabIndex={0}
+      >
+        <div className="landing-still landing-process-still">
+          <AnimatePresence initial={false}>
+            <motion.img
+              key={current.still + current.title}
+              src={current.still}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              initial={reduceMotion ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={reduceMotion ? undefined : { opacity: 0 }}
+              transition={{ duration: reduceMotion ? 0 : 0.45, ease: EASE }}
+            />
+          </AnimatePresence>
+        </div>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={current.title}
+            className="landing-process-copy"
+            initial={reduceMotion ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
+            transition={{ duration: reduceMotion ? 0 : 0.28, ease: EASE }}
+          >
+            <h3>{current.heading}</h3>
+            <p>{current.copy}</p>
+            {current.offer?.length ? (
+              <ul className="landing-industry-offer">
+                {current.offer.map((offer) => (
+                  <li key={offer.name}>
+                    <span className="landing-industry-offer-name">{offer.name}</span>
+                    <span className="landing-industry-offer-copy">{offer.copy}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {current.href ? (
+              <div className="landing-industry-actions">
+                <a
+                  className="landing-industry-more"
+                  href={current.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <span>See more</span>
+                  <ArrowUpRight size={17} strokeWidth={1.5} aria-hidden="true" />
+                </a>
+              </div>
+            ) : null}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </Reveal>
+  );
 };
 
-const heroCopy = {
-  hidden: { opacity: 0, y: 18 },
-  show: { opacity: 1, y: 0 },
+
+type NetworkInformation = EventTarget & {
+  effectiveType?: string;
+  saveData?: boolean;
+};
+
+const prefersReducedData = () => {
+  if (typeof navigator === "undefined") return false;
+  const connection = (navigator as Navigator & { connection?: NetworkInformation }).connection;
+  return connection?.saveData === true || ["slow-2g", "2g"].includes(connection?.effectiveType ?? "");
 };
 
 const LandingPage = () => {
   const reduceMotion = useReducedMotion();
-  const [stepIndex, setStepIndex] = useState(0);
-  const heroRef = useRef<HTMLDivElement>(null);
+  const [isMobileViewport, setIsMobileViewport] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia("(max-width: 680px)").matches,
+  );
+  const [isCompactViewport, setIsCompactViewport] = useState(() =>
+    typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches,
+  );
+  const [tabIndex, setTabIndex] = useState(0);
+  const [playingHeroVideoKey, setPlayingHeroVideoKey] = useState<string | null>(null);
+  const [reduceData, setReduceData] = useState(prefersReducedData);
+  const heroVideoRef = useRef<HTMLVideoElement>(null);
   const pageRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 680px)");
+    const handleChange = () => setIsMobileViewport(mediaQuery.matches);
+
+    handleChange();
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 900px)");
+    const handleChange = () => setIsCompactViewport(mediaQuery.matches);
+
+    handleChange();
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, []);
+
+  useEffect(() => {
+    const connection = (navigator as Navigator & { connection?: NetworkInformation }).connection;
+    if (!connection) return;
+
+    const updateDataPreference = () => setReduceData(prefersReducedData());
+    connection.addEventListener("change", updateDataPreference);
+    return () => connection.removeEventListener("change", updateDataPreference);
+  }, []);
 
   // Section attention + scroll-depth milestones. A no-op until the visitor grants
   // consent, and detaches again on withdrawal — see apps/web/src/lib/track.ts.
@@ -165,183 +219,201 @@ const LandingPage = () => {
     return instrumentLanding(pageRef.current);
   }, []);
 
-  // Prince, 08-21: "keep only the section for the websites that we've already
-  // created". Real portfolio rows or nothing.
+  // The marquee is a fixed set of supplied partner marks. Portfolio rows still
+  // drive the projects section below.
   const { project: shippedProject } = usePortfolio();
 
-  // The hero still drifts a little slower than the page. Small on purpose: the
-  // photo is the point, the motion only keeps it from reading as a poster.
-  const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
-  const heroShift = useTransform(scrollYProgress, [0, 1], ["0%", reduceMotion ? "0%" : "14%"]);
+  const heroVideoKey = `${isMobileViewport ? "mobile" : "desktop"}-${reduceData ? "poster" : "autoplay"}`;
+  const heroPoster = isMobileViewport ? "/landing/hero-building-mobile.webp" : "/landing/hero-building.webp";
 
-  const current = step[stepIndex] ?? step[0];
+  // Keep the hero video muted and inline so browsers can autoplay it. Attempt
+  // playback immediately and retry once media data is ready; the poster stays
+  // visible while loading or if the browser blocks autoplay, with no controls.
+  useEffect(() => {
+    const video = heroVideoRef.current;
+    if (!video) return;
+    if (reduceData) {
+      video.pause();
+      video.load();
+      return;
+    }
+
+    video.defaultMuted = true;
+    video.muted = true;
+    video.playsInline = true;
+
+    const startPlayback = () => {
+      void video.play().catch(() => {
+        // Keep the poster in place if autoplay is blocked; there are no controls.
+      });
+    };
+
+    video.addEventListener("canplay", startPlayback);
+    startPlayback();
+    return () => video.removeEventListener("canplay", startPlayback);
+  }, [isMobileViewport, reduceData]);
 
   return (
     <main className={reduceMotion ? "landing-page is-reduce-motion" : "landing-page"} ref={pageRef}>
-      <LandingNav overlayHero />
+      <FlowingBackground />
+      <LandingNav />
       <LandingScrollbar />
 
+      {/* A still card on every screen size: no scroll or load motion here. */}
       <section className="landing-hero" id="top">
-        <div className="landing-hero-frame" ref={heroRef}>
-          <motion.div
-            className="landing-hero-media"
-            style={{ y: heroShift }}
-            initial={reduceMotion ? false : { scale: 1.06 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 1.8, ease: EASE }}
-          >
-            {reduceMotion ? (
-              <img src="/landing/hero-building.jpg" alt="" />
-            ) : (
-              <video
-                className="landing-hero-video"
-                src="/landing/hero-building.mp4"
-                poster="/landing/hero-building.jpg"
-                autoPlay
-                muted
-                loop
-                playsInline
+        <div className="landing-hero-frame">
+          <div className="landing-hero-media">
+            <video
+              ref={heroVideoRef}
+              key={heroVideoKey}
+              className="landing-hero-video"
+              src={reduceData ? undefined : isMobileViewport ? "/landing/hero-building-mobile.mp4" : "/landing/hero-building.mp4"}
+              poster={heroPoster}
+              autoPlay={!reduceData}
+              muted
+              loop
+              playsInline
+              controls={false}
+              preload={reduceData ? "none" : "auto"}
+              aria-hidden="true"
+              onPlaying={() => setPlayingHeroVideoKey(heroVideoKey)}
+              onPause={() => setPlayingHeroVideoKey((activeKey) => (activeKey === heroVideoKey ? null : activeKey))}
+              onWaiting={() => setPlayingHeroVideoKey((activeKey) => (activeKey === heroVideoKey ? null : activeKey))}
+              onError={() => setPlayingHeroVideoKey((activeKey) => (activeKey === heroVideoKey ? null : activeKey))}
+            />
+            {/* iOS can paint a native play control even with controls disabled. Keep the still above it until video frames are playing. */}
+            {(!reduceData && playingHeroVideoKey === heroVideoKey) ? null : (
+              <img
+                className="landing-hero-poster"
+                src={heroPoster}
+                alt=""
                 aria-hidden="true"
+                loading="eager"
+                fetchPriority="high"
               />
             )}
-          </motion.div>
-          <div className="landing-hero-shade" />
-          <motion.div
-            className="landing-hero-copy"
-            initial={reduceMotion ? false : "hidden"}
-            animate="show"
-            transition={{ staggerChildren: 0.1, delayChildren: 0.25 }}
-          >
-            <motion.h1 variants={heroCopy} transition={{ duration: 0.7, ease: EASE }}>
-              We digitalize it for you.
-            </motion.h1>
-            <motion.p variants={heroCopy} transition={{ duration: 0.7, ease: EASE }}>
-              Philippine software agency and client workspace. One shared place from brief to
-              launch.
-            </motion.p>
-            <motion.div className="landing-hero-action" variants={heroCopy} transition={{ duration: 0.7, ease: EASE }}>
-              <Link
-                className="landing-button landing-button-hero"
-                to="/start"
-                onClick={() => trackPrimaryCta("Start a project", "/start")}
-              >
-                Start a project
-                <ChevronRight size={14} strokeWidth={1} absoluteStrokeWidth />
-              </Link>
-            </motion.div>
-          </motion.div>
+          </div>
+          <div className="landing-hero-copy">
+            <h1>{heroHeading}</h1>
+            <p>{heroCopy}</p>
+          </div>
         </div>
       </section>
 
-      {shippedProject.length > 0 ? (
-        <section className="landing-marquee" aria-label="Businesses running on ADVO">
-          <p>Businesses already running on ADVO</p>
-          <div className="landing-marquee-mask">
-            <div className="landing-marquee-track">
-              {[...shippedProject, ...shippedProject].map((item, index) => {
-                const logo = item.slug ? clientLogo[item.slug] : undefined;
-                return (
-                  <span
-                    className={logo?.wide ? "landing-marquee-item is-wide" : "landing-marquee-item"}
-                    key={`${item.portfolio_project_id}-${index}`}
-                    aria-hidden={index >= shippedProject.length}
-                  >
-                    {logo ? (
-                      <img src={logo.src} alt={item.title} style={logo.filter ? { filter: logo.filter } : undefined} />
-                    ) : null}
-                    {!logo || !logo.wide ? <span>{item.title}</span> : null}
-                  </span>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-      ) : null}
-
-      <section className="landing-piece" id="showcase">
-        <Reveal as="h2" className="landing-display">
-          What we build
-        </Reveal>
-        <Reveal className="landing-lede" delay={0.08}>
-          <p>
-            Paper, Viber, tally sheets. We drop in the missing piece: software for the
-            industries we already ship into, plus the tablet, printer, and TV on the counter.
-          </p>
-        </Reveal>
-
-        <RevealGroup className="landing-industry-grid" stagger={0.08}>
-          {industry.map((item) => (
-            <Reveal as="article" className="landing-industry-card" key={item.key}>
-              <div className="landing-industry-media">
-                <img src={item.image} alt={`${item.title} — what ADVO builds`} loading="lazy" />
-              </div>
-              <div className="landing-industry-head">
-                <item.icon size={20} strokeWidth={1.25} absoluteStrokeWidth />
-                <h3>{item.title}</h3>
-              </div>
-              <p className="landing-industry-copy">{item.copy}</p>
-              <ul className="landing-industry-offer">
-                {item.offer.map((o) => (
-                  <li key={o.name}>
-                    <span className="landing-industry-offer-name">{o.name}</span>
-                    <span className="landing-industry-offer-copy">{o.copy}</span>
-                  </li>
-                ))}
-              </ul>
-            </Reveal>
-          ))}
-        </RevealGroup>
-
-      </section>
-
-      <section className="landing-process" id="process">
-        <Reveal className="landing-process-card" delay={0.1}>
-          <div className="landing-process-tab" role="tablist" aria-orientation="vertical" aria-label="How it ships">
-            {step.map((item, index) => (
-              <button
-                type="button"
-                role="tab"
-                key={item.title}
-                aria-selected={index === stepIndex}
-                className={index === stepIndex ? "is-active" : ""}
-                onClick={() => setStepIndex(index)}
+      <section className="landing-marquee" aria-label="Businesses running on ADVO">
+        <div className="landing-marquee-mask">
+          <div className="landing-marquee-track">
+            {[0, 1].map((groupIndex) => (
+              <div
+                className="landing-marquee-group"
+                key={groupIndex}
+                aria-hidden={groupIndex === 1 ? true : undefined}
               >
-                {item.title}
-              </button>
+                {marqueeLogos.map((logo) => (
+                  <span className="landing-marquee-item" key={logo.src}>
+                    <img
+                      src={logo.src}
+                      alt={groupIndex === 0 ? logo.alt : ""}
+                      width={logo.width}
+                      height={logo.height}
+                      style={{
+                        "--landing-logo-scale": logo.scale,
+                        ...("offsetX" in logo ? {
+                          "--landing-logo-offset-x": logo.offsetX,
+                          "--landing-logo-offset-y": logo.offsetY,
+                        } : {}),
+                      } as CSSProperties}
+                      decoding="async"
+                    />
+                  </span>
+                ))}
+              </div>
             ))}
           </div>
-
-          <div className="landing-process-panel" role="tabpanel">
-            <div className="landing-still landing-process-still">
-              <AnimatePresence initial={false}>
-                <motion.img
-                  key={current.still + current.title}
-                  src={current.still}
-                  alt=""
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: reduceMotion ? 0 : 0.45, ease: EASE }}
-                />
-              </AnimatePresence>
-            </div>
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div
-                key={current.title}
-                className="landing-process-copy"
-                initial={reduceMotion ? false : { opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={reduceMotion ? undefined : { opacity: 0, y: -6 }}
-                transition={{ duration: 0.28, ease: EASE }}
-              >
-                <h3>{current.heading}</h3>
-                <p>{current.copy}</p>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </Reveal>
+        </div>
       </section>
+
+      <section
+        className="landing-piece"
+        id="solutions"
+        aria-labelledby="solutions-heading"
+      >
+        <img
+          className="landing-solutions-logo"
+          src="/landing/advo-logo-lockup.png"
+          alt="ADVO Technologies"
+          width={886}
+          height={310}
+        />
+        <Reveal as="h2" id="solutions-heading" className="landing-display landing-solutions-title">
+          Building Real-World Technological Solutions
+        </Reveal>
+
+        {isMobileViewport ? (
+          <SolutionExplorer items={industry} reduceMotion={reduceMotion} />
+        ) : (
+          <RevealGroup className="landing-industry-grid" stagger={0.08}>
+            {industry.map((item) => (
+              <Reveal as="article" className="landing-industry-card" key={item.key}>
+                <p className="landing-industry-label">{item.title}</p>
+                <div className="landing-industry-media">
+                  <img
+                    src={item.image}
+                    alt={`${item.title} — an ADVO solution`}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </div>
+                <div className="landing-industry-content">
+                  <h3>{item.heading}</h3>
+                  <p className="landing-industry-copy">{item.copy}</p>
+                  <ul className="landing-industry-offer">
+                    {item.offer.map((o) => (
+                      <li key={o.name}>
+                        <span className="landing-industry-offer-name">{o.name}</span>
+                        <span className="landing-industry-offer-copy">{o.copy}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {item.href ? (
+                    <div className="landing-industry-actions">
+                      <a
+                        className="landing-industry-more"
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <span>See more</span>
+                        <ArrowUpRight size={17} strokeWidth={1.5} aria-hidden="true" />
+                      </a>
+                    </div>
+                  ) : null}
+                </div>
+              </Reveal>
+            ))}
+          </RevealGroup>
+        )}
+      </section>
+
+      <ServicesScroll />
+
+      {!isMobileViewport ? (
+        <section className="landing-process" id="process">
+          <Reveal as="h2" className="landing-process-title">Industries we modernize</Reveal>
+          <IndustryExplorer
+            items={industryTab}
+            activeIndex={tabIndex}
+            onSelect={setTabIndex}
+            idPrefix="process-industry"
+            tablistLabel="Industries we modernize"
+            orientation={isCompactViewport ? "horizontal" : "vertical"}
+            reduceMotion={reduceMotion}
+          />
+        </section>
+      ) : null}
       {shippedProject.length > 0 ? <WorkShowcase project={shippedProject} /> : null}
+      <LandingTeam />
+      <ProjectInquiry embedded />
       <LandingFooter />
     </main>
   );

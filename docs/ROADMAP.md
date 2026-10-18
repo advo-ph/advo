@@ -159,11 +159,26 @@ Benchmark: `npm run bench:analytics` → [`bench/roadmap/analytics/scoring.mjs`]
 | Events land in a store built for volume | `activity_log` is an audit trail. | migration `046_analytics_event` | `A6-event-table` | Merged, dormant (`VITE_ANALYTICS` off) |
 | Batched ingest | One POST per event does not survive a session. | `POST /api/event` | `A7-ingest-endpoint` | Merged, dormant (`VITE_ANALYTICS` off) |
 | Raw events expire and roll up | Unbounded growth on a small VPS database. | `retention.service.ts`, 90 days | `A8-retention` — Tier 1 | Merged, dormant (`VITE_ANALYTICS` off) |
-| Landing section attention + scroll depth | No behavioural evidence behind landing decisions. | `LandingPage` → `instrumentLanding` | `A9-public-funnel` | Ported; **no admin read surface for it yet** |
+| Landing section attention + scroll depth | No behavioural evidence behind landing decisions. | `LandingPage` → `instrumentLanding` | `A9-public-funnel` | Ported. Admin read surface shipped 2026-10-09 — see below |
 | Visitor identity degrades honestly | Fingerprint noise on Safari/Firefox, blocked on Brave. | `track.ts` identity | `A10-visitor-identity` | Merged, dormant (`VITE_ANALYTICS` off) |
 | Which clients have gone quiet | "Has the client opened the proposal?" | `/admin/engagement` | `A11-hub-engagement` | Ported; **reads nothing yet — the Hub is not instrumented and the gate is off on `/hub`** |
 | Delivery-outcome view per member | Derivable today, surfaced nowhere. | `/admin/accountability` (`GET /api/team/accountability`) | `A12-team-delivery-view` | Merged, dormant (`VITE_ANALYTICS` off) |
 | Staff section attention on `/admin` | The requested accountability signal. | `lib/staff-telemetry.ts` | `A13-team-behavior` | Built, **flag OFF** — do not enable before the policy is signed and distributed |
+
+**Admin "Web Statistics" surface + visitor geo — shipped 2026-10-09** (`/admin/web-stats`,
+`process/general-plans/active/visitor-analytics_PLAN_09-10-26.md`). The admin read surface
+A9 was missing is now built: `GET /api/visitor-stats/{summary,pages,sections,scroll-depth,
+geo}` reads unique visitors/sessions/page views over a date range, top pages, landing
+section attention + dwell, the scroll-depth funnel, and visitor geo, straight off the raw
+`analytics_event` table (admin-gated, same enforcement pattern as `/engagement`). Migration
+`051` adds `geo_country`/`geo_region`/`geo_city`/`geo_lat`/`geo_lon` (city-centroid
+precision only), resolved server-side at ingest from an offline DB-IP City Lite database
+(`services/geo.service.ts`) — no external API call, no account, raw IP never persisted.
+The admin page includes a dark, dot-matrix world map plotting visitor cities by volume.
+Still ships dormant along with the rest of this feature area (`VITE_ANALYTICS` unset).
+Also changed: raw `analytics_event` rows are no longer auto-deleted by default —
+`ANALYTICS_RETENTION_DAY` is now opt-in (unset = kept forever; the daily rollup is
+unaffected) — see the plan's Risks section for the storage-growth tradeoff this implies.
 
 **Open decisions.** Who may see per-person staff telemetry (the policy says founder only, plus the member's own data — no read endpoint exists yet). Whether staff telemetry ever feeds the penalty ledger. Whether to proceed with staff telemetry at all, given the assessment's necessity finding. How the Hub asks a signed-in client for analytics consent, which A11 needs before it can show anything.
 

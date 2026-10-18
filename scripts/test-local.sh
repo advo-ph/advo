@@ -1,6 +1,6 @@
 #!/bin/bash
-# Boot the local advo-api, wait for /api/health, run vitest, kill the API.
-# Lets you get a clean 68/68 without polluting prod with test data.
+# Boot the local advo-api, wait for /api/health, run the web workspace suite, and stop the API.
+# Live API cases require a migrated, seeded development database; this script does not seed it.
 #
 # Usage: ./scripts/test-local.sh [vitest-args...]
 #   ./scripts/test-local.sh                      # full suite
@@ -64,4 +64,4 @@ echo "→ Running vitest"
 echo ""
 
 # Pass through any args so you can target specific files
-VITE_API_URL="$API_URL" npx vitest run "$@"
+VITE_API_URL="$API_URL" npm --workspace apps/web run test -- "$@"

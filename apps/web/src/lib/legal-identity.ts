@@ -14,6 +14,7 @@ export interface LegalIdentity {
   legal_name: string;
   registration_number: string;
   registration_body: string;
+  bir_registration_status: string;
   business_address: string;
   support_email: string;
   support_phone: string;

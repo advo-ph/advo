@@ -156,7 +156,7 @@ npm --workspace apps/web run dev         # Vite :6447, proxies /api → :6407
 `db:local` finds `psql` on PATH or at the Windows installer path; full notes in
 [docs/SETUP.md](docs/SETUP.md#local-development).
 
-Default login: `admin@advo.ph` / `changeme`
+Default local login: `admin` / `changeme` (the username is the email local part with punctuation removed)
 
 ## Environment Variables
 

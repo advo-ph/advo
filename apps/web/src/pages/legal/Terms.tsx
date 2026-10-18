@@ -13,17 +13,15 @@ const Terms = () => (
     kicker="Legal"
     title="Terms and Conditions"
     summary={
-      "These terms govern the software ADVO builds and operates for a client — the public site, the Client Hub, the Admin Console, and the hardware on the floor — and any payment made to ADVO through this site."
+      "These terms govern software ADVO builds and operates for clients — including public websites, Client Hubs, and Admin Consoles — and payments made to ADVO through this site."
     }
   >
     <LegalSection heading="What ADVO sells">
       <p>
-        ADVO builds and runs software systems: a public website, a Client Hub the
-        client&rsquo;s customers sign into, an Admin Console the client&rsquo;s
-        studio runs on, and the hardware that sits alongside them. Work is scoped
-        per engagement and quoted; this site does not sell a fixed-price product
-        off the shelf, and any figure shown in a quotation is valid only for the
-        engagement it names.
+        ADVO builds and runs software systems, including public websites, Client
+        Hubs, and Admin Consoles. Work is scoped per engagement and quoted; this
+        site does not sell a fixed-price product off the shelf, and any figure
+        shown in a quotation is valid only for the engagement it names.
       </p>
     </LegalSection>
 

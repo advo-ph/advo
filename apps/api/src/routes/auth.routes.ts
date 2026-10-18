@@ -4,6 +4,7 @@ import { zValidator } from "@hono/zod-validator";
 import { HTTPException } from "hono/http-exception";
 import {
   findUserByEmail,
+  findUserByUsername,
   findUserById,
   verifyPassword,
   signAccessToken,
@@ -22,6 +23,7 @@ import { sendMagicLinkEmail } from "../services/email.service.js";
 import { requireAuth } from "../middleware/auth.js";
 import { env } from "../utils/env.js";
 import type { Variables } from "../types/context.js";
+import { normalizeUsername } from "../utils/username.js";
 
 const auth = new Hono<{ Variables: Variables }>();
 
@@ -55,14 +57,14 @@ async function userPayload(u: { userId: number; email: string; role: string; isO
 // ─── Login ────────────────────────────────────────────
 
 const loginSchema = z.object({
-  email: z.string().email().max(255),
+  username: z.string().trim().min(1).max(255).transform(normalizeUsername).pipe(z.string().min(1).max(255)),
   password: z.string().min(1).max(255),
 });
 
 auth.post("/login", zValidator("json", loginSchema), async (c) => {
-  const { email, password } = c.req.valid("json");
+  const { username, password } = c.req.valid("json");
 
-  const user = await findUserByEmail(email);
+  const user = await findUserByUsername(username);
   if (!user || !user.passwordHash) {
     throw new HTTPException(401, { message: "Invalid credentials" });
   }
@@ -100,17 +102,17 @@ auth.post("/login", zValidator("json", loginSchema), async (c) => {
 // ─── Magic Link ───────────────────────────────────────
 
 const magicLinkSchema = z.object({
-  email: z.string().email().max(255),
+  username: z.string().trim().min(1).max(255).transform(normalizeUsername).pipe(z.string().min(1).max(255)),
 });
 
 auth.post("/magic-link", zValidator("json", magicLinkSchema), async (c) => {
-  const { email } = c.req.valid("json");
+  const { username } = c.req.valid("json");
 
-  // Always return success to prevent email enumeration
-  const token = await generateMagicToken(email);
-  if (token) {
-    const link = `${env().FRONTEND_URL}/login?token=${token}`;
-    await sendMagicLinkEmail(email, link);
+  // Always return success to prevent account enumeration.
+  const login = await generateMagicToken(username);
+  if (login) {
+    const link = `${env().FRONTEND_URL}/login?token=${login.token}`;
+    await sendMagicLinkEmail(login.email, link);
   }
 
   return c.json({

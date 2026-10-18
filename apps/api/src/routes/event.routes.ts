@@ -17,7 +17,6 @@
  * user. The zod schema below does not even have a userId field — the parse strips it.
  */
 import { Hono, type Context } from "hono";
-import { getConnInfo } from "@hono/node-server/conninfo";
 import { z } from "zod";
 import { HTTPException } from "hono/http-exception";
 import { and, gte, isNotNull, sql } from "drizzle-orm";
@@ -25,6 +24,8 @@ import { db } from "../db/connection.js";
 import { analyticsEvent, client } from "../db/schema.js";
 import { optionalAuth, requireAuth } from "../middleware/auth.js";
 import { requireAdmin } from "../middleware/rbac.js";
+import { resolveClientIp } from "../utils/client-ip.js";
+import { resolveGeo } from "../services/geo.service.js";
 import type { Variables } from "../types/context.js";
 
 const event = new Hono<{ Variables: Variables }>();
@@ -98,41 +99,12 @@ const bucket = new Map<string, Bucket>();
  *
  * This endpoint is an unauthenticated INSERT and deliberately skips the shared public
  * limiter, so this map is the only bound in front of it.
+ *
+ * The actual IP-resolution logic (peer address, trusted-proxy header order) now lives in
+ * ../utils/client-ip.ts, shared with the geo lookup below — this is a thin wrapper so the
+ * name and every call site here stay unchanged.
  */
-const isPrivateAddress = (address: string): boolean => {
-  const a = address.replace(/^::ffff:/, "");
-  return (
-    a === "127.0.0.1" ||
-    a === "::1" ||
-    a.startsWith("10.") ||
-    a.startsWith("192.168.") ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(a)
-  );
-};
-
-function rateKey(c: Context<{ Variables: Variables }>): string {
-  let peer = "unknown";
-  try {
-    peer = getConnInfo(c).remote.address ?? "unknown";
-  } catch {
-    // No socket info (test harness).
-  }
-
-  // Direct connection: the peer is the caller. No header is worth reading.
-  if (peer !== "unknown" && !isPrivateAddress(peer)) return peer;
-
-  // Behind our own proxy. apps/api/nginx.conf sets `X-Real-IP $remote_addr`, which
-  // OVERWRITES whatever the client sent — so it is the peer as nginx saw it, and it is
-  // trustworthy. `X-Forwarded-For` uses $proxy_add_x_forwarded_for, which APPENDS to the
-  // client's value, so its leading entries are attacker-chosen and are never read here.
-  const real = c.req.header("X-Real-IP");
-  if (real) return real.trim();
-
-  const cloudflare = c.req.header("CF-Connecting-IP");
-  if (cloudflare) return cloudflare.trim();
-
-  return peer;
-}
+const rateKey = (c: Context<{ Variables: Variables }>): string => resolveClientIp(c);
 
 
 /**
@@ -234,6 +206,7 @@ event.post("/", optionalAuth, async (c) => {
     });
   }
 
+  const clientIp = resolveClientIp(c); // was: inlined in rateKey()
   const overage = overBudget(rateKey(c), parsed.data.length);
   if (overage) throw new HTTPException(429, { message: overage });
 
@@ -241,6 +214,10 @@ event.post("/", optionalAuth, async (c) => {
   const user = c.get("user");
   const userId = user?.userId ?? null;
   const now = new Date();
+
+  // Computed ONCE per request/batch, not once per event — every event in a batch shares
+  // one requester. The raw IP string never leaves resolveGeo: see geo.service.ts.
+  const geo = resolveGeo(clientIp);
 
   await db()
     .insert(analyticsEvent)
@@ -255,6 +232,12 @@ event.post("/", optionalAuth, async (c) => {
         userId,
         path: normalisePath(e.path),
         detail: e.detail,
+        geoCountry: geo?.country ?? null,
+        geoRegion: geo?.region ?? null,
+        geoCity: geo?.city ?? null,
+        // City-centroid precision only -- rounded here, never the exact mmdb float.
+        geoLat: geo?.lat != null ? geo.lat.toFixed(2) : null,
+        geoLon: geo?.lon != null ? geo.lon.toFixed(2) : null,
       }))
     );
 

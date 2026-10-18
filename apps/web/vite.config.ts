@@ -51,7 +51,7 @@ export default defineConfig({
         "favicon.svg",
         "favicon.png",
         "favicon-32.png",
-        "og-image.png",
+        "og-image.jpg",
         "advo-logo-black.png",
         "icon-192.png",
         "icon-512.png",
@@ -62,7 +62,9 @@ export default defineConfig({
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,webmanifest,woff2}"],
         navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/api\//],
+        // robots.txt, sitemap.xml, llms.txt and the IndexNow key are files, not app
+        // routes. Without this, a visitor with the service worker sees the 404 page.
+        navigateFallbackDenylist: [/^\/api\//, /\.(?:txt|xml)$/],
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.pathname.startsWith("/api/"),
@@ -75,6 +77,16 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+    },
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        // Keep the services graphics libraries below the PWA precache file limit.
+        manualChunks: {
+          "services-graphics": ["three", "animejs"],
+        },
+      },
     },
   },
   define: {

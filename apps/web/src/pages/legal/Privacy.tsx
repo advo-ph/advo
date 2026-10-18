@@ -18,7 +18,9 @@ import {
  * analytics recorded by apps/web/src/lib/track.ts.
  *
  * Every analytics statement here must stay true to that file, to
- * ConsentGate.tsx, and to RETENTION_DAY in apps/api/src/services/retention.service.ts.
+ * ConsentGate.tsx, and to ANALYTICS_RETENTION_DAY in
+ * apps/api/src/services/retention.service.ts (unset = kept indefinitely; set to enable
+ * automatic deletion).
  */
 
 const STATUS_LABEL: Record<ConsentStatus, string> = {
@@ -110,15 +112,26 @@ const Privacy = () => {
           you allow are linked to your account, so ADVO can see whether a client
           has opened what we sent. Your IP address is used in memory to limit
           abuse of the analytics endpoint and is not stored with the analytics.
+          We also use your IP address, in memory only, to derive an approximate
+          location (country, region and city) at the moment we receive it; the
+          IP address itself is discarded immediately and never stored. Location
+          data comes from the free{" "}
+          <a className="underline underline-offset-4" href="https://db-ip.com" target="_blank" rel="noreferrer">
+            DB-IP City Lite database
+          </a>
+          , used under its CC BY 4.0 licence.
         </p>
         <p>
           <strong>Lawful basis:</strong> your consent (RA 10173 Sec. 12(a)).{" "}
           <strong>Where it goes:</strong> our own database on our own server; no
           analytics vendor, advertising network, or third-party script receives
-          it. <strong>How long:</strong> individual analytics records are deleted
-          ninety (90) days after we receive them. What remains afterwards is a
-          daily count per page, with no visitor id, no session id, and no
-          account attached.
+          it. <strong>How long:</strong> we do not currently delete individual
+          analytics records automatically — they are kept until you ask us to
+          delete them (see &ldquo;Your analytics choice&rdquo; below) or until we
+          adopt a stated retention period. A daily summary count per page is
+          kept separately and never contains a visitor id, session id, or
+          account identifier. The data collected includes approximate location
+          (country, region, city).
         </p>
       </LegalSection>
 
@@ -177,7 +190,7 @@ const Privacy = () => {
           Engagement records, invoices, and the accounting trail are kept for ten
           (10) years, as Philippine tax and corporate rules require. Account data is
           deleted on request once the engagement is closed and settled.
-          {isAnalyticsOn && " Analytics records are kept for ninety (90) days, as described above."}
+          {isAnalyticsOn && " Analytics records are kept until deleted, as described above."}
         </p>
       </LegalSection>
 

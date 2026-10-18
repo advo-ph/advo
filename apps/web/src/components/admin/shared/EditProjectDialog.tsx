@@ -18,6 +18,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { updateProject } from "@/lib/db";
+import { normalizeOptionalListValue, parseMoneyInput } from "@/lib/project-form";
 import { useToast } from "@/hooks/use-toast";
 import type { ProjectStatus } from "@/types/admin";
 import { STATUS_OPTIONS } from "@/types/admin";
@@ -39,11 +40,9 @@ export function EditProjectDialog({ project, open, onOpenChange, onSaved }: Edit
     description: project.description || "",
     repository_name: project.repository_name || "",
     preview_url: project.preview_url || "",
-    contract_url: project.contract_url || "",
     project_status: project.project_status as ProjectStatus,
     total_value_cents: project.total_value_cents,
     amount_paid_cents: project.amount_paid_cents,
-    tech_stack: project.tech_stack.join(", "),
   });
 
   const handleSave = async () => {
@@ -54,16 +53,20 @@ export function EditProjectDialog({ project, open, onOpenChange, onSaved }: Edit
 
     setIsSaving(true);
     try {
+      const totalValueCents = formData.total_value_cents;
+      const listValueCents = normalizeOptionalListValue(project.list_value_cents);
+      const keepsDiscount = listValueCents != null && totalValueCents <= listValueCents;
       const { error } = await updateProject(project.project_id, {
         title: formData.title.trim(),
         description: formData.description.trim() || null,
         repository_name: formData.repository_name.trim() || null,
         preview_url: formData.preview_url.trim() || null,
-        contract_url: formData.contract_url.trim() || null,
         project_status: formData.project_status,
-        total_value_cents: formData.total_value_cents,
+        total_value_cents: totalValueCents,
         amount_paid_cents: formData.amount_paid_cents,
-        tech_stack: formData.tech_stack.split(",").map((s) => s.trim()).filter(Boolean),
+        list_value_cents: keepsDiscount ? listValueCents : null,
+        discount_cents: keepsDiscount ? listValueCents - totalValueCents : 0,
+        discount_reason: keepsDiscount ? project.discount_reason ?? null : null,
       });
 
       if (error) {
@@ -150,23 +153,22 @@ export function EditProjectDialog({ project, open, onOpenChange, onSaved }: Edit
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Contract URL</label>
-            <Input
-              value={formData.contract_url}
-              onChange={(e) => setFormData({ ...formData, contract_url: e.target.value })}
-              placeholder="https://link-to-contract.pdf"
-            />
-          </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Total value (PHP)</label>
               <Input
                 type="number"
                 value={formData.total_value_cents / 100}
+                min="0"
+                step="0.01"
+                onFocus={(e) => {
+                  if (formData.total_value_cents === 0) e.currentTarget.select();
+                }}
                 onChange={(e) =>
-                  setFormData({ ...formData, total_value_cents: parseFloat(e.target.value) * 100 || 0 })
+                  setFormData((current) => ({
+                    ...current,
+                    total_value_cents: parseMoneyInput(e.target.value),
+                  }))
                 }
                 placeholder="0"
               />
@@ -177,22 +179,22 @@ export function EditProjectDialog({ project, open, onOpenChange, onSaved }: Edit
               <Input
                 type="number"
                 value={formData.amount_paid_cents / 100}
+                min="0"
+                step="0.01"
+                onFocus={(e) => {
+                  if (formData.amount_paid_cents === 0) e.currentTarget.select();
+                }}
                 onChange={(e) =>
-                  setFormData({ ...formData, amount_paid_cents: parseFloat(e.target.value) * 100 || 0 })
+                  setFormData((current) => ({
+                    ...current,
+                    amount_paid_cents: parseMoneyInput(e.target.value),
+                  }))
                 }
                 placeholder="0"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Tech stack (comma-separated)</label>
-            <Input
-              value={formData.tech_stack}
-              onChange={(e) => setFormData({ ...formData, tech_stack: e.target.value })}
-              placeholder="React, Postgres, Stripe"
-            />
-          </div>
         </div>
 
         <DialogFooter>

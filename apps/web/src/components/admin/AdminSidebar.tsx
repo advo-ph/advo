@@ -23,17 +23,18 @@ import {
   ChevronDown,
   Scan,
   BookOpen,
-  Sun,
-  Moon,
   Send,
   BookOpenCheck,
   Banknote,
   Activity,
   ShieldCheck,
+  Server,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDrawerLock } from "@/hooks/useDrawerLock";
 import { useRoles } from "@/hooks/useRoles";
+import { useNavHidden } from "@/hooks/useNavHidden";
 
 /** Shared with the hamburger's aria-controls so focus returns to it on close. */
 export const ADMIN_DRAWER_ID = "admin-navigation-drawer";
@@ -69,6 +70,8 @@ export type AdminSection =
   | "library"
   | "brand-scraper"
   | "fb-scraper"
+  | "vps"
+  | "web-stats"
   | "settings";
 
 interface AdminSidebarProps {
@@ -78,13 +81,17 @@ interface AdminSidebarProps {
   onToggleCollapse: () => void;
   isMobileOpen: boolean;
   onMobileClose: () => void;
-  theme: "dark" | "light";
-  onToggleTheme: () => void;
 }
 
-type NavItem = { id: AdminSection; label: string; icon: React.ElementType };
+type NavItem = {
+  id: AdminSection;
+  label: string;
+  icon: React.ElementType;
+  /** Shown to the owner only, whatever the visibility setting says. */
+  ownerOnly?: boolean;
+};
 
-const topItem: NavItem = { id: "dashboard", label: "Dashboard", icon: LayoutDashboard };
+export const topItem: NavItem = { id: "dashboard", label: "Dashboard", icon: LayoutDashboard };
 
 type NavGroup = {
   label: string;
@@ -107,14 +114,13 @@ type NavGroup = {
  * and routes are kept so existing /admin/finance, /admin/contracts, and
  * /admin/library links still resolve instead of bouncing to the dashboard.
  */
-const navGroups: NavGroup[] = [
+export const navGroups: NavGroup[] = [
   {
     label: "Operations",
     items: [
       // First in Operations: this is the daily-driver screen.
       { id: "tasks", label: "Tasks", icon: ListChecks },
       { id: "projects", label: "Projects", icon: FolderKanban },
-      { id: "clients", label: "Clients", icon: Users },
       // Which clients have gone quiet — reads consented, signed-in analytics only.
       { id: "engagement", label: "Engagement", icon: Activity },
       { id: "calendar", label: "Calendar", icon: CalendarDays },
@@ -124,25 +130,15 @@ const navGroups: NavGroup[] = [
       { id: "corpus", label: "Corpus", icon: BookOpenCheck },
       { id: "time", label: "Time", icon: Clock },
       { id: "finance", label: "Finance", icon: Banknote },
-      // Last in Operations: consulted, not driven. The owner-only controls on
-      // the screen itself are what gate the roster, not this nav item.
-      { id: "team", label: "Team", icon: Users2 },
       // Derived from deliverable rows only — no telemetry behind this view.
       { id: "accountability", label: "Accountability", icon: ShieldCheck },
-    ],
-  },
-  {
-    label: "Marketing",
-    collapsible: true,
-    items: [
-      { id: "portfolio", label: "Portfolio", icon: Image },
-      { id: "social", label: "Social", icon: Instagram },
     ],
   },
   {
     label: "Sales",
     collapsible: true,
     items: [
+      { id: "clients", label: "Clients", icon: Users },
       { id: "leads", label: "Leads", icon: UserPlus },
       { id: "proposals", label: "Proposals", icon: FileCheck2 },
       { id: "campaign", label: "Campaigns", icon: Send },
@@ -153,6 +149,13 @@ const navGroups: NavGroup[] = [
     label: "Tools",
     collapsible: true,
     items: [
+      // Consulted, not driven. The owner-only controls on the screen itself
+      // are what gate the roster, not this nav item.
+      { id: "team", label: "Team", icon: Users2 },
+      { id: "portfolio", label: "Portfolio", icon: Image },
+      { id: "social", label: "Social", icon: Instagram },
+      { id: "vps", label: "VPS Usage", icon: Server, ownerOnly: true },
+      { id: "web-stats", label: "Web Statistics", icon: BarChart3, ownerOnly: true },
       { id: "brand-scraper", label: "Brand Research", icon: Scan },
       { id: "fb-scraper", label: "Facebook Research", icon: BookOpen },
     ],
@@ -163,6 +166,24 @@ const navGroups: NavGroup[] = [
 const groupLabelFor = (section: AdminSection) =>
   navGroups.find((g) => g.collapsible && g.items.some((i) => i.id === section))?.label;
 
+/** The nav groups this user should see. Shared by the sidebar and the phone "More" sheet. */
+export function useVisibleNavGroups() {
+  // isOwner starts false and flips true once /api/auth/me lands, so the
+  // owner-only groups appear a beat after first paint rather than never.
+  const { isOwner } = useRoles();
+  // The owner picks which items everyone sees (Settings → Sidebar). Hiding is
+  // presentation only: the routes stay reachable by URL.
+  const { hidden } = useNavHidden();
+  const visibleGroups = navGroups
+    .filter((g) => !g.ownerOnly || isOwner)
+    .map((g) => ({
+      ...g,
+      items: g.items.filter((i) => !hidden.includes(i.id) && (!i.ownerOnly || isOwner)),
+    }))
+    .filter((g) => g.items.length > 0);
+  return { isOwner, hidden, visibleGroups };
+}
+
 const AdminSidebar = ({
   activeSection,
   onSectionChange,
@@ -170,8 +191,6 @@ const AdminSidebar = ({
   onToggleCollapse,
   isMobileOpen,
   onMobileClose,
-  theme,
-  onToggleTheme,
 }: AdminSidebarProps) => {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
@@ -183,10 +202,7 @@ const AdminSidebar = ({
   const toggleGroup = (label: string) =>
     setExpandedGroups((prev) => ({ ...prev, [label]: !prev[label] }));
 
-  // isOwner starts false and flips true once /api/auth/me lands, so the
-  // owner-only groups appear a beat after first paint rather than never.
-  const { isOwner } = useRoles();
-  const visibleGroups = navGroups.filter((g) => !g.ownerOnly || isOwner);
+  const { isOwner, hidden, visibleGroups } = useVisibleNavGroups();
 
   // The nav list is taller than a laptop viewport, so the last group can sit
   // below the fold with nothing to hint at it. A group heading stranded at the
@@ -206,7 +222,7 @@ const AdminSidebar = ({
     syncNavOverflow();
     window.addEventListener("resize", syncNavOverflow);
     return () => window.removeEventListener("resize", syncNavOverflow);
-  }, [syncNavOverflow, expandedGroups, isCollapsed, isOwner]);
+  }, [syncNavOverflow, expandedGroups, isCollapsed, isOwner, hidden]);
 
   useEffect(() => {
     const owner = groupLabelFor(activeSection);
@@ -366,7 +382,7 @@ const AdminSidebar = ({
         </nav>
         </div>
 
-        {/* Version, Theme toggle, Settings & Collapse */}
+        {/* Version, Settings & Collapse */}
         <div className="p-3 border-t border-border space-y-1">
           {/* One line, not a labelled block. The nav list is taller than the
               viewport, so every pixel spent down here is a nav item pushed
@@ -377,21 +393,6 @@ const AdminSidebar = ({
             </div>
           )}
 
-          <button
-            onClick={onToggleTheme}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-          >
-            {theme === "dark" ? (
-              <Sun className="h-5 w-5 flex-shrink-0" />
-            ) : (
-              <Moon className="h-5 w-5 flex-shrink-0" />
-            )}
-            {!isCollapsed && (
-              <span className="text-sm font-medium">
-                {theme === "dark" ? "Light Mode" : "Dark Mode"}
-              </span>
-            )}
-          </button>
 
           <button
             onClick={() => handleSectionChange("settings")}

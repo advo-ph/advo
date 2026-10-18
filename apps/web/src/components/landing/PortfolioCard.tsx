@@ -10,6 +10,7 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Reveal } from "@/components/motion/Reveal";
 import { cn } from "@/lib/utils";
+import { getResponsiveImageSrcSet } from "@/lib/image-urls";
 
 const isVideoUrl = (url: string) => /\.(mp4|webm|mov|ogg|ogv|m4v)(\?|$)/i.test(url);
 
@@ -213,8 +214,13 @@ const PortfolioCard = ({
               ) : (
                 <img
                   src={imageUrl}
+                  srcSet={getResponsiveImageSrcSet(imageUrl)}
+                  sizes="(max-width: 768px) 95vw, 48vw"
                   alt={title}
                   className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-[1.02]"
+                  loading="lazy"
+                  decoding="async"
+                  fetchPriority="low"
                 />
               )
             ) : (

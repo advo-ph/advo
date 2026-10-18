@@ -7,6 +7,7 @@ import { nanoid } from "nanoid";
 import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin } from "../middleware/rbac.js";
 import { env } from "../utils/env.js";
+import { warmUploadImage } from "../services/image-optimization.service.js";
 import { createLogger } from "../utils/logger.js";
 import type { Variables } from "../types/context.js";
 
@@ -77,6 +78,8 @@ files.post("/upload", requireAuth, async (c) => {
 
   const buffer = Buffer.from(await file.arrayBuffer());
   await writeFile(filepath, buffer);
+
+  warmUploadImage(bucket, filepath).catch((err) => log.warn({ err, bucket }, "Image warmup failed"));
 
   const url = `${env().API_URL}/uploads/${bucket}/${filename}`;
   log.info({ bucket, filename, size: file.size }, "File uploaded");

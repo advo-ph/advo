@@ -42,7 +42,7 @@ const Login = ({ variant }: LoginProps) => {
   // The wordmark carries "ADVO", so the label is only what comes after it. The <h1> still
   // reads as "ADVO Members" because the image keeps its alt text.
   const label = variant === "members" ? "Members" : "Client Hub";
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -108,7 +108,7 @@ const Login = ({ variant }: LoginProps) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { error } = await loginWithMagicLink(email);
+    const { error } = await loginWithMagicLink(username);
 
     setIsLoading(false);
 
@@ -122,7 +122,7 @@ const Login = ({ variant }: LoginProps) => {
       setIsSent(true);
       toast({
         title: "Check your email",
-        description: "We've sent you a magic link to sign in.",
+        description: "We've sent a magic link to the email address on file.",
       });
     }
   };
@@ -131,7 +131,7 @@ const Login = ({ variant }: LoginProps) => {
     e.preventDefault();
     setIsLoading(true);
 
-    const { error, user } = await login(email, password);
+    const { error, user } = await login(username, password);
 
     setIsLoading(false);
 
@@ -195,6 +195,12 @@ const Login = ({ variant }: LoginProps) => {
               <span aria-hidden="true" className="h-5 w-px bg-border" />
               <span className="text-lg font-medium tracking-tight">{label}</span>
             </h1>
+
+            {!showSavedAccounts && (
+              <p className="-mt-4 mb-6 text-center text-xs leading-relaxed text-muted-foreground">
+                Your username is the part before @ in your email, with punctuation removed. For example, prince.wagan becomes princewagan.
+              </p>
+            )}
 
             {/* Saved accounts. Present whether or not anyone is signed out, because signing
                 out is supposed to leave the account here as a one-tap target. */}
@@ -262,32 +268,34 @@ const Login = ({ variant }: LoginProps) => {
                 </p>
                 <Button
                   variant="ghost"
-                  className="mt-4"
+                  className="mt-4 min-h-11"
                   onClick={() => setIsSent(false)}
                 >
-                  Try another email
+                  Try another username
                 </Button>
               </div>
             ) : !showSavedAccounts && mode === "magic" ? (
               <form onSubmit={handleMagicLink} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-sm">
-                    Email address
+                  <Label htmlFor="magic-username" className="text-sm">
+                    Username
                   </Label>
                   <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@company.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="magic-username"
+                    type="text"
+                    placeholder="princewagan"
+                    autoCapitalize="none"
+                    autoComplete="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                     required
-                    className="bg-background"
+                    className="h-11 bg-background text-base"
                   />
                 </div>
 
                 <Button
                   type="submit"
-                  className="w-full group btn-press bg-foreground text-background hover:bg-foreground/90"
+                  className="h-11 w-full group btn-press bg-foreground text-background hover:bg-foreground/90"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -303,7 +311,7 @@ const Login = ({ variant }: LoginProps) => {
                 <button
                   type="button"
                   onClick={() => setMode("password")}
-                  className="w-full text-xs text-muted-foreground hover:text-foreground text-center transition-colors"
+                  className="inline-flex min-h-11 w-full items-center justify-center text-center text-xs text-muted-foreground transition-colors hover:text-foreground"
                 >
                   Sign in with password instead
                 </button>
@@ -312,7 +320,7 @@ const Login = ({ variant }: LoginProps) => {
                   <button
                     type="button"
                     onClick={() => setUseAnotherAccount(false)}
-                    className="w-full text-xs text-muted-foreground hover:text-foreground text-center transition-colors"
+                    className="inline-flex min-h-11 w-full items-center justify-center text-center text-xs text-muted-foreground transition-colors hover:text-foreground"
                   >
                     Back to saved accounts
                   </button>
@@ -321,17 +329,19 @@ const Login = ({ variant }: LoginProps) => {
             ) : !showSavedAccounts ? (
               <form onSubmit={handlePasswordLogin} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email-pw" className="text-sm">
-                    Email address
+                  <Label htmlFor="username" className="text-sm">
+                    Username
                   </Label>
                   <Input
-                    id="email-pw"
-                    type="email"
-                    placeholder="you@company.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    id="username"
+                    type="text"
+                    placeholder="princewagan"
+                    autoCapitalize="none"
+                    autoComplete="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
                     required
-                    className="bg-background"
+                    className="h-11 bg-background text-base"
                   />
                 </div>
 
@@ -347,12 +357,13 @@ const Login = ({ variant }: LoginProps) => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="bg-background pr-10"
+                      className="h-11 bg-background pr-12 text-base"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded text-muted-foreground hover:text-foreground"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -361,7 +372,7 @@ const Login = ({ variant }: LoginProps) => {
 
                 <Button
                   type="submit"
-                  className="w-full group btn-press bg-foreground text-background hover:bg-foreground/90"
+                  className="h-11 w-full group btn-press bg-foreground text-background hover:bg-foreground/90"
                   disabled={isLoading}
                 >
                   {isLoading ? (
@@ -377,7 +388,7 @@ const Login = ({ variant }: LoginProps) => {
                 <button
                   type="button"
                   onClick={() => setMode("magic")}
-                  className="w-full text-xs text-muted-foreground hover:text-foreground text-center transition-colors"
+                  className="inline-flex min-h-11 w-full items-center justify-center text-center text-xs text-muted-foreground transition-colors hover:text-foreground"
                 >
                   Use magic link instead
                 </button>
@@ -386,7 +397,7 @@ const Login = ({ variant }: LoginProps) => {
                   <button
                     type="button"
                     onClick={() => setUseAnotherAccount(false)}
-                    className="w-full text-xs text-muted-foreground hover:text-foreground text-center transition-colors"
+                    className="inline-flex min-h-11 w-full items-center justify-center text-center text-xs text-muted-foreground transition-colors hover:text-foreground"
                   >
                     Back to saved accounts
                   </button>

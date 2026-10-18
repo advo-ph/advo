@@ -127,12 +127,18 @@ const ScrollReset = () => {
       const id = decodeURIComponent(location.hash.slice(1));
       const deadline = performance.now() + HASH_WAIT_MS;
       let frame = 0;
+      let targetOffset: number | undefined;
 
       const seek = () => {
         const target = document.getElementById(id);
         if (target) {
-          target.scrollIntoView({ block: "start", behavior: "instant" });
-          return;
+          const offset = Math.round(target.getBoundingClientRect().top + currentOffset());
+          if (offset !== targetOffset) {
+            targetOffset = offset;
+            // Honour smooth/reduced-motion CSS, and adjust if async content
+            // above the section changes its position while the route loads.
+            target.scrollIntoView({ block: "start", behavior: "auto" });
+          }
         }
         // A stale or wrong anchor is not an error — give up quietly and leave the page
         // where it is rather than throwing it to the top.

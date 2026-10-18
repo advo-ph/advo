@@ -3,10 +3,12 @@ import { useReducedMotion } from "framer-motion";
 import LandingNav from "@/components/LandingNav";
 import LandingScrollbar from "@/components/LandingScrollbar";
 import LandingFooter from "./landing-footer";
+import FlowingBackground from "./FlowingBackground";
 import "./landing-page.css";
 
 interface LandingShellProps {
   children: ReactNode;
+  flowingBackground?: boolean;
 }
 
 /**
@@ -15,11 +17,12 @@ interface LandingShellProps {
  * from the same components, so the drawer behaviours and the system story
  * cannot drift between the two.
  */
-const LandingShell = ({ children }: LandingShellProps) => {
+const LandingShell = ({ children, flowingBackground = false }: LandingShellProps) => {
   const reduceMotion = useReducedMotion();
 
   return (
     <div className={reduceMotion ? "landing-page landing-shell is-reduce-motion" : "landing-page landing-shell"}>
+      {flowingBackground && <FlowingBackground />}
       <LandingNav anchorPrefix="/" />
       <LandingScrollbar />
       <div className="landing-shell-body">{children}</div>

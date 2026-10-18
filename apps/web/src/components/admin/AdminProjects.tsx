@@ -39,7 +39,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import * as db from "@/lib/db";
-import { projectFormMode } from "@/lib/project-form";
+import { normalizeOptionalListValue, parseMoneyInput, projectFormMode } from "@/lib/project-form";
 import { useToast } from "@/hooks/use-toast";
 import type { Client, ProjectStatus } from "@/types/admin";
 import { STATUS_OPTIONS, formatCurrency } from "@/types/admin";
@@ -85,14 +85,12 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
     description: "",
     repository_name: "",
     preview_url: "",
-    contract_url: "",
     project_status: "discovery" as ProjectStatus,
     total_value_cents: 0,
     amount_paid_cents: 0,
     list_value_cents: null as number | null,
     discount_cents: 0,
     discount_reason: "",
-    tech_stack: "",
   });
 
   const [updateFormData, setUpdateFormData] = useState({
@@ -109,14 +107,12 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
       description: "",
       repository_name: "",
       preview_url: "",
-      contract_url: "",
       project_status: "discovery",
       total_value_cents: 0,
       amount_paid_cents: 0,
       list_value_cents: null,
       discount_cents: 0,
       discount_reason: "",
-      tech_stack: "",
     });
     setAssetType("progress_photo");
     setAssetUrl("");
@@ -132,14 +128,12 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
       description: project.description || "",
       repository_name: project.repository_name || "",
       preview_url: project.preview_url || "",
-      contract_url: project.contract_url || "",
       project_status: project.project_status as ProjectStatus,
       total_value_cents: project.total_value_cents,
       amount_paid_cents: project.amount_paid_cents,
       list_value_cents: project.list_value_cents ?? null,
       discount_cents: project.discount_cents ?? 0,
       discount_reason: project.discount_reason ?? "",
-      tech_stack: project.tech_stack.join(", "),
     });
     setAssetType("progress_photo");
     setAssetUrl("");
@@ -163,27 +157,30 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
       return;
     }
 
-    setIsSaving(true);
-
+    const listValueCents = normalizeOptionalListValue(formData.list_value_cents);
+    const discountCents =
+      listValueCents == null
+        ? 0
+        : Math.min(listValueCents, Math.max(0, Math.round(formData.discount_cents)));
     const projectData = {
       client_id: parseInt(formData.client_id),
       title: formData.title,
       description: formData.description || null,
       repository_name: formData.repository_name || null,
       preview_url: formData.preview_url || null,
-      contract_url: formData.contract_url || null,
       project_status: formData.project_status,
       total_value_cents: formData.total_value_cents,
       amount_paid_cents: formData.amount_paid_cents,
-      list_value_cents: formData.list_value_cents,
-      discount_cents: formData.list_value_cents == null ? 0 : formData.discount_cents,
-      discount_reason: formData.list_value_cents == null ? null : formData.discount_reason || null,
-      tech_stack: formData.tech_stack.split(",").map(s => s.trim()).filter(Boolean),
+      list_value_cents: listValueCents,
+      discount_cents: discountCents,
+      discount_reason: listValueCents == null ? null : formData.discount_reason || null,
     };
-    if (projectData.list_value_cents != null && projectData.list_value_cents - projectData.discount_cents !== projectData.total_value_cents) {
+    if (listValueCents != null && listValueCents - discountCents !== projectData.total_value_cents) {
       toast({ title: "Discount does not add up", description: "List value minus discount must equal the total value.", variant: "destructive" });
       return;
     }
+
+    setIsSaving(true);
 
     try {
       let error: string | null;
@@ -322,6 +319,7 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
             <ArrowLeft className="h-4 w-4" /> Back to projects
           </button>
           <PageHeader
+            className="flex-col items-start sm:flex-row sm:items-center"
             title={formMode === "edit" ? "Edit project" : "New project"}
             meta={
               formMode === "edit" && editingProject
@@ -433,24 +431,28 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Contract URL</label>
-              <Input
-                value={formData.contract_url}
-                onChange={(e) => setFormData({ ...formData, contract_url: e.target.value })}
-                placeholder="https://link-to-contract.pdf"
-              />
-            </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Total Value (PHP)</label>
                 <Input
                   type="number"
                   value={formData.total_value_cents / 100}
-                  onChange={(e) =>
-                    setFormData({ ...formData, total_value_cents: parseFloat(e.target.value) * 100 })
-                  }
+                  min="0"
+                  step="0.01"
+                  onFocus={(e) => {
+                    if (formData.total_value_cents === 0) e.currentTarget.select();
+                  }}
+                  onChange={(e) => {
+                    const totalValueCents = parseMoneyInput(e.target.value);
+                    setFormData((current) => ({
+                      ...current,
+                      total_value_cents: totalValueCents,
+                      discount_cents:
+                        current.list_value_cents == null
+                          ? current.discount_cents
+                          : Math.max(0, current.list_value_cents - totalValueCents),
+                    }));
+                  }}
                   placeholder="0"
                 />
               </div>
@@ -460,8 +462,16 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
                 <Input
                   type="number"
                   value={formData.amount_paid_cents / 100}
+                  min="0"
+                  step="0.01"
+                  onFocus={(e) => {
+                    if (formData.amount_paid_cents === 0) e.currentTarget.select();
+                  }}
                   onChange={(e) =>
-                    setFormData({ ...formData, amount_paid_cents: parseFloat(e.target.value) * 100 })
+                    setFormData((current) => ({
+                      ...current,
+                      amount_paid_cents: parseMoneyInput(e.target.value),
+                    }))
                   }
                   placeholder="0"
                 />
@@ -475,13 +485,15 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
                 <Input
                   type="number"
                   value={formData.list_value_cents == null ? "" : formData.list_value_cents / 100}
+                  min="0"
+                  step="0.01"
                   onChange={(e) => {
-                    const list = e.target.value === "" ? null : Math.round(parseFloat(e.target.value) * 100);
-                    setFormData({
-                      ...formData,
+                    const list = e.target.value.trim() === "" ? null : normalizeOptionalListValue(parseMoneyInput(e.target.value));
+                    setFormData((current) => ({
+                      ...current,
                       list_value_cents: list,
-                      discount_cents: list == null ? 0 : Math.max(0, list - formData.total_value_cents),
-                    });
+                      discount_cents: list == null ? 0 : Math.max(0, list - current.total_value_cents),
+                    }));
                   }}
                   placeholder="Blank when no discount"
                 />
@@ -492,12 +504,22 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
                   type="number"
                   value={formData.list_value_cents == null ? "" : formData.discount_cents / 100}
                   disabled={formData.list_value_cents == null}
+                  min="0"
+                  step="0.01"
+                  onFocus={(e) => {
+                    if (formData.discount_cents === 0) e.currentTarget.select();
+                  }}
                   onChange={(e) => {
-                    const discount = Math.max(0, Math.round((parseFloat(e.target.value) || 0) * 100));
-                    setFormData({
-                      ...formData,
-                      discount_cents: discount,
-                      total_value_cents: (formData.list_value_cents ?? 0) - discount,
+                    setFormData((current) => {
+                      const discount = Math.min(
+                        current.list_value_cents ?? 0,
+                        parseMoneyInput(e.target.value),
+                      );
+                      return {
+                        ...current,
+                        discount_cents: discount,
+                        total_value_cents: (current.list_value_cents ?? 0) - discount,
+                      };
                     });
                   }}
                   placeholder="0"
@@ -512,15 +534,6 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
                   placeholder="referral, early payment, bundle"
                 />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Tech Stack (comma-separated)</label>
-              <Input
-                value={formData.tech_stack}
-                onChange={(e) => setFormData({ ...formData, tech_stack: e.target.value })}
-                placeholder="React, Postgres, Stripe"
-              />
             </div>
 
             {editingProject && (

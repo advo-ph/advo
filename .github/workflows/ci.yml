@@ -101,6 +101,20 @@ jobs:
             "test -f $VPS_WEB_ROOT/index.html"
           curl --fail --silent --show-error --location --max-time 20 https://advo.ph >/dev/null
 
+      # Only the one script; this job otherwise works from the build artifact.
+      - name: Fetch the post-deploy search script
+        uses: actions/checkout@v6
+        with:
+          path: repo
+          sparse-checkout: apps/web/scripts/post-deploy-seo.mjs
+          sparse-checkout-cone-mode: false
+
+      # Checks nginx serves each page its own HTML, and pings IndexNow (Bing, and
+      # through it ChatGPT search and Copilot). Warns, never fails the deploy.
+      - name: Notify search engines
+        continue-on-error: true
+        run: node repo/apps/web/scripts/post-deploy-seo.mjs dist
+
   audit:
     name: Security audit
     runs-on: ubuntu-latest

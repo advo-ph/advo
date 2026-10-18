@@ -98,7 +98,7 @@ const Hub = () => {
                 Your projects will appear here once we begin working together.
               </p>
               <Button asChild className="btn-press bg-accent text-accent-foreground hover:bg-accent/90">
-                <Link to="/start">Start a project</Link>
+                <Link to="/#start">Start a project</Link>
               </Button>
             </div>
           ) : (
