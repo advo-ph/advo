@@ -45,6 +45,10 @@ Cross-links:
   - 559 and 560 are Anthony's minutes for Jul 27 and May 26. His "Minutes of the Meeting" folder is link-shared, so the public folder page lists it.
   - Myriad meetings 4, 5, 7, 8, 11, 12 and 17 link their Drive audio.
 - **Credentials:** 49 credential lines were redacted from the chat bodies. Those chats still contain shared ADVO passwords in Messenger itself (contact@advo.ph, the advo.developers Gmail, the Contabo root, and a ChatGPT login), so rotate them.
+- **The Mac came back online in the evening.**
+  - Its newer chats are now loaded as sources 561–565: ADVO Core Oct 17–18, ADVO Developers (new GC), ADVO Members Oct 17–18 (the OPC announcement and officer roles), the Prince DM for Oct 16–18 near-ADVO only, and Schiffier Oct 17–18.
+  - The Andrei/Anthony/Kenneth/Keira/Prince GC is banter only, so it was not loaded. Keira had nothing new.
+  - That supersedes the "Mac-only chats not ingested" item below.
 - **Every other scraped chat with an ADVO-word hit was checked:** Stephen Derrick Banaga, Externals, Mark Nadala Revelo, yung stunnas, TrajectoVisa, Tristan Fragada and ZUNIGAS. None carries ADVO business: the hits are names like "Feliciano", professor-rating tables, dev logs, or a passing "check advo.ph". All were left out on purpose.
 - **Source 548 (FunRide comments)** now holds the full first sheet via the public CSV export: 17 items. Its facts still come from the first 11.
 - **`scripts/polkadoc-chat.mjs --near N`** keeps only messages within N of an ADVO or client word, for 1:1 chats. `--until` sets an end date.
