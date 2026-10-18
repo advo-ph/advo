@@ -121,13 +121,21 @@ const notAdvoFileId = new Set<string>();
 /** Gap between Open API detail reads within one tick. */
 const OPEN_READ_GAP_MILLISECOND = 750;
 
-/** Optional floor (ISO date) below which the Open API walk never reaches. */
+/** Optional floor (ISO date) for the first walk after boot: the backfill horizon. */
 function openSince(): number | null {
   const raw = process.env.PLAUD_OPEN_SINCE;
   if (!raw) return null;
   const t = Date.parse(raw);
   return Number.isNaN(t) ? null : t;
 }
+
+/** How far back every later tick re-reads (PLAUD_OPEN_LOOKBACK_DAY, default 3). */
+function lookbackMillisecond(): number {
+  const day = Number(process.env.PLAUD_OPEN_LOOKBACK_DAY ?? "3");
+  return (Number.isFinite(day) && day > 0 ? day : 3) * 24 * 60 * 60 * 1000;
+}
+
+let isFirstOpenWalk = true;
 
 /**
  * A routed meeting also lands in the corpus, as POST /api/corpus/ingest/plaud does
@@ -179,11 +187,15 @@ async function syncOpen(seenFileId: Set<string>): Promise<{
   seen: number;
   importedMeetingId: number[];
 }> {
-  const since = openSince();
-  const file = await listOpenFile(
-    (f: PlaudFile) =>
-      seenFileId.has(f.fileId) || (since !== null && f.startAt !== null && Date.parse(f.startAt) < since),
-  );
+  // Walk by time, not to the first imported file. A recording still transcribing
+  // when a newer one was imported used to sit below that watermark forever
+  // (2026-10-18: Fun Ride and two clinic meetings were missed exactly so).
+  const lookbackFloor = Date.now() - lookbackMillisecond();
+  const since = isFirstOpenWalk ? openSince() : null;
+  const floor = since !== null ? Math.min(since, lookbackFloor) : lookbackFloor;
+  const listed = await listOpenFile((f: PlaudFile) => f.startAt !== null && Date.parse(f.startAt) < floor);
+  isFirstOpenWalk = false;
+  const file = listed.filter((f) => !seenFileId.has(f.fileId));
   const fresh = file.filter((f) => !notAdvoFileId.has(f.fileId));
   const candidate = fresh.length > 0 ? await routeCandidate() : [];
   const createdBy = fresh.length > 0 ? await firstAdminUserId() : null;

@@ -88,6 +88,13 @@ describe("routeRecording", () => {
     expect(advo.projectId).toBe(22);
   });
 
+  it("routes a clinic-billing meeting to VBE without the name", () => {
+    expect(
+      routeRecording({ title: "10-18 Meeting: Clinic Billing Module, PhilHealth SOA Automation, Digital Waivers" }, candidate)
+        .projectId,
+    ).toBe(2);
+  });
+
   it("knows Plaud's misspellings", () => {
     expect(routeRecording({ title: "09-04 Strategy Note: Advol Parks — Web ML Plate Recognition POC" }, candidate).projectId).toBe(23);
     expect(routeRecording({ title: "10-03 Meeting: Felichi Ordering App" }, candidate).isAdvo).toBe(true);

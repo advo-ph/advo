@@ -32,7 +32,8 @@ export type RouteResult = {
 const PROJECT_ALIAS: Record<string, { strong: string[]; weak: string[] }> = {
   fourlinq: { strong: ["fourlinq", "four linq", "fourlink", "power mac center"], weak: ["windows and doors"] },
   funride: { strong: ["myriad", "fun ride", "funride", "one ride"], weak: [] },
-  vbe: { strong: ["vbe"], weak: ["eye center"] },
+  // VBE's work is PhilHealth eClaims and clinic billing; its meetings rarely say "VBE".
+  vbe: { strong: ["vbe", "eclaims", "clinic billing"], weak: ["eye center", "philhealth"] },
   nokohi: { strong: ["nokohi"], weak: [] },
   felici: { strong: ["felici", "felichi"], weak: ["gelato"] },
   flood: {
