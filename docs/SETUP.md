@@ -108,7 +108,9 @@ GITHUB_ORG=advo-ph
 PRAUD_IMPORT_SECRET=...                   # praud passcode `advo` → POST /api/meeting/import/praud
 ADVO_INBOX_PROJECT_ID=                    # optional; else auto Inbox project
 # PLAUD_TOKEN=                            # file-id import + GET /api/meeting/plaud (share URL works without)
-# PLAUD_POLL_SECOND=60                    # ADVO-folder probe interval; 0 disables
+# PLAUD_POLL_SECOND=60                    # Plaud probe interval; 0 disables
+# PLAUD_OPEN_TOKEN_FILE=                  # Open API grant(s), comma-separated (~/.plaud/tokens-mcp.json per account)
+# PLAUD_OPEN_LOOKBACK_DAY=3               # days each tick re-reads; PLAUD_OPEN_SINCE bounds the first walk
 
 # Preview hosting for "Show Client Now". Unset = manual: the team pastes
 # preview_url onto the project. `cloudflare` deploys the built artifact to Pages

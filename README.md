@@ -52,7 +52,7 @@ Measured by `npm run bench:paymongo` (**7/7** — a business phone is optional w
 - **Clients** — Client management with invite flow (creates auth account + sends welcome email)
 - **Team** — Team member profiles (bio, LinkedIn, avatar upload)
 - **Deliverables** — Schedule with status tracking and assignment
-- **Meetings** — Plaud import / ADVO-folder watch / Ask Plaud → preview → confirm deliverable
+- **Meetings** — automatic Plaud import (routed to the project its title/summary names), manual import, Ask Plaud → preview → confirm deliverable; each meeting links its Drive audio and Plaud page
 - **Availability** — Team capacity management
 - **Social** — Social media post management
 - **Content Studio** — CMS with monochrome visibility toggles (public / hub)
@@ -188,7 +188,12 @@ Default local login: `admin` / `changeme` (the username is the email local part 
 | `PLAUD_TOKEN` | No | Plaud consumer JWT for file-id import, folder watch, and Ask Plaud. Share-URL import works without it. |
 | `PLAUD_AUTH_FILE` | No | Alternate path to `{ token }` JSON (default `~/.piper/plaud-auth.json`). |
 | `PLAUD_API_HOST` | No | Plaud API host (default `https://api-apse1.plaud.ai`). |
-| `PLAUD_POLL_SECOND` | No | Seconds between ADVO-folder probes (default 60). `0` disables. |
+| `PLAUD_POLL_SECOND` | No | Seconds between Plaud probes (default 60). `0` disables. |
+| `PLAUD_OPEN_TOKEN_FILE` | No | Plaud Open API grant file(s): the `~/.plaud/tokens-mcp.json` written by `npx @plaud-ai/mcp` login. Comma-separate one file per Plaud account to poll several. Refreshes itself; used when no consumer JWT works. |
+| `PLAUD_OPEN_SINCE` | No | ISO date bounding the first Open API walk after boot (backfill). Unset = only the lookback window. |
+| `PLAUD_OPEN_LOOKBACK_DAY` | No | Days every later tick re-reads for new or still-transcribing recordings (default 3). |
+| `PLAUD_OPEN_API_BASE` | No | Plaud Open API base (default `https://platform.plaud.ai/developer/api`). |
+| `PLAUD_CORPUS_INGEST` | No | `0` stops the poller from also ingesting routed meetings into the corpus (default on). |
 | `ANTHROPIC_API_KEY` | No | Claude — contract review, meeting → tasks, timeline + revision-note assist, proposal copy. Every one falls back to a heuristic/template path when unset. |
 | `GITHUB_ORG` | No | GitHub org for the engineering feed (default `advo-ph`) |
 | `FB_SESSION_PATH` | No | Facebook session JSON for the experimental FB scraper (default `/root/blead/data/facebook-session.json`). Admin → Tools. |
