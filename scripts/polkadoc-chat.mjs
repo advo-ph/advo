@@ -3,7 +3,11 @@
  * Turn a polkadoc thread note into a corpus chat body, and optionally post it.
  *
  *   node scripts/polkadoc-chat.mjs <vault> <Platform/Thread> [--since 2026-09-12] [--post]
- *       [--project 22] [--external-suffix tail] [--ocr 300]
+ *       [--project 22] [--external-suffix tail] [--ocr 300] [--until 2026-09-01] [--near 8]
+ *
+ * --near N keeps only messages within N messages of one that names ADVO or a client
+ * (ADVO_WORD below). Use it on a 1:1 chat, where business sits between personal talk
+ * that has no place in the corpus.
  *
  * Body format (same as sources #46–50): one line per message,
  * `YYYY-MM-DD HH:MM Sender: text`, ⏎ for a newline inside a message, and
@@ -111,6 +115,19 @@ export function parseThread(text, { ocr = 300 } = {}) {
   return { message, duplicateCount };
 }
 
+/** ADVO, its clients, ventures and the money words around them. */
+export const ADVO_WORD =
+  /\b(advo|fourlinq|felici|felichi|nokohi|myriad|fun ?ride|pcedm|pcp|pasoo|vbe|floodpass|advopark|watec|san juan|capunfuerza|flowers and chocolates|coffee rush|unilab|client|contract|invoice|quotation|proposal|downpayment|down payment|commission|plaud|meeting|deliverable|sign-?off|opc|dti|bir|sec)\b/i;
+
+export function nearAdvo(message, radius) {
+  const keep = new Set();
+  message.forEach((m, i) => {
+    if (!ADVO_WORD.test(m.content)) return;
+    for (let j = Math.max(0, i - radius); j <= Math.min(message.length - 1, i + radius); j += 1) keep.add(j);
+  });
+  return message.filter((_, i) => keep.has(i));
+}
+
 export function bodyOf(message) {
   return message.map((m) => `${m.day} ${m.time} ${m.sender}: ${m.content}`).join("\n");
 }
@@ -128,7 +145,10 @@ async function main() {
   const ocr = Number(flag("--ocr") ?? 300);
   const since = flag("--since");
   const { message, duplicateCount } = parseThread(text, { ocr });
-  const kept = since ? message.filter((m) => m.day >= since) : message;
+  const until = flag("--until");
+  const near = flag("--near");
+  let kept = message.filter((m) => (!since || m.day >= since) && (!until || m.day < until));
+  if (near) kept = nearAdvo(kept, Number(near));
   const body = bodyOf(kept);
   const first = kept[0];
   const last = kept[kept.length - 1];

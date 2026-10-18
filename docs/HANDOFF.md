@@ -37,6 +37,16 @@ Cross-links:
 - **The prod Anthropic key has no credit** ("credit balance is too low"). Every server-side extraction falls back to the heuristic without saying so. That covers the poller's corpus step, where the six new meetings got 0–12 facts each, and `/ingest/text`/`/ingest/plaud`. Top up the key, then set `CORPUS_EXTRACT_MODEL` to a Sonnet model and re-ingest sources 531–536.
 - **Only Mar's Plaud account is read.** Prince's and Azree's recordings (the two Nokohi meetings Prince mentioned) are on their own accounts. Either they share them into Mar's account, or each of them logs into the MCP and their token file gets polled too (the poller takes one file today).
 - **The refresh token must be used within 7 days.** If the API is down for a week, copy a fresh `tokens-mcp.json` from the Mac.
+- **Later the same day (second pass):** these are now loaded on prod.
+  - Sources 545–553 are nine Drive documents: San Juan brief v2, FloodPASS framework, WATEC proposal, Flood research file, contract template copy, TWA confirmation, Myriad sign-off, FunRide comments batch 2 (partial sheet), and the UPTC transcript.
+  - 554 is fourlinq junior devs up to Aug 31.
+  - 555 is Keira's DM, near-ADVO messages only.
+  - 556 and 557 are the Prince DM for Feb–Jul and Aug–Oct, near-ADVO messages only, with personal spans cut.
+  - 559 and 560 are Anthony's minutes for Jul 27 and May 26. His "Minutes of the Meeting" folder is link-shared, so the public folder page lists it.
+  - Myriad meetings 4, 5, 7, 8, 11, 12 and 17 link their Drive audio.
+- **Credentials:** 49 credential lines were redacted from the chat bodies. Those chats still contain shared ADVO passwords in Messenger itself (contact@advo.ph, the advo.developers Gmail, the Contabo root, and a ChatGPT login), so rotate them.
+- **`scripts/polkadoc-chat.mjs --near N`** keeps only messages within N of an ADVO or client word, for 1:1 chats. `--until` sets an end date.
+- **Thirteen Drive recordings have no transcript** (Starbucks ×2, SM Aura 2, The Giving Cafe, three Azree clips, the Prince after-meeting call, Sonder, Omelette, Santolan, B-Mirk, Maya's). Mar wants Plaud only, with no local models. The Open API has no upload, so the files have to be imported into Plaud by hand; the poller then routes them.
 - **Not ingested:** the Mac-only chats (ADVO Developers, and the Andrei/Anthony/Kenneth/Keira/Prince GC), Oct 16–18 messages on the Mac, and the Prince DM (1:1, personal; left out on purpose). Re-run `node scripts/polkadoc-chat.mjs ~/polkadoc "<Platform/Thread>" --since <date>` on the Mac when it is back.
 - **Anthony's "Minutes of the Meeting" Drive folder** opens through the Drive connector, but its contents do not list, so they need sharing. Other audio sits in Prince's Drive (Power Mac clips dated 07-12, TGC, Starbucks, SM Aura, Azree clips) with no matching meeting row; none were linked on a guess.
 - `admin-credential` no longer logs in. Login is by username since `049`, and the password changed. The chat ingest ran the service code on the box instead.
