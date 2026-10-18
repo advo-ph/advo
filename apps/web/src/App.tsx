@@ -10,6 +10,7 @@ import RouteSeo from "@/seo/RouteSeo";
 import ConsentGate from "@/components/ConsentGate";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import InstallPrompt from "@/components/InstallPrompt";
+import NativeGate from "@/components/NativeGate";
 import { JobProgressWidget } from "@/components/admin/shared/JobProgressWidget";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -107,6 +108,9 @@ const App = () => (
               reset is queued before the new page's own effects run. Renders nothing. */}
           <ScrollReset />
           <RouteSeo />
+          {/* Members-only native-shell route gate. No-op on web
+              (isNativeApp() is always false there). Renders nothing. */}
+          <NativeGate />
           <AppRoutes />
           {/* Non-modal analytics consent prompt (RA 10173). Inside the router — it reads
               the route to stay off /admin and /hub — but outside <Routes> so it

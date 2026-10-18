@@ -2,6 +2,12 @@ import type { Config } from "tailwindcss";
 import tailwindcssAnimate from "tailwindcss-animate";
 
 export default {
+  // hover: utilities only on devices that can actually hover. Touch browsers fire a
+  // synthetic :hover on tap and keep it until the next tap elsewhere, so an outline
+  // button (hover:bg-accent) stayed orange after being toggled off on a phone.
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
   darkMode: ["class"],
   content: [
     "./pages/**/*.{ts,tsx}",
@@ -78,6 +84,13 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
         pill: "9999px",
+      },
+      // Named rather than ease-[cubic-bezier(...)]: tailwindcss-animate also registers
+      // ease-*, so an arbitrary value is ambiguous and Tailwind silently drops it. A named
+      // token sets both transition- and animation-timing-function.
+      transitionTimingFunction: {
+        "sheet-in": "cubic-bezier(0.22, 1, 0.36, 1)", // ease-out (quint): fast start, soft landing
+        "sheet-out": "cubic-bezier(0.4, 0, 1, 1)", // ease-in: gets out of the way
       },
       keyframes: {
         "accordion-down": {

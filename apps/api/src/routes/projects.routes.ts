@@ -45,6 +45,7 @@ import { attachTeamMemberId } from "../utils/project-capacity.js";
 import { createLogger } from "../utils/logger.js";
 import { describeDbError } from "../utils/db-error.js";
 import { recordError } from "../utils/error-capture.js";
+import { queueDeliveriesForActivity } from "../services/webhook-delivery.service.js";
 import type { Variables, AuthUser } from "../types/context.js";
 
 const log = createLogger("projects");
@@ -235,7 +236,9 @@ projects.get("/:id", async (c) => {
 
 // ─── Create Project ───────────────────────────────────
 
-const createSchema = z.object({
+// Exported so the MCP write tool update_project (services/mcp-tools.service.ts) reuses the
+// exact same shape and discount-arithmetic validation rather than a drifting copy.
+export const createSchema = z.object({
   clientId: z.number(),
   title: z.string().min(1).max(255),
   description: z.string().max(5000).nullish(),
@@ -260,7 +263,7 @@ const createSchema = z.object({
  * discount. Checked here, with the merged row, so a partial PATCH cannot leave the
  * three out of step (the DB CHECK would refuse it anyway, as a 500).
  */
-const discountArithmeticError = (row: { listValueCents?: number | null; discountCents?: number; totalValueCents?: number }) => {
+export const discountArithmeticError = (row: { listValueCents?: number | null; discountCents?: number; totalValueCents?: number }) => {
   const list = row.listValueCents ?? null;
   const discount = row.discountCents ?? 0;
   const total = row.totalValueCents ?? 0;
@@ -269,7 +272,7 @@ const discountArithmeticError = (row: { listValueCents?: number | null; discount
 };
 
 /** Treat a zero list price as an empty optional discount field. */
-const normalizeDiscountFields = <T extends { listValueCents?: number | null }>(row: T): T => {
+export const normalizeDiscountFields = <T extends { listValueCents?: number | null }>(row: T): T => {
   if (row.listValueCents !== 0) return row;
   return { ...row, listValueCents: null } as T;
 };
@@ -284,7 +287,7 @@ projects.post("/", requireAdmin, zValidator("json", createSchema), async (c) => 
 
 // ─── Update Project ───────────────────────────────────
 
-const updateSchema = createSchema.partial().omit({ clientId: true });
+export const updateSchema = createSchema.partial().omit({ clientId: true });
 
 projects.patch("/:id", requireAdmin, zValidator("json", updateSchema), async (c) => {
   const id = Number(c.req.param("id"));
@@ -769,11 +772,17 @@ projects.post("/:id/preview-request", async (c) => {
   const d = db();
   await assertProjectAccess(d, user, id);
 
-  await d.insert(activityLog).values({
-    userId: user.userId,
-    action: "preview_requested",
-    entityType: "project",
-    entityId: id,
+  const [loggedActivity] = await d
+    .insert(activityLog)
+    .values({
+      userId: user.userId,
+      action: "preview_requested",
+      entityType: "project",
+      entityId: id,
+    })
+    .returning({ activityId: activityLog.activityId });
+  queueDeliveriesForActivity(loggedActivity.activityId).catch((err) => {
+    log.warn({ err, activityId: loggedActivity.activityId }, "Could not queue webhook deliveries");
   });
 
   return c.json({ data: { message: "Preview requested" }, error: null }, 201);
@@ -946,17 +955,23 @@ projects.post(
     // an audit trail that drops rows without saying so is worse than none,
     // because it reads as complete.
     try {
-      await d.insert(activityLog).values({
-        userId: user.userId,
-        action: "timeline_suggested",
-        entityType: "project",
-        entityId: id,
-        metadata: {
-          method: suggestion.method,
-          totalDurationDays: suggestion.totalDurationDays,
-          phaseCount: suggestion.phase.length,
-          summary: suggestion.summary,
-        },
+      const [loggedActivity] = await d
+        .insert(activityLog)
+        .values({
+          userId: user.userId,
+          action: "timeline_suggested",
+          entityType: "project",
+          entityId: id,
+          metadata: {
+            method: suggestion.method,
+            totalDurationDays: suggestion.totalDurationDays,
+            phaseCount: suggestion.phase.length,
+            summary: suggestion.summary,
+          },
+        })
+        .returning({ activityId: activityLog.activityId });
+      queueDeliveriesForActivity(loggedActivity.activityId).catch((err) => {
+        log.warn({ err, activityId: loggedActivity.activityId }, "Could not queue webhook deliveries");
       });
     } catch (err) {
       log.error(
@@ -1322,11 +1337,17 @@ projects.post("/:id/preview-artifact", requireTeam, async (c) => {
 
   const written = await writePreviewArtifact(id, entry);
 
-  await db().insert(activityLog).values({
-    userId: c.get("user").userId,
-    action: "preview_artifact_uploaded",
-    entityType: "project",
-    entityId: id,
+  const [loggedActivity] = await db()
+    .insert(activityLog)
+    .values({
+      userId: c.get("user").userId,
+      action: "preview_artifact_uploaded",
+      entityType: "project",
+      entityId: id,
+    })
+    .returning({ activityId: activityLog.activityId });
+  queueDeliveriesForActivity(loggedActivity.activityId).catch((err) => {
+    log.warn({ err, activityId: loggedActivity.activityId }, "Could not queue webhook deliveries");
   });
 
   return c.json({

@@ -29,6 +29,7 @@ import {
 } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import postgres from "postgres";
 import { API, skipWhenApiDown } from "./live-api.js";
 
 const describe = describeAlways.skipIf(skipWhenApiDown);
@@ -79,7 +80,7 @@ beforeAll(async () => {
   if (skipWhenApiDown) return;
   // Login as admin
   const { body } = await apiPost("/api/auth/login", {
-    email: "admin@advo.ph",
+    username: "admin",
     password: "changeme",
   });
   adminToken = body.data.accessToken;
@@ -101,7 +102,7 @@ describe("Health", () => {
 describe("Auth", () => {
   it("POST /api/auth/login returns tokens", async () => {
     const { status, body } = await apiPost("/api/auth/login", {
-      email: "admin@advo.ph",
+      username: "admin",
       password: "changeme",
     });
     expect(status).toBe(200);
@@ -113,7 +114,7 @@ describe("Auth", () => {
 
   it("POST /api/auth/login rejects bad password", async () => {
     const { status, body } = await apiPost("/api/auth/login", {
-      email: "admin@advo.ph",
+      username: "admin",
       password: "wrong",
     });
     expect(status).toBe(401);
@@ -135,7 +136,7 @@ describe("Auth", () => {
   it("POST /api/auth/refresh rotates tokens", async () => {
     // Get a fresh token pair
     const login = await apiPost("/api/auth/login", {
-      email: "admin@advo.ph",
+      username: "admin",
       password: "changeme",
     });
     const refreshToken = login.body.data.refreshToken;
@@ -773,7 +774,7 @@ describe("Authorization — cross-tenant data scoping", () => {
   beforeAll(async () => {
     // Log in as the seeded client (owns only "Seed Client Co" data).
     const login = await apiPost("/api/auth/login", {
-      email: "client@advo.ph",
+      username: "client",
       password: "changeme",
     });
     clientToken = login.body?.data?.accessToken;
@@ -1432,5 +1433,142 @@ describe("Commission split (018)", () => {
   it("blocks finalize while the project is unshipped", async () => {
     const { status } = await apiPost(`/api/commission/${planId}/finalize`, {}, adminToken);
     expect(status).toBe(409);
+  });
+});
+
+// ─── Chat (owner-only widget, migration 057) ──────────
+//
+// Seeded via direct DB insert (not the Plaud import pipeline) for the
+// buttons/answer cases — faster and avoids re-deriving the whole import path
+// just to get one row on the table. `postgres` resolves from apps/api's own
+// dependency, hoisted to the workspace root (same pattern as corpus-body.test.ts).
+
+describe("Chat", () => {
+  let nonOwnerToken: string | undefined;
+  let chatSql: ReturnType<typeof postgres> | null = null;
+  const seededId: number[] = [];
+
+  beforeAll(async () => {
+    if (skipWhenApiDown) return;
+
+    const login = await apiPost("/api/auth/login", { username: "client", password: "changeme" });
+    nonOwnerToken = login.body?.data?.accessToken;
+
+    if (process.env.DATABASE_URL) {
+      chatSql = postgres(process.env.DATABASE_URL, { max: 1 });
+    }
+  });
+
+  afterAll(async () => {
+    if (chatSql) {
+      if (seededId.length > 0) {
+        await chatSql`delete from chat_message where chat_message_id = ANY(${seededId})`.catch(() => {});
+      }
+      await chatSql.end();
+    }
+  });
+
+  it("requires auth on all three routes", async () => {
+    const list = await apiGet("/api/chat/messages?channel=updates");
+    expect(list.status).toBe(401);
+
+    const posted = await apiPost("/api/chat/messages", { channel: "updates", body: "hi" });
+    expect(posted.status).toBe(401);
+
+    const answered = await apiPost("/api/chat/messages/1/answer", { optionId: "x" });
+    expect(answered.status).toBe(401);
+  });
+
+  it("rejects a non-owner (role=client, is_owner=false) on all three routes", async () => {
+    expect(nonOwnerToken).toBeTruthy();
+
+    const list = await apiGet("/api/chat/messages?channel=updates", nonOwnerToken);
+    expect(list.status).toBe(403);
+
+    const posted = await apiPost("/api/chat/messages", { channel: "updates", body: "hi" }, nonOwnerToken);
+    expect(posted.status).toBe(403);
+
+    const answered = await apiPost("/api/chat/messages/1/answer", { optionId: "x" }, nonOwnerToken);
+    expect(answered.status).toBe(403);
+  });
+
+  it("owner free text with no pending text-mode prompt is a disconnected note, not a crash", async () => {
+    const { status, body } = await apiPost(
+      "/api/chat/messages",
+      { channel: "updates", body: "just a note, nothing pending" },
+      adminToken,
+    );
+    expect(status).toBe(201);
+    expect(body.error).toBeNull();
+    expect(body.data.sender).toBe("owner");
+    expect(body.data.body).toBe("just a note, nothing pending");
+    seededId.push(body.data.chatMessageId);
+  });
+
+  it("answers a seeded buttons message once, then 409s on a second answer", async () => {
+    if (!chatSql) return; // DATABASE_URL not set for this run — DB-seeded cases skip, not fail.
+
+    const [seeded] = await chatSql`
+      insert into chat_message (channel, sender, body, input_mode, options)
+      values ('updates', 'bot', 'Pick one', 'buttons', ${chatSql.json([
+        { id: "a", label: "A" },
+        { id: "b", label: "B" },
+      ])})
+      returning chat_message_id
+    `;
+    seededId.push(seeded.chat_message_id);
+
+    const first = await apiPost(`/api/chat/messages/${seeded.chat_message_id}/answer`, { optionId: "a" }, adminToken);
+    expect(first.status).toBe(200);
+    expect(first.body.data.answeredOptionId).toBe("a");
+
+    const second = await apiPost(`/api/chat/messages/${seeded.chat_message_id}/answer`, { optionId: "b" }, adminToken);
+    expect(second.status).toBe(409);
+  });
+
+  it("GET /messages exposes askAvailable so the UI knows before the owner types", async () => {
+    const { status, body } = await apiGet("/api/chat/messages?channel=ask", adminToken);
+    expect(status).toBe(200);
+    // Additive field alongside {data, error} — not a new envelope shape.
+    expect(typeof body.askAvailable).toBe("boolean");
+  });
+
+  it("Ask replies with the honest no-key line when ANTHROPIC_API_KEY isn't configured (local dev has none)", async () => {
+    const { status, body } = await apiGet("/api/chat/messages?channel=ask", adminToken);
+    expect(status).toBe(200);
+    if (body.askAvailable) return; // this environment has a real key configured — nothing to assert here
+
+    const posted = await apiPost("/api/chat/messages", { channel: "ask", body: "what's open?" }, adminToken);
+    expect(posted.status).toBe(201);
+    seededId.push(posted.body.data.chatMessageId);
+
+    const after = await apiGet(`/api/chat/messages?channel=ask&after=${posted.body.data.chatMessageId}`, adminToken);
+    expect(after.status).toBe(200);
+    expect(after.body.data.length).toBeGreaterThan(0);
+    const reply = after.body.data[after.body.data.length - 1];
+    expect(reply.sender).toBe("bot");
+    expect(reply.body).toBe("Ask is off right now. No AI key is configured.");
+    seededId.push(reply.chatMessageId);
+  });
+
+  it("GET /messages?after= returns only rows after that cursor", async () => {
+    if (!chatSql) return;
+
+    const [before] = await chatSql`
+      insert into chat_message (channel, sender, body) values ('updates', 'bot', 'before cursor') returning chat_message_id
+    `;
+    seededId.push(before.chat_message_id);
+
+    const [after] = await chatSql`
+      insert into chat_message (channel, sender, body) values ('updates', 'bot', 'after cursor') returning chat_message_id
+    `;
+    seededId.push(after.chat_message_id);
+
+    const { status, body } = await apiGet(`/api/chat/messages?channel=updates&after=${before.chat_message_id}`, adminToken);
+    expect(status).toBe(200);
+    // postgres (the raw client) returns bigint ids as strings; the API returns numbers.
+    const ids: number[] = body.data.map((m: { chatMessageId: number }) => m.chatMessageId);
+    expect(ids).not.toContain(Number(before.chat_message_id));
+    expect(ids).toContain(Number(after.chat_message_id));
   });
 });

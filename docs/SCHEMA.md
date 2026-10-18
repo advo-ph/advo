@@ -541,6 +541,88 @@ List: `GET /api/corpus/source` is paged, returning `{ source, totalCount, limit,
 
 ---
 
+### bot_key
+
+One live MCP bearer credential per `team_member` (migration 055). Used by the read-only MCP
+server at `POST /mcp` (`requireBotKey`, [`bot-auth.ts`](../apps/api/src/middleware/bot-auth.ts))
+and managed by the owner-gated `POST /api/bot-keys` / `POST /api/bot-keys/:id/revoke`
+([`bot-keys.routes.ts`](../apps/api/src/routes/bot-keys.routes.ts)). `key_hash` is a sha256 hex
+digest of the raw bearer token — the raw token itself is returned exactly once, at creation, and
+never stored. A partial unique index enforces exactly one LIVE key (`revoked_at IS NULL`) per
+member; a key is revoked, never deleted, so the audit trail survives.
+
+| Column            | Type                  | Description                                                        |
+| ----------------- | --------------------- | -------------------------------------------------------------------- |
+| `bot_key_id`       | BIGSERIAL (PK)        |                                                                        |
+| `team_member_id`   | INTEGER (FK)          | → `team_member` ON DELETE CASCADE                                     |
+| `key_hash`         | VARCHAR(64)           | sha256 hex digest of the raw bearer token. UNIQUE. Never returned by any route. |
+| `key_prefix`       | VARCHAR(16)           | First 16 chars of the raw token, shown in the UI so an admin can tell keys apart. |
+| `created_by`       | INTEGER (FK)          | → `user` ON DELETE SET NULL (nullable)                                |
+| `revoked_at`       | TIMESTAMPTZ           | Nullable. Non-null makes the key permanently dead.                    |
+| `last_used_at`     | TIMESTAMPTZ           | Nullable. Updated fire-and-forget on every successful `/mcp` call.    |
+| `created_at`       | TIMESTAMPTZ           |                                                                        |
+
+### member_webhook
+
+One active push-alert webhook per `team_member` (migration 056). Managed by the owner-gated
+`GET/POST/PATCH /api/webhooks`, `POST /api/webhooks/:id/test`, `POST /api/webhooks/:id/rotate-secret`
+([`webhooks.routes.ts`](../apps/api/src/routes/webhooks.routes.ts)). `secret_encrypted` is
+AES-256-GCM, decryptable (unlike `bot_key.key_hash`) because the delivery poller must sign
+each outbound POST with the member's plaintext secret — see
+[`crypto.ts`](../apps/api/src/utils/crypto.ts). The raw secret is returned exactly once, at
+creation or rotation, and never stored or selected elsewhere.
+
+| Column                 | Type         | Description                                                                 |
+| ---------------------- | ------------ | ----------------------------------------------------------------------------- |
+| `member_webhook_id`    | BIGSERIAL (PK) |                                                                               |
+| `team_member_id`       | INTEGER (FK) | → `team_member` ON DELETE CASCADE. UNIQUE — one webhook per member.          |
+| `url`                  | TEXT         | Delivery target. Never echoes the secret in the URL.                         |
+| `secret_encrypted`     | TEXT         | AES-256-GCM, decryptable. Never returned by any route.                       |
+| `is_active`            | BOOLEAN      | "Revoke" is `PATCH { isActive: false }` — there is no delete endpoint.       |
+| `consecutive_failures` | INTEGER      | Reset to 0 on a successful delivery.                                         |
+| `last_delivery_at`     | TIMESTAMPTZ  | Nullable — null means never delivered.                                       |
+| `last_status`          | VARCHAR(20)  | `'ok' \| 'failing' \| null`. Flips to `'failing'` once `consecutive_failures >= 3`. |
+| `created_at`           | TIMESTAMPTZ  |                                                                               |
+| `updated_at`           | TIMESTAMPTZ  |                                                                               |
+
+### webhook_delivery
+
+Queue + audit trail for push alerts (migration 056). One row per `(member_webhook, activity)`
+pair, driven by [`webhook-delivery.service.ts`](../apps/api/src/services/webhook-delivery.service.ts)'s
+self-rescheduling poller (5s tick, up to 20 rows per tick). Rows are inserted by
+`queueDeliveriesForActivity`, called from inside
+[`activity.service.ts`](../apps/api/src/services/activity.service.ts)'s `logActivity()` itself
+so a webhook fan-out can never be forgotten by a call site.
+
+| Column                 | Type         | Description                                                                 |
+| ---------------------- | ------------ | ----------------------------------------------------------------------------- |
+| `webhook_delivery_id`  | BIGSERIAL (PK) |                                                                               |
+| `member_webhook_id`    | INTEGER (FK) | → `member_webhook` ON DELETE CASCADE                                         |
+| `activity_id`          | INTEGER (FK) | → `activity_log` ON DELETE SET NULL. Null for a synthetic `/test` delivery.  |
+| `payload`              | JSONB        | `{ event, entityType, entityId, source, actorUserId, occurredAt, activityId }` |
+| `status`               | VARCHAR(20)  | `queued \| delivered \| failed \| abandoned`                                 |
+| `attempt_count`        | INTEGER      | `>= 6` → `abandoned`, no further retries.                                    |
+| `next_attempt_at`      | TIMESTAMPTZ  | Backoff: 30s, 2m, 10m, 30m, 2h (capped), indexed with `status` for the poll. |
+| `last_error`           | TEXT         | Nullable. HTTP status or network error from the last attempt.                |
+| `delivered_at`         | TIMESTAMPTZ  | Nullable — set on the attempt that finally succeeds.                         |
+| `created_at`           | TIMESTAMPTZ  |                                                                               |
+
+### meeting_member
+
+Who joined a meeting, marked with the "Who joined" picker in the Meetings dialog (migration 058).
+Keyed by `team_member`, not `user`, because some team members have no login; `meeting_attendee`
+(041, `user_id` in its primary key) cannot hold them. Written only by `PUT /api/meeting/:id/members`
+(`requireTeam`, replaces the whole set). `GET /api/meeting` returns these plus any older
+self-serve `meeting_attendee` joins as one de-duplicated `attendees` list
+([`meeting.service.ts`](../apps/api/src/services/meeting.service.ts) `fetchAttendeeMap`).
+
+| Column           | Type          | Description                                                     |
+| ---------------- | ------------- | --------------------------------------------------------------- |
+| `meeting_id`     | BIGINT (FK)   | → `meeting` ON DELETE CASCADE. PK with `team_member_id`.        |
+| `team_member_id` | BIGINT (FK)   | → `team_member` ON DELETE CASCADE. Indexed.                     |
+| `marked_by`      | INTEGER (FK)  | → `user` ON DELETE SET NULL (nullable) — who saved the picker.  |
+| `created_at`     | TIMESTAMPTZ   |                                                                 |
+
 ### schema_migration
 
 One row per migration file a database has applied. Written by `019_schema_ledger.sql` and by every migration after it; read by `scripts/migration-drift.mjs`. **No API route touches it** — the app has no business editing its own deploy history.
@@ -579,6 +661,7 @@ Drizzle-kit `push` syncs `schema.ts` → Postgres. For schema changes that need 
 | `020_soft_bounce.sql` | 2026-08-23 | Created `email_soft_bounce` — the counter that makes `suppression_reason.soft_bounce_limit` reachable. Migration 015 shipped that enum arm with no producer: it appeared only in the enum and in `suppress()`'s own reason union, and the delivery-failure route did not even accept `soft_bounce`. The count is keyed on the **address**, not on `campaign_recipient` — a per-recipient count resets at every campaign boundary, so an address soft-bouncing twice per campaign forever would sit at 2 and never escalate, and that is exactly the address that must. The count is **cumulative, never reset**: nothing in this repo receives a delivery event (`status = 'sent'` means handed to the transport), so resetting on it would zero the counter for precisely the accept-then-defer addresses this catches; cumulative errs toward suppressing sooner, never later, and the reset belongs in a delivery webhook when one exists. Uniqueness is a **plain-column** index plus `CHECK (email = lower(email))`, diverging from 015's `lower(email)` expression index on purpose — `ON CONFLICT` can only infer a plain-column index through the query builder, so normalization becomes a database guarantee instead of an application convention. The threshold is NOT a column: `SOFT_BOUNCE_LIMIT` lives in `campaign.service.ts`, because unlike 018's percentages no already-written suppression changes meaning when the policy is retuned. **No ESP webhook calls the endpoint yet** — the mechanism is complete, the trigger is manual. |
 | `047_corpus_source_body.sql` | 2026-09-13 | Added nullable `corpus_source.body` TEXT — the full document text or transcript, which ingest used to discard (`/ingest/text`) or hide in `meta.body` (`/ingest/json`). Backfill MOVES rather than copies: `body = meta->>'body'` and `meta = meta - 'body'` where `body IS NULL` and `meta.body` is a string; the WHERE clause is the idempotence, and a row with both keeps both untouched. No search index (see `corpus_source`). Ledger row inserted. |
 | `054_meeting_audio_url.sql` | 2026-10-18 | Added nullable `meeting.audio_url` TEXT — the Drive (or other) link to a meeting's audio, shown as the Audio link on the Meetings table and set in the meeting dialog. `ADD COLUMN IF NOT EXISTS`, so a re-run is harmless. Applied to prod by hand. |
+| `058_meeting_member.sql` | 2026-10-18 | Created `meeting_member` (who joined a meeting, keyed by `team_member` so members without a login can be marked) and copied existing `meeting_attendee` rows for rostered users into it (`ON CONFLICT DO NOTHING`). `IF NOT EXISTS` throughout; ledger row inserted. Additive — `meeting_attendee` and the self-serve join routes are unchanged. **Not yet applied to prod.** |
 
 ### Which migration has this database seen?
 

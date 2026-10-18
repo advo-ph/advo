@@ -27,7 +27,9 @@ expenseRoutes.use("*", requireAuth);
 const EXPENSE_TYPES = ["development_expenses", "general_expenses"] as const;
 const PAID_STATUSES = ["paid", "unpaid"] as const;
 
-const createSchema = z.object({
+// Exported so the MCP write tool create_expense (services/mcp-tools.service.ts) reuses the
+// exact same shape rather than a drifting copy.
+export const createSchema = z.object({
   projectId: z.number().int().positive().nullable().optional(),
   teamMemberId: z.number().int().positive().nullable().optional(),
   purpose: z.string().min(1).max(5000),
@@ -38,7 +40,9 @@ const createSchema = z.object({
   authorizedBy: z.string().max(255).optional().default(""),
 });
 
-const updateSchema = z.object({
+// Exported so the MCP write tool update_expense (services/mcp-tools.service.ts) reuses the
+// exact same shape rather than a drifting copy.
+export const updateSchema = z.object({
   purpose: z.string().min(1).max(5000).optional(),
   amountCents: z.number().int().min(0).optional(),
   expenseType: z.enum(EXPENSE_TYPES).optional(),

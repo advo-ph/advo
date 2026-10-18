@@ -17,7 +17,9 @@ const leads = new Hono<{ Variables: Variables }>();
 
 // ─── Submit Lead (public) ─────────────────────────────
 
-const submitSchema = z.object({
+// Exported so the MCP write tool create_lead (services/mcp-tools.service.ts) reuses the
+// exact same shape rather than a drifting copy.
+export const submitSchema = z.object({
   name: z.string().min(1).max(255),
   email: z.string().email().max(255),
   company: z.string().max(255).nullish(),
@@ -93,7 +95,9 @@ leads.patch("/bulk", requireAuth, requireTeam, zValidator("json", bulkUpdateSche
 
 // ─── Update ───────────────────────────────────────────
 
-const updateSchema = z.object({
+// Exported so the MCP write tool update_lead (services/mcp-tools.service.ts) reuses the
+// exact same shape rather than a drifting copy.
+export const updateSchema = z.object({
   status: z
     .enum(["new", "contacted", "qualified", "proposal_sent", "closed_won", "closed_lost"])
     .optional(),

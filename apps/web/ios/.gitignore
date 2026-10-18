@@ -1,0 +1,5 @@
+App/App/public
+App/App/capacitor.config.json
+App/build
+xcuserdata/
+*.xcuserstate

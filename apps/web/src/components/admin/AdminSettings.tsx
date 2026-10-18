@@ -6,6 +6,8 @@ import {
   Check,
   Trash2,
   LogOut,
+  Copy,
+  KeyRound,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,7 +25,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useRoles } from "@/hooks/useRoles";
 import * as db from "@/lib/db";
-import { get, patch as apiPatch, post } from "@/lib/api";
+import { get, patch as apiPatch, post, getApiOrigin } from "@/lib/api";
 import { PageHeader, Panel, Dot } from "@/components/admin/_ui";
 import { navGroups, type AdminSection } from "@/components/admin/AdminSidebar";
 import { useNavHidden } from "@/hooks/useNavHidden";
@@ -42,6 +44,20 @@ interface MemberAccount {
   /** Null when the member has no account yet. */
   canLogin: boolean | null;
   isOwner: boolean | null;
+}
+
+/** One row of the Developer panel: a member's bot key and webhook. */
+interface DeveloperRow {
+  teamMemberId: number;
+  name: string;
+  isSelf: boolean;
+  botKeyId: number | null;
+  botKeyPrefix: string | null;
+  botKeyLastUsedAt: string | null;
+  memberWebhookId: number | null;
+  memberWebhookUrl: string | null;
+  memberWebhookIsActive: boolean | null;
+  memberWebhookLastStatus: string | null;
 }
 
 const AdminSettings = () => {
@@ -69,6 +85,19 @@ const AdminSettings = () => {
   const [editPassword, setEditPassword] = useState("");
   const [isSavingAccount, setIsSavingAccount] = useState(false);
 
+  // Developer panel — a member sees only their own row, the owner sees everyone who added one.
+  const [developerRows, setDeveloperRows] = useState<DeveloperRow[]>([]);
+
+  // Bot keys — one live MCP bearer credential per member.
+  const [botKeyBusyId, setBotKeyBusyId] = useState<number | null>(null);
+  const [newBotKey, setNewBotKey] = useState<{ memberName: string; token: string } | null>(null);
+
+  // Member webhooks — push alerts on every activity_log row.
+  const [webhookUrlDraft, setWebhookUrlDraft] = useState<Record<number, string>>({});
+  const [webhookBusyId, setWebhookBusyId] = useState<number | null>(null);
+  const [webhookTestResult, setWebhookTestResult] = useState<Record<number, "ok" | "failed">>({});
+  const [newWebhookSecret, setNewWebhookSecret] = useState<{ memberName: string; secret: string } | null>(null);
+
   // Password change
   const [isPasswordOpen, setIsPasswordOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -86,6 +115,7 @@ const AdminSettings = () => {
   useEffect(() => {
     checkApiConnection();
     fetchSocialLinks();
+    fetchDeveloperRows();
   }, []);
 
   useEffect(() => {
@@ -95,6 +125,11 @@ const AdminSettings = () => {
   const fetchAccounts = async () => {
     const res = await get<MemberAccount[]>("/api/team/accounts");
     if (res.data) setAccounts(res.data);
+  };
+
+  const fetchDeveloperRows = async () => {
+    const res = await get<DeveloperRow[]>("/api/team/developer");
+    if (res.data) setDeveloperRows(res.data);
   };
 
   const openAccount = (account: MemberAccount) => {
@@ -132,6 +167,88 @@ const AdminSettings = () => {
     toast({ title: isNew ? `Login created for ${editing.name}` : `Login updated for ${editing.name}` });
     setEditing(null);
     fetchAccounts();
+  };
+
+  const createBotKey = async (account: DeveloperRow) => {
+    setBotKeyBusyId(account.teamMemberId);
+    const res = await post<{ botKeyId: number; token: string }>("/api/bot-keys", {
+      teamMemberId: account.teamMemberId,
+    });
+    setBotKeyBusyId(null);
+    if (res.error || !res.data) {
+      toast({ title: "Could not create bot key", description: res.error, variant: "destructive" });
+      return;
+    }
+    setNewBotKey({ memberName: account.name, token: res.data.token });
+    fetchDeveloperRows();
+  };
+
+  const revokeBotKey = async (account: DeveloperRow) => {
+    if (!account.botKeyId) return;
+    setBotKeyBusyId(account.teamMemberId);
+    const res = await post(`/api/bot-keys/${account.botKeyId}/revoke`, {});
+    setBotKeyBusyId(null);
+    if (res.error) {
+      toast({ title: "Could not revoke bot key", description: res.error, variant: "destructive" });
+      return;
+    }
+    toast({ title: `Bot key revoked for ${account.name}` });
+    fetchDeveloperRows();
+  };
+
+  const saveWebhook = async (account: DeveloperRow) => {
+    const url = (webhookUrlDraft[account.teamMemberId] ?? account.memberWebhookUrl ?? "").trim();
+    if (!url) {
+      toast({ title: "Enter a webhook URL first", variant: "destructive" });
+      return;
+    }
+    setWebhookBusyId(account.teamMemberId);
+    const res = account.memberWebhookId
+      ? await apiPatch(`/api/webhooks/${account.memberWebhookId}`, { url })
+      : await post<{ memberWebhookId: number; secret: string }>("/api/webhooks", { teamMemberId: account.teamMemberId, url });
+    setWebhookBusyId(null);
+    if (res.error) {
+      toast({ title: "Could not save webhook", description: res.error, variant: "destructive" });
+      return;
+    }
+    if (!account.memberWebhookId && "data" in res && res.data) {
+      setNewWebhookSecret({ memberName: account.name, secret: (res.data as { secret: string }).secret });
+    } else {
+      toast({ title: `Webhook saved for ${account.name}` });
+    }
+    fetchDeveloperRows();
+  };
+
+  const toggleWebhookActive = async (account: DeveloperRow) => {
+    if (!account.memberWebhookId) return;
+    setWebhookBusyId(account.teamMemberId);
+    const res = await apiPatch(`/api/webhooks/${account.memberWebhookId}`, {
+      isActive: !account.memberWebhookIsActive,
+    });
+    setWebhookBusyId(null);
+    if (res.error) {
+      toast({ title: "Could not update webhook", description: res.error, variant: "destructive" });
+      return;
+    }
+    fetchDeveloperRows();
+  };
+
+  const testWebhook = async (account: DeveloperRow) => {
+    if (!account.memberWebhookId) return;
+    setWebhookBusyId(account.teamMemberId);
+    const res = await post<{ ok: boolean; error?: string }>(`/api/webhooks/${account.memberWebhookId}/test`, {});
+    setWebhookBusyId(null);
+    if (res.error || !res.data) {
+      toast({ title: "Could not reach test endpoint", description: res.error, variant: "destructive" });
+      return;
+    }
+    setWebhookTestResult((prev) => ({ ...prev, [account.teamMemberId]: res.data!.ok ? "ok" : "failed" }));
+    toast(
+      res.data.ok
+        ? { title: "Test delivery succeeded" }
+        : { title: "Test delivery failed", description: res.data.error, variant: "destructive" },
+    );
+    fetchDeveloperRows();
   };
 
   const fetchSocialLinks = async () => {
@@ -315,25 +432,112 @@ const AdminSettings = () => {
               <div className="px-4 py-3 text-sm text-muted-foreground">No team members yet.</div>
             )}
             {accounts.map((account) => (
-              <div key={account.teamMemberId} className="flex items-center justify-between gap-3 px-4 min-h-12 py-2">
-                <div className="min-w-0">
-                  <div className="text-sm truncate">{account.name}</div>
-                  <div className="text-xs text-muted-foreground truncate">
-                    {account.username ?? "No login"}
+              <div key={account.teamMemberId} className="px-4 py-2">
+                <div className="flex items-center justify-between gap-3 min-h-8">
+                  <div className="min-w-0">
+                    <div className="text-sm truncate">{account.name}</div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {account.username ?? "No login"}
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {account.canLogin === false && (
-                    <Badge variant="outline" className="text-destructive border-destructive/30">
-                      No access
-                    </Badge>
-                  )}
-                  <Button variant="outline" size="sm" className="h-8" onClick={() => openAccount(account)}>
-                    {account.userId == null ? "Add login" : "Edit"}
-                  </Button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {account.canLogin === false && (
+                      <Badge variant="outline" className="text-destructive border-destructive/30">
+                        No access
+                      </Badge>
+                    )}
+                    <Button variant="outline" size="sm" className="h-8" onClick={() => openAccount(account)}>
+                      {account.userId == null ? "Add login" : "Edit"}
+                    </Button>
+                  </div>
                 </div>
               </div>
             ))}
+          </div>
+        </Panel>
+      )}
+
+      {/* Developer: bot key (MCP) + webhook. Each member manages their own; the owner also sees
+          every member who has added one. Empty until someone adds something. */}
+      {developerRows.length > 0 && (
+        <Panel title="Developer" meta={isOwner ? "Bot keys and webhooks" : "Optional, for bots"}>
+          <div className="divide-y divide-border">
+            {developerRows.map((row) => {
+              const busyKey = botKeyBusyId === row.teamMemberId;
+              const busyHook = webhookBusyId === row.teamMemberId;
+              return (
+                <div key={row.teamMemberId} className="px-4 py-3 space-y-2">
+                  <div className="flex items-center justify-between gap-3 min-h-8">
+                    <div className="min-w-0">
+                      <div className="text-sm truncate">{row.isSelf ? "You" : row.name}</div>
+                      <div className="text-xs text-muted-foreground truncate">
+                        {row.botKeyId ? (
+                          <span className="font-mono">{row.botKeyPrefix}…</span>
+                        ) : (
+                          "No bot key"
+                        )}
+                        {row.botKeyLastUsedAt && ` · used ${new Date(row.botKeyLastUsedAt).toLocaleDateString()}`}
+                      </div>
+                    </div>
+                    {row.botKeyId ? (
+                      <Button variant="outline" size="sm" className="h-8 shrink-0 text-destructive"
+                        disabled={busyKey} onClick={() => revokeBotKey(row)}>
+                        {busyKey ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Revoke"}
+                      </Button>
+                    ) : (
+                      <Button variant="outline" size="sm" className="h-8 shrink-0"
+                        disabled={busyKey} onClick={() => createBotKey(row)}>
+                        {busyKey ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <>
+                            <KeyRound className="h-3.5 w-3.5 mr-1.5" /> Add bot key
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Webhook — push alerts on every change in ADVO. */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Dot
+                      className={
+                        row.memberWebhookId == null
+                          ? "bg-muted"
+                          : webhookTestResult[row.teamMemberId] === "failed" || row.memberWebhookLastStatus === "failing"
+                          ? "bg-red-500"
+                          : row.memberWebhookLastStatus === "ok"
+                          ? "bg-green-500"
+                          : "bg-yellow-500"
+                      }
+                    />
+                    <Input
+                      className="h-8 text-xs flex-1 min-w-[10rem]"
+                      placeholder="Webhook URL (optional)"
+                      value={webhookUrlDraft[row.teamMemberId] ?? row.memberWebhookUrl ?? ""}
+                      onChange={(e) => setWebhookUrlDraft((prev) => ({ ...prev, [row.teamMemberId]: e.target.value }))}
+                    />
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" className="h-8" disabled={busyHook} onClick={() => saveWebhook(row)}>
+                        {busyHook ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save"}
+                      </Button>
+                      {row.memberWebhookId != null && (
+                        <>
+                          <Button variant="outline" size="sm" className="h-8" disabled={busyHook} onClick={() => testWebhook(row)}>
+                            Test
+                          </Button>
+                          <Switch
+                            checked={row.memberWebhookIsActive ?? false}
+                            onCheckedChange={() => toggleWebhookActive(row)}
+                            aria-label={`Webhook active for ${row.name}`}
+                          />
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </Panel>
       )}
@@ -446,6 +650,94 @@ const AdminSettings = () => {
               {isSavingAccount ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
               Save
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* New bot key reveal — shown exactly once at creation time. */}
+      <Dialog open={newBotKey !== null} onOpenChange={(open) => !open && setNewBotKey(null)}>
+        <DialogContent className="bg-card border-border max-w-sm rounded-lg">
+          <DialogHeader>
+            <DialogTitle>Bot key for {newBotKey?.memberName}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 py-4 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <Input className="h-9 min-w-0 flex-1 font-mono text-xs" readOnly value={newBotKey?.token ?? ""} />
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 shrink-0"
+                onClick={() => newBotKey && navigator.clipboard.writeText(newBotKey.token)}
+              >
+                <Copy className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">This will not be shown again.</p>
+            <div className="min-w-0 space-y-1 pt-2">
+              <p className="text-xs font-medium text-foreground">MCP server URL</p>
+              <div className="flex items-center gap-2 min-w-0">
+                <Input className="h-9 min-w-0 flex-1 font-mono text-xs" readOnly value={`${getApiOrigin()}/mcp`} />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 shrink-0"
+                  onClick={() => navigator.clipboard.writeText(`${getApiOrigin()}/mcp`)}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+            <div className="min-w-0 space-y-1 pt-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-medium text-foreground">Connect from Grok</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 shrink-0"
+                  onClick={() =>
+                    navigator.clipboard.writeText(
+                      `{"type":"mcp","server_url":"${getApiOrigin()}/mcp","authorization":"Bearer ${newBotKey?.token ?? "<key>"}"}`,
+                    )
+                  }
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <pre className="max-w-full overflow-x-auto whitespace-pre-wrap break-all rounded-md border border-border bg-muted/40 p-2 text-[11px] leading-snug">
+{`{"type":"mcp","server_url":"${getApiOrigin()}/mcp","authorization":"Bearer ${newBotKey?.token ?? "<key>"}"}`}
+              </pre>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setNewBotKey(null)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* New webhook secret reveal — shown exactly once at creation time. */}
+      <Dialog open={newWebhookSecret !== null} onOpenChange={(open) => !open && setNewWebhookSecret(null)}>
+        <DialogContent className="bg-card border-border max-w-sm rounded-lg">
+          <DialogHeader>
+            <DialogTitle>Webhook secret for {newWebhookSecret?.memberName}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 py-4">
+            <div className="flex items-center gap-2">
+              <Input className="h-9 font-mono text-xs" readOnly value={newWebhookSecret?.secret ?? ""} />
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 shrink-0"
+                onClick={() => newWebhookSecret && navigator.clipboard.writeText(newWebhookSecret.secret)}
+              >
+                <Copy className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Used to verify the X-ADVO-Signature header on every delivery. This will not be shown again.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setNewWebhookSecret(null)}>Done</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

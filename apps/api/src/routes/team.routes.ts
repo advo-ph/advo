@@ -1,10 +1,10 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { eq, getTableColumns, sql } from "drizzle-orm";
+import { eq, and, isNull, getTableColumns, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { db } from "../db/connection.js";
-import { teamMember, user, deliverable, activityLog } from "../db/schema.js";
+import { teamMember, user, deliverable, activityLog, botKey, memberWebhook } from "../db/schema.js";
 import { requireAuth, optionalAuth, invalidateUserActive } from "../middleware/auth.js";
 import { requireAdmin } from "../middleware/rbac.js";
 import { hashPassword, revokeAllUserSessions } from "../services/auth.service.js";
@@ -147,7 +147,7 @@ team.get("/", optionalAuth, async (c) => {
 // The owner manages the username and password each roster member logs in with. A member
 // without an account gets one here, linked to their roster row in the same request.
 
-async function requireOwnerCaller(caller: Variables["user"] | undefined) {
+export async function requireOwnerCaller(caller: Variables["user"] | undefined) {
   const [account] = caller
     ? await db().select({ isOwner: user.isOwner }).from(user).where(eq(user.userId, caller.userId)).limit(1)
     : [];
@@ -156,8 +156,69 @@ async function requireOwnerCaller(caller: Variables["user"] | undefined) {
   }
 }
 
+/**
+ * Developer tools (bot key, webhook): the owner manages everyone's, a member only the roster
+ * row linked to their own login. 403s when a member reaches for someone else's.
+ */
+export async function requireSelfOrOwner(caller: Variables["user"] | undefined, teamMemberId: number) {
+  if (!caller) throw new HTTPException(403, { message: "Owner access required" });
+  const d = db();
+  const [account] = await d.select({ isOwner: user.isOwner }).from(user).where(eq(user.userId, caller.userId)).limit(1);
+  if (account?.isOwner) return;
+  const [own] = await d
+    .select({ teamMemberId: teamMember.teamMemberId })
+    .from(teamMember)
+    .where(and(eq(teamMember.teamMemberId, teamMemberId), eq(teamMember.userId, caller.userId)))
+    .limit(1);
+  if (!own) throw new HTTPException(403, { message: "You can only manage your own developer keys" });
+}
+
+// Developer section of Settings. A member gets only their own row (empty until they add a key
+// or webhook). The owner gets their own row plus every member who has added one — members who
+// never touched it stay hidden. MUST stay above "/:id".
+team.get("/developer", requireAuth, requireAdmin, async (c) => {
+  const caller = c.get("user");
+  const d = db();
+  const [account] = await d.select({ isOwner: user.isOwner }).from(user).where(eq(user.userId, caller.userId)).limit(1);
+  const isOwner = account?.isOwner ?? false;
+  const rows = await d
+    .select({
+      teamMemberId: teamMember.teamMemberId,
+      name: teamMember.name,
+      userId: teamMember.userId,
+      botKeyId: botKey.botKeyId,
+      botKeyPrefix: botKey.keyPrefix,
+      botKeyLastUsedAt: botKey.lastUsedAt,
+      memberWebhookId: memberWebhook.memberWebhookId,
+      memberWebhookUrl: memberWebhook.url,
+      memberWebhookIsActive: memberWebhook.isActive,
+      memberWebhookLastStatus: memberWebhook.lastStatus,
+    })
+    .from(teamMember)
+    .leftJoin(botKey, and(eq(botKey.teamMemberId, teamMember.teamMemberId), isNull(botKey.revokedAt)))
+    .leftJoin(memberWebhook, eq(memberWebhook.teamMemberId, teamMember.teamMemberId))
+    .where(
+      isOwner
+        ? and(eq(teamMember.isActive, true), sql`${teamMember.userId} IS NOT NULL`)
+        : and(eq(teamMember.isActive, true), eq(teamMember.userId, caller.userId)),
+    )
+    .orderBy(teamMember.teamMemberId);
+  // The caller's own row first, then everyone else in roster order.
+  const visible = (
+    isOwner ? rows.filter((r) => r.userId === caller.userId || r.botKeyId != null || r.memberWebhookId != null) : rows
+  ).sort((a, b) => Number(b.userId === caller.userId) - Number(a.userId === caller.userId));
+  c.header("Cache-Control", "no-store");
+  return c.json({
+    data: visible.map((r) => ({ ...r, isSelf: r.userId === caller.userId })),
+    error: null,
+  });
+});
+
 team.get("/accounts", requireAuth, requireAdmin, async (c) => {
   await requireOwnerCaller(c.get("user"));
+  // Left-joined against the one LIVE bot_key row (revoked_at IS NULL) per member — a
+  // revoked key simply does not match the join condition, so the row reads as "no key"
+  // exactly like a member who never had one, matching the one-live-key model.
   const rows = await db()
     .select({
       teamMemberId: teamMember.teamMemberId,
@@ -167,9 +228,18 @@ team.get("/accounts", requireAuth, requireAdmin, async (c) => {
       username: user.username,
       canLogin: user.isActive,
       isOwner: user.isOwner,
+      botKeyId: botKey.botKeyId,
+      botKeyPrefix: botKey.keyPrefix,
+      botKeyRevokedAt: botKey.revokedAt,
+      memberWebhookId: memberWebhook.memberWebhookId,
+      memberWebhookUrl: memberWebhook.url,
+      memberWebhookIsActive: memberWebhook.isActive,
+      memberWebhookLastStatus: memberWebhook.lastStatus,
     })
     .from(teamMember)
     .leftJoin(user, eq(teamMember.userId, user.userId))
+    .leftJoin(botKey, and(eq(botKey.teamMemberId, teamMember.teamMemberId), isNull(botKey.revokedAt)))
+    .leftJoin(memberWebhook, eq(memberWebhook.teamMemberId, teamMember.teamMemberId))
     .where(eq(teamMember.isActive, true))
     .orderBy(teamMember.teamMemberId);
   c.header("Cache-Control", "no-store");

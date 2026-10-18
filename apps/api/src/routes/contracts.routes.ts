@@ -77,7 +77,9 @@ contracts.get("/mine", async (c) => {
   return c.json({ data: row, error: null });
 });
 
-const createSchema = z.object({
+// Exported so the MCP write tools create_contract/update_contract
+// (services/mcp-tools.service.ts) reuse the exact same shape rather than a drifting copy.
+export const createSchema = z.object({
   clientId: z.number().int(),
   projectId: z.number().int().nullable().optional(),
   title: z.string().min(1).max(255),
@@ -324,7 +326,7 @@ contracts.delete("/files/:id", requireAdmin, async (c) => {
 // ─── Generic contract record CRUD (/:id) ─────────────
 // IMPORTANT: registered AFTER /files/* so "files" is never captured as an id.
 
-const updateSchema = createSchema.partial();
+export const updateSchema = createSchema.partial();
 
 contracts.patch("/:id", requireTeam, zValidator("json", updateSchema), async (c) => {
   const id = Number(c.req.param("id"));

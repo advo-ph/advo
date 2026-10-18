@@ -168,7 +168,7 @@ const AdminProposals = () => {
     <div className="space-y-4">
       <div className="flex items-baseline justify-between gap-4">
         <div className="flex items-baseline gap-3 min-w-0">
-          <h1 className="text-lg font-semibold tracking-tight">Proposals</h1>
+          <h1 className="sr-only sm:not-sr-only text-lg font-semibold tracking-tight">Proposals</h1>
           <span className="text-xs text-muted-foreground truncate">
             {pipeline.length} total · {sentCount} sent · {openedCount} opened · {repliedCount} replied · {signedCount} signed
           </span>

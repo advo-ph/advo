@@ -1,0 +1,75 @@
+
+> advo-monorepo@1.0.0 build
+> npm --workspace apps/web run build && npm --workspace apps/api run build
+
+
+> advo@1.0.0 build
+> npm run typecheck && vite build && node scripts/prerender.mjs
+
+
+> advo@1.0.0 typecheck
+> tsc --noEmit -p tsconfig.app.json
+
+vite v5.4.21 building for production...
+transforming...
+✓ 10303 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                      4.77 kB │ gzip:   1.62 kB
+dist/assets/index-s92w5997.css                     191.97 kB │ gzip:  33.56 kB
+dist/assets/virtual_pwa-register-2QNdrXaA.js         0.82 kB │ gzip:   0.50 kB
+dist/assets/web-C0WJcx0x.js                          0.88 kB │ gzip:   0.42 kB
+dist/assets/web-CmgXjW5U.js                          5.39 kB │ gzip:   1.44 kB
+dist/assets/workbox-window.prod.es5-BqEJf4Xk.js      5.71 kB │ gzip:   2.34 kB
+dist/assets/AdminVpsMonitor-nOA5nhAt.js             31.86 kB │ gzip:   9.75 kB
+dist/assets/services-graphics-LlBkymbI.js          601.00 kB │ gzip: 159.61 kB
+dist/assets/index-Da8HxXpy.js                    1,972.56 kB │ gzip: 576.63 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 4.11s
+
+PWA v1.3.0
+mode      generateSW
+precache  23 entries (2762.94 KiB)
+files generated
+  dist/sw.js
+  dist/workbox-abeb32eb.js
+Warning: React does not recognize the `fetchPriority` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `fetchpriority` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+    at img
+    at div
+    at div
+    at section
+    at main
+    at LandingPage (/Users/princewagan/advo/.claude/worktrees/agent-ab05362ecae535e50/apps/web/src/components/landing/LandingPage.tsx:266:48)
+    at Index
+    at RenderedRoute (/Users/princewagan/advo/.claude/worktrees/agent-ab05362ecae535e50/node_modules/react-router/dist/umd/react-router.development.js:535:7)
+    at Routes (/Users/princewagan/advo/.claude/worktrees/agent-ab05362ecae535e50/node_modules/react-router/dist/umd/react-router.development.js:1269:7)
+    at AppRoutes
+    at Router (/Users/princewagan/advo/.claude/worktrees/agent-ab05362ecae535e50/node_modules/react-router/dist/umd/react-router.development.js:1203:17)
+    at StaticRouter (/Users/princewagan/advo/.claude/worktrees/agent-ab05362ecae535e50/node_modules/react-router-dom/server.js:35:3)
+    at Provider (file:///Users/princewagan/advo/.claude/worktrees/agent-ab05362ecae535e50/node_modules/@radix-ui/react-context/dist/index.mjs:27:15)
+    at TooltipProvider (file:///Users/princewagan/advo/.claude/worktrees/agent-ab05362ecae535e50/node_modules/@radix-ui/react-tooltip/dist/index.mjs:29:5)
+    at AuthProvider (/Users/princewagan/advo/.claude/worktrees/agent-ab05362ecae535e50/apps/web/src/hooks/useAuth.tsx:20:25)
+    at QueryClientProvider (file:///Users/princewagan/advo/.claude/worktrees/agent-ab05362ecae535e50/node_modules/@tanstack/react-query/build/modern/QueryClientProvider.js:20:3)
+[prerender] /                                  3167 chars of text
+[prerender] /about                             1683 chars of text
+[prerender] /team                               428 chars of text
+[prerender] /start                              207 chars of text
+[prerender] /client-guide                       849 chars of text
+[prerender] /behind-the-scenes                  570 chars of text
+[prerender] /terms                             3678 chars of text
+[prerender] /privacy                           3359 chars of text
+[prerender] /refund                            3054 chars of text
+[prerender] /dispute                           2727 chars of text
+[prerender] /work/fourlinq                     3156 chars of text
+[prerender] /work/felici-artisan-gelato        2349 chars of text
+[prerender] 12 pages, sitemap.xml, llms.txt, llms-full.txt written to dist/
+✘ [ERROR] The build was canceled
+
+
+> advo-api@1.0.0 build
+> tsc
+

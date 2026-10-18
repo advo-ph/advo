@@ -78,7 +78,7 @@ const AdminDashboard = ({
       {/* Title bar */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-baseline gap-3 min-w-0">
-          <h1 className="text-lg font-semibold tracking-tight">Overview</h1>
+          <h1 className="sr-only sm:not-sr-only text-lg font-semibold tracking-tight">Overview</h1>
           <span className="hidden sm:inline text-xs text-muted-foreground truncate">
             {displayName} · {today}
           </span>

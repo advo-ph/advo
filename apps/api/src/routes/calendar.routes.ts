@@ -402,7 +402,9 @@ calendar.get("/", requireTeam, zValidator("query", rangeSchema, zodMessageHook),
   return c.json({ data: events, error: null });
 });
 
-const eventShape = {
+// Exported for the same reason as meetingBaseShape above — a plain-shape inputSchema for
+// the MCP write tool create_calendar_event (services/mcp-tools.service.ts).
+export const eventShape = {
   title: z.string().min(1).max(255),
   category: z.enum(MANUAL_CATEGORIES).default("event"),
   description: z.string().max(5000).nullable().optional(),
@@ -418,7 +420,9 @@ const ORDER_MESSAGE = "End time must be after the start time.";
 const isOutOfOrder = (startsAt?: string | null, endsAt?: string | null) =>
   Boolean(startsAt && endsAt && new Date(endsAt) <= new Date(startsAt));
 
-const createSchema = z.object(eventShape).superRefine((v, ctx) => {
+// Exported so the MCP write tools create_calendar_event/update_calendar_event
+// (services/mcp-tools.service.ts) reuse the exact same shape rather than a drifting copy.
+export const createSchema = z.object(eventShape).superRefine((v, ctx) => {
   if (isOutOfOrder(v.startsAt, v.endsAt)) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: ORDER_MESSAGE, path: ["endsAt"] });
   }
@@ -442,7 +446,7 @@ calendar.post("/", requireTeam, zValidator("json", createSchema, zodMessageHook)
   return c.json({ data: created, error: null }, 201);
 });
 
-const updateSchema = z.object(eventShape).partial();
+export const updateSchema = z.object(eventShape).partial();
 
 calendar.patch("/:id", requireTeam, zValidator("json", updateSchema, zodMessageHook), async (c) => {
   const id = Number(c.req.param("id"));

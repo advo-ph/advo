@@ -160,10 +160,14 @@ async function api(path: string, token?: string, init?: RequestInit) {
   return { status: res.status, body: await res.json() };
 }
 
+function usernameFromEmail(email: string): string {
+  return email.split("@", 1)[0].toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
 async function login(email: string, password = "changeme") {
   const res = await api("/api/auth/login", undefined, {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ username: usernameFromEmail(email), password }),
   });
   return res.body?.data?.accessToken as string | undefined;
 }

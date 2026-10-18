@@ -7,6 +7,7 @@ import { useAdminData } from "@/hooks/useAdminData";
 import { useOrgProjects } from "@/hooks/useOrgProjects";
 import { useAdminTeam } from "@/hooks/useAdminTeam";
 import { useTheme } from "@/hooks/useTheme";
+import { useRootScrollLock } from "@/hooks/useRootScrollLock";
 import { formatCurrency } from "@/types/admin";
 
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -43,6 +44,7 @@ import AdminLibrary from "@/components/admin/AdminLibrary";
 import AdminEngagement from "@/components/admin/AdminEngagement";
 import AdminAccountability from "@/components/admin/AdminAccountability";
 import AdminWebStats from "@/components/admin/AdminWebStats";
+import { ChatWidget } from "@/components/admin/ChatWidget";
 
 const AdminVpsMonitor = lazy(() => import("@/components/admin/AdminVpsMonitor"));
 import { useStaffTelemetry } from "@/lib/staff-telemetry";
@@ -77,12 +79,19 @@ const SECTION_LABEL: Record<AdminSection, string> = {
   proposals: "Proposals",
   campaign: "Campaigns",
   library: "Library",
-  "brand-scraper": "Brand Scraper",
-  "fb-scraper": "FB Scraper",
+  "brand-scraper": "Brand Research",
+  "fb-scraper": "Facebook Research",
   vps: "VPS Usage",
   "web-stats": "Web Statistics",
   settings: "Settings",
 };
+
+/**
+ * Sections that fit the screen instead of scrolling: main is sized to the space between
+ * the header and the bottom bar, the section fills it (its grid takes what is left), and
+ * the page scroll is switched off while the section is open.
+ */
+const FIT_SCREEN_SECTIONS: ReadonlySet<AdminSection> = new Set<AdminSection>(["availability", "calendar"]);
 
 /**
  * The URL is user input, so a path segment is only a section if it is one of the
@@ -108,6 +117,9 @@ const Admin = () => {
   // Staff behavioural telemetry — OFF unless VITE_STAFF_MONITORING is set at build time, and
   // inert while off. Do not enable before docs/MONITORING-POLICY.md is signed and distributed.
   useStaffTelemetry(activeSection);
+
+  const fitScreen = FIT_SCREEN_SECTIONS.has(activeSection);
+  useRootScrollLock(fitScreen);
 
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -143,7 +155,9 @@ const Admin = () => {
   const sidebarWidth = isSidebarCollapsed ? 72 : 240;
 
   return (
-    <div className={`min-h-screen bg-background text-foreground${theme === "light" ? " admin-light" : ""}`}>
+    <div
+      className={`${fitScreen ? "h-full" : "min-h-screen"} bg-background text-foreground${theme === "light" ? " admin-light" : ""}`}
+    >
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b border-border">
         <div className="px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
@@ -156,8 +170,11 @@ const Admin = () => {
                 className={`h-5 w-auto${theme === "dark" ? " invert" : ""}`}
               />
             </Link>
-            <span className="hidden sm:block h-3.5 w-px bg-border" />
+            <span className="shrink-0 h-3.5 w-px bg-border" />
             <span className="hidden sm:block text-sm text-muted-foreground">Members</span>
+            <span className="sm:hidden truncate text-sm font-semibold tracking-tight text-foreground">
+              {SECTION_LABEL[activeSection]}
+            </span>
           </div>
 
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
@@ -195,12 +212,22 @@ const Admin = () => {
 
       <AdminBottomNav activeSection={activeSection} onSectionChange={setActiveSection} />
 
+      {/* Owner-only, gates itself on isOwner. Mounted here (not App.tsx) because
+          it is an admin-only feature, unlike the global JobProgressWidget. */}
+      <ChatWidget />
+
       {/* Main Content */}
       <main
-        className="pt-24 pb-32 lg:pb-16 px-4 sm:px-6 transition-all duration-200 lg:ml-[var(--sidebar-w)]"
+        className={`pt-24 px-4 sm:px-6 transition-all duration-200 lg:ml-[var(--sidebar-w)] ${
+          // Fit-screen sections end just above the phone's bottom bar (74px + a 10px gap)
+          // and a little above the window edge on desktop.
+          fitScreen
+            ? "flex h-full flex-col pb-[calc(5.25rem_+_env(safe-area-inset-bottom))] lg:pb-6"
+            : "pb-32 lg:pb-16"
+        }`}
         style={{ ["--sidebar-w" as string]: `${sidebarWidth}px` }}
       >
-        <div className="max-w-6xl mx-auto">
+        <div className={`max-w-6xl mx-auto${fitScreen ? " flex w-full min-h-0 flex-1 flex-col" : ""}`}>
           {/* One boundary per section, keyed on the section id. A crash in one
               section leaves the header and sidebar mounted, so the user can
               always navigate away, and switching sections remounts the boundary

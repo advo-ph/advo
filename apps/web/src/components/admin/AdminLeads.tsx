@@ -178,7 +178,7 @@ const AdminLeads = () => {
       {/* Title + inline counts (no stat cards) */}
       <div className="flex items-baseline justify-between gap-4">
         <div className="flex items-baseline gap-3 min-w-0">
-          <h1 className="text-lg font-semibold tracking-tight">Leads</h1>
+          <h1 className="sr-only sm:not-sr-only text-lg font-semibold tracking-tight">Leads</h1>
           <span className="text-xs text-muted-foreground truncate">
             {leads.length} total · {newLeads} new · {qualifiedLeads} qualified · {closedWonThisMonth} won this month
           </span>

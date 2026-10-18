@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { isNativeApp } from "@/lib/platform";
 
 const DEFAULT_API_BASE = "http://localhost:6407";
 
@@ -24,6 +25,7 @@ export function previewPublicPath(token: string): string {
  */
 const PreviewLink = () => {
   const { token } = useParams<{ token: string }>();
+  const navigate = useNavigate();
   const [status, setStatus] = useState<"opening" | "missing">("opening");
 
   useEffect(() => {
@@ -34,11 +36,21 @@ const PreviewLink = () => {
 
     const target = previewApiUrl(token);
     const timer = window.setTimeout(() => {
+      if (isNativeApp()) {
+        // Native shell is a single WebView with no in-app way back from an
+        // external domain — open the client's preview in Safari instead
+        // (Capacitor's WKUIDelegate hands target=_blank/window.open to
+        // Safari via UIApplication.shared.open) and return to the app's own
+        // landing page rather than leaving the WebView on a dead-end.
+        window.open(target, "_blank");
+        navigate("/hub", { replace: true });
+        return;
+      }
       window.location.replace(target);
     }, 600);
 
     return () => window.clearTimeout(timer);
-  }, [token]);
+  }, [token, navigate]);
 
   if (status === "missing" || !token?.trim()) {
     return (

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,6 +67,11 @@ const MONTHS = [
 ];
 
 const pad = (n: number) => String(n).padStart(2, "0");
+
+/** One event line in a day cell (18px line + 2px gap), and the cell's fixed overhead:
+ *  the date row, its margin, and the cell padding. */
+const EVENT_LINE_PX = 20;
+const CELL_CHROME_PX = 34;
 
 interface FormState {
   id: number | null; // null = create
@@ -250,13 +255,35 @@ const AdminCalendar = () => {
     }
   };
 
+  // The month grid fills whatever height the page leaves it (the page does not scroll),
+  // so how many events a day cell can list depends on the screen. Measured, not guessed:
+  // a fixed three overflowed short phones and wasted tall desktops.
+  const gridRef = useRef<HTMLDivElement>(null);
+  const [eventLines, setEventLines] = useState(3);
+  useLayoutEffect(() => {
+    const el = gridRef.current;
+    if (!el) return;
+    const update = () => {
+      const rowHeight = el.clientHeight / 6;
+      setEventLines(Math.max(1, Math.min(6, Math.floor((rowHeight - CELL_CHROME_PX) / EVENT_LINE_PX))));
+    };
+    update();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const monthLabel = `${MONTHS[cursor.getMonth()]} ${cursor.getFullYear()}`;
   const shiftMonth = (n: number) =>
     setCursor((c) => new Date(c.getFullYear(), c.getMonth() + n, 1));
 
   return (
-    <div className="space-y-4">
+    // Fills the space main leaves (Admin.tsx turns the page scroll off for this section);
+    // the month grid takes whatever is left.
+    <div className="flex min-h-0 flex-1 flex-col gap-3 sm:gap-4">
       <PageHeader
+        className="shrink-0"
         title="Calendar"
         meta={
           isLoading
@@ -302,10 +329,11 @@ const AdminCalendar = () => {
       />
 
       {/* Mobile month label */}
-      <div className="sm:hidden text-sm font-medium">{monthLabel}</div>
+      <div className="sm:hidden shrink-0 text-sm font-medium">{monthLabel}</div>
 
-      {/* Filter legend */}
-      <div className="flex flex-wrap items-center gap-1.5">
+      {/* Filter legend: one line that scrolls sideways, so many categories never push the
+          month grid down. The right edge fades to say there is more. */}
+      <div className="flex shrink-0 items-center gap-1.5 overflow-x-auto whitespace-nowrap pr-6 [mask-image:linear-gradient(to_right,black_calc(100%-1.5rem),transparent)]">
         {presentCategories.map((k) => {
           const off = hidden.has(k);
           return (
@@ -319,7 +347,7 @@ const AdminCalendar = () => {
                   return n;
                 })
               }
-              className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors ${
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors ${
                 off
                   ? "border-border text-muted-foreground"
                   : "border-border text-muted-foreground hover:text-foreground"
@@ -333,8 +361,8 @@ const AdminCalendar = () => {
       </div>
 
       {/* Month grid */}
-      <div className="border border-border rounded-lg bg-card overflow-hidden">
-        <div className="grid grid-cols-7 border-b border-border">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card">
+        <div className="grid shrink-0 grid-cols-7 border-b border-border">
           {/* Was text-muted-foreground/70 (~2.9:1 in light mode) — same fix as THead. */}
           {WEEKDAYS.map((w) => (
             <div
@@ -345,19 +373,21 @@ const AdminCalendar = () => {
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-7">
+        <div ref={gridRef} data-testid="calendar-month-grid" className="grid min-h-0 flex-1 grid-cols-7 grid-rows-6">
           {cells.map((d, i) => {
             const k = dayKey(d);
             const inMonth = d.getMonth() === cursor.getMonth();
             const isToday = k === todayKey;
             const dayEvents = byDay[k] ?? [];
-            const eventShown = Math.min(dayEvents.length, 3);
+            // Everything fits, or one line short of it plus a "+N more" line.
+            const eventShown =
+              dayEvents.length <= eventLines ? dayEvents.length : Math.max(0, eventLines - 1);
             const moreCount = dayEvents.length - eventShown;
             return (
               <div
                 key={k}
                 onClick={() => openCreate(k)}
-                className={`group min-h-[64px] sm:min-h-[104px] border-b border-r border-border p-1.5 cursor-pointer transition-colors hover:bg-secondary/30 [&:nth-child(7n)]:border-r-0 ${
+                className={`group min-h-0 overflow-hidden border-b border-r border-border p-1 sm:p-1.5 cursor-pointer transition-colors hover:bg-secondary/30 [&:nth-child(7n)]:border-r-0 ${
                   inMonth ? "" : "bg-background/40"
                 } ${i >= 35 ? "border-b-0" : ""}`}
               >
@@ -386,13 +416,14 @@ const AdminCalendar = () => {
                         if (e.editable) openEdit(e);
                         else setDetail(e);
                       }}
-                      className="w-full flex items-center gap-1.5 px-1 py-0.5 rounded text-left hover:bg-secondary/70 transition-colors"
+                      className="w-full h-[18px] flex items-center gap-1 sm:gap-1.5 px-0.5 sm:px-1 rounded text-left hover:bg-secondary/70 transition-colors"
                       title={e.title}
                     >
                       <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${cat(e.category).dot}`} />
-                      <span className="text-[11px] truncate text-foreground/90">
+                      <span className="text-[11px] leading-4 truncate text-foreground/90">
+                        {/* No time on a phone: in a 50px cell it left no room for the title. */}
                         {!e.allDay && (
-                          <span className="text-muted-foreground tabular-nums mr-1">
+                          <span className="hidden sm:inline text-muted-foreground tabular-nums mr-1">
                             {new Date(e.start).toLocaleTimeString("en-US", {
                               hour: "numeric",
                               minute: "2-digit",
@@ -404,7 +435,7 @@ const AdminCalendar = () => {
                     </button>
                   ))}
                   {moreCount > 0 && (
-                    <div className="px-1 text-[10px] text-muted-foreground">
+                    <div className="px-0.5 sm:px-1 text-[10px] leading-4 text-muted-foreground">
                       +{moreCount} more
                     </div>
                   )}

@@ -2,6 +2,28 @@ import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import App from "./App.tsx";
 import "./index.css";
+import { isNativeApp } from "@/lib/platform";
+import { registerWebServiceWorker, unregisterAllServiceWorkers } from "@/lib/registerSw";
+import { initOtaUpdater } from "@/lib/otaUpdater";
+import { StatusBar, Style } from "@capacitor/status-bar";
+
+/**
+ * Native boot sequence must run before anything else touches the service
+ * worker / OTA state. `notifyAppReady()` (inside `initOtaUpdater`) must run
+ * synchronously-first, before any network call, or the OTA plugin
+ * auto-rolls back to the last-known-good bundle. Web behavior (SW
+ * auto-registration/`autoUpdate`) is preserved byte-for-byte via
+ * `registerWebServiceWorker()` and never touches OTA code.
+ */
+if (isNativeApp()) {
+  document.documentElement.classList.add("native-app");
+  void unregisterAllServiceWorkers();
+  void initOtaUpdater();
+  // Dark theme (theme_color: "#0c0c0c") — match the status bar text/icons.
+  void StatusBar.setStyle({ style: Style.Dark });
+} else {
+  void registerWebServiceWorker();
+}
 
 /**
  * `refetchOnWindowFocus` is ON deliberately.

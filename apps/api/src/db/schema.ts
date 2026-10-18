@@ -14,6 +14,7 @@ import {
   uniqueIndex,
   index,
   primaryKey,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -553,6 +554,10 @@ export const meeting = pgTable(
     description: text("description"),
     // Drive (or other) link to the audio, migration 054.
     audioUrl: text("audio_url"),
+    // Migration 057. Set only on a side-project excerpt copy (plaud-chat.service.ts);
+    // NULL on every primary meeting (the one importPlaudMeeting created/updated).
+    parentMeetingId: integer("parent_meeting_id")
+      .references((): AnyPgColumn => meeting.meetingId, { onDelete: "cascade" }),
   },
   (t) => [
     index("idx_meeting_project").on(t.projectId),
@@ -560,6 +565,7 @@ export const meeting = pgTable(
     index("idx_meeting_created_by").on(t.createdBy),
     uniqueIndex("idx_meeting_plaud_file").on(t.plaudFileId),
     index("idx_meeting_starts_at").on(t.startsAt),
+    index("idx_meeting_parent").on(t.parentMeetingId),
   ]
 );
 
@@ -576,6 +582,24 @@ export const meetingAttendee = pgTable(
   (t) => [
     primaryKey({ columns: [t.meetingId, t.userId] }),
     index("idx_meeting_attendee_user").on(t.userId),
+  ]
+);
+
+// Who joined a meeting, marked in the meeting dialog (migration 058). Keyed by
+// team_member, not user, because some team members have no login account.
+export const meetingMember = pgTable(
+  "meeting_member",
+  {
+    meetingId: bigint("meeting_id", { mode: "number" }).notNull()
+      .references(() => meeting.meetingId, { onDelete: "cascade" }),
+    teamMemberId: bigint("team_member_id", { mode: "number" }).notNull()
+      .references(() => teamMember.teamMemberId, { onDelete: "cascade" }),
+    markedBy: integer("marked_by").references(() => user.userId, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.meetingId, t.teamMemberId] }),
+    index("idx_meeting_member_team_member").on(t.teamMemberId),
   ]
 );
 
@@ -1888,5 +1912,109 @@ export const analyticsEventRollup = pgTable(
   (t) => [
     uniqueIndex("idx_analytics_event_rollup_period_kind_path").on(t.period, t.kind, t.path),
     index("idx_analytics_event_rollup_period").on(t.period),
+  ]
+);
+
+// ─── Bot keys (migration 055) ────────────────────────
+//
+// One live bearer credential per team_member for the MCP server. See migration 055 for the
+// partial-unique "one live key" invariant.
+
+export const botKey = pgTable(
+  "bot_key",
+  {
+    botKeyId: bigserial("bot_key_id", { mode: "number" }).primaryKey(),
+    teamMemberId: integer("team_member_id")
+      .notNull()
+      .references(() => teamMember.teamMemberId, { onDelete: "cascade" }),
+    keyHash: varchar("key_hash", { length: 64 }).notNull(),
+    keyPrefix: varchar("key_prefix", { length: 16 }).notNull(),
+    createdBy: integer("created_by").references(() => user.userId, { onDelete: "set null" }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("idx_bot_key_hash").on(t.keyHash),
+    index("idx_bot_key_team_member").on(t.teamMemberId),
+  ]
+);
+
+// ─── Member webhooks + delivery queue (migration 056) ────────────────
+//
+// One active webhook per team_member. secret_encrypted is reversible (unlike bot_key's
+// one-way hash) because the poller must sign each delivery with the member's plaintext
+// secret — see apps/api/src/utils/crypto.ts.
+
+export const memberWebhook = pgTable(
+  "member_webhook",
+  {
+    memberWebhookId: bigserial("member_webhook_id", { mode: "number" }).primaryKey(),
+    teamMemberId: integer("team_member_id")
+      .notNull()
+      .references(() => teamMember.teamMemberId, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    secretEncrypted: text("secret_encrypted").notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    consecutiveFailures: integer("consecutive_failures").notNull().default(0),
+    lastDeliveryAt: timestamp("last_delivery_at", { withTimezone: true }),
+    lastStatus: varchar("last_status", { length: 20 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("idx_member_webhook_one_per_member").on(t.teamMemberId)]
+);
+
+export const webhookDelivery = pgTable(
+  "webhook_delivery",
+  {
+    webhookDeliveryId: bigserial("webhook_delivery_id", { mode: "number" }).primaryKey(),
+    memberWebhookId: integer("member_webhook_id")
+      .notNull()
+      .references(() => memberWebhook.memberWebhookId, { onDelete: "cascade" }),
+    activityId: integer("activity_id").references(() => activityLog.activityId, { onDelete: "set null" }),
+    payload: jsonb("payload").notNull(),
+    status: varchar("status", { length: 20 }).notNull().default("queued"),
+    attemptCount: integer("attempt_count").notNull().default(0),
+    nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }).notNull().defaultNow(),
+    lastError: text("last_error"),
+    deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_webhook_delivery_poll").on(t.status, t.nextAttemptAt),
+    index("idx_webhook_delivery_webhook").on(t.memberWebhookId),
+  ]
+);
+
+/**
+ * The owner-only chat widget (migration 057). Two channels share one table:
+ * `updates` (bot FYIs/questions about new Plaud imports) and `ask` (owner
+ * free-text Q&A). `channel`/`sender`/`input_mode` are app-validated growable
+ * string sets, not pg enums — see COMMENT ON TABLE in the migration.
+ */
+export const chatMessage = pgTable(
+  "chat_message",
+  {
+    chatMessageId: bigserial("chat_message_id", { mode: "number" }).primaryKey(),
+    /** 'updates' | 'ask'. */
+    channel: varchar("channel", { length: 10 }).notNull(),
+    /** 'bot' | 'owner'. */
+    sender: varchar("sender", { length: 10 }).notNull(),
+    /** Always null when sender = 'bot'. */
+    sentByUserId: integer("sent_by_user_id").references(() => user.userId, { onDelete: "set null" }),
+    body: text("body").notNull(),
+    /** 'none' | 'buttons' | 'text'. */
+    inputMode: varchar("input_mode", { length: 10 }).notNull().default("none"),
+    /** Array<{id, label, style?}> — present only when inputMode = 'buttons'. */
+    options: jsonb("options"),
+    /** Set once a buttons row is tapped; a second answer attempt on it is a 409. */
+    answeredOptionId: varchar("answered_option_id", { length: 50 }),
+    /** {type, meetingId?, candidateProjectIds?, projectName?} — null for owner free text. */
+    context: jsonb("context"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_chat_message_channel_created").on(t.channel, t.createdAt),
   ]
 );

@@ -112,6 +112,22 @@ export async function fetchTeam(): Promise<TeamMember[]> {
   return mapped;
 }
 
+/**
+ * The order the public team page shows people in, for any admin list of people.
+ *
+ * fetchTeam already sorts by the owner's team_order setting, which is exactly what the
+ * public /team page renders (filtered to is_active). This keeps that order for everyone on
+ * the site and puts anyone who is not on it after them, by name, so an off-site person
+ * never lands in the middle of the public lineup.
+ */
+export function publicSiteOrder(members: TeamMember[]): TeamMember[] {
+  const onSite = members.filter((m) => m.is_active);
+  const offSite = members
+    .filter((m) => !m.is_active)
+    .sort((a, b) => a.name.localeCompare(b.name));
+  return [...onSite, ...offSite];
+}
+
 export function useAdminTeam() {
   const queryClient = useQueryClient();
   const { toast } = useToast();

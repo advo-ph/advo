@@ -28,6 +28,7 @@ import { db } from "../db/connection.js";
 import { meetingRecording, meeting } from "../db/schema.js";
 import { env } from "../utils/env.js";
 import { createLogger } from "../utils/logger.js";
+import { isPendingTranscript } from "./meeting.service.js";
 import {
   registerHandler,
   updateStep,
@@ -116,11 +117,22 @@ async function transcribeRecordingHandler(job: BackgroundJob): Promise<void> {
     .set({ transcript: transcriptText })
     .where(eq(meetingRecording.recordingId, recordingId));
 
-  // Also update the linked meeting's summary so the task-generation flow can use it.
+  // Also update the linked meeting's summary so the task-generation flow can use it,
+  // and its transcript while that still reads "(transcript pending)", so the Meetings
+  // page shows the text instead of the placeholder.
   if (rec.meetingId) {
+    const [linked] = await d
+      .select({ transcript: meeting.transcript })
+      .from(meeting)
+      .where(eq(meeting.meetingId, rec.meetingId))
+      .limit(1);
     await d
       .update(meeting)
-      .set({ summary: transcriptText, updatedAt: new Date() })
+      .set({
+        summary: transcriptText,
+        ...(linked && isPendingTranscript(linked.transcript) ? { transcript: transcriptText } : {}),
+        updatedAt: new Date(),
+      })
       .where(eq(meeting.meetingId, rec.meetingId));
   }
 

@@ -100,6 +100,10 @@ JWT_SECRET=<64-char-random-string>
 JWT_REFRESH_SECRET=<64-char-random-string>
 
 # Optional
+# SECRET_ENCRYPTION_KEY=<32+ char random string>  # member_webhook secret encryption key;
+#   unset -> HKDF-derived from JWT_SECRET (distinct salt/info), so prod works with zero new
+#   env vars. Set this only if JWT_SECRET ever rotates and encrypted webhook secrets must
+#   survive that rotation independently. See apps/api/src/utils/crypto.ts.
 RESEND_API_KEY=re_...                     # Email via Resend (lead notifications + invites)
 ANTHROPIC_API_KEY=sk-ant-...              # AI contract review (Claude); falls back to heuristic if unset
 GITHUB_TOKEN=ghp_...                      # GitHub API (server-side)

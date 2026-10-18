@@ -320,6 +320,7 @@ const AdminProjects = ({ projects, clients, isLoading, onRefresh }: AdminProject
           </button>
           <PageHeader
             className="flex-col items-start sm:flex-row sm:items-center"
+            keepTitleOnMobile
             title={formMode === "edit" ? "Edit project" : "New project"}
             meta={
               formMode === "edit" && editingProject

@@ -63,6 +63,7 @@ import {
   teamMember,
   user,
 } from "../db/schema.js";
+import { queueDeliveriesForActivity } from "./webhook-delivery.service.js";
 import { createLogger } from "../utils/logger.js";
 
 const log = createLogger("commission");
@@ -521,6 +522,8 @@ export async function createCommissionPlan(input: CreatePlanInput): Promise<Plan
     .limit(1);
   if (!found) throw new HTTPException(404, { message: "Project not found" });
 
+  let createdActivityId: number | undefined;
+
   const plan = await db().transaction(async (tx) => {
     const [created] = await tx
       .insert(commissionPlan)
@@ -611,16 +614,26 @@ export async function createCommissionPlan(input: CreatePlanInput): Promise<Plan
       log.warn({ err, projectId: input.projectId }, "commission auto-seed from project roles failed — plan created with company row only");
     }
 
-    await tx.insert(activityLog).values({
-      userId: input.userId,
-      action: "commission_plan_created",
-      entityType: "commission_plan",
-      entityId: created.commissionPlanId,
-      metadata: { projectId: input.projectId, basisCents: created.basisCents },
-    });
+    const [loggedActivity] = await tx
+      .insert(activityLog)
+      .values({
+        userId: input.userId,
+        action: "commission_plan_created",
+        entityType: "commission_plan",
+        entityId: created.commissionPlanId,
+        metadata: { projectId: input.projectId, basisCents: created.basisCents },
+      })
+      .returning({ activityId: activityLog.activityId });
+    createdActivityId = loggedActivity.activityId;
 
     return created;
   });
+
+  if (createdActivityId != null) {
+    queueDeliveriesForActivity(createdActivityId).catch((err) => {
+      log.warn({ err, activityId: createdActivityId }, "Could not queue webhook deliveries");
+    });
+  }
 
   return decorate(plan);
 }
@@ -885,6 +898,7 @@ export async function finalizeCommissionPlan(
   const finalizedAt = new Date();
   let allocatedCents = 0;
   let shareCount = 0;
+  let finalizedActivityId: number | undefined;
 
   const updated = await db().transaction(async (tx) => {
     // THE GUARD. Zero rows means another request finalized first, and we bail before
@@ -932,22 +946,32 @@ export async function finalizeCommissionPlan(
         .where(eq(commissionShare.commissionShareId, row.commissionShareId));
     }
 
-    await tx.insert(activityLog).values({
-      userId,
-      action: "commission_plan_finalized",
-      entityType: "commission_plan",
-      entityId: commissionPlanId,
-      metadata: {
-        basisCents: locked.basisCents,
-        allocatedCents: derived.allocatedCents,
-        shareCount: share.length,
-      },
-    });
+    const [loggedActivity] = await tx
+      .insert(activityLog)
+      .values({
+        userId,
+        action: "commission_plan_finalized",
+        entityType: "commission_plan",
+        entityId: commissionPlanId,
+        metadata: {
+          basisCents: locked.basisCents,
+          allocatedCents: derived.allocatedCents,
+          shareCount: share.length,
+        },
+      })
+      .returning({ activityId: activityLog.activityId });
+    finalizedActivityId = loggedActivity.activityId;
 
     allocatedCents = derived.allocatedCents;
     shareCount = share.length;
     return locked;
   });
+
+  if (finalizedActivityId != null) {
+    queueDeliveriesForActivity(finalizedActivityId).catch((err) => {
+      log.warn({ err, activityId: finalizedActivityId }, "Could not queue webhook deliveries");
+    });
+  }
 
   log.info(
     `plan ${commissionPlanId} finalized: ${allocatedCents} of ${updated.basisCents} cents across ${shareCount} shares`,
@@ -971,12 +995,18 @@ export async function deleteCommissionPlan(
   await db().delete(commissionShare).where(eq(commissionShare.commissionPlanId, commissionPlanId));
   await db().delete(commissionPlan).where(eq(commissionPlan.commissionPlanId, commissionPlanId));
 
-  await db().insert(activityLog).values({
-    userId,
-    action: "commission_plan_deleted",
-    entityType: "commission_plan",
-    entityId: commissionPlanId,
-    metadata: {},
+  const [loggedActivity] = await db()
+    .insert(activityLog)
+    .values({
+      userId,
+      action: "commission_plan_deleted",
+      entityType: "commission_plan",
+      entityId: commissionPlanId,
+      metadata: {},
+    })
+    .returning({ activityId: activityLog.activityId });
+  queueDeliveriesForActivity(loggedActivity.activityId).catch((err) => {
+    log.warn({ err, activityId: loggedActivity.activityId }, "Could not queue webhook deliveries");
   });
 }
 
@@ -1006,12 +1036,18 @@ export async function voidCommissionPlan(
 
   if (!updated) throw new HTTPException(409, { message: "Commission plan is frozen" });
 
-  await db().insert(activityLog).values({
-    userId,
-    action: "commission_plan_voided",
-    entityType: "commission_plan",
-    entityId: commissionPlanId,
-    metadata: { reason },
+  const [loggedActivity] = await db()
+    .insert(activityLog)
+    .values({
+      userId,
+      action: "commission_plan_voided",
+      entityType: "commission_plan",
+      entityId: commissionPlanId,
+      metadata: { reason },
+    })
+    .returning({ activityId: activityLog.activityId });
+  queueDeliveriesForActivity(loggedActivity.activityId).catch((err) => {
+    log.warn({ err, activityId: loggedActivity.activityId }, "Could not queue webhook deliveries");
   });
 
   return decorate(updated);

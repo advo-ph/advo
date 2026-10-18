@@ -42,6 +42,7 @@ import {
   signoffRevision,
 } from "../db/schema.js";
 import { buildRevisionTaskDescription } from "./revision-task.service.js";
+import { queueDeliveriesForActivity } from "./webhook-delivery.service.js";
 import { createLogger } from "../utils/logger.js";
 
 const log = createLogger("project-signoff");
@@ -420,12 +421,18 @@ export async function createSignoff(input: CreateSignoffInput, userId: number) {
     })
     .returning();
 
-  await db().insert(activityLog).values({
-    userId,
-    action: "project_signoff_created",
-    entityType: "project_signoff",
-    entityId: created.projectSignoffId,
-    metadata: { projectId: input.projectId, title: input.title },
+  const [loggedActivity] = await db()
+    .insert(activityLog)
+    .values({
+      userId,
+      action: "project_signoff_created",
+      entityType: "project_signoff",
+      entityId: created.projectSignoffId,
+      metadata: { projectId: input.projectId, title: input.title },
+    })
+    .returning({ activityId: activityLog.activityId });
+  queueDeliveriesForActivity(loggedActivity.activityId).catch((err) => {
+    log.warn({ err, activityId: loggedActivity.activityId }, "Could not queue webhook deliveries");
   });
 
   const [decorated] = await decorate([created]);
@@ -556,12 +563,18 @@ export async function issueSignoff(id: number, userId: number) {
     });
   }
 
-  await db().insert(activityLog).values({
-    userId,
-    action: "project_signoff_issued",
-    entityType: "project_signoff",
-    entityId: id,
-    metadata: { projectId: row.projectId, deliverableCount: snapshotSource.length },
+  const [loggedActivity] = await db()
+    .insert(activityLog)
+    .values({
+      userId,
+      action: "project_signoff_issued",
+      entityType: "project_signoff",
+      entityId: id,
+      metadata: { projectId: row.projectId, deliverableCount: snapshotSource.length },
+    })
+    .returning({ activityId: activityLog.activityId });
+  queueDeliveriesForActivity(loggedActivity.activityId).catch((err) => {
+    log.warn({ err, activityId: loggedActivity.activityId }, "Could not queue webhook deliveries");
   });
 
   const [decorated] = await decorate([updated]);
@@ -594,6 +607,7 @@ export async function signSignoff(id: number, input: SignInput) {
   if (pre.signedAt) throw new HTTPException(409, { message: "Already signed" });
 
   const signedAt = new Date();
+  let signedActivityId: number | undefined;
 
   const result = await db().transaction(async (tx) => {
     // THE GUARD. Zero rows means another request signed it first, and we bail
@@ -654,21 +668,31 @@ export async function signSignoff(id: number, input: SignInput) {
       }
     }
 
-    await tx.insert(activityLog).values({
-      userId: input.userId,
-      action: "project_signoff_signed",
-      entityType: "project_signoff",
-      entityId: id,
-      metadata: {
-        projectId: signed.projectId,
-        signedMethod: input.signedMethod,
-        finalPaymentCents: signed.finalPaymentCents,
-        invoiceId: row.invoiceId,
-      },
-    });
+    const [loggedActivity] = await tx
+      .insert(activityLog)
+      .values({
+        userId: input.userId,
+        action: "project_signoff_signed",
+        entityType: "project_signoff",
+        entityId: id,
+        metadata: {
+          projectId: signed.projectId,
+          signedMethod: input.signedMethod,
+          finalPaymentCents: signed.finalPaymentCents,
+          invoiceId: row.invoiceId,
+        },
+      })
+      .returning({ activityId: activityLog.activityId });
+    signedActivityId = loggedActivity.activityId;
 
     return row;
   });
+
+  if (signedActivityId != null) {
+    queueDeliveriesForActivity(signedActivityId).catch((err) => {
+      log.warn({ err, activityId: signedActivityId }, "Could not queue webhook deliveries");
+    });
+  }
 
   log.info({ id, method: input.signedMethod }, "Project sign-off signed");
   const [decorated] = await decorate([result]);
@@ -692,8 +716,9 @@ export async function recordRevision(
   now: Date = new Date(),
 ) {
   const { description } = await buildRevisionTaskDescription(input.note);
+  let revisionActivityId: number | undefined;
 
-  return db().transaction(async (tx) => {
+  const result = await db().transaction(async (tx) => {
     const [row] = await tx
       .select()
       .from(projectSignoff)
@@ -760,17 +785,21 @@ export async function recordRevision(
       })
       .returning();
 
-    await tx.insert(activityLog).values({
-      userId: input.userId,
-      action: "signoff_revision_recorded",
-      entityType: "project_signoff",
-      entityId: id,
-      metadata: {
-        roundNumber: ledger.roundNumber,
-        isPostSignoff,
-        deliverableId: task.deliverableId,
-      },
-    });
+    const [loggedActivity] = await tx
+      .insert(activityLog)
+      .values({
+        userId: input.userId,
+        action: "signoff_revision_recorded",
+        entityType: "project_signoff",
+        entityId: id,
+        metadata: {
+          roundNumber: ledger.roundNumber,
+          isPostSignoff,
+          deliverableId: task.deliverableId,
+        },
+      })
+      .returning({ activityId: activityLog.activityId });
+    revisionActivityId = loggedActivity.activityId;
 
     return {
       revision: ledger,
@@ -778,6 +807,14 @@ export async function recordRevision(
       derived: deriveWindow(row, used + 1, now),
     };
   });
+
+  if (revisionActivityId != null) {
+    queueDeliveriesForActivity(revisionActivityId).catch((err) => {
+      log.warn({ err, activityId: revisionActivityId }, "Could not queue webhook deliveries");
+    });
+  }
+
+  return result;
 }
 
 // ─── Void ────────────────────────────────────────────
@@ -814,12 +851,18 @@ export async function voidSignoff(id: number, reason: string, userId: number) {
     throw new HTTPException(409, { message: "Sign-off was signed before it could be voided" });
   }
 
-  await db().insert(activityLog).values({
-    userId,
-    action: "project_signoff_voided",
-    entityType: "project_signoff",
-    entityId: id,
-    metadata: { projectId: row.projectId, reason },
+  const [loggedActivity] = await db()
+    .insert(activityLog)
+    .values({
+      userId,
+      action: "project_signoff_voided",
+      entityType: "project_signoff",
+      entityId: id,
+      metadata: { projectId: row.projectId, reason },
+    })
+    .returning({ activityId: activityLog.activityId });
+  queueDeliveriesForActivity(loggedActivity.activityId).catch((err) => {
+    log.warn({ err, activityId: loggedActivity.activityId }, "Could not queue webhook deliveries");
   });
 
   const [decorated] = await decorate([updated]);

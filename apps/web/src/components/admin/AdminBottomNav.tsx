@@ -40,11 +40,17 @@ const AdminBottomNav = ({ activeSection, onSectionChange }: AdminBottomNavProps)
   // Escape, scroll lock, focus trap, and focus back to "More" on close.
   useDrawerLock(isMoreOpen, close, ADMIN_MORE_SHEET_ID);
 
-  const moreGroups = [
-    { label: "General", items: [topItem] },
-    ...visibleGroups.map((g) => ({ label: g.label, items: g.items.filter((i) => !MAIN_IDS.includes(i.id)) })),
-    { label: "Account", items: [{ id: "settings" as AdminSection, label: "Settings", icon: Settings }] },
-  ].filter((g) => g.items.length > 0);
+  // A short, flat list on purpose: the four pages people reach for on a phone, no
+  // category headers. Everything else stays in the desktop sidebar and ⌘K. Meetings
+  // and Team still honour the owner's Settings → Sidebar visibility.
+  const visibleItem = (id: AdminSection) =>
+    visibleGroups.flatMap((g) => g.items).find((i) => i.id === id);
+  const moreItems = [
+    topItem,
+    visibleItem("meetings"),
+    visibleItem("team"),
+    { id: "settings" as AdminSection, label: "Settings", icon: Settings },
+  ].filter((i): i is NonNullable<typeof i> => !!i);
 
   const isMainSection = MAIN_IDS.includes(activeSection);
 
@@ -78,7 +84,7 @@ const AdminBottomNav = ({ activeSection, onSectionChange }: AdminBottomNavProps)
               id={ADMIN_MORE_SHEET_ID}
               role="dialog"
               aria-modal="true"
-              aria-label="All pages"
+              aria-label="More pages"
               initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 24, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.97 }}
@@ -87,7 +93,7 @@ const AdminBottomNav = ({ activeSection, onSectionChange }: AdminBottomNavProps)
               className="fixed inset-x-3 z-50 mx-auto max-w-md bottom-[calc(5.5rem_+_env(safe-area-inset-bottom))] max-h-[min(70vh,560px)] flex flex-col overflow-hidden rounded-3xl border border-border/60 bg-background/80 backdrop-blur-xl backdrop-saturate-150 shadow-xl shadow-black/15"
             >
               <div className="shrink-0 flex items-center justify-between px-4 pt-3 pb-1">
-                <span className="text-sm font-medium">All pages</span>
+                <span className="text-sm font-medium">More</span>
                 <button
                   type="button"
                   onClick={close}
@@ -97,36 +103,29 @@ const AdminBottomNav = ({ activeSection, onSectionChange }: AdminBottomNavProps)
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <div className="min-h-0 overflow-y-auto overscroll-contain px-3 pb-3 space-y-3">
-                {moreGroups.map((group) => (
-                  <div key={group.label}>
-                    <div className="px-1 pb-1.5 text-[11px] uppercase tracking-wider text-muted-foreground">
-                      {group.label}
-                    </div>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {group.items.map(({ id, label, icon: Icon }) => {
-                        const active = activeSection === id;
-                        return (
-                          <button
-                            key={id}
-                            type="button"
-                            onClick={() => go(id)}
-                            aria-current={active ? "page" : undefined}
-                            className={cn(
-                              "min-h-[72px] flex flex-col items-center justify-center gap-1.5 rounded-2xl px-1 transition-colors",
-                              active
-                                ? "bg-foreground/10 text-foreground"
-                                : "text-muted-foreground hover:text-foreground hover:bg-foreground/5",
-                            )}
-                          >
-                            <Icon className="h-5 w-5" />
-                            <span className="text-[11px] font-medium text-center leading-tight">{label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
+              <div className="min-h-0 overflow-y-auto overscroll-contain px-3 pb-3">
+                <div className="grid grid-cols-4 gap-1.5">
+                  {moreItems.map(({ id, label, icon: Icon }) => {
+                    const active = activeSection === id;
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => go(id)}
+                        aria-current={active ? "page" : undefined}
+                        className={cn(
+                          "min-h-[72px] flex flex-col items-center justify-center gap-1.5 rounded-2xl px-1 transition-colors",
+                          active
+                            ? "bg-foreground/10 text-foreground"
+                            : "text-muted-foreground hover:text-foreground hover:bg-foreground/5",
+                        )}
+                      >
+                        <Icon className="h-5 w-5" />
+                        <span className="text-[11px] font-medium text-center leading-tight">{label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </motion.div>
           </>

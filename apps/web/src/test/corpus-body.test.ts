@@ -54,7 +54,7 @@ describe.skipIf(skipWhenApiDown)("corpus body — live API", () => {
     const res = await fetch(`${API}/api/auth/login`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: "admin@advo.ph", password: "changeme" }),
+      body: JSON.stringify({ username: "admin", password: "changeme" }),
     });
     return (await res.json()).data.accessToken as string;
   };

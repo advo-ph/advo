@@ -155,7 +155,8 @@ corpusRoutes.post(
           body: payload.transcript.slice(0, BODY_MAX_CHARACTER),
           projectId: projectId ?? null,
           leadName: leadName ?? null,
-          meta: { extractionMethod: extraction.method, meetingId: (meeting as { meetingId?: number }).meetingId ?? null },
+          // importPlaudMeeting returns { meeting, created }; the id is on .meeting.
+          meta: { extractionMethod: extraction.method, meetingId: meeting.meeting?.meetingId ?? null },
         },
         fact: extraction.fact,
         term: extraction.term,

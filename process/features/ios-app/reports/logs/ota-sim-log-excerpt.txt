@@ -1,0 +1,36 @@
+Captured via: xcrun simctl spawn <udid> log stream --level debug --style compact --predicate 'process == "App"'
+Device: iPhone 17 Pro simulator, iOS 26.2. App: ph.advo.app (Debug, unsigned, SPM).
+
+2026-10-18 19:20:42.901 I  App[3811:3a5e2c] (App.debug.dylib) [CapgoUpdater]: WebView set successfully for logging
+2026-10-18 19:20:42.902 I  App[3811:3a5e2c] (App.debug.dylib) [CapgoUpdater]: ::::: SIMULATOR :::::
+2026-10-18 19:20:42.909 I  App[3811:3a5e2c] (App.debug.dylib) [CapgoUpdater]: version native 1.0
+2026-10-18 19:20:42.912 I  App[3811:3a5e2c] (App.debug.dylib) [CapgoUpdater]: appId ph.advo.app
+2026-10-18 19:20:42.916 I  App[3811:3a5e2c] (App.debug.dylib) [CapgoUpdater]: Initial load builtin
+2026-10-18 19:20:42.989 I  App[3811:3a5e2c] (App.debug.dylib) [CapgoUpdater]: Auto update is disabled
+2026-10-18 19:20:42.989 I  App[3811:3a5e2c] (App.debug.dylib) [CapgoUpdater]: sendReadyToJs
+2026-10-18 19:20:42.989 I  App[3811:3a5e2c] (App.debug.dylib) [CapgoUpdater]: Wait for 10000 ms, then check for notifyAppReady
+2026-10-18 19:20:43.616 I  App[3811:3a5e49] (App.debug.dylib) [CapgoUpdater]: Setting status for bundle [builtin] to SUCCESS
+2026-10-18 19:20:43.617 I  App[3811:3a5e49] (App.debug.dylib) [CapgoUpdater]: Fallback bundle is: {"id":"builtin","version":"1.0","downloaded":"1970-01-01T00:00:00.000Z","checksum":"","status":"success"}
+2026-10-18 19:20:43.618 I  App[3811:3a5e49] (App.debug.dylib) [CapgoUpdater]: Current bundle loaded successfully. [notifyAppReady was called] {"id":"builtin","version":"1.0","downloaded":"1970-01-01T00:00:00.000Z","checksum":"","status":"success"}
+
+-- confirms:
+--   * notifyAppReady() fired synchronously-first (before any app network call), id=builtin
+--   * native CFBundleShortVersionString read by the plugin itself = "1.0" (matches
+--     the exact segment-count mismatch the isVersionAtLeast() fix guards against)
+--   * capacitor.config.ts's CapacitorUpdater.autoUpdate:false took effect ("Auto
+--     update is disabled") -- our manual initOtaUpdater() is the sole driver
+
+Local OTA test HTTP server access log (python3 -m http.server 8765, serving a
+real latest.json + bundle-1.0.9999.zip built via the exact CI zip/checksum
+steps):
+
+::1 - - [18/Oct/2026 19:20:43] "GET /app-updates/latest.json?t=1792322443769 HTTP/1.1" 200 -
+::1 - - [18/Oct/2026 19:22:29] "GET /app-updates/latest.json?t=1792322549392 HTTP/1.1" 200 -
+
+-- confirms: the app's own fetch() against LATEST_JSON_URL succeeds (200) on
+-- every launch from the capacitor://localhost origin, over plain HTTP to
+-- localhost (ATS loopback exemption works as expected, no Info.plist
+-- change needed). No second request for the .zip was observed in either
+-- run -- see the EXECUTE verification report's "OTA end-to-end" section for
+-- why, and the mocked unit-test coverage (src/test/ota-updater-flow.test.ts)
+-- that proves the download()/next() control flow itself is correct.

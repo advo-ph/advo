@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { z } from "zod";
 import { zValidator } from "@hono/zod-validator";
-import { eq, desc, and, inArray } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { db } from "../db/connection.js";
 import { meeting, meetingAttendee, meetingRecording, backgroundJob, project, client, deliverable, teamMember, user } from "../db/schema.js";
@@ -22,6 +22,8 @@ import {
   resolveInboxProjectId,
 } from "../services/plaud-import.service.js";
 import { plaudSyncStatus, syncPlaudFolder } from "../services/plaud-poll.service.js";
+import { fetchAttendeeMap, setMeetingMembers, sortMeetings } from "../services/meeting.service.js";
+import { backfillMeetingsFromTranscripts } from "../services/meeting-backfill.service.js";
 import { importSecretOk } from "../utils/import-secret.js";
 import type { Variables } from "../types/context.js";
 
@@ -71,8 +73,10 @@ const ORDER_MESSAGE = "End must be after start.";
 const isOutOfOrder = (a?: string | null, b?: string | null) =>
   Boolean(a && b && new Date(b) <= new Date(a));
 
-// Base shape — used for both create (with superRefine) and partial update.
-const meetingBaseShape = z.object({
+// Base shape — used for both create (with superRefine) and partial update. Exported so the
+// MCP write tools (services/mcp-tools.service.ts) can build a plain-shape inputSchema for
+// create_meeting without needing .shape off a superRefine-wrapped ZodEffects.
+export const meetingBaseShape = z.object({
   projectId: z.number().int().optional().nullable(),
   title: z.string().min(1).max(255),
   // recordedAt kept optional for backward compat; old clients still send it.
@@ -90,10 +94,12 @@ const meetingBaseShape = z.object({
 });
 
 // updateSchema is a plain partial — no superRefine cross-field checks on partial patches.
-const updateSchema = meetingBaseShape.partial();
+// Exported so the MCP write tool update_meeting (services/mcp-tools.service.ts) reuses the
+// exact same shape rather than a second, possibly-drifting copy.
+export const updateSchema = meetingBaseShape.partial();
 
-// createSchema requires at least one date field.
-const createSchema = meetingBaseShape.superRefine((v, ctx) => {
+// createSchema requires at least one date field. Exported for create_meeting likewise.
+export const createSchema = meetingBaseShape.superRefine((v, ctx) => {
   if (!v.recordedAt && !v.startsAt) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -180,60 +186,6 @@ function asProposed(raw: z.infer<typeof proposedTaskSchema>, grounding: MeetingG
       ? raw.projectId
       : grounded.projectId,
   };
-}
-
-// Attendee row shape used in the list response.
-interface AttendeeRow {
-  userId: number;
-  name: string;
-  avatarUrl: string | null;
-  joinedAt: string;
-}
-
-/** Sort meetings: upcoming (startsAt in future) soonest-first, then past newest-first. */
-function sortMeetings<T extends { startsAt: Date | null; recordedAt: Date }>(rows: T[]): T[] {
-  const now = Date.now();
-  const keyOf = (r: T) =>
-    r.startsAt ? r.startsAt.getTime() : r.recordedAt.getTime();
-  const isUpcoming = (r: T) => r.startsAt != null && r.startsAt.getTime() > now;
-  return [...rows].sort((a, b) => {
-    const aUp = isUpcoming(a);
-    const bUp = isUpcoming(b);
-    if (aUp && !bUp) return -1;
-    if (!aUp && bUp) return 1;
-    if (aUp && bUp) return keyOf(a) - keyOf(b); // upcoming: soonest first
-    return keyOf(b) - keyOf(a);                  // past: newest first
-  });
-}
-
-/** Fetch attendees for a list of meeting IDs in one query; group by meetingId. */
-async function fetchAttendeeMap(ids: number[]): Promise<Map<number, AttendeeRow[]>> {
-  const map = new Map<number, AttendeeRow[]>();
-  if (ids.length === 0) return map;
-  const d = db();
-  const atts = await d
-    .select({
-      meetingId: meetingAttendee.meetingId,
-      userId: meetingAttendee.userId,
-      joinedAt: meetingAttendee.joinedAt,
-      name: teamMember.name,
-      avatarUrl: teamMember.avatarUrl,
-      email: user.email,
-    })
-    .from(meetingAttendee)
-    .innerJoin(user, eq(meetingAttendee.userId, user.userId))
-    .leftJoin(teamMember, eq(teamMember.userId, user.userId))
-    .where(inArray(meetingAttendee.meetingId, ids));
-  for (const a of atts) {
-    if (!map.has(a.meetingId)) map.set(a.meetingId, []);
-    map.get(a.meetingId)!.push({
-      userId: a.userId,
-      name: a.name ?? a.email ?? `User #${a.userId}`,
-      avatarUrl: a.avatarUrl ?? null,
-      joinedAt: a.joinedAt.toISOString(),
-    });
-  }
-  return map;
 }
 
 meetingRoutes.get("/", async (c) => {
@@ -335,6 +287,20 @@ meetingRoutes.post("/plaud/sync", requireTeam, async (c) => {
   return c.json({ data: result, error: null });
 });
 
+// Make meetings agree with the transcripts already stored: link Plaud corpus sources to
+// their meeting, create the missing meetings, fill empty transcripts from the corpus or a
+// Whisper recording. Idempotent. Admin only; dryRun (default true) only reports.
+meetingRoutes.post(
+  "/backfill-transcripts",
+  requireAdmin,
+  zValidator("json", z.object({ dryRun: z.boolean().optional() }).optional()),
+  async (c) => {
+    const body = c.req.valid("json");
+    const report = await backfillMeetingsFromTranscripts({ dryRun: body?.dryRun ?? true });
+    return c.json({ data: report, error: null });
+  },
+);
+
 // Import from Plaud file id or public share URL. Team only.
 meetingRoutes.post("/import", requireTeam, zValidator("json", importSchema), async (c) => {
   const data = c.req.valid("json");
@@ -427,6 +393,20 @@ meetingRoutes.delete("/:id/join", requireAuth, async (c) => {
 
   return c.json({ data: { message: "Left meeting" }, error: null });
 });
+
+// Who joined, as marked in the meeting dialog. Replaces the whole set.
+meetingRoutes.put(
+  "/:id/members",
+  requireTeam,
+  zValidator("json", z.object({ teamMemberIds: z.array(z.number().int().positive()).max(200) })),
+  async (c) => {
+    const id = Number(c.req.param("id"));
+    if (Number.isNaN(id)) throw new HTTPException(400, { message: "Invalid meeting id" });
+    const { teamMemberIds } = c.req.valid("json");
+    const attendees = await setMeetingMembers(id, teamMemberIds, c.get("user").userId);
+    return c.json({ data: { meetingId: id, attendees }, error: null });
+  },
+);
 
 meetingRoutes.patch("/:id", requireTeam, zValidator("json", updateSchema), async (c) => {
   const id = Number(c.req.param("id"));

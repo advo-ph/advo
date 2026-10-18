@@ -130,6 +130,44 @@ export async function firstAdminUserId(): Promise<number | null> {
 }
 
 /**
+ * Read-only lookup of the clientId behind the auto-created Inbox holding
+ * project, using the same identification precedence as
+ * `resolveInboxProjectId` below (env var → project titled "Inbox" → client
+ * named "ADVO Inbox") but never creating anything. Returns null when no
+ * Inbox exists yet — callers that filter it out of a client picker should
+ * treat that as "nothing to exclude," not an error.
+ */
+export async function lookupInboxClientId(): Promise<number | null> {
+  const d = db();
+
+  const fromEnv = Number(process.env.ADVO_INBOX_PROJECT_ID ?? "");
+  if (Number.isInteger(fromEnv) && fromEnv > 0) {
+    const [proj] = await d
+      .select({ clientId: project.clientId })
+      .from(project)
+      .where(eq(project.projectId, fromEnv))
+      .limit(1);
+    if (proj) return proj.clientId;
+  }
+
+  const [named] = await d
+    .select({ clientId: project.clientId })
+    .from(project)
+    .where(eq(project.title, "Inbox"))
+    .limit(1);
+  if (named) return named.clientId;
+
+  const [byClientName] = await d
+    .select({ clientId: client.clientId })
+    .from(client)
+    .where(eq(client.companyName, "ADVO Inbox"))
+    .limit(1);
+  if (byClientName) return byClientName.clientId;
+
+  return null;
+}
+
+/**
  * Body projectId → ADVO_INBOX_PROJECT_ID → project titled Inbox
  * → create client "ADVO Inbox" + project Inbox.
  */

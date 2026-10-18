@@ -47,6 +47,38 @@ jobs:
         env:
           # Production API target — same as VPS-side build
           VITE_API_URL: https://api.advo.ph
+          # Single source of truth for the OTA manifest below and the iOS
+          # app's own update check (otaUpdater.ts) — no double-build version
+          # drift.
+          VITE_APP_VERSION: "1.0.${{ github.run_number }}"
+
+      # Publishes the self-hosted OTA artifacts the iOS app checks on launch
+      # (otaUpdater.ts -> https://advo.ph/app-updates/latest.json). Must run
+      # before "Upload frontend build" and before dist/ is rsynced, since
+      # deploy-web's rsync uses --delete (anything not in dist/ is wiped).
+      - name: Build OTA bundle
+        run: |
+          set -euo pipefail
+          VERSION="1.0.${{ github.run_number }}"
+          DIST=apps/web/dist
+          OUT="$DIST/app-updates"
+          ZIP_NAME="bundle-$VERSION.zip"
+          SCRATCH="$RUNNER_TEMP/ota-build"
+          mkdir -p "$(dirname "$OUT")" "$SCRATCH"
+          # Zip dist/ as-is into a scratch dir first — app-updates/ doesn't
+          # exist yet at this point, so there is nothing to exclude.
+          (cd "$DIST" && zip -r -q "$SCRATCH/$ZIP_NAME" .)
+          mkdir -p "$OUT"
+          mv "$SCRATCH/$ZIP_NAME" "$OUT/$ZIP_NAME"
+          CHECKSUM=$(sha256sum "$OUT/$ZIP_NAME" | awk '{print $1}')
+          cat > "$OUT/latest.json" <<EOF
+          {
+            "version": "$VERSION",
+            "url": "https://advo.ph/app-updates/$ZIP_NAME",
+            "checksum": "$CHECKSUM",
+            "minNativeVersion": "1.0.0"
+          }
+          EOF
 
       - name: Upload frontend build
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -100,6 +132,7 @@ jobs:
           ssh -i ~/.ssh/advo_deploy_key -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
             "test -f $VPS_WEB_ROOT/index.html"
           curl --fail --silent --show-error --location --max-time 20 https://advo.ph >/dev/null
+          curl --fail --silent --show-error --location --max-time 20 https://advo.ph/app-updates/latest.json >/dev/null
 
       # Only the one script; this job otherwise works from the build artifact.
       - name: Fetch the post-deploy search script

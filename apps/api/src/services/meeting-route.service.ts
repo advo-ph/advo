@@ -129,6 +129,45 @@ export function routeRecording(
   return { projectId: null, isAdvo, score: best?.score ?? 0, matched: best?.matched ?? [] };
 }
 
+export type RankedCandidate = { projectId: number; title: string; score: number };
+
+/**
+ * Top 3 candidate projects for a recording, ranked the same way
+ * `routeRecording` ranks internally — duplicated on purpose, not extracted out
+ * of `routeRecording`, so that function's own internals stay untouched while
+ * a teammate is actively editing this file (see plaud-chat.service.ts for the
+ * caller: the "which project?" chat question when a match is unsure).
+ */
+export function rankCandidates(
+  text: { title: string; summary?: string | null },
+  candidate: RouteCandidate[],
+): RankedCandidate[] {
+  const title = text.title ?? "";
+  const summary = text.summary ?? "";
+  const sayAdvo = /\badvo\b/i.test(title) || /\badvo\b/i.test(summary);
+  const isStrongHit = candidate.some((c) => c.strong.some((k) => countOf(title, k) + countOf(summary, k) > 0));
+  const isAdvo = sayAdvo || isStrongHit;
+
+  const scored = candidate
+    .map((c) => {
+      let score = 0;
+      let titleScore = 0;
+      const keyword = isAdvo ? [...c.strong, ...c.weak] : c.strong;
+      for (const k of keyword) {
+        const isStrong = c.strong.includes(k);
+        const titleHit = countOf(title, k) * (isStrong ? 6 : 2);
+        const hit = titleHit + Math.min(countOf(summary, k), isStrong ? 5 : 3) * (isStrong ? 2 : 1);
+        titleScore += titleHit;
+        if (hit > 0) score += hit;
+      }
+      return { projectId: c.projectId, title: c.title, score, titleScore };
+    })
+    .filter((s) => s.score > 0)
+    .sort((a, b) => b.titleScore - a.titleScore || b.score - a.score);
+
+  return scored.slice(0, 3).map((s) => ({ projectId: s.projectId, title: s.title, score: s.score }));
+}
+
 /** Every project except Inbox, with its keywords. */
 export async function routeCandidate(): Promise<RouteCandidate[]> {
   const row = await db()

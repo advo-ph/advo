@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import "./landing-nav.css";
 import { landingNavLinks } from "@/lib/public-navigation";
+import { isNativeApp } from "@/lib/platform";
 
 interface NavLink {
   label: string;
@@ -112,30 +113,39 @@ const LandingNav = ({ anchorPrefix = "", overlayHero = false }: LandingNavProps)
           />
         </Link>
 
-        <nav
-          className="landing-nav-link"
-          aria-label="Main navigation"
-        >
-          {landingNavLinks.map((entry) => (
-            <div className="landing-nav-item" key={entry.label}>
-              {renderLink(entry)}
-            </div>
-          ))}
-        </nav>
+        {/* Marketing nav links and the "Start a project" CTA are lead-gen/
+            site-navigation affordances with no purpose inside the members-only
+            native shell (the app's NativeGate allowlist can reach this header
+            on /login and the legal pages). Hidden only when
+            Capacitor.isNativePlatform() is true; web at advo.ph is unchanged. */}
+        {!isNativeApp() && (
+          <>
+            <nav
+              className="landing-nav-link"
+              aria-label="Main navigation"
+            >
+              {landingNavLinks.map((entry) => (
+                <div className="landing-nav-item" key={entry.label}>
+                  {renderLink(entry)}
+                </div>
+              ))}
+            </nav>
 
-        <div className="landing-nav-action">
-          {anchorPrefix === "" ? (
-            <a className="landing-nav-cta" href="#start" aria-label="Start a project" title="Start a project">
-              <span className="landing-nav-cta-full">Start a project</span>
-              <span className="landing-nav-cta-short">Start project</span>
-            </a>
-          ) : (
-            <Link className="landing-nav-cta" to={`${anchorPrefix}#start`} aria-label="Start a project" title="Start a project">
-              <span className="landing-nav-cta-full">Start a project</span>
-              <span className="landing-nav-cta-short">Start project</span>
-            </Link>
-          )}
-        </div>
+            <div className="landing-nav-action">
+              {anchorPrefix === "" ? (
+                <a className="landing-nav-cta" href="#start" aria-label="Start a project" title="Start a project">
+                  <span className="landing-nav-cta-full">Start a project</span>
+                  <span className="landing-nav-cta-short">Start project</span>
+                </a>
+              ) : (
+                <Link className="landing-nav-cta" to={`${anchorPrefix}#start`} aria-label="Start a project" title="Start a project">
+                  <span className="landing-nav-cta-full">Start a project</span>
+                  <span className="landing-nav-cta-short">Start project</span>
+                </Link>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </header>
   );

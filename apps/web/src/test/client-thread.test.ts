@@ -44,8 +44,13 @@ async function api(method: string, path: string, body?: unknown, token?: string)
   return { status: res.status, body: await res.json() };
 }
 
+function usernameFromEmail(email: string): string {
+  return email.split("@", 1)[0].toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
 async function login(email: string, password: string) {
-  const { status, body } = await api("POST", "/api/auth/login", { email, password });
+  const username = usernameFromEmail(email);
+  const { status, body } = await api("POST", "/api/auth/login", { username, password });
   if (status !== 200) throw new Error(`login failed for ${email}: HTTP ${status}`);
   return body.data.accessToken as string;
 }
@@ -365,7 +370,7 @@ describe("Deliverable completion notifies the client", () => {
     const created = await api(
       "POST",
       "/api/deliverables",
-      { projectId: ownProjectId, title, status: "in_progress" },
+      { projectId: ownProjectId, title, status: "ongoing" },
       adminToken,
     );
     expect(created.status).toBe(201);

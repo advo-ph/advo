@@ -205,11 +205,14 @@
   ::-webkit-scrollbar-track {
     background: transparent;
   }
-  *:hover::-webkit-scrollbar-thumb {
-    background: hsl(var(--muted-foreground) / 0.3);
-  }
-  *:hover::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--muted-foreground) / 0.6);
+  /* Hover-capable devices only: a tap on touch leaves :hover stuck (see tailwind.config.ts). */
+  @media (hover: hover) {
+    *:hover::-webkit-scrollbar-thumb {
+      background: hsl(var(--muted-foreground) / 0.3);
+    }
+    *:hover::-webkit-scrollbar-thumb:hover {
+      background: hsl(var(--muted-foreground) / 0.6);
+    }
   }
 }
 
@@ -309,4 +312,17 @@
       animation: none !important;
     }
   }
+}
+
+/* ── Native shell (Capacitor) safe-area clearance ──
+ * Scoped to `.native-app` (set on <html> in main.tsx only when
+ * Capacitor.isNativePlatform()), so web at advo.ph is byte-for-byte
+ * unaffected. Targets existing stable classNames rather than editing the
+ * owning components, so no other feature's file ownership is touched. */
+.native-app header.fixed.top-0.left-0.right-0.z-50 {
+  padding-top: env(safe-area-inset-top);
+}
+.native-app .fixed.bottom-4.right-4 {
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+  padding-right: max(16px, env(safe-area-inset-right));
 }

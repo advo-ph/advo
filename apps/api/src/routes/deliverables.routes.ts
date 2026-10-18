@@ -59,7 +59,7 @@ async function visibleProjectIds(user: { role: string; userId: number }): Promis
 }
 
 /** `new Date(...)` at the boundary, resolved in Manila, with a 400 instead of a throw. */
-function parseDueDate(value: string | null | undefined): Date | null {
+export function parseDueDate(value: string | null | undefined): Date | null {
   try {
     return toManilaInstant(value);
   } catch (err) {
@@ -376,9 +376,18 @@ deliverables.post(
   },
 );
 
+/**
+ * Only an admin or the owner may mark a deliverable "finished". Extracted so the write-tool
+ * handler for update_deliverable (services/mcp-tools.service.ts) reuses the exact same gate
+ * instead of a second, possibly-drifting copy.
+ */
+export function canMarkFinished({ role, isOwner }: { role: string; isOwner: boolean }): boolean {
+  return role === "admin" || isOwner;
+}
+
 // ─── Create ───────────────────────────────────────────
 
-const createSchema = z.object({
+export const createSchema = z.object({
   projectId: z.number(),
   title: z.string().min(1).max(255),
   description: z.string().max(5000).nullish(),
@@ -413,7 +422,7 @@ deliverables.post("/", requireTeam, zValidator("json", createSchema, zodMessageH
 //
 // Server-side gate: setting status = "finished" requires admin OR isOwner.
 
-const updateSchema = createSchema.partial().extend({
+export const updateSchema = createSchema.partial().extend({
   verifiedAt: flexibleDateTime(),
   attachmentUrl: z.string().max(500).nullish(),
 });
@@ -428,11 +437,9 @@ deliverables.patch("/:id", requireTeam, zValidator("json", updateSchema, zodMess
   // Gate: only admin or owner may mark a deliverable finished.
   if (data.status === "finished") {
     const caller = c.get("user");
-    if (caller.role !== "admin") {
-      const isOwner = await getIsOwner(caller.userId);
-      if (!isOwner) {
-        throw new HTTPException(403, { message: "Only the owner or an admin can mark a deliverable as finished" });
-      }
+    const isOwner = caller.role === "admin" ? false : await getIsOwner(caller.userId);
+    if (!canMarkFinished({ role: caller.role, isOwner })) {
+      throw new HTTPException(403, { message: "Only the owner or an admin can mark a deliverable as finished" });
     }
   }
 

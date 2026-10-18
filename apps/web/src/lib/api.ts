@@ -22,6 +22,15 @@ const API_URL = import.meta.env.DEV
   ? ""
   : (import.meta.env.VITE_API_URL || "http://localhost:6407");
 
+/**
+ * The API's real absolute origin, for display/copy contexts (e.g. an MCP server URL shown
+ * to an owner) where a relative "" (the dev-mode value above, proxied by Vite) is useless —
+ * an external MCP client has no Vite dev-server proxy to resolve it through.
+ */
+export function getApiOrigin(): string {
+  return (import.meta.env.VITE_API_URL as string | undefined) || "http://localhost:6407";
+}
+
 // ─── Token Management ─────────────────────────────────
 
 const ACCESS_KEY = "advo_access_token";

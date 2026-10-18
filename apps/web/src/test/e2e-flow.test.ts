@@ -39,7 +39,7 @@ beforeAll(async () => {
   // the login itself from throwing ECONNREFUSED and failing the file.
   if (skipWhenApiDown) return;
   const { body } = await api("POST", "/api/auth/login", {
-    email: "admin@advo.ph",
+    username: "admin",
     password: "changeme",
   });
   adminToken = body.data.accessToken;
@@ -50,7 +50,7 @@ beforeAll(async () => {
 describe("Auth Flows", () => {
   it("admin can login and gets role=admin", async () => {
     const { body } = await api("POST", "/api/auth/login", {
-      email: "admin@advo.ph",
+      username: "admin",
       password: "changeme",
     });
     expect(body.data.user.role).toBe("admin");
@@ -58,7 +58,7 @@ describe("Auth Flows", () => {
 
   it("team member can login", async () => {
     const { body } = await api("POST", "/api/auth/login", {
-      email: "angelo.revelo@advo.ph",
+      username: "angelorevelo",
       password: "changeme",
     });
     expect(body.data.user).toBeTruthy();
@@ -67,7 +67,7 @@ describe("Auth Flows", () => {
 
   it("refresh token rotation issues a new token", async () => {
     const login = await api("POST", "/api/auth/login", {
-      email: "admin@advo.ph",
+      username: "admin",
       password: "changeme",
     });
     const rt = login.body.data.refreshToken;
@@ -89,7 +89,7 @@ describe("Auth Flows", () => {
    */
   it("a spent refresh token is answered with the live one, not a 401", async () => {
     const login = await api("POST", "/api/auth/login", {
-      email: "admin@advo.ph",
+      username: "admin",
       password: "changeme",
     });
     const rt = login.body.data.refreshToken;
@@ -104,7 +104,7 @@ describe("Auth Flows", () => {
 
   it("concurrent refreshes all succeed and converge on one token", async () => {
     const login = await api("POST", "/api/auth/login", {
-      email: "admin@advo.ph",
+      username: "admin",
       password: "changeme",
     });
     const rt = login.body.data.refreshToken;
@@ -127,7 +127,7 @@ describe("Auth Flows", () => {
 
   it("logout ends the session and a spent token cannot revive it", async () => {
     const login = await api("POST", "/api/auth/login", {
-      email: "admin@advo.ph",
+      username: "admin",
       password: "changeme",
     });
     const rt = login.body.data.refreshToken;

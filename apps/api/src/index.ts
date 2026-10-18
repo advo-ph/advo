@@ -62,7 +62,13 @@ import financeRoutes from "./routes/finance.routes.js";
 import eventRoutes from "./routes/event.routes.js";
 import visitorStatsRoutes from "./routes/visitor-stats.routes.js";
 import vpsMonitorRoutes from "./routes/vps-monitor.routes.js";
+import chatRoutes from "./routes/chat.routes.js";
 import { startVpsMonitor, stopVpsMonitor } from "./services/vps-monitor.service.js";
+import mcpRoutes from "./routes/mcp.routes.js";
+import botKeyRoutes from "./routes/bot-keys.routes.js";
+import webhookRoutes from "./routes/webhooks.routes.js";
+import { activityLogMiddleware } from "./middleware/activity-log.middleware.js";
+import { startWebhookPoll, stopWebhookPoll } from "./services/webhook-delivery.service.js";
 
 import type { Variables } from "./types/context.js";
 
@@ -104,6 +110,7 @@ app.use(
         "http://localhost:6101",
         "http://localhost:5173",
         "http://localhost:3000",
+        "capacitor://localhost",
       ];
       return allow.includes(origin) ? origin : "";
     },
@@ -196,6 +203,12 @@ const publicLimiter = rateLimiter({
   limit: isDev ? 3000 : 30,
   keyGenerator: (c) => c.req.header("X-Forwarded-For") || "unknown",
 });
+
+// Generic change-log middleware: one activity_log row (source: 'api') per successful
+// human/bot mutation under /api/*, deny-listing routes that already self-log or are not a
+// meaningful "change" (see middleware/activity-log.denylist.ts). Mounted once, after the
+// global CORS/rate-limit middleware above, before every route mount below.
+app.use("/api/*", activityLogMiddleware);
 
 // ─── Routes ───────────────────────────────────────────
 
@@ -307,6 +320,11 @@ app.route("/api/visitor-stats", visitorStatsRoutes);
 // collector runs on the API host and keeps a bounded local seven-day history.
 app.route("/api/vps-monitor", vpsMonitorRoutes);
 
+// Stateless MCP server (Streamable HTTP, bot-key auth) + its owner-gated key admin console.
+app.route("/mcp", mcpRoutes);
+app.route("/api/bot-keys", botKeyRoutes);
+app.route("/api/webhooks", webhookRoutes);
+
 // Internal library (team-wide catalog)
 app.route("/api/library", libraryRoutes);
 
@@ -316,6 +334,9 @@ app.route("/api/jobs", jobRoutes);
 // Scrapers
 app.route("/api/scrape", scrapeRoutes);
 app.route("/api/scrape", fbScrapeRoutes);
+
+// Owner-only chat widget (Updates + Ask tabs, migration 057).
+app.route("/api/chat", chatRoutes);
 
 // ─── Global Error Handler ─────────────────────────────
 
@@ -374,6 +395,7 @@ serve({ fetch: app.fetch, port }, () => {
   // Re-queue any jobs that were running when the previous process died.
   crashRecovery().catch((err) => log.error({ err }, "Crash recovery failed"));
   startRunner();
+  startWebhookPoll();
 });
 
 // ─── Periodic Cleanup ─────────────────────────────────
@@ -395,6 +417,7 @@ async function shutdown(signal: string) {
   stopRetentionSweep();
   stopVpsMonitor();
   stopRunner();
+  stopWebhookPoll();
   await closeDb();
   process.exit(0);
 }

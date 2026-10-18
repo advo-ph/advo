@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, type KeyboardEvent } from "react";
 import {
   Plus,
   School,
@@ -7,16 +7,19 @@ import {
   Ban,
   Loader2,
   Trash2,
+  ChevronsUpDown,
+  CalendarSearch,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
@@ -26,7 +29,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useAdminTeam } from "@/hooks/useAdminTeam";
+import { useAdminTeam, publicSiteOrder } from "@/hooks/useAdminTeam";
 import {
   useAdminAvailability,
   blockAppliesOn,
@@ -34,8 +37,7 @@ import {
   type BlockType,
 } from "@/hooks/useAdminAvailability";
 import { useCalendar } from "@/hooks/useCalendar";
-import { useOrgProjects } from "@/hooks/useOrgProjects";
-import { projectCountByMember, capacityRemaining } from "@/lib/capacity";
+import { useRoles } from "@/hooks/useRoles";
 import {
   dayKey,
   formatManilaDate,
@@ -45,12 +47,23 @@ import {
   timeToMinutes,
 } from "@/lib/manila-time";
 import { ConfirmDeleteDialog } from "@/components/admin/ConfirmDeleteDialog";
-import { PageHeader, Panel } from "./_ui";
+import { ResponsiveSheet } from "@/components/admin/shared/ResponsiveSheet";
+import { Panel } from "./_ui";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const FULL_DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-const HOURS = Array.from({ length: 24 }, (_, i) => i); // 12am to 11pm
-const HOUR_ROW_PX = 40; // must match the min-h-[40px] on each cell
+
+/**
+ * The grid starts at 7am. Nobody schedules work at 3am, and the six empty rows above
+ * it were most of why the week did not fit on one screen. A block that starts earlier
+ * is clipped to 7am; one that ends by 7am is listed under the grid instead.
+ */
+const FIRST_HOUR = 7;
+const GRID_START = FIRST_HOUR * 60;
+const HOURS = Array.from({ length: 24 - FIRST_HOUR }, (_, i) => FIRST_HOUR + i); // 7am to 11pm
+
+const hourLabel = (hour: number) =>
+  hour === 0 ? "12am" : hour > 12 ? `${hour - 12}pm` : hour === 12 ? "12pm" : `${hour}am`;
 
 /** A free slot shorter than this is not a meeting, it is an arithmetic artefact. */
 const MIN_FREE_SLOT_MINUTES = 30;
@@ -59,12 +72,14 @@ const MIN_FREE_SLOT_MINUTES = 30;
 const FREE_TIME_HORIZON_DAYS = 7;
 
 // Cool, flat palette — small color cues against the charcoal canvas, no glow.
-const blockTypeConfig: Record<BlockType, { label: string; color: string; bgColor: string; dot: string; icon: React.ElementType }> = {
-  school: { label: "School/Class", color: "text-blue-400", bgColor: "bg-blue-500/10 border-blue-500/30", dot: "bg-blue-500", icon: School },
-  break: { label: "Break", color: "text-amber-400", bgColor: "bg-amber-500/10 border-amber-500/30", dot: "bg-amber-500", icon: Coffee },
-  work: { label: "Work Available", color: "text-emerald-400", bgColor: "bg-emerald-500/10 border-emerald-500/30", dot: "bg-emerald-500", icon: Briefcase },
-  unavailable: { label: "Unavailable", color: "text-rose-400", bgColor: "bg-rose-500/10 border-rose-500/30", dot: "bg-rose-500", icon: Ban },
+// `short` is for the legend and the type chips, which both have to fit one line at 390px.
+const blockTypeConfig: Record<BlockType, { label: string; short: string; color: string; bgColor: string; dot: string; icon: React.ElementType }> = {
+  school: { label: "School", short: "School", color: "text-blue-400", bgColor: "bg-blue-500/10 border-blue-500/30", dot: "bg-blue-500", icon: School },
+  break: { label: "Break", short: "Break", color: "text-amber-400", bgColor: "bg-amber-500/10 border-amber-500/30", dot: "bg-amber-500", icon: Coffee },
+  work: { label: "Work Available", short: "Work", color: "text-emerald-400", bgColor: "bg-emerald-500/10 border-emerald-500/30", dot: "bg-emerald-500", icon: Briefcase },
+  unavailable: { label: "Unavailable", short: "Unavailable", color: "text-rose-400", bgColor: "bg-rose-500/10 border-rose-500/30", dot: "bg-rose-500", icon: Ban },
 };
+const BLOCK_TYPES = Object.keys(blockTypeConfig) as BlockType[];
 
 // ─── Minute ranges ───
 // Everything below works in minutes past midnight. The grid used to compare only
@@ -131,9 +146,43 @@ function subtract(base: Range[], blockers: Range[]): Range[] {
   return out;
 }
 
+// ─── One-off dates ───
+// A block whose window is shorter than a week falls on one date at most: an exam day, a
+// school break. It is not part of the weekly pattern, so the grid draws it only in the
+// week it falls in and lists it under the grid until then. Drawn every week, ten all-day
+// exam and break days turned a member's whole Sun–Wed into one solid wall.
+
+const DAY_MS = 86_400_000;
+
+const isOneOff = (b: AvailabilityBlock) =>
+  b.effective_from !== null &&
+  b.effective_to !== null &&
+  Date.parse(b.effective_to) - Date.parse(b.effective_from) < 7 * DAY_MS;
+
+/** The date a one-off block falls on, or null when its weekday is not in its window. */
+function oneOffDate(b: AvailabilityBlock): string | null {
+  const from = Date.parse(`${b.effective_from}T00:00:00Z`);
+  const shift = (b.day_of_week - new Date(from).getUTCDay() + 7) % 7;
+  const date = new Date(from + shift * DAY_MS).toISOString().slice(0, 10);
+  return date <= b.effective_to! ? date : null;
+}
+
+/** Sun–Sat of the Manila week holding `today`, as YYYY-MM-DD. */
+function weekOf(today: string): string[] {
+  const at = Date.parse(`${today}T00:00:00Z`);
+  const sunday = at - new Date(at).getUTCDay() * DAY_MS;
+  return DAYS.map((_, i) => new Date(sunday + i * DAY_MS).toISOString().slice(0, 10));
+}
+
 const AdminAvailability = () => {
   const { toast } = useToast();
-  const { activeMembers: teamMembers, isLoading: teamLoading } = useAdminTeam();
+  const { members, isLoading: teamLoading } = useAdminTeam();
+  // Everyone in the order the public team page shows them; staff who are not on the
+  // site but can sign in come last, by name. A switched-off login is not listed.
+  const teamMembers = useMemo(
+    () => publicSiteOrder(members.filter((m) => m.is_active || m.can_login === true)),
+    [members],
+  );
   const {
     blocks,
     isLoading: blocksLoading,
@@ -142,27 +191,23 @@ const AdminAvailability = () => {
     deleteBlock,
     isSaving,
   } = useAdminAvailability();
-  const { projects, isLoading: projectLoading } = useOrgProjects();
+  const { teamMemberId: myMemberId, isLoading: rolesLoading } = useRoles();
 
-  const isLoading = teamLoading || blocksLoading || projectLoading;
-  const [selectedMember, setSelectedMember] = useState<number | null>(null);
+  const isLoading = teamLoading || blocksLoading || rolesLoading;
 
-  // Active (non-shipped) project count per team member from GET /api/projects.
-  const projectCount = useMemo(
-    () =>
-      projectCountByMember(
-        projects.map((p) => ({
-          teamMemberId: p.team_member_id,
-          projectStatus: p.project_status,
-        })),
-      ),
-    [projects],
-  );
-
-  // Auto-select first member when data loads
-  if (selectedMember === null && teamMembers.length > 0) {
-    setSelectedMember(teamMembers[0].team_member_id);
-  }
+  // Whose week is on screen. Plain component state on purpose: every visit opens on
+  // the signed-in person's own schedule, and picking someone else lasts only until
+  // the page is left. Falls back to the first roster member for a login with no
+  // roster row (e.g. the shared admin account).
+  const [pickedMember, setPickedMember] = useState<number | null>(null);
+  const myMember = teamMembers.find((m) => m.team_member_id === myMemberId) ?? null;
+  const selectedMember =
+    pickedMember ?? myMember?.team_member_id ?? teamMembers[0]?.team_member_id ?? null;
+  const selectedMemberRow = teamMembers.find((m) => m.team_member_id === selectedMember) ?? null;
+  // The picker lists the signed-in person first, then the roster in team order.
+  const pickerMembers = myMember
+    ? [myMember, ...teamMembers.filter((m) => m.team_member_id !== myMember.team_member_id)]
+    : teamMembers;
 
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -405,6 +450,22 @@ const AdminAvailability = () => {
     );
   };
 
+  const openFreeTime = () => {
+    setSelectedMembers(teamMembers.map((m) => m.team_member_id));
+    setShowFreeTime(true);
+  };
+
+  // Arrow keys move between the type chips, as in any radio group.
+  const onTypeKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const step = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+    if (!step) return;
+    e.preventDefault();
+    const at = BLOCK_TYPES.indexOf(formData.block_type);
+    const next = BLOCK_TYPES[(at + step + BLOCK_TYPES.length) % BLOCK_TYPES.length];
+    setFormData({ ...formData, block_type: next });
+    e.currentTarget.querySelector<HTMLButtonElement>(`[data-type="${next}"]`)?.focus();
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -414,269 +475,419 @@ const AdminAvailability = () => {
   }
 
   const today = manilaToday();
+  const thisWeek = weekOf(today);
+  const gridBlocks = filteredBlocks.filter(
+    (b) => !isOneOff(b) || oneOffDate(b) === thisWeek[b.day_of_week],
+  );
+  const datedDays = filteredBlocks
+    .filter(isOneOff)
+    .map((block) => ({ block, date: oneOffDate(block) }))
+    .filter((d): d is { block: AvailabilityBlock; date: string } => d.date !== null && d.date >= today)
+    .sort((a, b) => a.date.localeCompare(b.date) || a.block.start_time.localeCompare(b.block.start_time));
+
+  // What the 7am grid can draw (clipped to 7am when it starts earlier), and what is
+  // over before the grid begins, which is listed under it instead of being lost.
+  const placed = gridBlocks.flatMap((block) => {
+    const { start, end } = rangeOf(block);
+    return end > GRID_START ? [{ block, start, end, top: Math.max(start, GRID_START) }] : [];
+  });
+  const earlyBlocks = gridBlocks
+    .filter((b) => rangeOf(b).end <= GRID_START)
+    .sort((a, b) => a.day_of_week - b.day_of_week || a.start_time.localeCompare(b.start_time));
+
+  // Free slots grouped per day, so a phone reads one row per day instead of a wall of chips.
+  const slotDays: { date: Date; dow: number; slots: typeof freeTimeSlots }[] = [];
+  for (const slot of freeTimeSlots) {
+    const last = slotDays[slotDays.length - 1];
+    if (last && last.date.getTime() === slot.date.getTime()) last.slots.push(slot);
+    else slotDays.push({ date: slot.date, dow: slot.dow, slots: [slot] });
+  }
+  const allSelected = teamMembers.length > 0 && selectedMembers.length === teamMembers.length;
+
+  const memberPicker = selectedMemberRow && (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          data-testid="availability-person-picker"
+          className="inline-flex h-9 max-w-full items-center gap-2 rounded-md border border-border bg-card pl-1.5 pr-2.5 text-sm font-medium transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-secondary"
+        >
+          <Avatar className="h-6 w-6">
+            <AvatarImage src={selectedMemberRow.avatar_url ?? undefined} />
+            <AvatarFallback className="text-[10px]">{getInitials(selectedMemberRow.name)}</AvatarFallback>
+          </Avatar>
+          <span className="sr-only">Schedule for </span>
+          <span className="truncate">{selectedMemberRow.name}</span>
+          {selectedMember === myMemberId && (
+            <span className="text-xs font-normal text-muted-foreground">You</span>
+          )}
+          <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-64 max-h-[min(60vh,420px)] overflow-y-auto">
+        <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">Show schedule for</DropdownMenuLabel>
+        <DropdownMenuRadioGroup
+          value={String(selectedMember)}
+          onValueChange={(value) => setPickedMember(Number(value))}
+        >
+          {pickerMembers.map((member) => (
+            <DropdownMenuRadioItem
+              key={member.team_member_id}
+              value={String(member.team_member_id)}
+              className="h-10 gap-2 focus:bg-secondary focus:text-foreground"
+            >
+              <Avatar className="h-6 w-6">
+                <AvatarImage src={member.avatar_url ?? undefined} />
+                <AvatarFallback className="text-[10px]">{getInitials(member.name)}</AvatarFallback>
+              </Avatar>
+              <span className="flex-1 truncate">{member.name}</span>
+              {member.team_member_id === myMemberId && (
+                <span className="text-xs text-muted-foreground">You</span>
+              )}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
+  const freeTimeBody = (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-medium text-muted-foreground">People</p>
+          <button
+            type="button"
+            onClick={() => setSelectedMembers(allSelected ? [] : teamMembers.map((m) => m.team_member_id))}
+            className="min-h-8 px-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {allSelected ? "Clear" : "Select all"}
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {teamMembers.map((member) => {
+            const active = selectedMembers.includes(member.team_member_id);
+            return (
+              <button
+                key={member.team_member_id}
+                type="button"
+                data-testid={`freetime-member-${member.team_member_id}`}
+                aria-pressed={active}
+                onClick={() => toggleMemberSelection(member.team_member_id)}
+                className={`flex h-10 items-center gap-2 rounded-md border px-2.5 text-sm transition-colors sm:h-9 ${
+                  active
+                    ? "bg-accent/[0.08] border-accent/40 text-foreground"
+                    : "bg-secondary border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Avatar className="h-5 w-5">
+                  <AvatarImage src={member.avatar_url ?? undefined} />
+                  <AvatarFallback className="text-[10px]">{getInitials(member.name)}</AvatarFallback>
+                </Avatar>
+                {member.name.split(" ")[0]}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {selectedMembers.length < 2 ? (
+        <p className="text-sm text-muted-foreground">Select at least 2 people to find common free time.</p>
+      ) : slotDays.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          No overlapping free time in the next {FREE_TIME_HORIZON_DAYS} days for the selected people.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">
+            Everyone is free ({MIN_FREE_SLOT_MINUTES} minutes or more)
+          </p>
+          <ul className="divide-y divide-border rounded-md border border-border">
+            {slotDays.map((day) => (
+              <li key={day.date.getTime()} className="flex items-start justify-between gap-3 px-3 py-2">
+                <span className="whitespace-nowrap pt-0.5 text-sm font-medium">
+                  {DAYS[day.dow]} {formatManilaDate(day.date)}
+                </span>
+                <span className="flex flex-wrap justify-end gap-1.5">
+                  {day.slots.map((slot) => (
+                    <span
+                      key={slot.key}
+                      className="rounded border border-accent/30 bg-accent/[0.06] px-1.5 py-0.5 text-xs tabular-nums text-accent-ink"
+                    >
+                      {slot.start}–{slot.end}
+                    </span>
+                  ))}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title="Team Availability"
-        meta="Schedules, capacity, and school blackout blocks"
-        action={
-          <div className="flex items-center gap-2">
-            <Button
-              variant={showFreeTime ? "default" : "outline"}
-              size="sm"
-              className="h-9 gap-1.5"
-              onClick={() => {
-                setShowFreeTime(!showFreeTime);
-                if (!showFreeTime) {
-                  setSelectedMembers(teamMembers.map((m) => m.team_member_id));
-                }
-              }}
-            >
-              Find free time
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => openAddDialog()}
-              className="h-9 gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              <Plus className="h-4 w-4" />
-              Add block
-            </Button>
-          </div>
-        }
-      />
+    // Fills the space main leaves between the header and the bottom bar (Admin.tsx turns
+    // the page scroll off for this section), and the week grid takes whatever is left.
+    <div className="flex min-h-0 flex-1 flex-col gap-3 sm:gap-4">
+      {/* Header. Phones: [picker][Free time][+ Add] on one row (the title is for screen
+          readers only there). Desktop: title, picker and actions on one row. */}
+      <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2.5">
+        {/* Visually hidden on phones (the top bar names the section there), so the wrapper
+            leaves the flow too and the controls row does not inherit an empty row's gap. */}
+        <div className="flex min-w-0 basis-full items-baseline gap-3 max-sm:sr-only lg:basis-0 lg:flex-1">
+          <h1 className="sr-only sm:not-sr-only whitespace-nowrap text-lg font-semibold tracking-tight">Team Availability</h1>
+          <span className="hidden truncate text-xs text-muted-foreground sm:inline">
+            Schedules, capacity, and school blackout blocks
+          </span>
+        </div>
+        <div className="flex min-w-0 flex-1 items-center gap-2 lg:flex-none">
+          {/* Shrinks first: a long name ends in an ellipsis before a button wraps. */}
+          <div className="min-w-0 flex-1 lg:flex-none">{memberPicker}</div>
+          {/* Opens a popup rather than toggling an inline panel, so the grid never moves.
+              Icon-only below 390px, where the three controls would not fit with text. */}
+          <Button
+            variant={showFreeTime ? "default" : "outline"}
+            size="sm"
+            className="h-9 shrink-0 max-[389px]:w-9 max-[389px]:px-0"
+            aria-haspopup="dialog"
+            aria-expanded={showFreeTime}
+            onClick={openFreeTime}
+          >
+            <CalendarSearch className="hidden max-[389px]:block" aria-hidden />
+            <span className="max-[389px]:sr-only sm:hidden">Free time</span>
+            <span className="hidden sm:inline">Find free time</span>
+          </Button>
+          <Button size="sm" onClick={() => openAddDialog()} className="h-9 shrink-0 gap-1.5">
+            <Plus className="h-4 w-4" />
+            <span className="sm:hidden">Add</span>
+            <span className="hidden sm:inline">Add block</span>
+          </Button>
+        </div>
+      </div>
 
-      {/* Find Free Time Panel */}
-      {showFreeTime && (
-        <Panel
-          title="Find free time"
-          meta={`Next ${FREE_TIME_HORIZON_DAYS} days · work blocks shared by everyone selected, minus classes, breaks and anything already booked`}
+      <ResponsiveSheet
+        open={showFreeTime}
+        onOpenChange={setShowFreeTime}
+        title="Find free time"
+        desktopClassName="max-w-lg"
+        testId="free-time-sheet"
+      >
+        {freeTimeBody}
+      </ResponsiveSheet>
+
+      {/* Weekly Calendar Grid */}
+      <Panel className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {/* Title and legend each hold one line; on a narrow phone the legend drops under the title. */}
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-border px-3 py-2 sm:min-h-11 sm:pl-4 sm:pr-3">
+          <h2 className="whitespace-nowrap text-sm font-medium">Weekly schedule</h2>
+          <div className="flex items-center gap-2.5 whitespace-nowrap sm:gap-3">
+            {BLOCK_TYPES.map((type) => (
+              <span key={type} className="flex items-center gap-1 text-[11px] text-muted-foreground sm:gap-1.5 sm:text-xs">
+                <span className={`inline-block h-1.5 w-1.5 rounded-full ${blockTypeConfig[type].dot}`} />
+                {blockTypeConfig[type].short}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Day Headers */}
+        <div className="grid shrink-0 grid-cols-[32px_repeat(7,minmax(0,1fr))] border-b border-border sm:grid-cols-[52px_repeat(7,minmax(0,1fr))]">
+          <div className="h-7 bg-secondary/30 sm:h-8" />
+          {DAYS.map((day, i) => (
+            <div
+              key={day}
+              className={`flex h-7 items-center justify-center border-l border-border text-[11px] font-medium sm:h-8 sm:text-xs ${
+                i === 0 || i === 6 ? "text-muted-foreground" : "text-foreground"
+              }`}
+            >
+              {day}
+            </div>
+          ))}
+        </div>
+
+        {/* Time Grid, 7am to midnight. The hour rows share the panel's leftover height
+            equally, so the whole week fits whatever the screen. Blocks are placed in
+            percentages of their starting cell: a cell's padding box is one row minus its
+            1px top border, so (100% + 1px) is exactly one row. */}
+        <div
+          data-testid="availability-week-grid"
+          className="grid min-h-0 flex-1 grid-cols-[32px_repeat(7,minmax(0,1fr))] sm:grid-cols-[52px_repeat(7,minmax(0,1fr))]"
+          style={{ gridTemplateRows: `repeat(${HOURS.length}, minmax(0, 1fr))` }}
         >
-          <div className="p-4 space-y-4">
-            <div className="flex flex-wrap items-center gap-2">
-              {teamMembers.map((member) => {
-                const active = selectedMembers.includes(member.team_member_id);
+          {HOURS.map((hour) => (
+            <div key={hour} className="contents">
+              {/* Hour Label */}
+              <div className="flex min-h-0 items-start justify-end overflow-hidden border-t border-border bg-secondary/20 pr-1 pt-0.5 text-[10px] leading-none tabular-nums text-muted-foreground sm:pr-2 sm:pt-1 sm:text-[11px]">
+                {hourLabel(hour)}
+              </div>
+
+              {/* Day Cells */}
+              {DAYS.map((_, dayIndex) => {
+                const hourStart = hour * 60;
+                // A block is drawn once, in the row its visible start minute falls in,
+                // and is then sized in minutes. Everything here used to be integer
+                // hours, which is why a 13:15–13:45 block matched no row and drew nothing.
+                const startingHere = placed.filter(
+                  (p) => p.block.day_of_week === dayIndex && p.top >= hourStart && p.top < hourStart + 60,
+                );
+
                 return (
-                  <button
-                    key={member.team_member_id}
-                    data-testid={`freetime-member-${member.team_member_id}`}
-                    aria-pressed={active}
-                    onClick={() => toggleMemberSelection(member.team_member_id)}
-                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md text-sm border transition-colors ${
-                      active
-                        ? "bg-accent/[0.08] border-accent/40 text-foreground"
-                        : "bg-secondary border-border text-muted-foreground hover:text-foreground"
-                    }`}
+                  <div
+                    key={`${hour}-${dayIndex}`}
+                    className="relative min-h-0 cursor-pointer border-l border-t border-border hover:bg-secondary/30"
+                    onClick={() => openAddDialog(dayIndex, hour)}
                   >
-                    <Avatar className="h-5 w-5">
-                      <AvatarImage src={member.avatar_url} />
-                      <AvatarFallback className="text-[10px]">{getInitials(member.name)}</AvatarFallback>
-                    </Avatar>
-                    {member.name.split(" ")[0]}
-                  </button>
+                    {startingHere.map(({ block, start, end, top }) => {
+                      const config = blockTypeConfig[block.block_type];
+                      const Icon = config.icon;
+                      const duration = end - start;
+                      const shown = end - top;
+                      // Started before 7am: drawn flush from the top edge, with a dashed
+                      // top border saying there is more of it above.
+                      const clipped = start < GRID_START;
+                      const expired = block.effective_to !== null && block.effective_to < today;
+
+                      return (
+                        <div
+                          key={block.block_id}
+                          className={`absolute inset-x-0.5 z-10 cursor-pointer overflow-hidden rounded-md border px-1 py-0.5 transition-[filter] hover:brightness-110 sm:inset-x-1 sm:px-1.5 ${config.bgColor} ${
+                            clipped ? "rounded-t-none" : ""
+                          } ${expired ? "opacity-40" : ""}`}
+                          style={{
+                            top: clipped ? 0 : `calc((100% + 1px) * ${(top - hourStart) / 60} + 1px)`,
+                            height: `max(14px, calc((100% + 1px) * ${shown / 60} - ${clipped ? 2 : 4}px))`,
+                            ...(clipped ? { borderTopStyle: "dashed" as const } : {}),
+                          }}
+                          title={`${block.label || config.label} · ${block.start_time.slice(0, 5)}–${block.end_time.slice(0, 5)}${
+                            block.effective_from || block.effective_to
+                              ? ` · ${block.effective_from || "any"} to ${block.effective_to || "open-ended"}`
+                              : ""
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditDialog(block);
+                          }}
+                        >
+                          <div className="flex items-start gap-1">
+                            <Icon className={`mt-0.5 hidden h-3 w-3 shrink-0 sm:block ${config.color}`} />
+                            <span className="min-w-0 text-[10px] font-medium leading-tight [overflow-wrap:anywhere] sm:truncate sm:text-xs sm:leading-4">
+                              {block.label || config.label}
+                            </span>
+                          </div>
+                          {shown >= 60 && (
+                            <div className="mt-0.5 hidden text-[10px] leading-none tabular-nums text-muted-foreground sm:block">
+                              {duration === 1440
+                                ? "all day"
+                                : `${block.start_time.slice(0, 5)} – ${block.end_time.slice(0, 5)}`}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 );
               })}
             </div>
+          ))}
+        </div>
 
-            {selectedMembers.length >= 2 && freeTimeSlots.length > 0 && (
-              <div className="space-y-2 pt-1 border-t border-border">
-                <p className="text-xs text-muted-foreground pt-3">
-                  Available when everyone is free ({MIN_FREE_SLOT_MINUTES} minutes or more)
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {freeTimeSlots.map((slot) => (
-                    <span
-                      key={slot.key}
-                      className="inline-flex items-center gap-1.5 text-xs text-accent-ink border border-accent/30 bg-accent/[0.06] rounded-md px-2 py-1 tabular-nums"
+        {/* Blocks the grid cannot draw: over before 7am, or dated days in a later week.
+            One line that scrolls sideways, so a long list never pushes the grid off screen. */}
+        {(earlyBlocks.length > 0 || datedDays.length > 0) && (
+          <div
+            data-testid="availability-notes"
+            className="flex shrink-0 items-center gap-1.5 overflow-x-auto whitespace-nowrap border-t border-border py-1.5 pl-3 pr-6 [mask-image:linear-gradient(to_right,black_calc(100%-1.5rem),transparent)] sm:pl-4"
+          >
+            {earlyBlocks.length > 0 && (
+              <>
+                <span className="mr-0.5 shrink-0 text-xs text-muted-foreground">Before 7am</span>
+                {earlyBlocks.map((block) => {
+                  const config = blockTypeConfig[block.block_type];
+                  return (
+                    <button
+                      key={block.block_id}
+                      type="button"
+                      onClick={() => openEditDialog(block)}
+                      className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2 py-1 text-xs tabular-nums transition-[filter] hover:brightness-110 ${config.bgColor}`}
                     >
-                      {DAYS[slot.dow]} {formatManilaDate(slot.date)} {slot.start} – {slot.end}
-                    </span>
-                  ))}
-                </div>
-              </div>
+                      <span className="font-medium">
+                        {DAYS[block.day_of_week]} {block.start_time.slice(0, 5)}–{block.end_time.slice(0, 5)}
+                      </span>
+                      <span className="text-muted-foreground">{block.label || config.label}</span>
+                    </button>
+                  );
+                })}
+              </>
             )}
-
-            {selectedMembers.length >= 2 && freeTimeSlots.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                No overlapping free time in the next {FREE_TIME_HORIZON_DAYS} days for the selected members.
-              </p>
+            {earlyBlocks.length > 0 && datedDays.length > 0 && (
+              <span aria-hidden className="mx-1 h-4 w-px shrink-0 bg-border" />
             )}
-
-            {selectedMembers.length < 2 && (
-              <p className="text-sm text-muted-foreground">Select at least 2 members to find common free time.</p>
+            {datedDays.length > 0 && (
+              <>
+                <span
+                  className="mr-0.5 shrink-0 text-xs text-muted-foreground"
+                  title="Drawn in the grid during their own week"
+                >
+                  Dated days
+                </span>
+                {datedDays.map(({ block, date }) => {
+                  const config = blockTypeConfig[block.block_type];
+                  const { start, end } = rangeOf(block);
+                  const allDay = end - start === 1440;
+                  return (
+                    <button
+                      key={block.block_id}
+                      type="button"
+                      onClick={() => openEditDialog(block)}
+                      className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2 py-1 text-xs tabular-nums transition-[filter] hover:brightness-110 ${config.bgColor}`}
+                    >
+                      <config.icon className={`h-3 w-3 ${config.color}`} />
+                      <span className="font-medium">
+                        {DAYS[block.day_of_week]} {formatManilaDate(`${date}T00:00:00+08:00`)}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {block.label || config.label} ·{" "}
+                        {allDay ? "all day" : `${block.start_time.slice(0, 5)}–${block.end_time.slice(0, 5)}`}
+                      </span>
+                    </button>
+                  );
+                })}
+              </>
             )}
           </div>
-        </Panel>
-      )}
+        )}
+      </Panel>
 
-      {/* Team Member Tabs + capacity chip (active project count) */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {teamMembers.map((member) => {
-          const active = selectedMember === member.team_member_id;
-          const activeProjectCount = projectCount.get(member.team_member_id) ?? 0;
-          const remaining = capacityRemaining(activeProjectCount);
-          const isAtCapacity = remaining === 0 && activeProjectCount > 0;
-          return (
-            <button
-              key={member.team_member_id}
-              onClick={() => setSelectedMember(member.team_member_id)}
-              className={`flex items-center gap-2 px-3 h-9 rounded-md text-sm font-medium transition-colors whitespace-nowrap border ${
-                active
-                  ? "bg-secondary border-border text-foreground"
-                  : "bg-transparent border-transparent text-muted-foreground hover:text-foreground hover:bg-secondary/50"
-              }`}
-            >
-              <Avatar className="h-5 w-5">
-                <AvatarImage src={member.avatar_url} />
-                <AvatarFallback className="text-[10px]">{getInitials(member.name)}</AvatarFallback>
-              </Avatar>
-              {member.name}
-              <span
-                title={
-                  isAtCapacity
-                    ? `${activeProjectCount} active project${activeProjectCount === 1 ? "" : "s"} · at capacity`
-                    : `${activeProjectCount} active · ${remaining} capacity remaining`
-                }
-                className={`inline-flex items-center rounded-full px-1.5 py-0 text-[10px] font-medium tabular-nums border ${
-                  isAtCapacity
-                    ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
-                    : activeProjectCount > 0
-                      ? "bg-accent/10 border-accent/30 text-accent-ink"
-                      : "bg-secondary border-border text-muted-foreground"
-                }`}
-              >
-                {activeProjectCount} proj
-                {!isAtCapacity && remaining < 3 && (
-                  // Was opacity-70 which dropped the already-small text-accent to ~1.9:1
-                  // in light mode. Removing the modifier keeps the colour legible; the
-                  // containing badge already reads as secondary via its border treatment.
-                  <span className="ml-1">· {remaining} left</span>
-                )}
-                {isAtCapacity && <span className="ml-1">· full</span>}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Weekly Calendar Grid */}
-      <Panel
-        title="Weekly schedule"
-        meta={
-          <div className="flex flex-wrap items-center gap-3">
-            {Object.entries(blockTypeConfig).map(([type, config]) => (
-              <span key={type} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <span className={`inline-block h-1.5 w-1.5 rounded-full ${config.dot}`} />
-                {config.label}
-              </span>
-            ))}
+      {/* Add/Edit block: the same sheet as Find free time on phones, a dialog elsewhere. */}
+      <ResponsiveSheet
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        title={editingBlock ? "Edit Schedule Block" : "Add Schedule Block"}
+        desktopClassName="max-w-md"
+        testId="block-sheet"
+        footer={
+          <div className="flex items-center gap-2">
+            {editingBlock && (
+              <Button variant="destructive" onClick={() => setConfirmDelete(true)} className="h-10">
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </Button>
+            )}
+            <div className="ml-auto flex gap-2">
+              <Button variant="outline" className="h-10" onClick={() => setIsDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button className="h-10 min-w-20" onClick={handleSave} disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+              </Button>
+            </div>
           </div>
         }
       >
-        <div className="overflow-hidden rounded-b-lg">
-          {/* Day Headers */}
-          <div className="grid grid-cols-[56px_repeat(7,1fr)] border-b border-border">
-            <div className="h-9 bg-secondary/30" />
-            {DAYS.map((day, i) => (
-              <div
-                key={day}
-                className={`h-9 flex items-center justify-center text-xs font-medium border-l border-border ${
-                  i === 0 || i === 6 ? "text-muted-foreground" : "text-foreground"
-                }`}
-              >
-                {day}
-              </div>
-            ))}
-          </div>
-
-          {/* Time Grid — capped + internally scrollable on mobile so the page fits the screen. */}
-          <div className="max-h-[60vh] overflow-y-auto sm:max-h-none sm:overflow-y-visible">
-          <div className="grid grid-cols-[56px_repeat(7,1fr)]">
-            {HOURS.map((hour) => (
-              <div key={hour} className="contents">
-                {/* Hour Label */}
-                <div className="px-2 text-[11px] tabular-nums text-muted-foreground text-right border-t border-border bg-secondary/20 flex items-start justify-end pt-1 min-h-[40px]">
-                  {hour === 0 ? "12am" : hour > 12 ? `${hour - 12}pm` : hour === 12 ? "12pm" : `${hour}am`}
-                </div>
-
-                {/* Day Cells */}
-                {DAYS.map((_, dayIndex) => {
-                  const hourStart = hour * 60;
-                  // A block is drawn once, in the row its start minute falls in, and is
-                  // then sized in minutes. Everything here used to be integer hours, which
-                  // is why a 13:15–13:45 block matched no row and drew nothing.
-                  const startingHere = filteredBlocks.filter((b) => {
-                    if (b.day_of_week !== dayIndex) return false;
-                    const { start } = rangeOf(b);
-                    return start >= hourStart && start < hourStart + 60;
-                  });
-
-                  return (
-                    <div
-                      key={`${hour}-${dayIndex}`}
-                      className="min-h-[40px] border-t border-l border-border relative group cursor-pointer hover:bg-secondary/30"
-                      onClick={() => openAddDialog(dayIndex, hour)}
-                    >
-                      {startingHere.map((block) => {
-                        const config = blockTypeConfig[block.block_type];
-                        const Icon = config.icon;
-                        const { start, end } = rangeOf(block);
-                        const duration = end - start;
-                        const offsetPx = ((start - hourStart) / 60) * HOUR_ROW_PX;
-                        const heightPx = Math.max((duration / 60) * HOUR_ROW_PX - 4, 14);
-                        const expired = block.effective_to !== null && block.effective_to < today;
-
-                        return (
-                          <div
-                            key={block.block_id}
-                            className={`absolute inset-x-1 ${config.bgColor} border rounded-md px-1.5 py-0.5 cursor-pointer z-10 overflow-hidden hover:brightness-110 transition-[filter] ${
-                              expired ? "opacity-40" : ""
-                            }`}
-                            style={{ top: `${offsetPx + 2}px`, height: `${heightPx}px` }}
-                            title={`${block.label || config.label} · ${block.start_time.slice(0, 5)}–${block.end_time.slice(0, 5)}${
-                              block.effective_from || block.effective_to
-                                ? ` · ${block.effective_from || "any"} to ${block.effective_to || "open-ended"}`
-                                : ""
-                            }`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              openEditDialog(block);
-                            }}
-                          >
-                            <div className="flex items-center gap-1">
-                              <Icon className={`h-3 w-3 ${config.color} flex-shrink-0`} />
-                              <span className="text-xs font-medium truncate">{block.label || config.label}</span>
-                            </div>
-                            {duration >= 45 && (
-                              <div className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
-                                {block.start_time.slice(0, 5)} – {block.end_time.slice(0, 5)}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-          </div>
-        </div>
-      </Panel>
-
-      {/* Add/Edit Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-card border-border max-w-md rounded-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {editingBlock ? "Edit Schedule Block" : "Add Schedule Block"}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="grid gap-4 py-4">
-            <div className="space-y-2">
+        <div className="grid gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="min-w-0 space-y-2">
               <label className="text-sm font-medium">Team Member</label>
               <Select
                 value={formData.team_member_id}
@@ -695,120 +906,110 @@ const AdminAvailability = () => {
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Day</label>
-                <Select
-                  value={formData.day_of_week}
-                  onValueChange={(v) => setFormData({ ...formData, day_of_week: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FULL_DAYS.map((day, i) => (
-                      <SelectItem key={i} value={i.toString()}>{day}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Type</label>
-                <Select
-                  value={formData.block_type}
-                  onValueChange={(v) => setFormData({ ...formData, block_type: v as BlockType })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(blockTypeConfig).map(([type, config]) => (
-                      <SelectItem key={type} value={type}>
-                        <span className="flex items-center gap-2">
-                          <config.icon className={`h-4 w-4 ${config.color}`} />
-                          {config.label}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="min-w-0 space-y-2">
+              <label className="text-sm font-medium">Day</label>
+              <Select
+                value={formData.day_of_week}
+                onValueChange={(v) => setFormData({ ...formData, day_of_week: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {FULL_DAYS.map((day, i) => (
+                    <SelectItem key={i} value={i.toString()}>{day}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+          </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Start Time</label>
-                <Input
-                  type="time"
-                  value={formData.start_time}
-                  onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">End Time</label>
-                <Input
-                  type="time"
-                  value={formData.end_time}
-                  onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
-                />
-              </div>
+          {/* Type: one row of chips, sized to their labels so all four fit at 390px. */}
+          <div className="space-y-2">
+            <span id="block-type-label" className="text-sm font-medium">Type</span>
+            <div
+              role="radiogroup"
+              aria-labelledby="block-type-label"
+              onKeyDown={onTypeKeyDown}
+              className="flex gap-1.5"
+            >
+              {BLOCK_TYPES.map((type) => {
+                const config = blockTypeConfig[type];
+                const on = formData.block_type === type;
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    role="radio"
+                    aria-checked={on}
+                    tabIndex={on ? 0 : -1}
+                    data-type={type}
+                    onClick={() => setFormData({ ...formData, block_type: type })}
+                    className={`inline-flex h-10 flex-auto items-center justify-center gap-1.5 whitespace-nowrap rounded-md border px-2 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-9 ${
+                      on
+                        ? `${config.bgColor} text-foreground`
+                        : "border-border text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
+                    }`}
+                  >
+                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${config.dot}`} />
+                    {config.short}
+                  </button>
+                );
+              })}
             </div>
+          </div>
 
-            {/* Bounds. A recurring block with no end date repeats until the end of time. */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Starts on (optional)</label>
-                <Input
-                  type="date"
-                  value={formData.effective_from}
-                  onChange={(e) => setFormData({ ...formData, effective_from: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Ends on (optional)</label>
-                <Input
-                  type="date"
-                  value={formData.effective_to}
-                  onChange={(e) => setFormData({ ...formData, effective_to: e.target.value })}
-                />
-              </div>
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Start Time</label>
+              <Input
+                type="time"
+                value={formData.start_time}
+                onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+              />
             </div>
-            <p className="text-xs text-muted-foreground -mt-2">
-              Leave blank to repeat with no end. Set an end date for a semester or a
-              temporary schedule so it stops appearing on the calendar afterwards.
-            </p>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Label (optional)</label>
+              <label className="text-sm font-medium">End Time</label>
               <Input
-                value={formData.label}
-                onChange={(e) => setFormData({ ...formData, label: e.target.value })}
-                placeholder="e.g. CS 101, Lunch, Client meeting"
+                type="time"
+                value={formData.end_time}
+                onChange={(e) => setFormData({ ...formData, end_time: e.target.value })}
               />
             </div>
           </div>
 
-          <DialogFooter className="flex justify-between">
-            {editingBlock && (
-              <Button variant="destructive" onClick={() => setConfirmDelete(true)} className="mr-auto">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </Button>
-            )}
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSave} disabled={isSaving}>
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
-              </Button>
+          {/* Bounds. A recurring block with no end date repeats until the end of time. */}
+          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Starts on (optional)</label>
+              <Input
+                type="date"
+                value={formData.effective_from}
+                onChange={(e) => setFormData({ ...formData, effective_from: e.target.value })}
+              />
             </div>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Ends on (optional)</label>
+              <Input
+                type="date"
+                value={formData.effective_to}
+                onChange={(e) => setFormData({ ...formData, effective_to: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Label (optional)</label>
+            <Input
+              value={formData.label}
+              onChange={(e) => setFormData({ ...formData, label: e.target.value })}
+              placeholder="e.g. CS 101, Lunch, Client meeting"
+            />
+          </div>
+        </div>
+      </ResponsiveSheet>
 
       <ConfirmDeleteDialog
         open={confirmDelete}

@@ -10,23 +10,31 @@
 import type { ReactNode, ElementType } from "react";
 import { cn } from "@/lib/utils";
 
-/** Page title row: title + optional meta + optional right-aligned action. */
+/**
+ * Page title row: title + optional meta + optional right-aligned action.
+ * On phones the title is hidden here (it shows in the fixed admin header instead),
+ * unless `keepTitleOnMobile` is set for sub-view titles that aren't the section name.
+ */
 export const PageHeader = ({
   title,
   subtitle,
   meta,
   action,
   className,
+  keepTitleOnMobile,
 }: {
   title: string;
   subtitle?: ReactNode;
   meta?: ReactNode;
   action?: ReactNode;
   className?: string;
+  keepTitleOnMobile?: boolean;
 }) => (
   <div className={cn("flex items-center justify-between gap-4", className)}>
     <div className="flex items-baseline gap-3 min-w-0">
-      <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
+      <h1 className={cn("text-lg font-semibold tracking-tight", !keepTitleOnMobile && "sr-only sm:not-sr-only")}>
+        {title}
+      </h1>
       {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
       {meta && <span className="text-xs text-muted-foreground truncate">{meta}</span>}
     </div>

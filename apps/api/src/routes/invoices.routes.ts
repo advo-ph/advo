@@ -56,7 +56,9 @@ invoices.get("/", async (c) => {
 
 // ─── Create ───────────────────────────────────────────
 
-const createSchema = z.object({
+// Exported so the MCP write tool create_invoice (services/mcp-tools.service.ts) reuses the
+// exact same shape rather than a drifting copy.
+export const createSchema = z.object({
   projectId: z.number(),
   amountCents: z.number().int().min(0),
   label: z.string().min(1).max(255),
@@ -80,7 +82,9 @@ invoices.post("/", requireAdmin, zValidator("json", createSchema), async (c) => 
 
 // ─── Update ───────────────────────────────────────────
 
-const updateSchema = z.object({
+// Exported so the MCP write tool update_invoice (services/mcp-tools.service.ts) reuses the
+// exact same shape rather than a drifting copy.
+export const updateSchema = z.object({
   status: z.enum(["unpaid", "paid", "overdue"]).optional(),
   notes: z.string().max(2000).nullish(),
   amountCents: z.number().int().min(0).optional(),

@@ -89,7 +89,7 @@ describe.skipIf(skipWhenApiDown)("corpus — live ingest and check", () => {
     const res = await fetch(`${API}/api/auth/login`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: "admin@advo.ph", password: "changeme" }),
+      body: JSON.stringify({ username: "admin", password: "changeme" }),
     });
     return (await res.json()).data.accessToken as string;
   };
@@ -133,7 +133,7 @@ describe.skipIf(skipWhenApiDown)("corpus — live ingest and check", () => {
     const res = await fetch(`${API}/api/auth/login`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email: "client@advo.ph", password: "changeme" }),
+      body: JSON.stringify({ username: "client", password: "changeme" }),
     });
     const token = (await res.json()).data?.accessToken as string | undefined;
     if (!token) return;

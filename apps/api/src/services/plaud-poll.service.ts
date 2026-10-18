@@ -20,6 +20,7 @@ import {
 } from "./plaud-import.service.js";
 import { extract, ingestBundle } from "./corpus.service.js";
 import { routeCandidate, routeRecording } from "./meeting-route.service.js";
+import { onPlaudMeetingImported } from "./plaud-chat.service.js";
 import {
   getOpenFileDetail,
   hasOpenAuth,
@@ -234,6 +235,12 @@ async function syncOpen(seenFileId: Set<string>, grant: string): Promise<{
         if (result.meeting?.meetingId) importedMeetingId.push(result.meeting.meetingId);
         routedFileId.push(f.fileId);
         await ingestToCorpus(payload, f.fileId, route.projectId, result.meeting?.meetingId ?? null, createdBy);
+        if (result.meeting) {
+          await onPlaudMeetingImported({ meetingRow: result.meeting, route, created: true }).catch((err) => {
+            recordError("plaud-chat", err);
+            log.warn({ err, fileId: f.fileId }, "chat hook failed; import kept");
+          });
+        }
         log.info(
           { fileId: f.fileId, projectId, matched: route.matched, score: route.score },
           "Plaud recording routed",
@@ -291,7 +298,14 @@ async function syncEveryGrant(seenFileId: Set<string>): Promise<{
   return total;
 }
 
-/** Consumer tick: every recording in the ADVO tag folder goes to Inbox. */
+/**
+ * Consumer tick: every recording in the ADVO tag folder goes to Inbox.
+ *
+ * No chat hook here on purpose (accepted gap, not an oversight): this
+ * transport has no routing step at all, so there is no RouteResult to hand
+ * onPlaudMeetingImported, and it is not the transport running in prod today.
+ * If it ever becomes primary, a follow-up plan adds routing + the hook here.
+ */
 async function syncConsumer(seenFileId: Set<string>): Promise<{
   imported: number;
   skipped: number;

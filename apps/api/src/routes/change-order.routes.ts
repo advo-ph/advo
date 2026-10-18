@@ -8,7 +8,11 @@ import { changeOrder, project, client, activityLog } from "../db/schema.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireTeam } from "../middleware/rbac.js";
 import { notifyProjectClient } from "../services/notify.service.js";
+import { queueDeliveriesForActivity } from "../services/webhook-delivery.service.js";
+import { createLogger } from "../utils/logger.js";
 import type { Variables } from "../types/context.js";
+
+const log = createLogger("change-order-routes");
 
 const changeOrderRoutes = new Hono<{ Variables: Variables }>();
 
@@ -17,7 +21,9 @@ changeOrderRoutes.use("*", requireAuth);
 // App-validated (not a DB enum) so the set can grow without a migration.
 const CHANGE_ORDER_STATUS = ["filed", "quoted", "signed", "declined"] as const;
 
-const createSchema = z.object({
+// Exported so the MCP write tool create_change_order (services/mcp-tools.service.ts)
+// reuses the exact same shape rather than a drifting copy.
+export const createSchema = z.object({
   projectId: z.number().int(),
   scope: z.string().min(1).max(5000),
   reason: z.string().min(1).max(5000),
@@ -131,12 +137,18 @@ changeOrderRoutes.post("/", zValidator("json", createSchema), async (c) => {
     })
     .returning();
 
-  await db().insert(activityLog).values({
-    userId: user.userId,
-    action: "change_order_filed",
-    entityType: "change_order",
-    entityId: created.changeOrderId,
-    metadata: { projectId: data.projectId },
+  const [loggedActivity] = await db()
+    .insert(activityLog)
+    .values({
+      userId: user.userId,
+      action: "change_order_filed",
+      entityType: "change_order",
+      entityId: created.changeOrderId,
+      metadata: { projectId: data.projectId },
+    })
+    .returning({ activityId: activityLog.activityId });
+  queueDeliveriesForActivity(loggedActivity.activityId).catch((err) => {
+    log.warn({ err, activityId: loggedActivity.activityId }, "Could not queue webhook deliveries");
   });
 
   // A client filing their own change order already knows about it; only a team-raised

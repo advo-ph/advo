@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { get, post, patch, del } from "@/lib/api";
+import { api, get, post, patch, del } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -22,8 +22,12 @@ export interface Meeting {
   createdBy: number | null;
   createdAt: string;
   updatedAt: string;
+  /** Who joined: members marked in the meeting dialog, plus older self-serve joins. */
   attendees: Array<{
-    userId: number;
+    /** null for a team member who has no login. */
+    userId: number | null;
+    /** null for an older self-serve join by someone off the team roster. */
+    teamMemberId: number | null;
     name: string;
     avatarUrl: string | null;
     joinedAt: string;
@@ -128,8 +132,9 @@ export function useMeeting(projectId?: number | null) {
 
   const createMutation = useMutation({
     mutationFn: async (input: MeetingInput) => {
-      const r = await post("/api/meeting", input);
+      const r = await post<Meeting>("/api/meeting", input);
       if (r.error) throw new Error(r.error);
+      return r.data ?? null;
     },
     onSuccess: () => {
       invalidate();
@@ -244,27 +249,17 @@ export function useMeeting(projectId?: number | null) {
     onError: onErr,
   });
 
-  const joinMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const r = await post(`/api/meeting/${id}/join`, {});
+  // Replaces who joined (the dialog's members picker). Quiet on success: it runs right
+  // after the create/update save, which already shows its own toast.
+  const membersMutation = useMutation({
+    mutationFn: async ({ id, teamMemberIds }: { id: number; teamMemberIds: number[] }) => {
+      const r = await api(`/api/meeting/${id}/members`, {
+        method: "PUT",
+        body: JSON.stringify({ teamMemberIds }),
+      });
       if (r.error) throw new Error(r.error);
     },
-    onSuccess: () => {
-      invalidate();
-      toast({ title: "Joined meeting" });
-    },
-    onError: onErr,
-  });
-
-  const leaveMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const r = await del(`/api/meeting/${id}/join`);
-      if (r.error) throw new Error(r.error);
-    },
-    onSuccess: () => {
-      invalidate();
-      toast({ title: "Left meeting" });
-    },
+    onSuccess: invalidate,
     onError: onErr,
   });
 
@@ -279,12 +274,11 @@ export function useMeeting(projectId?: number | null) {
     proposeTask: proposeTaskMutation.mutateAsync,
     generateTask: (id: number, task?: ProposedTask[], method?: TaskMethod) =>
       generateTaskMutation.mutateAsync({ id, task, method }),
-    joinMeeting: joinMutation.mutateAsync,
-    leaveMeeting: leaveMutation.mutateAsync,
-    isSaving: createMutation.isPending || updateMutation.isPending,
+    setMeetingMembers: (id: number, teamMemberIds: number[]) =>
+      membersMutation.mutateAsync({ id, teamMemberIds }),
+    isSaving: createMutation.isPending || updateMutation.isPending || membersMutation.isPending,
     isImporting: importMutation.isPending,
     isGeneratingTask: generateTaskMutation.isPending || proposeTaskMutation.isPending,
-    isJoining: joinMutation.isPending || leaveMutation.isPending,
   };
 }
 

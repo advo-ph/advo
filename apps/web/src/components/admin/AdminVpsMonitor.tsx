@@ -282,7 +282,7 @@ const AdminVpsMonitor = () => {
     return (
       <div className="space-y-5">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">VPS usage</h1>
+          <h1 className="sr-only sm:not-sr-only text-2xl font-semibold tracking-tight">VPS usage</h1>
           <p className="mt-1 text-sm text-muted-foreground">Contabo server and deployed website resources</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-5 sm:p-7">
@@ -303,7 +303,7 @@ const AdminVpsMonitor = () => {
       <div className="space-y-5">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">VPS usage</h1>
+            <h1 className="sr-only sm:not-sr-only text-2xl font-semibold tracking-tight">VPS usage</h1>
             <p className="mt-1 text-sm text-muted-foreground">Contabo server and deployed website resources</p>
           </div>
           <Button variant="outline" size="sm" onClick={() => void refetch()} disabled={isFetching} className="gap-2">
@@ -332,7 +332,7 @@ const AdminVpsMonitor = () => {
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight">VPS usage</h1>
+            <h1 className="sr-only sm:not-sr-only text-2xl font-semibold tracking-tight">VPS usage</h1>
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${state === "online" ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400"}`}>
               {state === "online" ? <CheckCircle2 className="h-3.5 w-3.5" /> : <CircleAlert className="h-3.5 w-3.5" />}
               {state === "online" ? "Live" : "Last known data"}

@@ -111,6 +111,11 @@ const envSchema = z.object({
   PLAUD_TOKEN: z.string().optional(),
   PLAUD_AUTH_FILE: z.string().optional(),
   PLAUD_API_HOST: z.string().optional(),
+  /** Plaud Open API poller (services/plaud-poll.service.ts), read off process.env directly. */
+  PLAUD_OPEN_TOKEN_FILE: z.string().optional(),
+  PLAUD_OPEN_SINCE: z.string().optional(),
+  PLAUD_OPEN_LOOKBACK_DAY: z.string().optional(),
+  PLAUD_CORPUS_INGEST: z.string().optional(),
 
   /**
    * Which Claude model extracts corpus facts from a transcript or document. The first
@@ -139,6 +144,14 @@ const envSchema = z.object({
     (value) => value === "" ? undefined : value,
     z.string().regex(/^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+$/).optional(),
   ),
+
+  /**
+   * Optional key for apps/api/src/utils/crypto.ts's webhook-secret encryption. Unset →
+   * derived via HKDF from JWT_SECRET (distinct salt/info), so prod works with zero new env
+   * vars. Set this only if JWT_SECRET ever rotates and encrypted webhook secrets must
+   * survive that rotation independently.
+   */
+  SECRET_ENCRYPTION_KEY: z.string().min(32).optional(),
 
   PORT: z.coerce.number().default(6407),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
