@@ -55,6 +55,13 @@ Cross-links:
   - Seven personal recordings were skipped.
   - **The fix that came from it:** the Open API poll used to stop at the first already-imported file, so recordings still transcribing below a newer import were lost. It now re-reads the last `PLAUD_OPEN_LOOKBACK_DAY` days (default 3) every tick. `PLAUD_OPEN_SINCE` is removed from prod; it only bounds the first walk after boot.
   - `parseFileId` accepts `of_` ids.
+- **Heuristic facts replaced.** The 12 Plaud meetings whose facts came from the heuristic (sources 531–536 and 567–572) were re-extracted by Sonnet subagents, with every quote verified, for 283 facts; the bodies are unchanged.
+  - B-Mirk (571, meeting 29) is the Nokohi platform (same menu, checkout and Matcha Pair), so it moved to Nokohi (16).
+  - Meeting 25 got its real title back; it was imported before Plaud renamed it.
+- **Prince's Plaud** (princewagan08, in Mar's Chrome): read-only, authorized by Mar.
+  - Seven ADVO recordings are now meetings 32–38 with sources 580–586 (88 facts): the San Juan Flood pitch 10-14 (→22), the PCEDM/PCP platform demo 10-14 (→26, personal half cut), PCP app pricing, PCPI website and convention, and the PCP member portal (Inbox, lead 22 "Philippine College of Physicians (PCP)"), plus Felici Vista Verde 1 and 2 (Inbox; brand unclear).
+  - **They hold the Plaud AI summaries only.** The transcript list is virtualized, and every way of moving the full text off the page was blocked: downloads, the clipboard, and a POST to localhost. His other 8 files are lectures, clips and Plaud's onboarding files.
+  - For full transcripts and automatic polling, Prince connects his own Plaud MCP and his `tokens-mcp.json` gets polled as a second grant.
 - **Every other scraped chat with an ADVO-word hit was checked:** Stephen Derrick Banaga, Externals, Mark Nadala Revelo, yung stunnas, TrajectoVisa, Tristan Fragada and ZUNIGAS. None carries ADVO business: the hits are names like "Feliciano", professor-rating tables, dev logs, or a passing "check advo.ph". All were left out on purpose.
 - **Source 548 (FunRide comments)** now holds the full first sheet via the public CSV export: 17 items. Its facts still come from the first 11.
 - **`scripts/polkadoc-chat.mjs --near N`** keeps only messages within N of an ADVO or client word, for 1:1 chats. `--until` sets an end date.
