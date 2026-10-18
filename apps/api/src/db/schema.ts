@@ -1955,6 +1955,10 @@ export const memberWebhook = pgTable(
       .references(() => teamMember.teamMemberId, { onDelete: "cascade" }),
     url: text("url").notNull(),
     secretEncrypted: text("secret_encrypted").notNull(),
+    /** Defaults to Authorization. Ignored when authHeaderValueEncrypted is null. */
+    authHeaderName: varchar("auth_header_name", { length: 100 }).notNull().default("Authorization"),
+    /** AES-256-GCM via encryptSecret. Null = no extra header on delivery. Never returned. */
+    authHeaderValueEncrypted: text("auth_header_value_encrypted"),
     isActive: boolean("is_active").notNull().default(true),
     consecutiveFailures: integer("consecutive_failures").notNull().default(0),
     lastDeliveryAt: timestamp("last_delivery_at", { withTimezone: true }),

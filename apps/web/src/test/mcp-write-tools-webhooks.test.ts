@@ -257,7 +257,7 @@ describe.skipIf(skipWhenApiDown)("Member webhooks (Phase 2)", () => {
   let adminToken: string;
   let teamMember_: TeamAccount | undefined;
   let listenerPort: number;
-  let receivedBodies: { raw: string; signature: string | null }[] = [];
+  let receivedBodies: { raw: string; signature: string | null; event: string | null; authorization: string | null }[] = [];
   let server: ReturnType<typeof createServer>;
 
   beforeAll(async () => {
@@ -274,6 +274,8 @@ describe.skipIf(skipWhenApiDown)("Member webhooks (Phase 2)", () => {
           receivedBodies.push({
             raw: Buffer.concat(chunks).toString("utf8"),
             signature: (req.headers["x-advo-signature"] as string) ?? null,
+            event: (req.headers["x-advo-event"] as string) ?? null,
+            authorization: (req.headers.authorization as string) ?? null,
           });
           res.writeHead(200);
           res.end("ok");
@@ -350,6 +352,81 @@ describe.skipIf(skipWhenApiDown)("Member webhooks (Phase 2)", () => {
   it("never exposes secretEncrypted anywhere in the admin console response", async () => {
     const res = await api("GET", "/api/webhooks", undefined, adminToken);
     const text = JSON.stringify(res.body);
-    expect(text).not.toMatch(/secretEncrypted|secret_encrypted/);
+    expect(text).not.toMatch(/secretEncrypted|secret_encrypted|authHeaderValueEncrypted|auth_header_value_encrypted/);
+  });
+
+  it("test delivery sends the optional Authorization header and list responses only say whether it is set", async () => {
+    if (!teamMember_) return;
+    receivedBodies = [];
+    const bearer = "Bearer cursor_wh_test_9f3a_do_not_leak";
+
+    const existing = await api("GET", "/api/webhooks", undefined, adminToken);
+    const mine = (existing.body.data as { memberWebhookId: number; teamMemberId: number }[]).find(
+      (w) => w.teamMemberId === teamMember_!.teamMemberId,
+    );
+
+    let memberWebhookId: number;
+    if (mine) {
+      memberWebhookId = mine.memberWebhookId;
+      const patched = await api(
+        "PATCH",
+        `/api/webhooks/${memberWebhookId}`,
+        { url: `http://127.0.0.1:${listenerPort}/hook`, isActive: true, authHeader: bearer },
+        adminToken,
+      );
+      expect(patched.status).toBe(200);
+      expect(patched.body.data.authHeaderSet).toBe(true);
+      expect(JSON.stringify(patched.body)).not.toContain(bearer);
+    } else {
+      const created = await api(
+        "POST",
+        "/api/webhooks",
+        { teamMemberId: teamMember_.teamMemberId, url: `http://127.0.0.1:${listenerPort}/hook`, authHeader: bearer },
+        adminToken,
+      );
+      expect(created.status).toBe(201);
+      memberWebhookId = created.body.data.memberWebhookId as number;
+      expect(JSON.stringify(created.body)).not.toContain(bearer);
+    }
+
+    try {
+      const test = await api("POST", `/api/webhooks/${memberWebhookId}/test`, {}, adminToken);
+      expect(test.status).toBe(200);
+      expect(test.body.data.ok).toBe(true);
+
+      const delivery = receivedBodies[receivedBodies.length - 1];
+      expect(delivery.authorization).toBe(bearer);
+      expect(delivery.event).toBe("webhook_test");
+      expect(delivery.signature).toMatch(/^sha256=/);
+
+      const list = await api("GET", "/api/webhooks", undefined, adminToken);
+      const row = (list.body.data as { memberWebhookId: number; authHeaderSet: boolean }[]).find(
+        (w) => w.memberWebhookId === memberWebhookId,
+      );
+      expect(row?.authHeaderSet).toBe(true);
+      const listText = JSON.stringify(list.body);
+      expect(listText).not.toContain(bearer);
+      expect(listText).not.toMatch(/authHeaderValueEncrypted|auth_header_value_encrypted|secretEncrypted|secret_encrypted/);
+
+      const developer = await api("GET", "/api/team/developer", undefined, adminToken);
+      const developerText = JSON.stringify(developer.body);
+      expect(developerText).not.toContain(bearer);
+      expect(developerText).not.toMatch(/authHeaderValueEncrypted|auth_header_value_encrypted/);
+      const developerRow = (developer.body.data as { teamMemberId: number; memberWebhookAuthHeaderSet: boolean }[]).find(
+        (r) => r.teamMemberId === teamMember_!.teamMemberId,
+      );
+      expect(developerRow?.memberWebhookAuthHeaderSet).toBe(true);
+
+      const cleared = await api("PATCH", `/api/webhooks/${memberWebhookId}`, { authHeader: null }, adminToken);
+      expect(cleared.status).toBe(200);
+      expect(cleared.body.data.authHeaderSet).toBe(false);
+
+      receivedBodies = [];
+      const again = await api("POST", `/api/webhooks/${memberWebhookId}/test`, {}, adminToken);
+      expect(again.body.data.ok).toBe(true);
+      expect(receivedBodies[receivedBodies.length - 1].authorization).toBeNull();
+    } finally {
+      await api("PATCH", `/api/webhooks/${memberWebhookId}`, { isActive: false, authHeader: null }, adminToken);
+    }
   });
 });

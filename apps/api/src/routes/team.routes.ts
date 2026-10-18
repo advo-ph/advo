@@ -193,6 +193,7 @@ team.get("/developer", requireAuth, requireAdmin, async (c) => {
       memberWebhookUrl: memberWebhook.url,
       memberWebhookIsActive: memberWebhook.isActive,
       memberWebhookLastStatus: memberWebhook.lastStatus,
+      memberWebhookAuthHeaderSet: sql<boolean>`${memberWebhook.authHeaderValueEncrypted} IS NOT NULL`.mapWith(Boolean),
     })
     .from(teamMember)
     .leftJoin(botKey, and(eq(botKey.teamMemberId, teamMember.teamMemberId), isNull(botKey.revokedAt)))
@@ -235,6 +236,7 @@ team.get("/accounts", requireAuth, requireAdmin, async (c) => {
       memberWebhookUrl: memberWebhook.url,
       memberWebhookIsActive: memberWebhook.isActive,
       memberWebhookLastStatus: memberWebhook.lastStatus,
+      memberWebhookAuthHeaderSet: sql<boolean>`${memberWebhook.authHeaderValueEncrypted} IS NOT NULL`.mapWith(Boolean),
     })
     .from(teamMember)
     .leftJoin(user, eq(teamMember.userId, user.userId))
