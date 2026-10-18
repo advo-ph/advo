@@ -1,4 +1,4 @@
--- Migration 048: meeting.audio_url — where the recording's audio lives (a Drive link).
+-- Migration 054: meeting.audio_url — where the recording's audio lives (a Drive link).
 --
 -- Prince asked (2026-10-18) for one table of every meeting with its date, client, the
 -- Drive link to the audio and the Plaud link to the transcript. The Plaud link is
