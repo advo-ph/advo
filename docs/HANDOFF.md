@@ -34,8 +34,8 @@ Cross-links:
 
 **Honest open-items**
 - Mar's own schedule is not on the site (he chose to add it himself).
-- Andrei's times are approximate where the screenshot is small (e.g. Sat FAA 10:30–12:00 vs 12:30).
-- The import's unbounded "Busy" blocks for Kenneth (Wed 18:00–24:00, all Thursday) mirror "exams wednesdays nighttime and thursdays". They over-block on non-exam weeks; Kenneth should narrow them to exam dates.
+- ~~Andrei's times are approximate.~~ Enlarged: PEPC Tue/Fri 11:30–12:30, ArtAp 3:30–5:00 and Sat FAA 10:30–12:30, all matching the import.
+- ~~Kenneth's unbounded "Busy" blocks over-block.~~ Wed 18:00–24:00 and all-day Thursday are now bounded to his exam periods (Oct 19–28, Nov 30–Dec 10), per "exams … wednesdays nighttime tska thursdays".
 - The DPWH meeting is not scheduled yet: Anthony is aligning the date.
 
 ---
