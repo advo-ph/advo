@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { checkDb } from "../db/connection.js";
 import { errorCount, recentError } from "../utils/error-capture.js";
 import { plaudSyncStatus } from "../services/plaud-poll.service.js";
+import { openAuthState } from "../services/plaud-open.service.js";
 import { plaudAuthState } from "../services/plaud.service.js";
 import { mailHealth } from "../services/email.service.js";
 
@@ -17,6 +18,7 @@ health.get("/", async (c) => {
   const isDbOk = await checkDb();
   const poll = plaudSyncStatus();
   const auth = plaudAuthState();
+  const openAuth = openAuthState();
   const mail = mailHealth();
 
   // `status` stays the API's OWN liveness — it is what the uptime ping watches,
@@ -60,6 +62,11 @@ health.get("/", async (c) => {
       // Presence only — never the token itself.
       isTokenConfigured: auth.isConfigured,
       isTokenUsable: auth.isUsable,
+      transport: poll.transport,
+      // Open API grant: expiry dates only. The refresh token must be used within 7 days.
+      isOpenTokenConfigured: openAuth.isConfigured,
+      openAccessExpiresAt: openAuth.accessExpiresAt,
+      openRefreshExpiresAt: openAuth.refreshExpiresAt,
     },
 
     mail,

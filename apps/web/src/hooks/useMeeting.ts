@@ -17,6 +17,7 @@ export interface Meeting {
   description: string | null;
   plaudFileId: string | null;
   plaudShareKey: string | null;
+  audioUrl: string | null;
   isVisibleClient: boolean;
   createdBy: number | null;
   createdAt: string;
@@ -41,6 +42,7 @@ export interface MeetingInput {
   description?: string | null;
   plaudFileId?: string | null;
   plaudShareKey?: string | null;
+  audioUrl?: string | null;
   isVisibleClient?: boolean;
 }
 

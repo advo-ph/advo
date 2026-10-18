@@ -14,14 +14,18 @@ import {
   hasPlaudAuth,
   parseFileId,
   parseShareKey,
+  payloadFromDetail,
   type PlaudPayload,
 } from "./plaud.service.js";
+import { PlaudOpenError, getOpenFileDetail, hasOpenAuth } from "./plaud-open.service.js";
 
 export type ImportInput = {
   projectId: number;
   fileId?: string | null;
   shareUrl?: string | null;
   createdBy: number | null;
+  /** Already fetched (the Open API poll reads the detail to route it first). */
+  payload?: PlaudPayload | null;
 };
 
 function shareKeyOf(payload: PlaudPayload): string | null {
@@ -47,26 +51,33 @@ export async function importPlaudMeeting(input: ImportInput) {
   if (!proj) throw new HTTPException(400, { message: "Project not found" });
 
   let payload: PlaudPayload;
-  try {
-    // File-id fetch needs the consumer JWT. praud always sends a share URL
-    // too — use that when this box has no Plaud auth (prod today).
-    if (fileId && hasPlaudAuth()) {
-      payload = await fetchPlaudFile(fileId);
-    } else if (shareKey) {
-      payload = await fetchPlaudShare(shareKey);
-    } else {
-      throw new HTTPException(503, {
-        message: "Plaud auth is not configured (PLAUD_TOKEN or ~/.piper/plaud-auth.json)",
+  if (input.payload) {
+    payload = input.payload;
+  } else {
+    try {
+      // File-id fetch needs the consumer JWT. praud always sends a share URL
+      // too — use that when this box has no Plaud auth (prod today).
+      if (fileId && hasPlaudAuth()) {
+        payload = await fetchPlaudFile(fileId);
+      } else if (fileId && hasOpenAuth()) {
+        payload = payloadFromDetail(await getOpenFileDetail(fileId), null);
+      } else if (shareKey) {
+        payload = await fetchPlaudShare(shareKey);
+      } else {
+        throw new HTTPException(503, {
+          message:
+            "Plaud auth is not configured (PLAUD_TOKEN, ~/.piper/plaud-auth.json or PLAUD_OPEN_TOKEN_FILE)",
+        });
+      }
+    } catch (err) {
+      if (err instanceof HTTPException) throw err;
+      if (err instanceof PlaudApiError || err instanceof PlaudOpenError) {
+        throw new HTTPException(502, { message: err.message });
+      }
+      throw new HTTPException(502, {
+        message: err instanceof Error ? err.message : "Plaud fetch failed",
       });
     }
-  } catch (err) {
-    if (err instanceof HTTPException) throw err;
-    if (err instanceof PlaudApiError) {
-      throw new HTTPException(502, { message: err.message });
-    }
-    throw new HTTPException(502, {
-      message: err instanceof Error ? err.message : "Plaud fetch failed",
-    });
   }
 
   if (!payload.transcript.trim()) {

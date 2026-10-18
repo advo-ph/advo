@@ -7,3 +7,14 @@ export function plaudShareUrl(key: string | null | undefined): string | null {
   }
   return `https://app.plaud.ai/share/${encodeURIComponent(key)}`;
 }
+
+/** The share link when one was made, else the owner's own Plaud page for the file id. */
+export function plaudMeetingUrl(meeting: {
+  plaudShareKey?: string | null;
+  plaudFileId?: string | null;
+}): string | null {
+  return (
+    plaudShareUrl(meeting.plaudShareKey) ??
+    (meeting.plaudFileId ? `https://web.plaud.ai/file/${encodeURIComponent(meeting.plaudFileId)}` : null)
+  );
+}

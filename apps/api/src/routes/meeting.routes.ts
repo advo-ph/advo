@@ -85,6 +85,7 @@ const meetingBaseShape = z.object({
   description: z.string().max(10_000).nullable().optional(),
   plaudShareKey: z.string().max(500).nullable().optional(),
   plaudFileId: z.string().max(64).nullable().optional(),
+  audioUrl: z.string().url().max(2000).nullable().optional(),
   isVisibleClient: z.boolean().optional(),
 });
 
@@ -267,6 +268,7 @@ meetingRoutes.get("/", async (c) => {
         description: meeting.description,
         plaudFileId: meeting.plaudFileId,
         plaudShareKey: meeting.plaudShareKey,
+        audioUrl: meeting.audioUrl,
         isVisibleClient: meeting.isVisibleClient,
         createdBy: meeting.createdBy,
         createdAt: meeting.createdAt,
@@ -381,6 +383,7 @@ meetingRoutes.post("/", requireTeam, zValidator("json", createSchema), async (c)
       description: data.description ?? null,
       plaudFileId: data.plaudFileId ?? null,
       plaudShareKey: data.plaudShareKey ?? null,
+      audioUrl: data.audioUrl ?? null,
       isVisibleClient: data.isVisibleClient ?? false,
       createdBy: currentUser.userId,
     })
@@ -452,6 +455,7 @@ meetingRoutes.patch("/:id", requireTeam, zValidator("json", updateSchema), async
   if (data.description !== undefined) values.description = data.description ?? null;
   if (data.plaudFileId !== undefined) values.plaudFileId = data.plaudFileId ?? null;
   if (data.plaudShareKey !== undefined) values.plaudShareKey = data.plaudShareKey ?? null;
+  if (data.audioUrl !== undefined) values.audioUrl = data.audioUrl ?? null;
   if (data.isVisibleClient !== undefined) values.isVisibleClient = data.isVisibleClient;
 
   const [updated] = await db()

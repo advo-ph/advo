@@ -474,7 +474,7 @@ async function fetchLinked(url: string): Promise<string> {
   return buf.toString("utf8");
 }
 
-async function hydrateDetail(detail: FileDetail): Promise<FileDetail> {
+export async function hydrateDetail(detail: FileDetail): Promise<FileDetail> {
   const list = item(detail);
   await Promise.all(
     list.map(async (c) => {

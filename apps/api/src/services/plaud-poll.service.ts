@@ -1,7 +1,11 @@
 /**
  * RSS-like probe of the Plaud ADVO folder.
- * New recordings (tag ADVO or name contains "advo") import into Inbox
- * without going through praud. Skips file ids already on meeting.
+ *
+ * Two transports. The consumer web API (browser JWT) reads the ADVO tag and
+ * imports into Inbox. The official Open API (OAuth, self-refreshing — see
+ * plaud-open.service.ts) has no tags, so each new recording is read, routed to
+ * its project by title and summary, and skipped when nothing in it names ADVO
+ * or a project. Skips file ids already on meeting either way.
  */
 import { inArray, isNotNull } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
@@ -14,7 +18,18 @@ import {
   importPlaudMeeting,
   resolveInboxProjectId,
 } from "./plaud-import.service.js";
-import { hasPlaudAuth, isTokenUsable, listAdvoFile, plaudAuthState } from "./plaud.service.js";
+import { extract, ingestBundle } from "./corpus.service.js";
+import { routeCandidate, routeRecording } from "./meeting-route.service.js";
+import { getOpenFileDetail, hasOpenAuth, listOpenFile } from "./plaud-open.service.js";
+import {
+  hasPlaudAuth,
+  isTokenUsable,
+  listAdvoFile,
+  payloadFromDetail,
+  plaudAuthState,
+  type PlaudFile,
+  type PlaudPayload,
+} from "./plaud.service.js";
 
 const log = createLogger("plaud-poll");
 
@@ -24,6 +39,7 @@ const MAX_BACKOFF_STEP = 5;
 
 export type PlaudSyncStatus = {
   isEnabled: boolean;
+  transport: "consumer" | "open" | null;
   isRunning: boolean;
   intervalSecond: number;
   lastSyncAt: string | null;
@@ -40,6 +56,7 @@ export type PlaudSyncStatus = {
 
 const status: PlaudSyncStatus = {
   isEnabled: false,
+  transport: null,
   isRunning: false,
   intervalSecond: 60,
   lastSyncAt: null,
@@ -83,9 +100,134 @@ function nextDelayMillisecond(): number {
  * hasPlaudAuth() only proves a token string exists.
  */
 function suppressedReason(): string | null {
+  if (transport()) return null;
   if (!hasPlaudAuth()) return "Plaud auth is not configured";
-  if (!isTokenUsable()) return plaudAuthState().deadReason ?? "Plaud token is not usable";
+  return plaudAuthState().deadReason ?? "Plaud token is not usable";
+}
+
+/** Consumer JWT when it works, else the Open API grant, else nothing. */
+function transport(): "consumer" | "open" | null {
+  if (isTokenUsable()) return "consumer";
+  if (hasOpenAuth()) return "open";
   return null;
+}
+
+/**
+ * Open API files already read and judged not ADVO. In memory only: after a
+ * restart the walk re-reads them once, bounded by the first imported file.
+ */
+const notAdvoFileId = new Set<string>();
+
+/** Gap between Open API detail reads within one tick. */
+const OPEN_READ_GAP_MILLISECOND = 750;
+
+/** Optional floor (ISO date) below which the Open API walk never reaches. */
+function openSince(): number | null {
+  const raw = process.env.PLAUD_OPEN_SINCE;
+  if (!raw) return null;
+  const t = Date.parse(raw);
+  return Number.isNaN(t) ? null : t;
+}
+
+/**
+ * A routed meeting also lands in the corpus, as POST /api/corpus/ingest/plaud does
+ * for a share link: facts, terms and actions with the transcript as the body.
+ * Off with PLAUD_CORPUS_INGEST=0. A failure here never undoes the meeting.
+ */
+async function ingestToCorpus(
+  payload: PlaudPayload,
+  fileId: string,
+  projectId: number | null,
+  meetingId: number | null,
+  createdBy: number | null,
+): Promise<void> {
+  if (process.env.PLAUD_CORPUS_INGEST === "0") return;
+  try {
+    const extraction = await extract(payload.transcript, payload.recordedAt);
+    await ingestBundle(
+      {
+        source: {
+          kind: "plaud",
+          externalId: fileId,
+          url: `https://web.plaud.ai/file/${fileId}`,
+          title: payload.title,
+          occurredAt: payload.recordedAt,
+          summary: extraction.summary ?? payload.summary ?? null,
+          body: payload.transcript,
+          projectId,
+          meta: { extractionMethod: extraction.method, meetingId, via: "plaud-open-poll" },
+        },
+        fact: extraction.fact,
+        term: extraction.term,
+        action: extraction.action,
+      },
+      createdBy,
+    );
+  } catch (err) {
+    recordError("plaud-corpus", err);
+    log.warn({ err, fileId }, "corpus ingest of a Plaud meeting failed; meeting kept");
+  }
+}
+
+/**
+ * Open API tick: list the new head, read each recording, route it, import the
+ * ADVO ones under their project (Inbox when the project is unclear).
+ */
+async function syncOpen(seenFileId: Set<string>): Promise<{
+  imported: number;
+  skipped: number;
+  seen: number;
+  importedMeetingId: number[];
+}> {
+  const since = openSince();
+  const file = await listOpenFile(
+    (f: PlaudFile) =>
+      seenFileId.has(f.fileId) || (since !== null && f.startAt !== null && Date.parse(f.startAt) < since),
+  );
+  const fresh = file.filter((f) => !notAdvoFileId.has(f.fileId));
+  const candidate = fresh.length > 0 ? await routeCandidate() : [];
+  const createdBy = fresh.length > 0 ? await firstAdminUserId() : null;
+
+  let imported = 0;
+  let skipped = file.length - fresh.length;
+  const importedMeetingId: number[] = [];
+  for (const [index, f] of fresh.entries()) {
+    // The Open API rate-limits detail reads; a first run walks months of files.
+    if (index > 0) await new Promise((resolve) => setTimeout(resolve, OPEN_READ_GAP_MILLISECOND));
+    try {
+      const payload = payloadFromDetail(await getOpenFileDetail(f.fileId), null);
+      // No transcript yet: leave it unjudged so the next tick reads it again.
+      if (!payload.transcript.trim()) {
+        skipped += 1;
+        continue;
+      }
+      const route = routeRecording({ title: payload.title, summary: payload.summary }, candidate);
+      if (!route.isAdvo) {
+        notAdvoFileId.add(f.fileId);
+        skipped += 1;
+        continue;
+      }
+      const projectId = route.projectId ?? (await resolveInboxProjectId(null));
+      const result = await importPlaudMeeting({ projectId, fileId: f.fileId, createdBy, payload });
+      if (result.created) {
+        imported += 1;
+        if (result.meeting?.meetingId) importedMeetingId.push(result.meeting.meetingId);
+        await ingestToCorpus(payload, f.fileId, route.projectId, result.meeting?.meetingId ?? null, createdBy);
+        log.info(
+          { fileId: f.fileId, projectId, matched: route.matched, score: route.score },
+          "Plaud recording routed",
+        );
+      } else skipped += 1;
+    } catch (err) {
+      skipped += 1;
+      if (err instanceof HTTPException && (err.status === 422 || err.status === 502)) {
+        log.info({ fileId: f.fileId, status: err.status }, "skip Plaud file");
+        continue;
+      }
+      throw err;
+    }
+  }
+  return { imported, skipped, seen: file.length, importedMeetingId };
 }
 
 /** Plaud file ids already on a meeting row — the page walk's stop set. */
@@ -99,6 +241,57 @@ async function importedFileId(): Promise<Set<string>> {
     if (r.plaudFileId) id.add(r.plaudFileId);
   }
   return id;
+}
+
+/** Consumer tick: every recording in the ADVO tag folder goes to Inbox. */
+async function syncConsumer(seenFileId: Set<string>): Promise<{
+  imported: number;
+  skipped: number;
+  seen: number;
+  importedMeetingId: number[];
+}> {
+  const file = await listAdvoFile(seenFileId);
+
+  const fileId = file.map((f) => f.fileId);
+  const existing = new Set<string>();
+  if (fileId.length > 0) {
+    const row = await db()
+      .select({ plaudFileId: meeting.plaudFileId })
+      .from(meeting)
+      .where(inArray(meeting.plaudFileId, fileId));
+    for (const r of row) {
+      if (r.plaudFileId) existing.add(r.plaudFileId);
+    }
+  }
+
+  const fresh = file.filter((f) => !existing.has(f.fileId));
+  const projectId = await resolveInboxProjectId(null);
+  const createdBy = await firstAdminUserId();
+
+  let imported = 0;
+  let skipped = existing.size;
+  const importedMeetingId: number[] = [];
+  for (const f of fresh) {
+    try {
+      const result = await importPlaudMeeting({
+        projectId,
+        fileId: f.fileId,
+        createdBy,
+      });
+      if (result.created) {
+        imported += 1;
+        if (result.meeting?.meetingId) importedMeetingId.push(result.meeting.meetingId);
+      } else skipped += 1;
+    } catch (err) {
+      skipped += 1;
+      if (err instanceof HTTPException && (err.status === 422 || err.status === 502)) {
+        log.info({ fileId: f.fileId, status: err.status }, "skip Plaud file");
+        continue;
+      }
+      throw err;
+    }
+  }
+  return { imported, skipped, seen: file.length, importedMeetingId };
 }
 
 export async function syncPlaudFolder(): Promise<PlaudSyncStatus> {
@@ -123,48 +316,11 @@ export async function syncPlaudFolder(): Promise<PlaudSyncStatus> {
     // Feed already-imported ids in so the page walk stops at the first one it
     // recognises instead of pulling the whole account every tick.
     const seenFileId = await importedFileId();
-    const file = await listAdvoFile(seenFileId);
-    status.seenCount = file.length;
-
-    const fileId = file.map((f) => f.fileId);
-    const existing = new Set<string>();
-    if (fileId.length > 0) {
-      const row = await db()
-        .select({ plaudFileId: meeting.plaudFileId })
-        .from(meeting)
-        .where(inArray(meeting.plaudFileId, fileId));
-      for (const r of row) {
-        if (r.plaudFileId) existing.add(r.plaudFileId);
-      }
-    }
-
-    const fresh = file.filter((f) => !existing.has(f.fileId));
-    const projectId = await resolveInboxProjectId(null);
-    const createdBy = await firstAdminUserId();
-
-    let imported = 0;
-    let skipped = existing.size;
-    const importedMeetingId: number[] = [];
-    for (const f of fresh) {
-      try {
-        const result = await importPlaudMeeting({
-          projectId,
-          fileId: f.fileId,
-          createdBy,
-        });
-        if (result.created) {
-          imported += 1;
-          if (result.meeting?.meetingId) importedMeetingId.push(result.meeting.meetingId);
-        } else skipped += 1;
-      } catch (err) {
-        skipped += 1;
-        if (err instanceof HTTPException && (err.status === 422 || err.status === 502)) {
-          log.info({ fileId: f.fileId, status: err.status }, "skip Plaud file");
-          continue;
-        }
-        throw err;
-      }
-    }
+    const via = transport();
+    status.transport = via;
+    const { imported, skipped, seen, importedMeetingId } =
+      via === "open" ? await syncOpen(seenFileId) : await syncConsumer(seenFileId);
+    status.seenCount = seen;
 
     status.importedCount = imported;
     status.importedMeetingId = importedMeetingId;
@@ -174,7 +330,7 @@ export async function syncPlaudFolder(): Promise<PlaudSyncStatus> {
     status.lastSyncAt = new Date().toISOString();
     status.lastSuccessAt = status.lastSyncAt;
     if (imported > 0) {
-      log.info({ imported, skipped, seen: file.length }, "Plaud ADVO folder sync");
+      log.info({ imported, skipped, seen, transport: via }, "Plaud ADVO folder sync");
     }
   } catch (err) {
     status.lastError = err instanceof Error ? err.message : "Plaud sync failed";

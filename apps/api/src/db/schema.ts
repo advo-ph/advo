@@ -548,6 +548,8 @@ export const meeting = pgTable(
     endsAt: timestamp("ends_at", { withTimezone: true }),
     location: varchar("location", { length: 255 }),
     description: text("description"),
+    // Drive (or other) link to the audio, migration 048.
+    audioUrl: text("audio_url"),
   },
   (t) => [
     index("idx_meeting_project").on(t.projectId),

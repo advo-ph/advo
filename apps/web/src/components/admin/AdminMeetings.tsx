@@ -40,7 +40,7 @@ import {
   type ProposeTaskResult,
 } from "@/hooks/useMeeting";
 
-import { plaudShareUrl } from "@/lib/plaud";
+import { plaudMeetingUrl } from "@/lib/plaud";
 import { MeetingTaskPreview } from "./MeetingTaskPreview";
 import { useRecordingActions, useRecordingList } from "@/hooks/useRecordings";
 import { startPolling } from "@/hooks/useJobPoller";
@@ -50,6 +50,7 @@ import ConfirmDeleteDialog from "./ConfirmDeleteDialog";
 interface ProjectOption {
   project_id: number;
   title: string;
+  client?: { company_name?: string } | null;
 }
 
 interface FormState {
@@ -60,6 +61,7 @@ interface FormState {
   startsAt: string;      // datetime-local — for scheduled
   endsAt: string;        // datetime-local — optional end
   location: string;
+  audioUrl: string;
   transcript: string;
 }
 
@@ -71,6 +73,7 @@ const emptyForm = (): FormState => ({
   startsAt: "",
   endsAt: "",
   location: "",
+  audioUrl: "",
   transcript: "",
 });
 
@@ -164,9 +167,11 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
 
   const projectTitle = (id: number) =>
     projects.find((p) => p.project_id === id)?.title ?? `Project #${id}`;
+  const clientName = (id: number | null) =>
+    (id ? projects.find((p) => p.project_id === id)?.client?.company_name : null) ?? "—";
 
   const withPlaud = useMemo(
-    () => meeting.filter((m) => m.plaudShareKey).length,
+    () => meeting.filter((m) => plaudMeetingUrl(m)).length,
     [meeting],
   );
 
@@ -197,6 +202,7 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
       startsAt: m.startsAt ? toLocalInput(m.startsAt) : "",
       endsAt: m.endsAt ? toLocalInput(m.endsAt) : "",
       location: m.location ?? "",
+      audioUrl: m.audioUrl ?? "",
       transcript: m.transcript,
     });
     setDialogOpen(true);
@@ -214,6 +220,7 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
       startsAt: form.startsAt ? fromLocalInput(form.startsAt) : null,
       endsAt: form.endsAt ? fromLocalInput(form.endsAt) : null,
       location: form.location.trim() || null,
+      audioUrl: form.audioUrl.trim() || null,
       transcript: form.transcript.trim(),
     };
     try {
@@ -511,7 +518,9 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
         <THead>
           <span className="flex-1">Title</span>
           <span className="w-40 hidden md:block">Project</span>
+          <span className="w-36 hidden lg:block">Client</span>
           <span className="w-40">When</span>
+          <span className="w-28 hidden md:block">Links</span>
           <span className="w-24">Status</span>
           <span className="w-16 text-right"></span>
         </THead>
@@ -524,7 +533,7 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
           ) : (
             [...upcoming, ...past].map((m, idx) => {
               const isOpen = expandedId === m.meetingId;
-              const share = plaudShareUrl(m.plaudShareKey);
+              const share = plaudMeetingUrl(m);
               const isUpcomingMeeting = m.startsAt && new Date(m.startsAt).getTime() > Date.now();
               // Show divider before the first past meeting when both groups are non-empty.
               const showDivider = upcoming.length > 0 && past.length > 0 && idx === upcoming.length;
@@ -551,10 +560,28 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
                     <span className="w-40 truncate text-muted-foreground hidden md:block">
                       {m.projectId ? projectTitle(m.projectId) : "No project"}
                     </span>
+                    <span className="w-36 truncate text-muted-foreground text-xs hidden lg:block">
+                      {clientName(m.projectId)}
+                    </span>
                     <span className="w-40 text-muted-foreground tabular-nums text-xs">
                       {isUpcomingMeeting
                         ? fmtWhen(m.startsAt!)
                         : fmtWhen(m.recordedAt)}
+                    </span>
+                    <span
+                      className="w-28 hidden md:flex items-center gap-3 text-xs"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {m.audioUrl ? (
+                        <a href={m.audioUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground underline-offset-2 hover:underline">
+                          Audio
+                        </a>
+                      ) : null}
+                      {share ? (
+                        <a href={share} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground underline-offset-2 hover:underline">
+                          Plaud
+                        </a>
+                      ) : null}
                     </span>
                     <span className="w-24">
                       {isUpcomingMeeting ? (
@@ -760,6 +787,17 @@ const AdminMeetings = ({ projects }: { projects: ProjectOption[] }) => {
                 placeholder="e.g. Zoom, Office"
                 value={form.location}
                 onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+                className="h-9"
+              />
+            </div>
+
+            <div>
+              <span className="text-xs text-muted-foreground block mb-1">Audio link (optional)</span>
+              <Input
+                type="url"
+                placeholder="Google Drive link to the recording"
+                value={form.audioUrl}
+                onChange={(e) => setForm((f) => ({ ...f, audioUrl: e.target.value }))}
                 className="h-9"
               />
             </div>
