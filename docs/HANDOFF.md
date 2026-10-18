@@ -33,7 +33,7 @@ Cross-links:
 - **Reply targets.** `scripts/polkadoc-chat.mjs` now keeps them as `(↪ reply to Name)`. Bodies of 538, 539, 563, 556, 557 and 564 were regenerated with them, with the same personal cuts and credential redaction (tighter rules: "Secretary", Drive links and laughter are no longer redacted). All 359 fact quotes still match their bodies.
 
 **Honest open-items**
-- Mar's own schedule is not on the site (he chose to add it himself).
+- ~~Mar's own schedule is not on the site.~~ Added from his `~/Code/college/class/2026-1/<course>/about.md` schedule fields on the Mac (8 courses: LAS 111/50 Mon/Thu, LLAW/HISTO/PHILO/QUANT Tue/Fri, PEPC and ITMGT Wed), plus the group rule. All 11 active members now have blocks; RL has no classes (term done).
 - ~~Andrei's times are approximate.~~ Enlarged: PEPC Tue/Fri 11:30–12:30, ArtAp 3:30–5:00 and Sat FAA 10:30–12:30, all matching the import.
 - ~~Kenneth's unbounded "Busy" blocks over-block.~~ Wed 18:00–24:00 and all-day Thursday are now bounded to his exam periods (Oct 19–28, Nov 30–Dec 10), per "exams … wednesdays nighttime tska thursdays".
 - The DPWH meeting is not scheduled yet: Anthony is aligning the date.
