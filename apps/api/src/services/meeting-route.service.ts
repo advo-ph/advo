@@ -78,7 +78,8 @@ function countOf(haystack: string, needle: string): number {
 /**
  * A strong name weighs 6 in the title and 2 per summary mention (5 at most); a weak
  * word 2 and 1 (3 at most), so "Power Mac Center" in a title outweighs a summary
- * that says "parking" five times. A project wins only
+ * that says "parking" five times. Title hits decide first; the summary only
+ * breaks a tie or routes a recording whose title names nothing. A project wins only
  * with score >= 2 and a strict lead over the runner-up; a tie stays unrouted
  * (Inbox) rather than guessed. A recording is ADVO when it says "ADVO" or hits a
  * strong name; weak words never make a recording ADVO on their own.
@@ -90,32 +91,37 @@ export function routeRecording(
   const title = text.title ?? "";
   const summary = text.summary ?? "";
   const sayAdvo = /\badvo\b/i.test(title) || /\badvo\b/i.test(summary);
-  let isStrongHit = false;
+  // Pass 1: is this ADVO at all? It says so, or it names a project outright.
+  const isStrongHit = candidate.some((c) => c.strong.some((k) => countOf(title, k) + countOf(summary, k) > 0));
+  const isAdvo = sayAdvo || isStrongHit;
+  // Pass 2: once it is ADVO, the ordinary words count too ("Flood Platform").
   const scored = candidate
     .map((c) => {
       let score = 0;
+      let titleScore = 0;
       const matched: string[] = [];
-      const keyword = sayAdvo ? [...c.strong, ...c.weak] : c.strong;
+      const keyword = isAdvo ? [...c.strong, ...c.weak] : c.strong;
       for (const k of keyword) {
         const isStrong = c.strong.includes(k);
-        const hit = isStrong
-          ? countOf(title, k) * 6 + Math.min(countOf(summary, k), 5) * 2
-          : countOf(title, k) * 2 + Math.min(countOf(summary, k), 3);
+        const titleHit = countOf(title, k) * (isStrong ? 6 : 2);
+        const hit = titleHit + Math.min(countOf(summary, k), isStrong ? 5 : 3) * (isStrong ? 2 : 1);
+        titleScore += titleHit;
         if (hit > 0) {
           score += hit;
           matched.push(k);
-          if (isStrong) isStrongHit = true;
         }
       }
-      return { projectId: c.projectId, score, matched };
+      return { projectId: c.projectId, score, titleScore, matched };
     })
     .filter((s) => s.score > 0)
-    .sort((a, b) => b.score - a.score);
+    // The title is what the recording is about; the summary only breaks ties.
+    .sort((a, b) => b.titleScore - a.titleScore || b.score - a.score);
 
   const best = scored[0];
   const runnerUp = scored[1];
-  const isAdvo = sayAdvo || isStrongHit;
-  if (isAdvo && best && best.score >= 2 && (!runnerUp || best.score > runnerUp.score)) {
+  const isAhead =
+    !runnerUp || best.titleScore > runnerUp.titleScore || (best.titleScore === runnerUp.titleScore && best.score > runnerUp.score);
+  if (isAdvo && best && best.score >= 2 && isAhead) {
     return { projectId: best.projectId, isAdvo, score: best.score, matched: best.matched };
   }
   return { projectId: null, isAdvo, score: best?.score ?? 0, matched: best?.matched ?? [] };
