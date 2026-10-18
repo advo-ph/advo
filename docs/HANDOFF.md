@@ -45,6 +45,8 @@ Cross-links:
   - 559 and 560 are Anthony's minutes for Jul 27 and May 26. His "Minutes of the Meeting" folder is link-shared, so the public folder page lists it.
   - Myriad meetings 4, 5, 7, 8, 11, 12 and 17 link their Drive audio.
 - **Credentials:** 49 credential lines were redacted from the chat bodies. Those chats still contain shared ADVO passwords in Messenger itself (contact@advo.ph, the advo.developers Gmail, the Contabo root, and a ChatGPT login), so rotate them.
+- **Every other scraped chat with an ADVO-word hit was checked:** Stephen Derrick Banaga, Externals, Mark Nadala Revelo, yung stunnas, TrajectoVisa, Tristan Fragada and ZUNIGAS. None carries ADVO business: the hits are names like "Feliciano", professor-rating tables, dev logs, or a passing "check advo.ph". All were left out on purpose.
+- **Source 548 (FunRide comments)** now holds the full first sheet via the public CSV export: 17 items. Its facts still come from the first 11.
 - **`scripts/polkadoc-chat.mjs --near N`** keeps only messages within N of an ADVO or client word, for 1:1 chats. `--until` sets an end date.
 - **Thirteen Drive recordings have no transcript** (Starbucks ×2, SM Aura 2, The Giving Cafe, three Azree clips, the Prince after-meeting call, Sonder, Omelette, Santolan, B-Mirk, Maya's). Mar wants Plaud only, with no local models. The Open API has no upload, so the files have to be imported into Plaud by hand; the poller then routes them.
 - **Not ingested:** the Mac-only chats (ADVO Developers, and the Andrei/Anthony/Kenneth/Keira/Prince GC), Oct 16–18 messages on the Mac, and the Prince DM (1:1, personal; left out on purpose). Re-run `node scripts/polkadoc-chat.mjs ~/polkadoc "<Platform/Thread>" --since <date>` on the Mac when it is back.
