@@ -15,6 +15,31 @@ Cross-links:
 
 ---
 
+## 2026-10-18 (night) — member schedules on the Availability page, attributed from ADVO Members and Flood
+
+> Asked: "implement the schedules of each member, make sure you get the attribution right and replies." The sources were the ADVO Members thread of 10-18 20:18–20:46 (schedule screenshots plus Anthony's compilation), the ADVO Flood thread of 10-18 19:31–20:29 (DPWH dates) and the Prince DM. Prod data only; no code change apart from the chat converter.
+
+**Already there.** Someone imported the class schedules on the site at 20:53, after Prince said "so u or me can import it there". Each was checked against its screenshot. Prince, Keira ("same lang kami ni keira"), Johann (the updated DLSU schedule with ECO ARCHERS), Anthony (Nursing), David (Architecture), Andrei and Ardy (the Ateneo lockscreen) match.
+
+**Fixed and added (availability_block):**
+- **Kenneth.** ILW (Oct 29–Nov 4) and Break (Nov 16–18) had gone in as all-day `school`, i.e. busy, though they are weeks without classes; they are now `work` on those dates. His October exam days (Oct 20–28) were added from his calendar, plus Wed training 12:30–16:00 and his stated Wednesday free hours.
+- **Schiffier.** The UST schedule from Anthony's compilation (owner confirmed by Mar).
+- **The free-time finder only counts `work` blocks minus busy ones**, and only Prince had any. Every member except Prince now has Anthony's group rule as `work` from 10-18 ("Sun: All Available, Full Day / M-W-T-F-S: 6pm Onward / Tuesdays: 8pm onward"), labelled with its source.
+- **Dated availability from the Flood GC.** Prince (Oct 27 from 13:30, Oct 28 all day, Oct 30 from 13:30, dinners next week), David (Oct 23–25, 27 morning, 31) and Johann (Oct 19 from 14:00, Oct 20–23 from 16:00). RL is available every day (classes done).
+- **Scheduled meetings.** 39, San Juan City Hall pitch, Oct 21 09:00–10:00 (Flood; Prince, David, Johann). 40, ECEAS, Oct 21 18:00 (Inbox; Prince).
+
+**Corpus.**
+- **New sources.** 593 is Flood Oct 17–18 (DPWH responded via Usec Allan Yap, OTT ecoLog final, meeting dates). 594 is Members 10-18 evening, with every schedule written out as read from the screenshots. 595 is the Prince DM evening.
+- **Reply targets.** `scripts/polkadoc-chat.mjs` now keeps them as `(↪ reply to Name)`. Bodies of 538, 539, 563, 556, 557 and 564 were regenerated with them, with the same personal cuts and credential redaction (tighter rules: "Secretary", Drive links and laughter are no longer redacted). All 359 fact quotes still match their bodies.
+
+**Honest open-items**
+- Mar's own schedule is not on the site (he chose to add it himself).
+- Andrei's times are approximate where the screenshot is small (e.g. Sat FAA 10:30–12:00 vs 12:30).
+- The import's unbounded "Busy" blocks for Kenneth (Wed 18:00–24:00, all Thursday) mirror "exams wednesdays nighttime and thursdays". They over-block on non-exam weeks; Kenneth should narrow them to exam dates.
+- The DPWH meeting is not scheduled yet: Anthony is aligning the date.
+
+---
+
 ## 2026-10-18 — Plaud goes automatic (Open API), meetings routed to projects, Sep 11–Oct 17 chats in the corpus
 
 > Prince (Messenger, 2026-10-18 15:28): _"whenever we finish a meeting and plaud creates transcription, itll automatically add to the advo website to the project"_. Shipped to prod (`8ec2ed5`), migration `054` applied by hand, deployed. The PC vault was used because the Mac went offline mid-session. The Mac copy is newer: it was written at Oct 18 16:07 and has 243 chats against the PC's 235.

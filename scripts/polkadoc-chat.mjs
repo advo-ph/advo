@@ -13,7 +13,7 @@
  * `YYYY-MM-DD HH:MM Sender: text`, ⏎ for a newline inside a message, and
  * `[ATT name] ocr…` for an attachment with its OCR or transcript text, cut to
  * --ocr characters (screenshots OCR to kilobytes of noise; the Prince DM is 54 MB).
- * "You" becomes "Gelo". Exact repeated blocks (polkadoc's capture twins) are dropped.
+ * "You" becomes "Gelo". A reply keeps its target as `(↪ reply to Name)`. Exact repeated blocks (polkadoc's capture twins) are dropped.
  *
  * With --post it calls POST /api/corpus/ingest/text on ADVO_API_URL as ADVO_EMAIL,
  * kind "text", externalId `polkadoc:<Platform/Thread>` (plus `#<suffix>` when given),
@@ -81,6 +81,13 @@ export function parseThread(text, { ocr = 300 } = {}) {
     };
     for (const l of line) {
       if (l.startsWith("## ") || l.startsWith("### ")) continue;
+      const reply = l.match(/^>\s*↪\s*_in reply to (?:\*\*(.+?)\*\*|(\S+))_/);
+      if (reply) {
+        // Keep who a reply answers: "You" is Gelo, as it is for senders.
+        const to = (reply[1] ?? reply[2] ?? "").trim().replace(/^You$/, "Gelo");
+        part.push(`(↪ reply to ${to})`);
+        continue;
+      }
       if (/^>\s*↪/.test(l)) continue;
       const forward = l.match(/^>\s*⤳\s*_forwarded from \*\*(.+?)\*\*_/);
       if (forward) {
