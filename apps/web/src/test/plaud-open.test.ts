@@ -24,6 +24,7 @@ const PROJECT: [number, string, string][] = [
   [24, "ADVO School (venture, paused)", "ADVO Inbox"],
   [25, "FunRide PH", "Myriad Entertainment Corporation"],
   [26, "PCEDM App", "PCEDM"],
+  [27, "PCP App", "Philippine College of Physicians"],
 ];
 const candidate: RouteCandidate[] = PROJECT.map(([projectId, title, company]) => ({
   projectId,
@@ -93,6 +94,10 @@ describe("routeRecording", () => {
       routeRecording({ title: "10-18 Meeting: Clinic Billing Module, PhilHealth SOA Automation, Digital Waivers" }, candidate)
         .projectId,
     ).toBe(2);
+  });
+
+  it("routes PCP meetings to the PCP App", () => {
+    expect(routeRecording({ title: "10-14 Pulong: Presyo ng PCP App at Pagpapahusay ng mga Tampok" }, candidate).projectId).toBe(27);
   });
 
   it("knows Plaud's misspellings", () => {

@@ -43,6 +43,7 @@ const PROJECT_ALIAS: Record<string, { strong: string[]; weak: string[] }> = {
   advopark: { strong: ["advopark", "advo park", "advol park", "advol parks"], weak: ["parking"] },
   school: { strong: ["advo school"], weak: ["school id"] },
   pcedm: { strong: ["pcedm"], weak: [] },
+  "pcp app": { strong: ["pcp", "pcpi", "philippine college of physicians"], weak: [] },
   tmc: { strong: ["tmc registry"], weak: ["tmc", "medical city"] },
   "coffee rush": { strong: ["coffee rush"], weak: ["eastridge"] },
   "camps ph": { strong: ["camps ph"], weak: [] },
