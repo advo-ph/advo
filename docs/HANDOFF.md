@@ -15,6 +15,35 @@ Cross-links:
 
 ---
 
+## 2026-10-18 — Plaud goes automatic (Open API), meetings routed to projects, Sep 11–Oct 17 chats in the corpus
+
+> Prince (Messenger, 2026-10-18 15:28): _"whenever we finish a meeting and plaud creates transcription, itll automatically add to the advo website to the project"_. Shipped to prod (`8ec2ed5`), migration `054` applied by hand, deployed. The PC vault was used because the Mac went offline mid-session. The Mac copy is newer: it was written at Oct 18 16:07 and has 243 chats against the PC's 235.
+
+**Automatic Plaud.** The poller now has a second transport: Plaud's official Open API (`platform.plaud.ai/developer/api`, the OAuth grant `@plaud-ai/mcp` uses), in `plaud-open.service.ts`.
+- **Token.** Access tokens last 24h, refresh tokens 7 days. Each refresh returns a new refresh token, and the old one keeps working, so the box and the Mac's MCP can share one grant. The token file sits on the box at `/opt/advo/apps/api/.plaud-open-token.json` (env `PLAUD_OPEN_TOKEN_FILE`, plus `PLAUD_OPEN_SINCE=2026-08-16`). It is in the MCP's own format, so a fresh `~/.plaud/tokens-mcp.json` from any logged-in machine can be copied over as-is.
+- **Routing.** The Open API has no tags, and the account is Mar's whole Plaud (lectures, personal notes). `meeting-route.service.ts` reads each new recording's title and summary. It imports a recording only when it says "ADVO" or names a project (full title, client name, or a curated alias such as Myriad, Power Mac Center, Felichi or Advol Parks). Ordinary words (flood, parking, coffee) count only after that. Title hits decide; ties go to Inbox. Checked against all 508 recordings since June: 24 are ADVO and no lecture gets through.
+- **Corpus.** Each routed meeting is also ingested into the corpus (`PLAUD_CORPUS_INGEST=0` turns this off). `/api/health` shows `plaud.transport` and the two token expiry dates.
+- **First tick on prod:** imported 6 meetings since Aug 16, ids 19–24. They are Nokohi 10-06 (→16), Flood 10-04, 09-11 and 09-10 (→22), Advol Parks 09-04 (→23), and Felichi 10-03 (→Inbox: Felici Gelato or Felici Cafe is unclear).
+- **Rate limit.** The API returns 429 after about 160 back-to-back reads. The client waits it out, and the poller spaces its reads 750 ms apart.
+
+**Meetings table.** It has Client, Audio (Drive) and Plaud columns, plus an "Audio link" field in the meeting dialog (`meeting.audio_url`, migration 054). Meeting 14 (FourlinQ 07-10) now links `Fourlinq Meeting.m4a` in Prince's Drive. Eight Fun Ride / Myriad meetings moved from Inbox to FunRide PH (25), along with their corpus sources.
+
+**Chats → corpus.** `scripts/polkadoc-chat.mjs` turns a polkadoc thread note into the corpus chat body format. Sonnet subagents extracted facts from the deltas after sources #46–50, with every quote checked verbatim. The result is sources 537–544: 182 facts, 24 terms, 40 actions.
+- 537 ADVO Core (Sep 11–Oct 17): FourlinQ ₱75k with ₱30k paid on 09-30 and ₱33k due after revisions; leads Unilab, PCEDM, PCP/PASOO, San Juan; the OPC filing.
+- 538 Flood (Sep 13–Oct 16): WATEC JV dropped 10-05; OTT/KELLER sensors; Ardhee JV; San Juan City Hall Oct 21.
+- 539–544: Members, Park, fourlinq junior devs, Schiffier (legal/OPC), Telegram FourlinQ, Slack.
+
+**Honest open-items**
+- **The prod Anthropic key has no credit** ("credit balance is too low"). Every server-side extraction falls back to the heuristic without saying so. That covers the poller's corpus step, where the six new meetings got 0–12 facts each, and `/ingest/text`/`/ingest/plaud`. Top up the key, then set `CORPUS_EXTRACT_MODEL` to a Sonnet model and re-ingest sources 531–536.
+- **Only Mar's Plaud account is read.** Prince's and Azree's recordings (the two Nokohi meetings Prince mentioned) are on their own accounts. Either they share them into Mar's account, or each of them logs into the MCP and their token file gets polled too (the poller takes one file today).
+- **The refresh token must be used within 7 days.** If the API is down for a week, copy a fresh `tokens-mcp.json` from the Mac.
+- **Not ingested:** the Mac-only chats (ADVO Developers, and the Andrei/Anthony/Kenneth/Keira/Prince GC), Oct 16–18 messages on the Mac, and the Prince DM (1:1, personal; left out on purpose). Re-run `node scripts/polkadoc-chat.mjs ~/polkadoc "<Platform/Thread>" --since <date>` on the Mac when it is back.
+- **Anthony's "Minutes of the Meeting" Drive folder** opens through the Drive connector, but its contents do not list, so they need sharing. Other audio sits in Prince's Drive (Power Mac clips dated 07-12, TGC, Starbucks, SM Aura, Azree clips) with no matching meeting row; none were linked on a guess.
+- `admin-credential` no longer logs in. Login is by username since `049`, and the password changed. The chat ingest ran the service code on the box instead.
+- `legal-compliance.test.ts › landing footer reaches every disclosure` fails on `origin/main` before this work.
+
+---
+
 ## 2026-09-13 (late night) — corpus sources keep their full text, and the admin can read it
 
 > **Merged (`8f6501e`), deployed, migration `047` applied on prod.** Verified live in a real browser at 1440px and 375px: Corpus → Sources lists every source ("50 of 468" with Load more), and a source such as #50 opens at `?source=50` with its full 372,973-character transcript. On prod, the project, kind, `q`, `externalId` and paging filters all return 200.

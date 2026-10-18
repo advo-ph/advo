@@ -5,3 +5,5 @@ uploads/
 .env.local
 *.log
 .vercel
+# Plaud Open API grant (refresh token) — lives on the box only
+.plaud-open-token.json
