@@ -100,7 +100,7 @@ JWT_SECRET=<64-char-random-string>
 JWT_REFRESH_SECRET=<64-char-random-string>
 
 # Optional
-# SECRET_ENCRYPTION_KEY=<32+ char random string>  # member_webhook secret encryption key;
+# SECRET_ENCRYPTION_KEY=<32+ char random string>  # member_webhook secret + optional auth-header encryption key;
 #   unset -> HKDF-derived from JWT_SECRET (distinct salt/info), so prod works with zero new
 #   env vars. Set this only if JWT_SECRET ever rotates and encrypted webhook secrets must
 #   survive that rotation independently. See apps/api/src/utils/crypto.ts.

@@ -58,6 +58,8 @@ interface DeveloperRow {
   memberWebhookUrl: string | null;
   memberWebhookIsActive: boolean | null;
   memberWebhookLastStatus: string | null;
+  /** True when an Authorization header is stored. The value itself is never sent to the browser. */
+  memberWebhookAuthHeaderSet: boolean | null;
 }
 
 const AdminSettings = () => {
@@ -94,6 +96,7 @@ const AdminSettings = () => {
 
   // Member webhooks — push alerts on every activity_log row.
   const [webhookUrlDraft, setWebhookUrlDraft] = useState<Record<number, string>>({});
+  const [webhookAuthDraft, setWebhookAuthDraft] = useState<Record<number, string>>({});
   const [webhookBusyId, setWebhookBusyId] = useState<number | null>(null);
   const [webhookTestResult, setWebhookTestResult] = useState<Record<number, "ok" | "failed">>({});
   const [newWebhookSecret, setNewWebhookSecret] = useState<{ memberName: string; secret: string } | null>(null);
@@ -202,10 +205,14 @@ const AdminSettings = () => {
       toast({ title: "Enter a webhook URL first", variant: "destructive" });
       return;
     }
+    const authHeader = (webhookAuthDraft[account.teamMemberId] ?? "").trim();
+    const payload: { url: string; authHeader?: string } = { url };
+    // Blank keeps a header already stored. A typed value replaces it.
+    if (authHeader) payload.authHeader = authHeader;
     setWebhookBusyId(account.teamMemberId);
     const res = account.memberWebhookId
-      ? await apiPatch(`/api/webhooks/${account.memberWebhookId}`, { url })
-      : await post<{ memberWebhookId: number; secret: string }>("/api/webhooks", { teamMemberId: account.teamMemberId, url });
+      ? await apiPatch(`/api/webhooks/${account.memberWebhookId}`, payload)
+      : await post<{ memberWebhookId: number; secret: string }>("/api/webhooks", { teamMemberId: account.teamMemberId, ...payload });
     setWebhookBusyId(null);
     if (res.error) {
       toast({ title: "Could not save webhook", description: res.error, variant: "destructive" });
@@ -216,6 +223,11 @@ const AdminSettings = () => {
     } else {
       toast({ title: `Webhook saved for ${account.name}` });
     }
+    setWebhookAuthDraft((prev) => {
+      const next = { ...prev };
+      delete next[account.teamMemberId];
+      return next;
+    });
     fetchDeveloperRows();
   };
 
@@ -516,6 +528,21 @@ const AdminSettings = () => {
                       placeholder="Webhook URL (optional)"
                       value={webhookUrlDraft[row.teamMemberId] ?? row.memberWebhookUrl ?? ""}
                       onChange={(e) => setWebhookUrlDraft((prev) => ({ ...prev, [row.teamMemberId]: e.target.value }))}
+                    />
+                    <Input
+                      className="h-8 text-xs flex-1 min-w-[10rem]"
+                      type="password"
+                      autoComplete="off"
+                      spellCheck={false}
+                      maxLength={4096}
+                      aria-label="Authorization header"
+                      placeholder={
+                        row.memberWebhookAuthHeaderSet
+                          ? "Authorization header (saved)"
+                          : "Authorization header (optional)"
+                      }
+                      value={webhookAuthDraft[row.teamMemberId] ?? ""}
+                      onChange={(e) => setWebhookAuthDraft((prev) => ({ ...prev, [row.teamMemberId]: e.target.value }))}
                     />
                     <div className="flex items-center gap-2">
                       <Button variant="outline" size="sm" className="h-8" disabled={busyHook} onClick={() => saveWebhook(row)}>

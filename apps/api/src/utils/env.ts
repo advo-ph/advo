@@ -146,10 +146,11 @@ const envSchema = z.object({
   ),
 
   /**
-   * Optional key for apps/api/src/utils/crypto.ts's webhook-secret encryption. Unset →
-   * derived via HKDF from JWT_SECRET (distinct salt/info), so prod works with zero new env
-   * vars. Set this only if JWT_SECRET ever rotates and encrypted webhook secrets must
-   * survive that rotation independently.
+   * Optional key for apps/api/src/utils/crypto.ts. Encrypts member-webhook signing
+   * secrets and the optional outbound auth header. Unset → derived via HKDF from
+   * JWT_SECRET (distinct salt/info), so prod works with zero new env vars. Set this
+   * only if JWT_SECRET ever rotates and those encrypted values must survive that
+   * rotation independently.
    */
   SECRET_ENCRYPTION_KEY: z.string().min(32).optional(),
 

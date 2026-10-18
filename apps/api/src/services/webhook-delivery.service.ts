@@ -9,7 +9,9 @@
  * plaud-poll.service.ts. Every 5s, pick up to 20 rows where
  * status IN ('queued','failed') AND next_attempt_at <= now(); for each, decrypt the
  * webhook's secret, sign the JSON body, POST with X-ADVO-Signature + X-ADVO-Event, 5s
- * timeout.
+ * timeout. When the webhook has an encrypted auth header, that header (name defaults
+ * to Authorization) is sent on the same POST. Signature headers are applied after it
+ * so a stored name can never overwrite them.
  */
 import { and, asc, eq, inArray, lte } from "drizzle-orm";
 import { db } from "../db/connection.js";
@@ -79,6 +81,33 @@ export async function queueDeliveriesForActivity(activityId: number): Promise<vo
   );
 }
 
+/** Headers for one outbound POST. ADVO signature headers are set last so they win. */
+export function buildDeliveryHeaders(input: {
+  secret: string;
+  body: string;
+  event: string;
+  authHeaderName?: string | null;
+  authHeaderValue?: string | null;
+}): Record<string, string> {
+  const headers: Record<string, string> = {};
+  const value = input.authHeaderValue?.trim() ?? "";
+  if (value) {
+    const name = (input.authHeaderName || "Authorization").trim() || "Authorization";
+    headers[name] = value;
+  }
+  headers["Content-Type"] = "application/json";
+  headers["X-ADVO-Signature"] = `sha256=${signPayload(input.secret, input.body)}`;
+  headers["X-ADVO-Event"] = input.event;
+  return headers;
+}
+
+type DeliveryWebhook = {
+  url: string;
+  secretEncrypted: string;
+  authHeaderName: string | null;
+  authHeaderValueEncrypted: string | null;
+};
+
 /** One synthetic delivery (no activityId), sent synchronously for an immediate pass/fail. */
 export async function sendTestDelivery(memberWebhookId: number): Promise<{ ok: boolean; error?: string }> {
   const d = db();
@@ -99,7 +128,7 @@ export async function sendTestDelivery(memberWebhookId: number): Promise<{ ok: b
     activityId: null,
   };
 
-  const result = await deliverOnce(webhook.url, webhook.secretEncrypted, payload);
+  const result = await deliverOnce(webhook, payload);
   await d
     .update(memberWebhook)
     .set({
@@ -114,29 +143,38 @@ export async function sendTestDelivery(memberWebhookId: number): Promise<{ ok: b
 }
 
 async function deliverOnce(
-  url: string,
-  secretEncrypted: string,
+  webhook: DeliveryWebhook,
   payload: WebhookEventPayload,
 ): Promise<{ ok: boolean; error?: string }> {
   const body = JSON.stringify(payload);
   let secret: string;
   try {
-    secret = decryptSecret(secretEncrypted);
+    secret = decryptSecret(webhook.secretEncrypted);
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Could not decrypt secret" };
   }
-  const signature = signPayload(secret, body);
+
+  let authHeaderValue: string | null = null;
+  if (webhook.authHeaderValueEncrypted) {
+    try {
+      authHeaderValue = decryptSecret(webhook.authHeaderValueEncrypted);
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : "Could not decrypt auth header" };
+    }
+  }
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MILLISECOND);
   try {
-    const response = await fetch(url, {
+    const response = await fetch(webhook.url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-ADVO-Signature": `sha256=${signature}`,
-        "X-ADVO-Event": payload.event,
-      },
+      headers: buildDeliveryHeaders({
+        secret,
+        body,
+        event: payload.event,
+        authHeaderName: webhook.authHeaderName,
+        authHeaderValue,
+      }),
       body,
       signal: controller.signal,
     });
@@ -166,7 +204,7 @@ async function processOne(row: typeof webhookDelivery.$inferSelect): Promise<voi
     return;
   }
 
-  const result = await deliverOnce(webhook.url, webhook.secretEncrypted, row.payload as WebhookEventPayload);
+  const result = await deliverOnce(webhook, row.payload as WebhookEventPayload);
   const nextAttemptCount = row.attemptCount + 1;
 
   if (result.ok) {

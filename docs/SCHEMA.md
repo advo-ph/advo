@@ -564,7 +564,7 @@ member; a key is revoked, never deleted, so the audit trail survives.
 
 ### member_webhook
 
-One active push-alert webhook per `team_member` (migration 056). Managed by the owner-gated
+One active push-alert webhook per `team_member` (migration 056; optional auth header in 059). Managed by the owner-gated
 `GET/POST/PATCH /api/webhooks`, `POST /api/webhooks/:id/test`, `POST /api/webhooks/:id/rotate-secret`
 ([`webhooks.routes.ts`](../apps/api/src/routes/webhooks.routes.ts)). `secret_encrypted` is
 AES-256-GCM, decryptable (unlike `bot_key.key_hash`) because the delivery poller must sign
@@ -578,6 +578,8 @@ creation or rotation, and never stored or selected elsewhere.
 | `team_member_id`       | INTEGER (FK) | → `team_member` ON DELETE CASCADE. UNIQUE — one webhook per member.          |
 | `url`                  | TEXT         | Delivery target. Never echoes the secret in the URL.                         |
 | `secret_encrypted`     | TEXT         | AES-256-GCM, decryptable. Never returned by any route.                       |
+| `auth_header_name`     | VARCHAR(100) | Name of the optional outbound header (migration 059). Defaults to `Authorization`. Ignored when the value is null. |
+| `auth_header_value_encrypted` | TEXT  | Optional header value (typically `Bearer …`), AES-256-GCM via `encryptSecret`. Null = unset. List routes return only `authHeaderSet`, never the ciphertext or the plaintext. |
 | `is_active`            | BOOLEAN      | "Revoke" is `PATCH { isActive: false }` — there is no delete endpoint.       |
 | `consecutive_failures` | INTEGER      | Reset to 0 on a successful delivery.                                         |
 | `last_delivery_at`     | TIMESTAMPTZ  | Nullable — null means never delivered.                                       |
@@ -662,6 +664,7 @@ Drizzle-kit `push` syncs `schema.ts` → Postgres. For schema changes that need 
 | `047_corpus_source_body.sql` | 2026-09-13 | Added nullable `corpus_source.body` TEXT — the full document text or transcript, which ingest used to discard (`/ingest/text`) or hide in `meta.body` (`/ingest/json`). Backfill MOVES rather than copies: `body = meta->>'body'` and `meta = meta - 'body'` where `body IS NULL` and `meta.body` is a string; the WHERE clause is the idempotence, and a row with both keeps both untouched. No search index (see `corpus_source`). Ledger row inserted. |
 | `054_meeting_audio_url.sql` | 2026-10-18 | Added nullable `meeting.audio_url` TEXT — the Drive (or other) link to a meeting's audio, shown as the Audio link on the Meetings table and set in the meeting dialog. `ADD COLUMN IF NOT EXISTS`, so a re-run is harmless. Applied to prod by hand. |
 | `058_meeting_member.sql` | 2026-10-18 | Created `meeting_member` (who joined a meeting, keyed by `team_member` so members without a login can be marked) and copied existing `meeting_attendee` rows for rostered users into it (`ON CONFLICT DO NOTHING`). `IF NOT EXISTS` throughout; ledger row inserted. Additive — `meeting_attendee` and the self-serve join routes are unchanged. **Not yet applied to prod.** |
+| `059_webhook_auth_header.sql` | 2026-10-18 | Added nullable `member_webhook.auth_header_value_encrypted` (AES-256-GCM, same helper as `secret_encrypted`) and `auth_header_name` (default `Authorization`). Deliveries and the Test button send that header with `X-ADVO-Signature` / `X-ADVO-Event`. List routes expose only whether it is set. **Not yet applied to prod.** |
 
 ### Which migration has this database seen?
 
