@@ -27,6 +27,7 @@ describe("parseFileId", () => {
       "b77dac5b1e012ddd33bf9c091f3127f9",
     );
     expect(parseFileId("pub_abc::tok")).toBeNull();
+    expect(parseFileId("of_B77DAC5B1E012DDD33BF9C091F3127F9")).toBe("b77dac5b1e012ddd33bf9c091f3127f9");
   });
 });
 

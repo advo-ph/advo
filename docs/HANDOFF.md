@@ -49,6 +49,12 @@ Cross-links:
   - Its newer chats are now loaded as sources 561–565: ADVO Core Oct 17–18, ADVO Developers (new GC), ADVO Members Oct 17–18 (the OPC announcement and officer roles), the Prince DM for Oct 16–18 near-ADVO only, and Schiffier Oct 17–18.
   - The Andrei/Anthony/Kenneth/Keira/Prince GC is banter only, so it was not loaded. Keira had nothing new.
   - That supersedes the "Mac-only chats not ingested" item below.
+- **The 13 Drive recordings are done through Plaud.** Mar imported them into his own Plaud on 2026-10-18; Plaud dates them all 10-18, with no recording dates.
+  - The poller routed four: Nokohi (16), two clinic-billing meetings (VBE, 2: the new `clinic billing`/`eclaims` aliases) and Fun Ride (25).
+  - Three ADVO-filed ones whose text never names ADVO went to Inbox by hand, as meetings 29–31: B-Mirk donut POS, the SM Aura AI workshop and the Prince call.
+  - Seven personal recordings were skipped.
+  - **The fix that came from it:** the Open API poll used to stop at the first already-imported file, so recordings still transcribing below a newer import were lost. It now re-reads the last `PLAUD_OPEN_LOOKBACK_DAY` days (default 3) every tick. `PLAUD_OPEN_SINCE` is removed from prod; it only bounds the first walk after boot.
+  - `parseFileId` accepts `of_` ids.
 - **Every other scraped chat with an ADVO-word hit was checked:** Stephen Derrick Banaga, Externals, Mark Nadala Revelo, yung stunnas, TrajectoVisa, Tristan Fragada and ZUNIGAS. None carries ADVO business: the hits are names like "Feliciano", professor-rating tables, dev logs, or a passing "check advo.ph". All were left out on purpose.
 - **Source 548 (FunRide comments)** now holds the full first sheet via the public CSV export: 17 items. Its facts still come from the first 11.
 - **`scripts/polkadoc-chat.mjs --near N`** keeps only messages within N of an ADVO or client word, for 1:1 chats. `--until` sets an end date.

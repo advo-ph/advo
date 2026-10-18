@@ -459,7 +459,8 @@ export function parseShareKey(raw: string): string | null {
 }
 
 export function parseFileId(raw: string): string | null {
-  const trimmed = String(raw).trim();
+  // The Open API prefixes the same hex id with "of_".
+  const trimmed = String(raw).trim().replace(/^of_/i, "");
   if (/^[a-f0-9]{24,64}$/i.test(trimmed)) return trimmed.toLowerCase();
   return null;
 }
