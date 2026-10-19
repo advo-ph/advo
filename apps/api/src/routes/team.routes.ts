@@ -255,7 +255,7 @@ const accountSchema = z.object({
     .transform(normalizeUsername)
     .pipe(z.string().min(3, "Username must be at least 3 letters or numbers").max(255))
     .optional(),
-  password: z.string().min(8, "Password must be at least 8 characters").max(255).optional(),
+  password: z.string().min(6, "Password must be at least 6 characters").max(255).optional(),
 });
 
 team.patch("/:id/account", requireAuth, requireAdmin, zValidator("json", accountSchema), async (c) => {

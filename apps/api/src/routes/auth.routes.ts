@@ -305,7 +305,7 @@ auth.post("/device-key/revoke", zValidator("json", deviceLoginSchema), async (c)
 
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1),
-  newPassword: z.string().min(8).max(255),
+  newPassword: z.string().min(6).max(255),
 });
 
 auth.post("/change-password", requireAuth, zValidator("json", changePasswordSchema), async (c) => {

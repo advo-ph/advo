@@ -59,8 +59,8 @@ const AccountPanel = ({ user }: AccountPanelProps) => {
       toast({ variant: "destructive", title: "The new passwords do not match." });
       return;
     }
-    if (newPassword.length < 8) {
-      toast({ variant: "destructive", title: "Use at least 8 characters." });
+    if (newPassword.length < 6) {
+      toast({ variant: "destructive", title: "Use at least 6 characters." });
       return;
     }
 
@@ -134,7 +134,7 @@ const AccountPanel = ({ user }: AccountPanelProps) => {
                 id="account-new-password"
                 type="password"
                 autoComplete="new-password"
-                placeholder="At least 8 characters"
+                placeholder="At least 6 characters"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 required

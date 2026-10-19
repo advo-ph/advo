@@ -196,12 +196,6 @@ const Login = ({ variant }: LoginProps) => {
               <span className="text-lg font-medium tracking-tight">{label}</span>
             </h1>
 
-            {!showSavedAccounts && (
-              <p className="-mt-4 mb-6 text-center text-xs leading-relaxed text-muted-foreground">
-                Your username is the part before @ in your email, with punctuation removed. For example, prince.wagan becomes princewagan.
-              </p>
-            )}
-
             {/* Saved accounts. Present whether or not anyone is signed out, because signing
                 out is supposed to leave the account here as a one-tap target. */}
             {showSavedAccounts && (

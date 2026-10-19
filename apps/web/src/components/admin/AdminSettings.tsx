@@ -156,8 +156,8 @@ const AdminSettings = () => {
       setEditing(null);
       return;
     }
-    if (body.password && body.password.length < 8) {
-      toast({ title: "Password must be at least 8 characters", variant: "destructive" });
+    if (body.password && body.password.length < 6) {
+      toast({ title: "Password must be at least 6 characters", variant: "destructive" });
       return;
     }
     setIsSavingAccount(true);
@@ -286,8 +286,8 @@ const AdminSettings = () => {
       toast({ title: "Passwords don't match", variant: "destructive" });
       return;
     }
-    if (newPassword.length < 8) {
-      toast({ title: "Password must be at least 8 characters", variant: "destructive" });
+    if (newPassword.length < 6) {
+      toast({ title: "Password must be at least 6 characters", variant: "destructive" });
       return;
     }
     setIsChangingPassword(true);
@@ -631,7 +631,7 @@ const AdminSettings = () => {
             </div>
             <div className="space-y-1.5">
               <label className="text-xs text-muted-foreground block">New password</label>
-              <Input className="h-9" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Min 8 characters" />
+              <Input className="h-9" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Min 6 characters" />
             </div>
             <div className="space-y-1.5">
               <label className="text-xs text-muted-foreground block">Confirm new password</label>
@@ -667,7 +667,7 @@ const AdminSettings = () => {
               </label>
               <Input className="h-9" type="password" value={editPassword} autoComplete="new-password"
                 onChange={(e) => setEditPassword(e.target.value)}
-                placeholder={editing?.userId == null ? "Min 8 characters" : "Leave empty to keep"}
+                placeholder={editing?.userId == null ? "Min 6 characters" : "Leave empty to keep"}
                 onKeyDown={(e) => e.key === "Enter" && saveAccount()} />
             </div>
           </div>
