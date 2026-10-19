@@ -34,6 +34,7 @@ interface ResponsiveSheetProps {
   /** Width and surface for the desktop dialog, e.g. "max-w-md". */
   desktopClassName?: string;
   testId?: string;
+  onEscapeKeyDown?: (event: KeyboardEvent) => void;
 }
 
 export function ResponsiveSheet({
@@ -44,6 +45,7 @@ export function ResponsiveSheet({
   footer,
   desktopClassName,
   testId,
+  onEscapeKeyDown,
 }: ResponsiveSheetProps) {
   const isMobile = useIsMobile();
 
@@ -54,6 +56,7 @@ export function ResponsiveSheet({
           side="bottom"
           aria-describedby={undefined}
           data-testid={testId}
+          onEscapeKeyDown={onEscapeKeyDown}
           className={MOBILE_SHEET_CLASS}
           // Focus the sheet itself, not its first field: on a phone, focusing a select or
           // input on open pops the keyboard or picker before the person has read the sheet.
@@ -89,6 +92,7 @@ export function ResponsiveSheet({
       <DialogContent
         aria-describedby={undefined}
         data-testid={testId}
+        onEscapeKeyDown={onEscapeKeyDown}
         className={cn("rounded-lg border-border bg-card motion-reduce:!animate-none", desktopClassName ?? "max-w-lg")}
       >
         <DialogHeader>

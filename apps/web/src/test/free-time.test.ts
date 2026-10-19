@@ -261,6 +261,22 @@ describe("findDaySlots", () => {
     expect(majority).toEqual([]);
   });
 
+  it("excludes three or more unavailable people even when most of the team is free", () => {
+    const { everyone, majority } = findDaySlots(
+      [busy(1, "09:00", "12:00"), busy(2, "09:00", "11:00"), busy(3, "09:00", "10:00"),
+        busy(4, "09:00", "09:30"), free(5), free(6), free(7), free(8), free(9)],
+      options,
+    );
+    expect(everyone).toEqual([
+      { start: at("07:00"), end: at("09:00") },
+      { start: at("12:00"), end: 1440 },
+    ]);
+    expect(majority).toEqual([
+      { start: at("10:00"), end: at("11:00"), missing: [1, 2] },
+      { start: at("11:00"), end: at("12:00"), missing: [1] },
+    ]);
+  });
+
   it("each distinct missing set is its own slot, in time order", () => {
     const { majority } = findDaySlots(
       [busy(ARDY, "18:00", "20:00"), busy(SCHIFFIER, "19:00", "21:00"), free(3), free(4), free(5)],
@@ -327,7 +343,7 @@ describe("findDaySlots", () => {
 
 describe("majorityLabel", () => {
   it("names who is missing, by first name, in order", () => {
-    expect(majorityLabel(["Ardy", "Schiffier"])).toBe("Majority except Ardy, Schiffier");
-    expect(majorityLabel(["Ardy"])).toBe("Majority except Ardy");
+    expect(majorityLabel(["Ardy", "Schiffier"])).toBe("Most are free except Ardy, Schiffier");
+    expect(majorityLabel(["Ardy"])).toBe("Most are free except Ardy");
   });
 });

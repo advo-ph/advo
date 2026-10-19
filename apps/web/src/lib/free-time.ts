@@ -103,7 +103,7 @@ export interface DaySlots {
 
 /**
  * One day's free slots for a group: where everyone is free, and where a strict majority
- * is (more than half of the group free).
+ * is (more than half of the group free, with at most two people unavailable).
  *
  * A sweep over every member's free-range boundaries cuts the day into elementary
  * segments. Inside one segment each member is either wholly free or wholly busy, so the
@@ -140,7 +140,7 @@ export function findDaySlots(
       .filter((m) => !m.free.some((r) => r.start <= start && r.end >= end))
       .map((m) => m.id);
     const freeCount = members.length - missing.length;
-    if (missing.length > 0 && freeCount * 2 <= members.length) continue;
+    if (missing.length >= 3 || (missing.length > 0 && freeCount * 2 <= members.length)) continue;
 
     const last = segments[segments.length - 1];
     if (last && last.end === start && sameIds(last.missing, missing)) last.end = end;
@@ -168,9 +168,9 @@ export function findDaySlots(
 const sameIds = (a: readonly number[], b: readonly number[]) =>
   a.length === b.length && a.every((id, i) => id === b[i]);
 
-/** "Majority except Ardy, Schiffier". Pass first names, in the order to show them. */
+/** "Most are free except Ardy, Schiffier". Pass first names, in the order to show them. */
 export function majorityLabel(missingNames: readonly string[]): string {
-  return `Majority except ${missingNames.join(", ")}`;
+  return `Most are free except ${missingNames.join(", ")}`;
 }
 
 // ─── Free Members: who can make this meeting ───

@@ -1,4 +1,4 @@
-import { useState, useMemo, type KeyboardEvent } from "react";
+import { useState, useMemo, useLayoutEffect, useRef, type ReactNode, type KeyboardEvent } from "react";
 import {
   Plus,
   School,
@@ -38,7 +38,6 @@ import {
 import { useCalendar } from "@/hooks/useCalendar";
 import { useRoles } from "@/hooks/useRoles";
 import {
-  dayKey,
   formatManilaDate,
   manilaToday,
   minutesToClock12h,
@@ -48,7 +47,6 @@ import {
 import {
   ATTENDANCE_ORDER,
   classifyAttendance,
-  defaultMeetingWindow,
   findDaySlots,
   formatClockRange12h,
   majorityLabel,
@@ -60,6 +58,9 @@ import {
   type MeetingWindowInput,
   type Range,
 } from "@/lib/free-time";
+import { advancePastSearchDates, availabilityHorizon, defaultAvailabilityMeeting, defaultSearchDates } from "@/lib/availability-search";
+import { FreeMembersMeeting, FreeTimeDateRange } from "./AvailabilitySearchFields";
+import { layoutAvailabilitySlots } from "@/lib/availability-layout";
 import { ConfirmDeleteDialog } from "@/components/admin/ConfirmDeleteDialog";
 import { ResponsiveSheet } from "@/components/admin/shared/ResponsiveSheet";
 import { Panel } from "./_ui";
@@ -81,9 +82,6 @@ const hourLabel = (hour: number) => minutesToClock12h(hour * 60);
 /** A free slot shorter than this is not a meeting, it is an arithmetic artefact. */
 const MIN_FREE_SLOT_MINUTES = 30;
 
-/** Days ahead the free-time search looks. Bookings are dated, so the search must be too. */
-const FREE_TIME_HORIZON_DAYS = 7;
-
 // Cool, flat palette — small color cues against the charcoal canvas, no glow.
 // `short` is for the legend and the type chips, which both have to fit one line at 390px.
 const blockTypeConfig: Record<BlockType, { label: string; short: string; color: string; bgColor: string; dot: string; icon: React.ElementType }> = {
@@ -93,14 +91,43 @@ const blockTypeConfig: Record<BlockType, { label: string; short: string; color: 
 };
 const BLOCK_TYPES = Object.keys(blockTypeConfig) as BlockType[];
 
-// The five Free Members groups. Flat dots, the same quiet cue the block legend uses.
-const attendanceConfig: Record<AttendanceStatus, { label: string; dot: string }> = {
-  available: { label: "Available", dot: "bg-emerald-500" },
-  "may-be-late": { label: "May be late", dot: "bg-amber-500" },
-  "will-be-late": { label: "Will be late", dot: "bg-orange-500" },
-  "leaves-early": { label: "Leaves early", dot: "bg-sky-500" },
-  "not-available": { label: "Not available", dot: "bg-rose-500" },
+// Text labels identify the Free Members groups.
+const attendanceConfig: Record<AttendanceStatus, { label: string }> = {
+  available: { label: "Available" },
+  "may-be-late": { label: "May be late" },
+  "will-be-late": { label: "Will be late" },
+  "leaves-early": { label: "Leaves early" },
+  "not-available": { label: "Not available" },
 };
+
+/** Fit the longest first name, then apply that size to the whole roster. */
+function CompactPeopleGrid({ children }: { children: ReactNode }) {
+  const gridRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const grid = gridRef.current;
+    if (!grid) return;
+    const fitNames = () => {
+      grid.style.fontSize = "14px";
+      let size = 14;
+      grid.querySelectorAll<HTMLButtonElement>("button").forEach((button) => {
+        const name = button.querySelector<HTMLElement>("span");
+        if (!name) return;
+        const style = getComputedStyle(button);
+        const available = button.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+        const width = name.getBoundingClientRect().width;
+        if (width > 0) size = Math.min(size, 14 * available / width);
+      });
+      grid.style.fontSize = `${Math.max(1, Math.floor(size * 10) / 10)}px`;
+    };
+    fitNames();
+    const observer = new ResizeObserver(fitNames);
+    observer.observe(grid);
+    let active = true;
+    document.fonts?.ready.then(() => { if (active) fitNames(); });
+    return () => { active = false; observer.disconnect(); };
+  }, [children]);
+  return <div ref={gridRef} className="grid grid-cols-4 gap-1.5 text-sm md:grid-cols-5">{children}</div>;
+}
 
 type SearchMode = "time" | "members";
 
@@ -198,27 +225,21 @@ const AdminAvailability = () => {
   // Find Free Time state
   const [showFreeTime, setShowFreeTime] = useState(false);
   const [selectedMembers, setSelectedMembers] = useState<number[]>([]);
+  const hasOpenedFreeTime = useRef(false);
   // "time": when can the selected people meet. "members": who can make one meeting.
   const [searchMode, setSearchMode] = useState<SearchMode>("time");
-  const [meetingWindow, setMeetingWindow] = useState<MeetingWindowInput>(() => defaultMeetingWindow());
+  const [searchDates, setSearchDates] = useState(defaultSearchDates);
+  const [meetingWindow, setMeetingWindow] = useState<MeetingWindowInput>(defaultAvailabilityMeeting);
 
   // The concrete days the free-time search covers. Recurring blocks have no dates, but
   // meetings and deadlines do, so the search has to happen on real days to be able to
   // subtract them.
-  const horizon = useMemo(() => {
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    const days = Array.from({ length: FREE_TIME_HORIZON_DAYS }, (_, i) => {
-      const d = new Date(start);
-      d.setDate(start.getDate() + i);
-      return { date: d, key: dayKey(d), dow: d.getDay() };
-    });
-    const end = new Date(days[days.length - 1].date);
-    end.setHours(23, 59, 59, 999);
-    return { days, from: start, to: end };
-  }, []);
+  const horizon = useMemo(
+    () => availabilityHorizon(searchDates.start, searchDates.end),
+    [searchDates.start, searchDates.end],
+  );
 
-  const { events } = useCalendar(horizon.from, horizon.to);
+  const { events, isLoading: calendarLoading } = useCalendar(horizon.from, horizon.to);
 
   /**
    * Dated bookings that actually occupy time, as minute ranges, keyed by day.
@@ -246,12 +267,11 @@ const AdminAvailability = () => {
 
       for (const day of horizon.days) {
         const dayStart = new Date(day.date);
-        const dayEnd = new Date(day.date);
-        dayEnd.setHours(23, 59, 59, 999);
-        if (last < dayStart || start > dayEnd) continue;
+        const dayEnd = new Date(dayStart.getTime() + DAY_MS);
+        if (last <= dayStart || start >= dayEnd) continue;
 
-        const from = start < dayStart ? 0 : start.getHours() * 60 + start.getMinutes();
-        const to = last > dayEnd ? 1440 : last.getHours() * 60 + last.getMinutes();
+        const from = Math.max(0, (start.getTime() - dayStart.getTime()) / 60_000);
+        const to = Math.min(1440, (last.getTime() - dayStart.getTime()) / 60_000);
         if (to > from) map.set(day.key, [...(map.get(day.key) ?? []), { start: from, end: to }]);
       }
     }
@@ -299,7 +319,7 @@ const AdminAvailability = () => {
           .map(rangeOf),
       }));
       const { everyone, majority } = findDaySlots(members, {
-        base: { start: GRID_START, end: 1440 },
+        base: { start: Math.min(1440, Math.max(GRID_START, Math.ceil((Date.now() - day.date.getTime()) / 60_000))), end: 1440 },
         bookings: bookingsByDay.get(day.key) ?? [],
         minMinutes: MIN_FREE_SLOT_MINUTES,
       });
@@ -314,7 +334,7 @@ const AdminAvailability = () => {
    * Free Members: where each selected person lands for one start/end.
    *
    * Busy is that person's own school / meeting / unavailable blocks, at their real clock
-   * times (not clipped to the 7am grid), on every date the meeting touches plus the day
+   * times (not clipped to the 7am grid), on the meeting date plus the day
    * before it. Dated calendar entries are left out on purpose: GET /api/calendar does not
    * say who a booking belongs to, so counting one would mark everybody busy for it.
    */
@@ -326,7 +346,7 @@ const AdminAvailability = () => {
 
     const days = meetingDays(meetingWindow.startDate, meetingWindow.endDate);
     const byStatus = new Map<AttendanceStatus, { member: (typeof teamMembers)[number]; reason: string | null }[]>();
-    for (const member of selectedRoster) {
+    for (const member of teamMembers) {
       const busy: BusyInterval[] = [];
       for (const block of blocks) {
         if (block.team_member_id !== member.team_member_id) continue;
@@ -347,7 +367,7 @@ const AdminAvailability = () => {
         return rows ? [{ status, rows }] : [];
       }),
     };
-  }, [showFreeTime, searchMode, meetingWindow, selectedRoster, blocks]);
+  }, [showFreeTime, searchMode, meetingWindow, teamMembers, blocks]);
 
   const getInitials = (name: string) => {
     return name.split(" ").map((n) => n[0]).join("").toUpperCase();
@@ -454,12 +474,21 @@ const AdminAvailability = () => {
     );
   };
 
-  // Every open starts fresh: everyone selected, Free Time mode, and a Free Members window
-  // at the next full hour (one left over from an earlier open may already be past).
+  // Reopening keeps the search, including an intentionally empty people selection.
+  // Only dates before Manila today advance; clock times do not expire within a day.
   const openFreeTime = () => {
-    setSelectedMembers(teamMembers.map((m) => m.team_member_id));
-    setSearchMode("time");
-    setMeetingWindow(defaultMeetingWindow());
+    if (!hasOpenedFreeTime.current) {
+      setSelectedMembers(teamMembers.map((m) => m.team_member_id));
+      hasOpenedFreeTime.current = true;
+    }
+    const now = new Date();
+    setSearchDates((dates) => advancePastSearchDates(dates, now));
+    setMeetingWindow((meeting) => {
+      const dates = advancePastSearchDates({ start: meeting.startDate, end: meeting.endDate }, now);
+      return dates.start === meeting.startDate && dates.end === meeting.endDate
+        ? meeting
+        : { ...meeting, startDate: dates.start, endDate: dates.end };
+    });
     setShowFreeTime(true);
   };
 
@@ -495,10 +524,10 @@ const AdminAvailability = () => {
 
   // What the 7am grid can draw (clipped to 7am when it starts earlier), and what is
   // over before the grid begins, which is listed under it instead of being lost.
-  const placed = gridBlocks.flatMap((block) => {
+  const placed = layoutAvailabilitySlots(gridBlocks.flatMap((block) => {
     const { start, end } = rangeOf(block);
     return end > GRID_START ? [{ block, start, end, top: Math.max(start, GRID_START) }] : [];
-  });
+  }));
   const earlyBlocks = gridBlocks
     .filter((b) => rangeOf(b).end <= GRID_START)
     .sort((a, b) => a.day_of_week - b.day_of_week || a.start_time.localeCompare(b.start_time));
@@ -557,17 +586,18 @@ const AdminAvailability = () => {
   // Free Time results: one row per day. Everyone-free slots lead as accent chips; majority
   // slots follow underneath, quieter, each naming who would be missing.
   const freeTimeResults =
-    selectedMembers.length < 2 ? (
+    calendarLoading ? (
+      <p role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" />Checking schedules…
+      </p>
+    ) : selectedMembers.length < 2 ? (
       <p className="text-sm text-muted-foreground">Select at least 2 people to find common free time.</p>
     ) : freeTimeDays.length === 0 ? (
       <p className="text-sm text-muted-foreground">
-        No free time in the next {FREE_TIME_HORIZON_DAYS} days for the selected people.
+        No free time in this date range for the selected people.
       </p>
     ) : (
       <div className="space-y-2">
-        <p className="text-xs font-medium text-muted-foreground">
-          Everyone free first, then the majority ({MIN_FREE_SLOT_MINUTES} minutes or more)
-        </p>
         <ul className="divide-y divide-border rounded-md border border-border">
           {freeTimeDays.map((day) => (
             <li key={day.key} className="flex items-start justify-between gap-3 px-3 py-2">
@@ -611,63 +641,20 @@ const AdminAvailability = () => {
       </div>
     );
 
-  const setWindowField = (field: keyof MeetingWindowInput) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setMeetingWindow((prev) => ({ ...prev, [field]: e.target.value }));
-
-  // Free Members: a start and an end (date + time each, Manila), then the selected people
-  // in five groups. Empty groups are not shown.
+  // Free Members always includes the full roster for a single meeting date.
   const freeMembersBody = (
     <div className="space-y-4">
-      <div className="space-y-2">
-        <p className="text-xs font-medium text-muted-foreground">Meeting</p>
-        <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,7.5rem)] items-center gap-2">
-          <label htmlFor="freemembers-start-date" className="text-sm">Start</label>
-          <Input
-            id="freemembers-start-date"
-            type="date"
-            data-testid="freemembers-start-date"
-            value={meetingWindow.startDate}
-            onChange={setWindowField("startDate")}
-            className="min-w-0"
-          />
-          <Input
-            type="time"
-            aria-label="Start time"
-            data-testid="freemembers-start-time"
-            value={meetingWindow.startTime}
-            onChange={setWindowField("startTime")}
-            className="min-w-0"
-          />
-          <label htmlFor="freemembers-end-date" className="text-sm">End</label>
-          <Input
-            id="freemembers-end-date"
-            type="date"
-            data-testid="freemembers-end-date"
-            value={meetingWindow.endDate}
-            onChange={setWindowField("endDate")}
-            className="min-w-0"
-          />
-          <Input
-            type="time"
-            aria-label="End time"
-            data-testid="freemembers-end-time"
-            value={meetingWindow.endTime}
-            onChange={setWindowField("endTime")}
-            className="min-w-0"
-          />
-        </div>
-      </div>
+      <FreeMembersMeeting value={meetingWindow} onChange={setMeetingWindow} />
 
       {attendance?.problem ? (
         <p role="status" className="text-sm text-muted-foreground">{attendance.problem}</p>
-      ) : selectedMembers.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Select at least one person.</p>
+      ) : teamMembers.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No team members found.</p>
       ) : (
         <div className="space-y-3">
           {attendance?.groups.map(({ status, rows }) => (
             <section key={status} data-testid={`freemembers-group-${status}`} aria-label={attendanceConfig[status].label}>
               <h3 className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                <span aria-hidden className={`inline-block h-1.5 w-1.5 rounded-full ${attendanceConfig[status].dot}`} />
                 {attendanceConfig[status].label}
                 <span className="tabular-nums">· {rows.length}</span>
               </h3>
@@ -698,7 +685,7 @@ const AdminAvailability = () => {
   ];
 
   const freeTimeBody = (
-    <div className="space-y-4">
+    <div className="space-y-4 [overflow-anchor:none]">
       <div className="flex items-center justify-between gap-2">
         <p id="freetime-mode-label" className="text-xs font-medium text-muted-foreground">Search mode</p>
         {/* Two segments, one pressed. A toggle button per mode rather than a radio group,
@@ -728,43 +715,45 @@ const AdminAvailability = () => {
         </div>
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <p className="text-xs font-medium text-muted-foreground">People</p>
-          <button
-            type="button"
-            onClick={() => setSelectedMembers(allSelected ? [] : teamMembers.map((m) => m.team_member_id))}
-            className="min-h-8 px-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            {allSelected ? "Clear" : "Select all"}
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {teamMembers.map((member) => {
-            const active = selectedMembers.includes(member.team_member_id);
-            return (
+      {searchMode === "time" && (
+        <>
+          <FreeTimeDateRange start={searchDates.start} end={searchDates.end} minDate={today} onChange={setSearchDates} />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-muted-foreground">People</p>
               <button
-                key={member.team_member_id}
                 type="button"
-                data-testid={`freetime-member-${member.team_member_id}`}
-                aria-pressed={active}
-                onClick={() => toggleMemberSelection(member.team_member_id)}
-                className={`flex h-10 items-center gap-2 rounded-md border px-2.5 text-sm transition-colors sm:h-9 ${
-                  active
-                    ? "bg-accent/[0.08] border-accent/40 text-foreground"
-                    : "bg-secondary border-border text-muted-foreground hover:text-foreground"
-                }`}
+                onClick={() => setSelectedMembers(allSelected ? [] : teamMembers.map((m) => m.team_member_id))}
+                className="min-h-8 px-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
-                <Avatar className="h-5 w-5">
-                  <AvatarImage src={member.avatar_url ?? undefined} />
-                  <AvatarFallback className="text-[10px]">{getInitials(member.name)}</AvatarFallback>
-                </Avatar>
-                {member.name.split(" ")[0]}
+                {allSelected ? "Clear" : "Select all"}
               </button>
-            );
-          })}
-        </div>
-      </div>
+            </div>
+            <CompactPeopleGrid>
+              {teamMembers.map((member) => {
+                const active = selectedMembers.includes(member.team_member_id);
+                return (
+                  <button
+                    key={member.team_member_id}
+                    type="button"
+                    data-testid={`freetime-member-${member.team_member_id}`}
+                    title={member.name}
+                    aria-pressed={active}
+                    onClick={() => toggleMemberSelection(member.team_member_id)}
+                    className={`flex h-9 min-w-0 items-center justify-center rounded-md border px-1.5 font-medium transition-colors ${
+                      active
+                        ? "bg-accent/[0.08] border-accent/40 text-foreground"
+                        : "bg-secondary border-border text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <span className="shrink-0 whitespace-nowrap">{member.name.trim().split(/\s+/)[0]}</span>
+                  </button>
+                );
+              })}
+            </CompactPeopleGrid>
+          </div>
+        </>
+      )}
 
       {searchMode === "time" ? freeTimeResults : freeMembersBody}
     </div>
@@ -814,8 +803,11 @@ const AdminAvailability = () => {
         open={showFreeTime}
         onOpenChange={setShowFreeTime}
         title="Find free time"
-        desktopClassName="max-w-lg"
+        desktopClassName="max-w-lg max-h-[90dvh] overflow-y-auto"
         testId="free-time-sheet"
+        onEscapeKeyDown={(event) => {
+          if ((event.target as HTMLElement).closest("[data-availability-picker-open]")) event.preventDefault();
+        }}
       >
         {freeTimeBody}
       </ResponsiveSheet>
@@ -882,7 +874,7 @@ const AdminAvailability = () => {
                     className="relative min-h-0 cursor-pointer border-l border-t border-border hover:bg-secondary/30"
                     onClick={() => openAddDialog(dayIndex, hour)}
                   >
-                    {startingHere.map(({ block, start, end, top }) => {
+                    {startingHere.map(({ block, start, end, top, column, columns }) => {
                       const config = blockTypeConfig[block.block_type];
                       const Icon = config.icon;
                       const duration = end - start;
@@ -891,14 +883,21 @@ const AdminAvailability = () => {
                       // top border saying there is more of it above.
                       const clipped = start < GRID_START;
                       const expired = block.effective_to !== null && block.effective_to < today;
+                      const dateSubtitle = block.effective_from && block.effective_to
+                        ? block.effective_from === block.effective_to
+                          ? formatManilaDate(`${block.effective_from}T00:00:00+08:00`)
+                          : `${formatManilaDate(`${block.effective_from}T00:00:00+08:00`)} – ${formatManilaDate(`${block.effective_to}T00:00:00+08:00`)}`
+                        : null;
 
                       return (
                         <div
                           key={block.block_id}
-                          className={`absolute inset-x-0.5 z-10 cursor-pointer overflow-hidden rounded-md border px-1 py-0.5 transition-[filter] hover:brightness-110 sm:inset-x-1 sm:px-1.5 ${config.bgColor} ${
+                          className={`absolute z-10 cursor-pointer overflow-hidden rounded-md border px-1 py-0.5 transition-[left,width,filter] duration-200 ease-out motion-reduce:transition-none hover:brightness-110 sm:px-1.5 [--slot-gap:2px] sm:[--slot-gap:4px] ${config.bgColor} ${
                             clipped ? "rounded-t-none" : ""
                           } ${expired ? "opacity-40" : ""}`}
                           style={{
+                            left: `calc(${column * 100 / columns}% + var(--slot-gap))`,
+                            width: `calc(${100 / columns}% - 2 * var(--slot-gap))`,
                             top: clipped ? 0 : `calc((100% + 1px) * ${(top - hourStart) / 60} + 1px)`,
                             height: `max(14px, calc((100% + 1px) * ${shown / 60} - ${clipped ? 2 : 4}px))`,
                             ...(clipped ? { borderTopStyle: "dashed" as const } : {}),
@@ -914,13 +913,18 @@ const AdminAvailability = () => {
                           }}
                         >
                           <div className="flex items-start gap-1">
-                            <Icon className={`mt-0.5 hidden h-3 w-3 shrink-0 sm:block ${config.color}`} />
-                            <span className="min-w-0 text-[10px] font-medium leading-tight [overflow-wrap:anywhere] sm:truncate sm:text-xs sm:leading-4">
+                            <Icon className={`mt-0.5 hidden h-3 w-3 shrink-0 ${columns === 1 ? "sm:block" : ""} ${config.color}`} />
+                            <span className="min-w-0 truncate text-[10px] font-medium leading-tight sm:text-xs sm:leading-4">
                               {block.label || config.label}
                             </span>
                           </div>
+                          {dateSubtitle && (
+                            <div className="mt-0.5 truncate text-[9px] leading-tight text-muted-foreground sm:text-[10px] sm:leading-snug">
+                              {dateSubtitle}
+                            </div>
+                          )}
                           {shown >= 60 && (
-                            <div className="mt-0.5 hidden text-[10px] leading-none tabular-nums text-muted-foreground sm:block">
+                            <div className="mt-0.5 hidden truncate text-[10px] leading-snug tabular-nums text-muted-foreground sm:block">
                               {duration === 1440
                                 ? "all day"
                                 : `${block.start_time.slice(0, 5)} – ${block.end_time.slice(0, 5)}`}
@@ -977,8 +981,6 @@ const AdminAvailability = () => {
                 </span>
                 {datedDays.map(({ block, date }) => {
                   const config = blockTypeConfig[block.block_type];
-                  const { start, end } = rangeOf(block);
-                  const allDay = end - start === 1440;
                   return (
                     <button
                       key={block.block_id}
@@ -986,13 +988,11 @@ const AdminAvailability = () => {
                       onClick={() => openEditDialog(block)}
                       className={`inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2 py-1 text-xs tabular-nums transition-[filter] hover:brightness-110 ${config.bgColor}`}
                     >
-                      <config.icon className={`h-3 w-3 ${config.color}`} />
                       <span className="font-medium">
                         {DAYS[block.day_of_week]} {formatManilaDate(`${date}T00:00:00+08:00`)}
                       </span>
                       <span className="text-muted-foreground">
-                        {block.label || config.label} ·{" "}
-                        {allDay ? "all day" : `${block.start_time.slice(0, 5)}–${block.end_time.slice(0, 5)}`}
+                        {block.label || config.label}
                       </span>
                     </button>
                   );
