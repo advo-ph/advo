@@ -9,6 +9,8 @@ import {
   Trash2,
   ChevronsUpDown,
   CalendarSearch,
+  CircleDashed,
+  ArrowLeftRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -227,6 +229,9 @@ const AdminAvailability = () => {
   // Find Free Time state
   const [showFreeTime, setShowFreeTime] = useState(false);
   const [selectedMembers, setSelectedMembers] = useState<number[]>([]);
+  // "work" is the default: free = scheduled work minus school/break/unavailable. "empty"
+  // widens that to the whole grid window, so unscheduled time counts as free too.
+  const [freeMode, setFreeMode] = useState<"work" | "empty">("work");
 
   // The concrete days the free-time search covers. Recurring blocks have no dates, but
   // meetings and deadlines do, so the search has to happen on real days to be able to
@@ -305,6 +310,12 @@ const AdminAvailability = () => {
    * So: every day, work minus every other block type, intersected across the selected
    * members, minus the bookings actually on that date, and finally minus anything too
    * short to be a meeting.
+   *
+   * Two modes change only what counts as a member's base window before busy blocks are
+   * subtracted. "work" (default) is the base above. "empty" widens the base to the whole
+   * grid day (7am–midnight, GRID_START to 1440), so unscheduled time counts as free too —
+   * useful for "does anyone have a totally open slot" rather than "is this inside someone's
+   * declared work hours".
    */
   const freeTimeSlots = useMemo(() => {
     if (!showFreeTime || selectedMembers.length < 2) return [];
@@ -316,9 +327,12 @@ const AdminAvailability = () => {
         const mine = blocks.filter(
           (b) => b.team_member_id === memberId && blockAppliesOn(b, day.key, day.dow),
         );
-        const work = merge(mine.filter((b) => b.block_type === "work").map(rangeOf));
         const busy = merge(mine.filter((b) => b.block_type !== "work").map(rangeOf));
-        return subtract(work, busy);
+        const base =
+          freeMode === "work"
+            ? merge(mine.filter((b) => b.block_type === "work").map(rangeOf))
+            : [{ start: GRID_START, end: 1440 }];
+        return subtract(base, busy);
       });
 
       if (perMember.some((r) => r.length === 0)) continue;
@@ -343,7 +357,7 @@ const AdminAvailability = () => {
     }
 
     return slots;
-  }, [showFreeTime, selectedMembers, blocks, horizon.days, bookingsByDay]);
+  }, [showFreeTime, selectedMembers, freeMode, blocks, horizon.days, bookingsByDay]);
 
   const getInitials = (name: string) => {
     return name.split(" ").map((n) => n[0]).join("").toUpperCase();
@@ -452,6 +466,7 @@ const AdminAvailability = () => {
 
   const openFreeTime = () => {
     setSelectedMembers(teamMembers.map((m) => m.team_member_id));
+    setFreeMode("work");
     setShowFreeTime(true);
   };
 
@@ -553,6 +568,25 @@ const AdminAvailability = () => {
 
   const freeTimeBody = (
     <div className="space-y-4">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-xs font-medium text-muted-foreground">Search mode</p>
+        <button
+          type="button"
+          data-testid="freetime-mode-toggle"
+          aria-pressed={freeMode === "empty"}
+          onClick={() => setFreeMode(freeMode === "work" ? "empty" : "work")}
+          className="flex h-10 items-center gap-1.5 rounded-md border border-border bg-secondary px-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground sm:h-9"
+        >
+          {freeMode === "work" ? (
+            <Briefcase className={`h-3.5 w-3.5 ${blockTypeConfig.work.color}`} />
+          ) : (
+            <CircleDashed className="h-3.5 w-3.5" />
+          )}
+          {freeMode === "work" ? "Work available" : "Empty slots"}
+          <ArrowLeftRight className="h-3.5 w-3.5 opacity-60" aria-hidden />
+        </button>
+      </div>
+
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <p className="text-xs font-medium text-muted-foreground">People</p>
@@ -595,12 +629,16 @@ const AdminAvailability = () => {
         <p className="text-sm text-muted-foreground">Select at least 2 people to find common free time.</p>
       ) : slotDays.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No overlapping free time in the next {FREE_TIME_HORIZON_DAYS} days for the selected people.
+          {freeMode === "work"
+            ? `No overlapping work time in the next ${FREE_TIME_HORIZON_DAYS} days for the selected people.`
+            : `No overlapping open time in the next ${FREE_TIME_HORIZON_DAYS} days for the selected people.`}
         </p>
       ) : (
         <div className="space-y-2">
           <p className="text-xs font-medium text-muted-foreground">
-            Everyone is free ({MIN_FREE_SLOT_MINUTES} minutes or more)
+            {freeMode === "work"
+              ? `Everyone is free (${MIN_FREE_SLOT_MINUTES} minutes or more)`
+              : `Everyone has an empty or work slot (${MIN_FREE_SLOT_MINUTES} minutes or more)`}
           </p>
           <ul className="divide-y divide-border rounded-md border border-border">
             {slotDays.map((day) => (
