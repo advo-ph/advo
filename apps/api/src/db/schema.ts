@@ -769,7 +769,7 @@ export const availabilityBlock = pgTable(
     // ../utils/manila-date.ts. Both columns are constrained by migration 024.
     startTime: varchar("start_time", { length: 5 }).notNull(),
     endTime: varchar("end_time", { length: 5 }).notNull(),
-    blockType: varchar("block_type", { length: 20 }).notNull().default("work"), // school|break|work|unavailable
+    blockType: varchar("block_type", { length: 20 }).notNull().default("unavailable"), // school|meeting|unavailable
     label: varchar("label", { length: 100 }),
     // Bounds on the recurrence (migration 024). NULL from = unbounded backwards, NULL to
     // = open-ended. Without these a "Tuesdays 10:00" class projects onto every Tuesday in

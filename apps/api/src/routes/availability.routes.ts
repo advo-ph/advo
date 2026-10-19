@@ -61,7 +61,7 @@ const blockShape = {
   dayOfWeek: z.number().int().min(0).max(6),
   startTime: z.string().regex(HHMM, "Time must be HH:MM between 00:00 and 23:59"),
   endTime: z.string().regex(HHMM, "Time must be HH:MM between 00:00 and 23:59"),
-  blockType: z.enum(["school", "break", "work", "unavailable"]),
+  blockType: z.enum(["school", "meeting", "unavailable"]),
   // null clears the label. undefined (absent) leaves it alone on PATCH. The two are not
   // the same thing, and collapsing them is why clearing a label used to do nothing.
   label: z.string().max(100).nullish(),

@@ -2,7 +2,18 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { get, post, patch, del } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
-export type BlockType = "school" | "break" | "work" | "unavailable";
+export type BlockType = "school" | "meeting" | "unavailable";
+
+const KNOWN_BLOCK_TYPES: readonly string[] = ["school", "meeting", "unavailable"] satisfies BlockType[];
+
+/**
+ * A type this build does not know reads as "unavailable" (busy) instead of reaching the
+ * grid as a key with no config. That is a `work` or `break` row from a database that
+ * has not run migration 060 yet; without this the Availability page throws on it.
+ */
+function asBlockType(value: unknown): BlockType {
+  return typeof value === "string" && KNOWN_BLOCK_TYPES.includes(value) ? (value as BlockType) : "unavailable";
+}
 
 export interface AvailabilityBlock {
   block_id: number;
@@ -44,7 +55,7 @@ function mapBlock(b: Record<string, unknown>): AvailabilityBlock {
     day_of_week: (b.dayOfWeek ?? b.day_of_week) as number,
     start_time: (b.startTime ?? b.start_time) as string,
     end_time: (b.endTime ?? b.end_time) as string,
-    block_type: (b.blockType ?? b.block_type) as BlockType,
+    block_type: asBlockType(b.blockType ?? b.block_type),
     label: (b.label as string | null) || null,
     effective_from: ((b.effectiveFrom ?? b.effective_from) as string | null) || null,
     effective_to: ((b.effectiveTo ?? b.effective_to) as string | null) || null,

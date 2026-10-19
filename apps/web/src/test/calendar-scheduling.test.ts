@@ -261,7 +261,7 @@ describe("availability validation is enforced server-side", () => {
         dayOfWeek: 2,
         startTime: "17:00",
         endTime: "09:00",
-        blockType: "work",
+        blockType: "unavailable",
       }),
     });
     expect(status).toBe(400);
@@ -280,7 +280,7 @@ describe("availability validation is enforced server-side", () => {
         dayOfWeek: 2,
         startTime: "09:00",
         endTime: "10:00",
-        blockType: "work",
+        blockType: "unavailable",
         effectiveFrom: "2026-12-01",
         effectiveTo: "2026-01-01",
       }),

@@ -347,7 +347,7 @@ Key-value config table. Most keys are admin-only via `/api/settings/*`. The allo
 
 ### availability_block
 
-Per-member schedule blocks used by [`AdminAvailability`](../apps/web/src/components/admin/AdminAvailability.tsx) to track when each team member is in school / on break / available for work / unavailable.
+Per-member schedule blocks used by [`AdminAvailability`](../apps/web/src/components/admin/AdminAvailability.tsx) to track when each team member is in school / in an ADVO meeting / unavailable.
 
 Created by [migration 024](../apps/api/migrations/024_availability_block_bounds.sql). Before
 that this table had no migration at all — it reached every database through
@@ -361,7 +361,7 @@ detector's view entirely.
 | `day_of_week`    | INTEGER        | 0–6 (Sunday–Saturday), CHECKed                                            |
 | `start_time`     | VARCHAR(5)     | `"HH:MM"`. Not a `TIME` column.                                           |
 | `end_time`       | VARCHAR(5)     | `"HH:MM"`. `"00:00"` means midnight at the **end** of the day.            |
-| `block_type`     | VARCHAR(20)    | CHECKed to `school`, `break`, `work`, `unavailable`. Not a Postgres ENUM.  |
+| `block_type`     | VARCHAR(20)    | CHECKed to `school`, `meeting`, `unavailable` (migration 060). Not a Postgres ENUM. Default `unavailable`. |
 | `label`          | VARCHAR(100)   | Optional (e.g. "CS 101", "Lunch")                                         |
 | `effective_from` | DATE           | First Manila date the block applies. NULL = unbounded backwards.          |
 | `effective_to`   | DATE           | Last Manila date the block applies, inclusive. NULL = open-ended.         |
@@ -665,6 +665,7 @@ Drizzle-kit `push` syncs `schema.ts` → Postgres. For schema changes that need 
 | `054_meeting_audio_url.sql` | 2026-10-18 | Added nullable `meeting.audio_url` TEXT — the Drive (or other) link to a meeting's audio, shown as the Audio link on the Meetings table and set in the meeting dialog. `ADD COLUMN IF NOT EXISTS`, so a re-run is harmless. Applied to prod by hand. |
 | `058_meeting_member.sql` | 2026-10-18 | Created `meeting_member` (who joined a meeting, keyed by `team_member` so members without a login can be marked) and copied existing `meeting_attendee` rows for rostered users into it (`ON CONFLICT DO NOTHING`). `IF NOT EXISTS` throughout; ledger row inserted. Additive — `meeting_attendee` and the self-serve join routes are unchanged. **Not yet applied to prod.** |
 | `059_webhook_auth_header.sql` | 2026-10-18 | Added nullable `member_webhook.auth_header_value_encrypted` (AES-256-GCM, same helper as `secret_encrypted`) and `auth_header_name` (default `Authorization`). Deliveries and the Test button send that header with `X-ADVO-Signature` / `X-ADVO-Event`. List routes expose only whether it is set. **Not yet applied to prod.** |
+| `060_availability_block_meeting_type.sql` | 2026-10-19 | `availability_block.block_type` drops to three types: `school`, `meeting` (new), `unavailable`. In one transaction: deletes every `work` row (the Find free time search now uses 7am–midnight as its base window, so nothing reads them), converts `break` → `unavailable`, then reclassifies `unavailable` rows whose label matches `ILIKE '%meeting%'` to `meeting` (a rule, not an id list, so one file is right in every environment). Swaps `chk_availability_block_type` to the three values and sets the column default to `unavailable`. Ledger row inserted. Applied to local `advo_dev` 2026-10-19 (6 `work` deleted, 0 converted). **Not yet applied to prod** — apply it before deploying the web build that drops `work`/`break`. |
 
 ### Which migration has this database seen?
 

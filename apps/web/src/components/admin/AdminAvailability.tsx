@@ -2,15 +2,12 @@ import { useState, useMemo, type KeyboardEvent } from "react";
 import {
   Plus,
   School,
-  Coffee,
-  Briefcase,
+  Users,
   Ban,
   Loader2,
   Trash2,
   ChevronsUpDown,
   CalendarSearch,
-  CircleDashed,
-  ArrowLeftRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -44,10 +41,25 @@ import {
   dayKey,
   formatManilaDate,
   manilaToday,
-  minutesToTime,
+  minutesToClock12h,
   timeRangeProblem,
   timeToMinutes,
 } from "@/lib/manila-time";
+import {
+  ATTENDANCE_ORDER,
+  classifyAttendance,
+  defaultMeetingWindow,
+  findDaySlots,
+  formatClockRange12h,
+  majorityLabel,
+  meetingDays,
+  meetingSpan,
+  type AttendanceStatus,
+  type BusyInterval,
+  type MajoritySlot,
+  type MeetingWindowInput,
+  type Range,
+} from "@/lib/free-time";
 import { ConfirmDeleteDialog } from "@/components/admin/ConfirmDeleteDialog";
 import { ResponsiveSheet } from "@/components/admin/shared/ResponsiveSheet";
 import { Panel } from "./_ui";
@@ -64,8 +76,7 @@ const FIRST_HOUR = 7;
 const GRID_START = FIRST_HOUR * 60;
 const HOURS = Array.from({ length: 24 - FIRST_HOUR }, (_, i) => FIRST_HOUR + i); // 7am to 11pm
 
-const hourLabel = (hour: number) =>
-  hour === 0 ? "12am" : hour > 12 ? `${hour - 12}pm` : hour === 12 ? "12pm" : `${hour}am`;
+const hourLabel = (hour: number) => minutesToClock12h(hour * 60);
 
 /** A free slot shorter than this is not a meeting, it is an arithmetic artefact. */
 const MIN_FREE_SLOT_MINUTES = 30;
@@ -77,76 +88,32 @@ const FREE_TIME_HORIZON_DAYS = 7;
 // `short` is for the legend and the type chips, which both have to fit one line at 390px.
 const blockTypeConfig: Record<BlockType, { label: string; short: string; color: string; bgColor: string; dot: string; icon: React.ElementType }> = {
   school: { label: "School", short: "School", color: "text-blue-400", bgColor: "bg-blue-500/10 border-blue-500/30", dot: "bg-blue-500", icon: School },
-  break: { label: "Break", short: "Break", color: "text-amber-400", bgColor: "bg-amber-500/10 border-amber-500/30", dot: "bg-amber-500", icon: Coffee },
-  work: { label: "Work Available", short: "Work", color: "text-emerald-400", bgColor: "bg-emerald-500/10 border-emerald-500/30", dot: "bg-emerald-500", icon: Briefcase },
+  meeting: { label: "Meeting", short: "Meeting", color: "text-violet-400", bgColor: "bg-violet-500/10 border-violet-500/30", dot: "bg-violet-500", icon: Users },
   unavailable: { label: "Unavailable", short: "Unavailable", color: "text-rose-400", bgColor: "bg-rose-500/10 border-rose-500/30", dot: "bg-rose-500", icon: Ban },
 };
 const BLOCK_TYPES = Object.keys(blockTypeConfig) as BlockType[];
 
+// The five Free Members groups. Flat dots, the same quiet cue the block legend uses.
+const attendanceConfig: Record<AttendanceStatus, { label: string; dot: string }> = {
+  available: { label: "Available", dot: "bg-emerald-500" },
+  "may-be-late": { label: "May be late", dot: "bg-amber-500" },
+  "will-be-late": { label: "Will be late", dot: "bg-orange-500" },
+  "leaves-early": { label: "Leaves early", dot: "bg-sky-500" },
+  "not-available": { label: "Not available", dot: "bg-rose-500" },
+};
+
+type SearchMode = "time" | "members";
+
 // ─── Minute ranges ───
 // Everything below works in minutes past midnight. The grid used to compare only
 // parseInt(start_time.split(":")[0]), which threw the minutes away: "13:15–13:45" matched
-// no cell at all and rendered nowhere, while reporting "Added" on save.
-
-interface Range {
-  start: number;
-  end: number;
-}
+// no cell at all and rendered nowhere, while reporting "Added" on save. The range maths
+// (merge, subtract, the free-time sweep) lives in lib/free-time.ts.
 
 const rangeOf = (b: AvailabilityBlock): Range => ({
   start: timeToMinutes(b.start_time),
   end: timeToMinutes(b.end_time, true),
 });
-
-/**
- * Overlapping and touching ranges collapsed into one.
- *
- * A member can hold two work blocks that overlap ("13:00–23:00" and "13:00–00:00" both
- * exist in this table today). Intersecting without merging first yields the same free
- * window once per source block, so the panel offers the same slot twice.
- */
-function merge(ranges: Range[]): Range[] {
-  if (ranges.length < 2) return ranges;
-  const sorted = [...ranges].sort((a, b) => a.start - b.start);
-  const out: Range[] = [sorted[0]];
-  for (const r of sorted.slice(1)) {
-    const last = out[out.length - 1];
-    if (r.start <= last.end) last.end = Math.max(last.end, r.end);
-    else out.push({ ...r });
-  }
-  return out;
-}
-
-/** a ∩ b, for two sorted-by-nothing lists of ranges. */
-function intersect(a: Range[], b: Range[]): Range[] {
-  const out: Range[] = [];
-  for (const r1 of a) {
-    for (const r2 of b) {
-      const start = Math.max(r1.start, r2.start);
-      const end = Math.min(r1.end, r2.end);
-      if (start < end) out.push({ start, end });
-    }
-  }
-  return out;
-}
-
-/** base minus every blocker, splitting a range that a blocker lands in the middle of. */
-function subtract(base: Range[], blockers: Range[]): Range[] {
-  let out = base;
-  for (const blocker of blockers) {
-    const next: Range[] = [];
-    for (const r of out) {
-      if (blocker.end <= r.start || blocker.start >= r.end) {
-        next.push(r);
-        continue;
-      }
-      if (blocker.start > r.start) next.push({ start: r.start, end: blocker.start });
-      if (blocker.end < r.end) next.push({ start: blocker.end, end: r.end });
-    }
-    out = next;
-  }
-  return out;
-}
 
 // ─── One-off dates ───
 // A block whose window is shorter than a week falls on one date at most: an exam day, a
@@ -220,7 +187,9 @@ const AdminAvailability = () => {
     day_of_week: "1",
     start_time: "09:00",
     end_time: "12:00",
-    block_type: "work" as BlockType,
+    // "unavailable", not "meeting": the neutral "something is on" default, so a school
+    // or personal block saved before its type is picked is not mislabelled a meeting.
+    block_type: "unavailable" as BlockType,
     label: "",
     effective_from: "",
     effective_to: "",
@@ -229,9 +198,9 @@ const AdminAvailability = () => {
   // Find Free Time state
   const [showFreeTime, setShowFreeTime] = useState(false);
   const [selectedMembers, setSelectedMembers] = useState<number[]>([]);
-  // "work" is the default: free = scheduled work minus school/break/unavailable. "empty"
-  // widens that to the whole grid window, so unscheduled time counts as free too.
-  const [freeMode, setFreeMode] = useState<"work" | "empty">("work");
+  // "time": when can the selected people meet. "members": who can make one meeting.
+  const [searchMode, setSearchMode] = useState<SearchMode>("time");
+  const [meetingWindow, setMeetingWindow] = useState<MeetingWindowInput>(() => defaultMeetingWindow());
 
   // The concrete days the free-time search covers. Recurring blocks have no dates, but
   // meetings and deadlines do, so the search has to happen on real days to be able to
@@ -294,70 +263,91 @@ const AdminAvailability = () => {
     return blocks.filter((b) => b.team_member_id === selectedMember);
   }, [blocks, selectedMember]);
 
+  // The selected people in roster order, so "Majority except …" and the Free Members
+  // groups list names the same way the people chips do, whatever order they were tapped.
+  const selectedRoster = useMemo(
+    () => teamMembers.filter((m) => selectedMembers.includes(m.team_member_id)),
+    [teamMembers, selectedMembers],
+  );
+
   /**
-   * Overlapping free time.
+   * Free Time: per day, where everyone is free, then where a strict majority is.
    *
-   * Three things were wrong here and all three had the same shape: the search was
+   * Three things were wrong here once and all three had the same shape: the search was
    * narrower than the data it claimed to summarise.
    *
    *   1. It looped `day = 1; day <= 5`, so Saturday and Sunday were never considered even
    *      though the grid above renders weekend blocks and people work weekends.
-   *   2. It filtered to block_type === "work" and stopped, so school, break and
-   *      unavailable were never subtracted. It proposed meetings during a class.
+   *   2. It subtracted only some block types, so it proposed meetings during a class.
    *   3. Its dependency list named only blocks, so nothing dated was ever subtracted and
    *      it proposed slots on top of meetings that already existed.
    *
-   * So: every day, work minus every other block type, intersected across the selected
-   * members, minus the bookings actually on that date, and finally minus anything too
-   * short to be a meeting.
-   *
-   * Two modes change only what counts as a member's base window before busy blocks are
-   * subtracted. "work" (default) is the base above. "empty" widens the base to the whole
-   * grid day (7am–midnight, GRID_START to 1440), so unscheduled time counts as free too —
-   * useful for "does anyone have a totally open slot" rather than "is this inside someone's
-   * declared work hours".
+   * So: every day, the 7am–midnight window minus every block (school, meeting and
+   * unavailable are all busy), swept across the selected people (findDaySlots), with the
+   * dated bookings on that date taken out of both tiers, and anything too short to be a
+   * meeting dropped.
    */
-  const freeTimeSlots = useMemo(() => {
-    if (!showFreeTime || selectedMembers.length < 2) return [];
+  const freeTimeDays = useMemo(() => {
+    if (!showFreeTime || searchMode !== "time" || selectedRoster.length < 2) return [];
 
-    const slots: { key: string; date: Date; dow: number; start: string; end: string }[] = [];
-
+    const days: { key: string; date: Date; dow: number; everyone: Range[]; majority: MajoritySlot[] }[] = [];
     for (const day of horizon.days) {
-      const perMember = selectedMembers.map((memberId) => {
-        const mine = blocks.filter(
-          (b) => b.team_member_id === memberId && blockAppliesOn(b, day.key, day.dow),
-        );
-        const busy = merge(mine.filter((b) => b.block_type !== "work").map(rangeOf));
-        const base =
-          freeMode === "work"
-            ? merge(mine.filter((b) => b.block_type === "work").map(rangeOf))
-            : [{ start: GRID_START, end: 1440 }];
-        return subtract(base, busy);
+      const members = selectedRoster.map((member) => ({
+        id: member.team_member_id,
+        busy: blocks
+          .filter((b) => b.team_member_id === member.team_member_id && blockAppliesOn(b, day.key, day.dow))
+          .map(rangeOf),
+      }));
+      const { everyone, majority } = findDaySlots(members, {
+        base: { start: GRID_START, end: 1440 },
+        bookings: bookingsByDay.get(day.key) ?? [],
+        minMinutes: MIN_FREE_SLOT_MINUTES,
       });
-
-      if (perMember.some((r) => r.length === 0)) continue;
-
-      let shared = perMember[0];
-      for (let i = 1; i < perMember.length && shared.length > 0; i++) {
-        shared = intersect(shared, perMember[i]);
-      }
-
-      shared = merge(subtract(shared, merge(bookingsByDay.get(day.key) ?? [])));
-
-      for (const r of shared) {
-        if (r.end - r.start < MIN_FREE_SLOT_MINUTES) continue;
-        slots.push({
-          key: `${day.key}-${r.start}`,
-          date: day.date,
-          dow: day.dow,
-          start: minutesToTime(r.start),
-          end: minutesToTime(r.end),
-        });
+      if (everyone.length > 0 || majority.length > 0) {
+        days.push({ key: day.key, date: day.date, dow: day.dow, everyone, majority });
       }
     }
+    return days;
+  }, [showFreeTime, searchMode, selectedRoster, blocks, horizon.days, bookingsByDay]);
 
-    return slots;
-  }, [showFreeTime, selectedMembers, freeMode, blocks, horizon.days, bookingsByDay]);
+  /**
+   * Free Members: where each selected person lands for one start/end.
+   *
+   * Busy is that person's own school / meeting / unavailable blocks, at their real clock
+   * times (not clipped to the 7am grid), on every date the meeting touches plus the day
+   * before it. Dated calendar entries are left out on purpose: GET /api/calendar does not
+   * say who a booking belongs to, so counting one would mark everybody busy for it.
+   */
+  const attendance = useMemo(() => {
+    if (!showFreeTime || searchMode !== "members") return null;
+
+    const span = meetingSpan(meetingWindow);
+    if ("problem" in span) return { problem: span.problem, groups: [] };
+
+    const days = meetingDays(meetingWindow.startDate, meetingWindow.endDate);
+    const byStatus = new Map<AttendanceStatus, { member: (typeof teamMembers)[number]; reason: string | null }[]>();
+    for (const member of selectedRoster) {
+      const busy: BusyInterval[] = [];
+      for (const block of blocks) {
+        if (block.team_member_id !== member.team_member_id) continue;
+        const { start, end } = rangeOf(block);
+        for (const day of days) {
+          if (!blockAppliesOn(block, day.dateKey, day.dow)) continue;
+          busy.push({ start: day.offset + start, end: day.offset + end, label: blockTypeConfig[block.block_type].label });
+        }
+      }
+      const { status, reason } = classifyAttendance(busy, span);
+      byStatus.set(status, [...(byStatus.get(status) ?? []), { member, reason }]);
+    }
+
+    return {
+      problem: null,
+      groups: ATTENDANCE_ORDER.flatMap((status) => {
+        const rows = byStatus.get(status);
+        return rows ? [{ status, rows }] : [];
+      }),
+    };
+  }, [showFreeTime, searchMode, meetingWindow, selectedRoster, blocks]);
 
   const getInitials = (name: string) => {
     return name.split(" ").map((n) => n[0]).join("").toUpperCase();
@@ -374,7 +364,7 @@ const AdminAvailability = () => {
       start_time: hasHour ? `${String(hour).padStart(2, "0")}:00` : "09:00",
       // 23:00 + 1h is midnight, which this table spells "00:00" (end of day).
       end_time: hasHour ? `${String((hour! + 1) % 24).padStart(2, "0")}:00` : "12:00",
-      block_type: "work",
+      block_type: "unavailable",
       label: "",
       effective_from: "",
       effective_to: "",
@@ -464,9 +454,12 @@ const AdminAvailability = () => {
     );
   };
 
+  // Every open starts fresh: everyone selected, Free Time mode, and a Free Members window
+  // at the next full hour (one left over from an earlier open may already be past).
   const openFreeTime = () => {
     setSelectedMembers(teamMembers.map((m) => m.team_member_id));
-    setFreeMode("work");
+    setSearchMode("time");
+    setMeetingWindow(defaultMeetingWindow());
     setShowFreeTime(true);
   };
 
@@ -510,14 +503,9 @@ const AdminAvailability = () => {
     .filter((b) => rangeOf(b).end <= GRID_START)
     .sort((a, b) => a.day_of_week - b.day_of_week || a.start_time.localeCompare(b.start_time));
 
-  // Free slots grouped per day, so a phone reads one row per day instead of a wall of chips.
-  const slotDays: { date: Date; dow: number; slots: typeof freeTimeSlots }[] = [];
-  for (const slot of freeTimeSlots) {
-    const last = slotDays[slotDays.length - 1];
-    if (last && last.date.getTime() === slot.date.getTime()) last.slots.push(slot);
-    else slotDays.push({ date: slot.date, dow: slot.dow, slots: [slot] });
-  }
   const allSelected = teamMembers.length > 0 && selectedMembers.length === teamMembers.length;
+  const firstName = (memberId: number) =>
+    teamMembers.find((m) => m.team_member_id === memberId)?.name.split(" ")[0] ?? "Someone";
 
   const memberPicker = selectedMemberRow && (
     <DropdownMenu>
@@ -566,25 +554,178 @@ const AdminAvailability = () => {
     </DropdownMenu>
   );
 
+  // Free Time results: one row per day. Everyone-free slots lead as accent chips; majority
+  // slots follow underneath, quieter, each naming who would be missing.
+  const freeTimeResults =
+    selectedMembers.length < 2 ? (
+      <p className="text-sm text-muted-foreground">Select at least 2 people to find common free time.</p>
+    ) : freeTimeDays.length === 0 ? (
+      <p className="text-sm text-muted-foreground">
+        No free time in the next {FREE_TIME_HORIZON_DAYS} days for the selected people.
+      </p>
+    ) : (
+      <div className="space-y-2">
+        <p className="text-xs font-medium text-muted-foreground">
+          Everyone free first, then the majority ({MIN_FREE_SLOT_MINUTES} minutes or more)
+        </p>
+        <ul className="divide-y divide-border rounded-md border border-border">
+          {freeTimeDays.map((day) => (
+            <li key={day.key} className="flex items-start justify-between gap-3 px-3 py-2">
+              <span className="whitespace-nowrap pt-0.5 text-sm font-medium">
+                {DAYS[day.dow]} {formatManilaDate(day.date)}
+              </span>
+              <div className="flex min-w-0 flex-col items-end gap-1.5">
+                {day.everyone.length > 0 && (
+                  <span className="flex flex-wrap justify-end gap-1.5">
+                    {day.everyone.map((slot) => (
+                      <span
+                        key={`all-${slot.start}`}
+                        data-testid="freetime-slot-everyone"
+                        className="whitespace-nowrap rounded border border-accent/30 bg-accent/[0.06] px-1.5 py-0.5 text-xs tabular-nums text-accent-ink"
+                      >
+                        {formatClockRange12h(slot.start, slot.end)}
+                      </span>
+                    ))}
+                  </span>
+                )}
+                {day.majority.map((slot) => (
+                  // The chip stays beside its label; a long list of names wraps inside the
+                  // label instead of pushing the time onto a line of its own.
+                  <span
+                    key={`most-${slot.start}`}
+                    data-testid="freetime-slot-majority"
+                    className="flex items-start justify-end gap-1.5"
+                  >
+                    <span className="min-w-0 pt-[3px] text-right text-[11px] leading-tight text-muted-foreground">
+                      {majorityLabel(slot.missing.map(firstName))}
+                    </span>
+                    <span className="shrink-0 whitespace-nowrap rounded border border-border bg-secondary/60 px-1.5 py-0.5 text-xs tabular-nums text-muted-foreground">
+                      {formatClockRange12h(slot.start, slot.end)}
+                    </span>
+                  </span>
+                ))}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+
+  const setWindowField = (field: keyof MeetingWindowInput) => (e: React.ChangeEvent<HTMLInputElement>) =>
+    setMeetingWindow((prev) => ({ ...prev, [field]: e.target.value }));
+
+  // Free Members: a start and an end (date + time each, Manila), then the selected people
+  // in five groups. Empty groups are not shown.
+  const freeMembersBody = (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <p className="text-xs font-medium text-muted-foreground">Meeting</p>
+        <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_minmax(0,7.5rem)] items-center gap-2">
+          <label htmlFor="freemembers-start-date" className="text-sm">Start</label>
+          <Input
+            id="freemembers-start-date"
+            type="date"
+            data-testid="freemembers-start-date"
+            value={meetingWindow.startDate}
+            onChange={setWindowField("startDate")}
+            className="min-w-0"
+          />
+          <Input
+            type="time"
+            aria-label="Start time"
+            data-testid="freemembers-start-time"
+            value={meetingWindow.startTime}
+            onChange={setWindowField("startTime")}
+            className="min-w-0"
+          />
+          <label htmlFor="freemembers-end-date" className="text-sm">End</label>
+          <Input
+            id="freemembers-end-date"
+            type="date"
+            data-testid="freemembers-end-date"
+            value={meetingWindow.endDate}
+            onChange={setWindowField("endDate")}
+            className="min-w-0"
+          />
+          <Input
+            type="time"
+            aria-label="End time"
+            data-testid="freemembers-end-time"
+            value={meetingWindow.endTime}
+            onChange={setWindowField("endTime")}
+            className="min-w-0"
+          />
+        </div>
+      </div>
+
+      {attendance?.problem ? (
+        <p role="status" className="text-sm text-muted-foreground">{attendance.problem}</p>
+      ) : selectedMembers.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Select at least one person.</p>
+      ) : (
+        <div className="space-y-3">
+          {attendance?.groups.map(({ status, rows }) => (
+            <section key={status} data-testid={`freemembers-group-${status}`} aria-label={attendanceConfig[status].label}>
+              <h3 className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <span aria-hidden className={`inline-block h-1.5 w-1.5 rounded-full ${attendanceConfig[status].dot}`} />
+                {attendanceConfig[status].label}
+                <span className="tabular-nums">· {rows.length}</span>
+              </h3>
+              <ul className="divide-y divide-border rounded-md border border-border">
+                {rows.map(({ member, reason }) => (
+                  <li key={member.team_member_id} className="flex min-h-10 items-center gap-2 px-3 py-1.5">
+                    <Avatar className="h-6 w-6 shrink-0">
+                      <AvatarImage src={member.avatar_url ?? undefined} />
+                      <AvatarFallback className="text-[10px]">{getInitials(member.name)}</AvatarFallback>
+                    </Avatar>
+                    <span className="min-w-0 flex-1 truncate text-sm">{member.name}</span>
+                    {reason && (
+                      <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{reason}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const searchModes: { mode: SearchMode; label: string }[] = [
+    { mode: "time", label: "Free Time" },
+    { mode: "members", label: "Free Members" },
+  ];
+
   const freeTimeBody = (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-medium text-muted-foreground">Search mode</p>
-        <button
-          type="button"
-          data-testid="freetime-mode-toggle"
-          aria-pressed={freeMode === "empty"}
-          onClick={() => setFreeMode(freeMode === "work" ? "empty" : "work")}
-          className="flex h-10 items-center gap-1.5 rounded-md border border-border bg-secondary px-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground sm:h-9"
+        <p id="freetime-mode-label" className="text-xs font-medium text-muted-foreground">Search mode</p>
+        {/* Two segments, one pressed. A toggle button per mode rather than a radio group,
+            so each is one Tab stop and needs no arrow-key handling. */}
+        <div
+          role="group"
+          aria-labelledby="freetime-mode-label"
+          className="inline-flex shrink-0 rounded-md border border-border bg-secondary p-0.5"
         >
-          {freeMode === "work" ? (
-            <Briefcase className={`h-3.5 w-3.5 ${blockTypeConfig.work.color}`} />
-          ) : (
-            <CircleDashed className="h-3.5 w-3.5" />
-          )}
-          {freeMode === "work" ? "Work available" : "Empty slots"}
-          <ArrowLeftRight className="h-3.5 w-3.5 opacity-60" aria-hidden />
-        </button>
+          {searchModes.map(({ mode, label }) => {
+            const on = searchMode === mode;
+            return (
+              <button
+                key={mode}
+                type="button"
+                data-testid={`freetime-mode-${mode}`}
+                aria-pressed={on}
+                onClick={() => setSearchMode(mode)}
+                className={`h-9 rounded-[5px] px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:h-8 ${
+                  on ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -625,42 +766,7 @@ const AdminAvailability = () => {
         </div>
       </div>
 
-      {selectedMembers.length < 2 ? (
-        <p className="text-sm text-muted-foreground">Select at least 2 people to find common free time.</p>
-      ) : slotDays.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          {freeMode === "work"
-            ? `No overlapping work time in the next ${FREE_TIME_HORIZON_DAYS} days for the selected people.`
-            : `No overlapping open time in the next ${FREE_TIME_HORIZON_DAYS} days for the selected people.`}
-        </p>
-      ) : (
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground">
-            {freeMode === "work"
-              ? `Everyone is free (${MIN_FREE_SLOT_MINUTES} minutes or more)`
-              : `Everyone has an empty or work slot (${MIN_FREE_SLOT_MINUTES} minutes or more)`}
-          </p>
-          <ul className="divide-y divide-border rounded-md border border-border">
-            {slotDays.map((day) => (
-              <li key={day.date.getTime()} className="flex items-start justify-between gap-3 px-3 py-2">
-                <span className="whitespace-nowrap pt-0.5 text-sm font-medium">
-                  {DAYS[day.dow]} {formatManilaDate(day.date)}
-                </span>
-                <span className="flex flex-wrap justify-end gap-1.5">
-                  {day.slots.map((slot) => (
-                    <span
-                      key={slot.key}
-                      className="rounded border border-accent/30 bg-accent/[0.06] px-1.5 py-0.5 text-xs tabular-nums text-accent-ink"
-                    >
-                      {slot.start}–{slot.end}
-                    </span>
-                  ))}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {searchMode === "time" ? freeTimeResults : freeMembersBody}
     </div>
   );
 
@@ -962,7 +1068,7 @@ const AdminAvailability = () => {
             </div>
           </div>
 
-          {/* Type: one row of chips, sized to their labels so all four fit at 390px. */}
+          {/* Type: one row of chips, sized to their labels so all three fit at 390px. */}
           <div className="space-y-2">
             <span id="block-type-label" className="text-sm font-medium">Type</span>
             <div

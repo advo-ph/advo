@@ -118,6 +118,26 @@ export function minutesToTime(minutes: number): string {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
+/**
+ * Minutes past midnight to a 12-hour clock label, minute-precision.
+ *
+ * "18:00" -> "6pm", "19:50" -> "7:50pm", on the hour drops the ":00" (matches the
+ * existing grid's `hourLabel`). 1440 (midnight at the END of a day/range) reads as
+ * "12am", the same label as minute 0 — both are midnight on a 12-hour clock.
+ *
+ * Wraps in both directions, so a minute on a multi-day timeline (Free Members counts
+ * from the meeting's start date, and looks at the day before it) still names the clock
+ * time: -30 is "11:30pm", 1500 is "1am".
+ */
+export function minutesToClock12h(minutes: number): string {
+  const total = ((minutes % 1440) + 1440) % 1440;
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  const period = h >= 12 ? "pm" : "am";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return m === 0 ? `${h12}${period}` : `${h12}:${String(m).padStart(2, "0")}${period}`;
+}
+
 /** Why this start/end pair is not a valid block, or null when it is. */
 export function timeRangeProblem(startTime: string, endTime: string): string | null {
   if (!startTime || !endTime) return "Both a start and an end time are required.";
