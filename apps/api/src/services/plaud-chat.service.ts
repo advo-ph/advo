@@ -43,7 +43,16 @@ type MeetingRow = typeof meeting.$inferSelect;
 
 /** Short title for a chat message body — the plan's "40 chars" bound. */
 function shortTitle(title: string): string {
-  return title.length > 40 ? `${title.slice(0, 40)}…` : title;
+  return title.length > 40 ? `${title.slice(0, 40).trimEnd()}…` : title;
+}
+
+/**
+ * A recording question names a meeting the owner cannot open yet, so it shows
+ * more of the title, in quotes, so the cut never runs into the sentence ("….").
+ */
+function quotedTitle(title: string): string {
+  const t = title.trim();
+  return `“${t.length > 60 ? `${t.slice(0, 60).trimEnd()}…` : t}”`;
 }
 
 async function projectTitle(projectId: number): Promise<string> {
@@ -243,7 +252,7 @@ export async function postRecordingQuestion(input: {
 }): Promise<boolean> {
   if (await hasAskedAboutFile(input.fileId)) return false;
   const guess = await guessClient(input.title, input.summary);
-  const lead = `New meeting in Plaud: ${shortTitle(input.title)}.`;
+  const lead = `New meeting in Plaud: ${quotedTitle(input.title)}`;
   await postBotMessage({
     channel: "updates",
     body: guess
