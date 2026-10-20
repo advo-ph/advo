@@ -50,6 +50,13 @@ const PROJECT_ALIAS: Record<string, { strong: string[]; weak: string[] }> = {
   "flowers and chocolates": { strong: ["flowers and chocolates"], weak: [] },
 };
 
+/**
+ * Plaud titles a class "10-20 Lecture: …" or "10-19 Lektura: …". A professor who
+ * names ADVO as a case study (2026-10-20, a Porter's-framework class) does not make
+ * it a meeting, so for these only the title can say ADVO or a project.
+ */
+const LECTURE_TITLE = /^\s*(?:\d{1,2}-\d{1,2}\s+)?(?:lecture|lektura)\b/i;
+
 /** Client names that say nothing about which project (ADVO's own bucket). */
 const GENERIC_CLIENT = new Set(["advo inbox"]);
 
@@ -92,9 +99,10 @@ export function routeRecording(
 ): RouteResult {
   const title = text.title ?? "";
   const summary = text.summary ?? "";
-  const sayAdvo = /\badvo\b/i.test(title) || /\badvo\b/i.test(summary);
+  const evidence = LECTURE_TITLE.test(title) ? "" : summary;
+  const sayAdvo = /\badvo\b/i.test(title) || /\badvo\b/i.test(evidence);
   // Pass 1: is this ADVO at all? It says so, or it names a project outright.
-  const isStrongHit = candidate.some((c) => c.strong.some((k) => countOf(title, k) + countOf(summary, k) > 0));
+  const isStrongHit = candidate.some((c) => c.strong.some((k) => countOf(title, k) + countOf(evidence, k) > 0));
   const isAdvo = sayAdvo || isStrongHit;
   // Pass 2: once it is ADVO, the ordinary words count too ("Flood Platform").
   const scored = candidate

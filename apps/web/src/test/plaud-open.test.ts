@@ -90,6 +90,17 @@ describe("routeRecording", () => {
     expect(advo.projectId).toBe(22);
   });
 
+  it("skips a lecture that only uses ADVO as an example", () => {
+    const summary = "Industry boundaries. Examples: *Saint Elizabeth Hospital*: healthcare. *ADVO*: tech/software.";
+    for (const title of [
+      "10-20 Lecture: Strategic Industry Boundaries and Market Scope using Porter's Framework",
+      "10-19 Lektura: Mga Paraan ng Pagpawi ng Obligasyon",
+    ]) {
+      expect(routeRecording({ title, summary }, candidate).isAdvo).toBe(false);
+    }
+    expect(routeRecording({ title: "10-21 Lecture: ADVO Flood demo for the class", summary }, candidate).projectId).toBe(22);
+  });
+
   it("routes a clinic-billing meeting to VBE without the name", () => {
     expect(
       routeRecording({ title: "10-18 Meeting: Clinic Billing Module, PhilHealth SOA Automation, Digital Waivers" }, candidate)
