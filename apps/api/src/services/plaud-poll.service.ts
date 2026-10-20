@@ -18,9 +18,9 @@ import {
   importPlaudMeeting,
   resolveInboxProjectId,
 } from "./plaud-import.service.js";
-import { extract, ingestBundle } from "./corpus.service.js";
-import { routeCandidate, routeRecording } from "./meeting-route.service.js";
-import { onPlaudMeetingImported } from "./plaud-chat.service.js";
+import { looksLikeClientMeeting, routeCandidate, routeRecording } from "./meeting-route.service.js";
+import { onPlaudMeetingImported, postRecordingQuestion } from "./plaud-chat.service.js";
+import { ingestToCorpus } from "./plaud-recording.service.js";
 import {
   getOpenFileDetail,
   hasOpenAuth,
@@ -34,7 +34,6 @@ import {
   payloadFromDetail,
   plaudAuthState,
   type PlaudFile,
-  type PlaudPayload,
 } from "./plaud.service.js";
 
 const log = createLogger("plaud-poll");
@@ -145,46 +144,6 @@ function lookbackMillisecond(): number {
 const walkedGrant = new Set<string>();
 
 /**
- * A routed meeting also lands in the corpus, as POST /api/corpus/ingest/plaud does
- * for a share link: facts, terms and actions with the transcript as the body.
- * Off with PLAUD_CORPUS_INGEST=0. A failure here never undoes the meeting.
- */
-async function ingestToCorpus(
-  payload: PlaudPayload,
-  fileId: string,
-  projectId: number | null,
-  meetingId: number | null,
-  createdBy: number | null,
-): Promise<void> {
-  if (process.env.PLAUD_CORPUS_INGEST === "0") return;
-  try {
-    const extraction = await extract(payload.transcript, payload.recordedAt);
-    await ingestBundle(
-      {
-        source: {
-          kind: "plaud",
-          externalId: fileId,
-          url: `https://web.plaud.ai/file/${fileId}`,
-          title: payload.title,
-          occurredAt: payload.recordedAt,
-          summary: extraction.summary ?? payload.summary ?? null,
-          body: payload.transcript,
-          projectId,
-          meta: { extractionMethod: extraction.method, meetingId, via: "plaud-open-poll" },
-        },
-        fact: extraction.fact,
-        term: extraction.term,
-        action: extraction.action,
-      },
-      createdBy,
-    );
-  } catch (err) {
-    recordError("plaud-corpus", err);
-    log.warn({ err, fileId }, "corpus ingest of a Plaud meeting failed; meeting kept");
-  }
-}
-
-/**
  * Open API tick: list the new head, read each recording, route it, import the
  * ADVO ones under their project (Inbox when the project is unclear).
  */
@@ -226,6 +185,17 @@ async function syncOpen(seenFileId: Set<string>, grant: string): Promise<{
       if (!route.isAdvo) {
         notAdvoFileId.add(f.fileId);
         skipped += 1;
+        // Names no project but reads like client work (a new lead such as ECEAS):
+        // ask the owner in the chat instead of dropping it. Nothing is imported
+        // until they answer.
+        if (looksLikeClientMeeting({ title: payload.title, summary: payload.summary })) {
+          await postRecordingQuestion({ fileId: f.fileId, grant, title: payload.title, summary: payload.summary }).catch(
+            (err) => {
+              recordError("plaud-chat", err);
+              log.warn({ err, fileId: f.fileId }, "new-client question failed");
+            },
+          );
+        }
         continue;
       }
       const projectId = route.projectId ?? (await resolveInboxProjectId(null));

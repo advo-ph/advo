@@ -10,23 +10,30 @@
  * project HTTP routes, so nothing else writes that row for them.
  */
 import Anthropic from "@anthropic-ai/sdk";
-import { and, asc, desc, eq, gt, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, gt, isNull, ne, sql } from "drizzle-orm";
 import { HTTPException } from "hono/http-exception";
 import { db } from "../db/connection.js";
 import { calendarEvent, chatMessage, client, meeting, project } from "../db/schema.js";
 import { logActivity } from "./activity.service.js";
 import { ADVO_AI_MODEL } from "../utils/ai-model.js";
 import { rankCandidates, routeCandidate } from "./meeting-route.service.js";
-import { createSideProjectCopies, postMeetingMatchQuestion } from "./plaud-chat.service.js";
+import { createSideProjectCopies, postMeetingMatchQuestion, type ClientGuess } from "./plaud-chat.service.js";
 import { lookupInboxClientId } from "./plaud-import.service.js";
+import { importRecording } from "./plaud-recording.service.js";
 
 export type ChatChannel = "updates" | "ask";
 export type ChatOption = { id: string; label: string; style?: "primary" | "default" | "danger" };
+/** What a new client/project gets filed against: a meeting already on the site, or a Plaud recording not imported yet. */
+export type MeetingTarget = { meetingId: number } | { fileId: string; grant: string };
 export type ChatContext =
   | { type: "confident_fyi"; meetingId: number; projectId: number }
   | { type: "meeting_match"; meetingId: number; candidateProjectIds: number[] }
   | { type: "new_project_name"; meetingId: number }
   | { type: "new_project_client"; meetingId: number; projectName: string }
+  | { type: "recording_check"; fileId: string; grant: string; title: string; guess: ClientGuess | null }
+  | { type: "recording_project"; fileId: string; grant: string }
+  | { type: "new_client_company"; target: MeetingTarget; projectName?: string }
+  | { type: "new_client_project"; target: MeetingTarget; companyName: string }
   | { type: "ask_followup" }
   | null;
 
@@ -75,17 +82,101 @@ async function loadProjectTitle(projectId: number): Promise<string> {
   return row?.title ?? `Project #${projectId}`;
 }
 
-function logChat(action: string, entityType: string, entityId: number, userId: number, extra: Record<string, unknown> = {}) {
+function logChat(action: string, entityType: string, entityId: number | null, userId: number, extra: Record<string, unknown> = {}) {
   return logActivity({ userId, action, entityType, entityId, source: "chat", metadata: extra });
 }
 
-/** Create the project and attach it to the meeting — shared by both "new project" entry points. */
-async function createProjectAndAssign(clientId: number, projectName: string, meetingId: number, userId: number): Promise<void> {
+/**
+ * File the target under a project: move a meeting that is already on the site, or
+ * import the Plaud recording into it. Says so in the chat either way.
+ */
+async function assignTarget(target: MeetingTarget, projectId: number, projectName: string, userId: number): Promise<void> {
+  if ("meetingId" in target) {
+    await db().update(meeting).set({ projectId, updatedAt: new Date() }).where(eq(meeting.meetingId, target.meetingId));
+    await postBotMessage({ channel: "updates", body: `Done. Added to ${projectName}.`, inputMode: "none" });
+    await logChat("meeting_updated", "meeting", target.meetingId, userId, { projectId });
+    return;
+  }
+  try {
+    const result = await importRecording({ ...target, projectId, createdBy: userId });
+    await postBotMessage({ channel: "updates", body: `Done. Meeting added to ${projectName}.`, inputMode: "none" });
+    if (result.meeting) await logChat("meeting_created", "meeting", result.meeting.meetingId, userId, { projectId, fileId: target.fileId });
+  } catch (err) {
+    // The poller never re-asks about a file, so the retry has to live here.
+    console.error("[chat] Plaud import after the owner's answer failed:", err);
+    await postBotMessage({
+      channel: "updates",
+      body: `${projectName} is saved, but Plaud did not send the meeting.`,
+      inputMode: "buttons",
+      options: [{ id: `project:${projectId}`, label: "Try again", style: "primary" }],
+      context: { type: "recording_project", fileId: target.fileId, grant: target.grant },
+    });
+  }
+}
+
+/** Create the project and attach the target — shared by every "new project" entry point. */
+async function createProjectAndAssign(clientId: number, projectName: string, target: MeetingTarget, userId: number): Promise<void> {
   const [newProj] = await db().insert(project).values({ clientId, title: projectName }).returning();
-  await db().update(meeting).set({ projectId: newProj.projectId, updatedAt: new Date() }).where(eq(meeting.meetingId, meetingId));
-  await postBotMessage({ channel: "updates", body: `Done. Added to ${projectName}.`, inputMode: "none" });
-  await logChat("project_created", "project", newProj.projectId, userId, { meetingId });
-  await logChat("meeting_updated", "meeting", meetingId, userId, { projectId: newProj.projectId });
+  await logChat("project_created", "project", newProj.projectId, userId, target);
+  await assignTarget(target, newProj.projectId, projectName, userId);
+}
+
+/** The owner's names for a new client and its project. An existing company with the same name is reused, not duplicated. */
+async function createClientProjectAndAssign(companyName: string, projectName: string, target: MeetingTarget, userId: number): Promise<void> {
+  const company = companyName.trim().slice(0, 255);
+  const title = (projectName.trim() || company).slice(0, 255);
+  const [existing] = await db()
+    .select({ clientId: client.clientId })
+    .from(client)
+    .where(sql`lower(${client.companyName}) = lower(${company})`)
+    .limit(1);
+  let clientId = existing?.clientId;
+  if (!clientId) {
+    [{ clientId }] = await db().insert(client).values({ companyName: company }).returning({ clientId: client.clientId });
+    await logChat("client_created", "client", clientId, userId, target);
+  }
+  await createProjectAndAssign(clientId, title, target, userId);
+}
+
+function askCompanyName(target: MeetingTarget, projectName?: string) {
+  return postBotMessage({
+    channel: "updates",
+    body: "Company name?",
+    inputMode: "text",
+    context: { type: "new_client_company", target, projectName },
+  });
+}
+
+/** "Company" alone, or "Company / Project" in one line. */
+async function handleCompanyName(context: { target: MeetingTarget; projectName?: string }, body: string, userId: number) {
+  const [company, typedProject] = body.split(/\s+\/\s+/, 2);
+  const projectName = context.projectName ?? typedProject;
+  if (projectName) {
+    await createClientProjectAndAssign(company, projectName, context.target, userId);
+    return;
+  }
+  await postBotMessage({
+    channel: "updates",
+    body: "Project name?",
+    inputMode: "text",
+    context: { type: "new_client_project", target: context.target, companyName: company.trim() },
+  });
+}
+
+/** Every real project, for "Existing project" on a recording that is not on the site yet. */
+async function postRecordingProjectQuestion(fileId: string, grant: string): Promise<void> {
+  const rows = await db()
+    .select({ projectId: project.projectId, title: project.title })
+    .from(project)
+    .where(ne(project.title, "Inbox"))
+    .orderBy(asc(project.title));
+  await postBotMessage({
+    channel: "updates",
+    body: "Which project?",
+    inputMode: "buttons",
+    options: rows.map((r) => ({ id: `project:${r.projectId}`, label: r.title })),
+    context: { type: "recording_project", fileId, grant },
+  });
 }
 
 /** The owner's text reply to the "Name?" prompt. */
@@ -98,14 +189,13 @@ async function handleNewProjectName(meetingId: number, projectName: string, user
   const inboxClientId = await lookupInboxClientId();
   const realRows = inboxClientId != null ? rows.filter((r) => r.clientId !== inboxClientId) : rows;
   if (realRows.length === 0) {
-    await postBotMessage({ channel: "updates", body: "No clients yet. Add a client first.", inputMode: "none" });
+    await askCompanyName({ meetingId }, projectName);
     return;
   }
-  if (realRows.length === 1) {
-    await createProjectAndAssign(realRows[0].clientId, projectName, meetingId, userId);
-    return;
-  }
-  const options: ChatOption[] = realRows.map((r) => ({ id: `client:${r.clientId}`, label: r.companyName }));
+  const options: ChatOption[] = [
+    ...realRows.map((r) => ({ id: `client:${r.clientId}`, label: r.companyName })),
+    { id: "new_client", label: "New client" },
+  ];
   await postBotMessage({
     channel: "updates",
     body: "Which client?",
@@ -168,9 +258,40 @@ async function dispatchAnswer(row: ChatMessageRow, optionId: string, userId: num
       return;
     }
     case "new_project_client": {
+      if (optionId === "new_client") {
+        await askCompanyName({ meetingId: context.meetingId }, context.projectName);
+        return;
+      }
       if (optionId.startsWith("client:")) {
         const clientId = Number(optionId.slice("client:".length));
-        await createProjectAndAssign(clientId, context.projectName, context.meetingId, userId);
+        await createProjectAndAssign(clientId, context.projectName, { meetingId: context.meetingId }, userId);
+      }
+      return;
+    }
+    case "recording_check": {
+      const target = { fileId: context.fileId, grant: context.grant };
+      if (optionId === "yes" && context.guess) {
+        await createClientProjectAndAssign(context.guess.company, context.guess.project, target, userId);
+        return;
+      }
+      if (optionId === "type") {
+        await askCompanyName(target);
+        return;
+      }
+      if (optionId === "existing") {
+        await postRecordingProjectQuestion(context.fileId, context.grant);
+        return;
+      }
+      if (optionId === "skip") {
+        await postBotMessage({ channel: "updates", body: "OK, not added.", inputMode: "none" });
+        await logChat("recording_skipped", "plaud_file", null, userId, { fileId: context.fileId });
+      }
+      return;
+    }
+    case "recording_project": {
+      if (optionId.startsWith("project:")) {
+        const projectId = Number(optionId.slice("project:".length));
+        await assignTarget({ fileId: context.fileId, grant: context.grant }, projectId, await loadProjectTitle(projectId), userId);
       }
       return;
     }
@@ -245,6 +366,10 @@ export async function sendOwnerText(channel: ChatChannel, body: string, userId: 
     const context = pending.context as ChatContext;
     if (context?.type === "new_project_name") {
       await handleNewProjectName(context.meetingId, body, userId);
+    } else if (context?.type === "new_client_company") {
+      await handleCompanyName(context, body, userId);
+    } else if (context?.type === "new_client_project") {
+      await createClientProjectAndAssign(context.companyName, body, context.target, userId);
     }
   }
   // No pending prompt: a disconnected note. The owner row above is kept; no

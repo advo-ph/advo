@@ -6,7 +6,12 @@ import {
   openTimeToIso,
   openTokenFilePaths,
 } from "../../../api/src/services/plaud-open.service";
-import { keywordFor, routeRecording, type RouteCandidate } from "../../../api/src/services/meeting-route.service";
+import {
+  keywordFor,
+  looksLikeClientMeeting,
+  routeRecording,
+  type RouteCandidate,
+} from "../../../api/src/services/meeting-route.service";
 import { payloadFromDetail } from "../../../api/src/services/plaud.service";
 
 // The prod project list on 2026-10-18 (Inbox excluded, as routeCandidate does).
@@ -99,6 +104,28 @@ describe("routeRecording", () => {
       expect(routeRecording({ title, summary }, candidate).isAdvo).toBe(false);
     }
     expect(routeRecording({ title: "10-21 Lecture: ADVO Flood demo for the class", summary }, candidate).projectId).toBe(22);
+  });
+
+  it("flags a client meeting that names no project, so the chat can ask", () => {
+    // The 10-20 ECEAS pricing talk: Plaud heard the client's name as "exce".
+    const eceas = {
+      title: "10-20 Pulong: Istruktura ng Pagpepresyo sa Web Development at Paghahanda sa Kontrata",
+      summary:
+        "Pagpepresyo para sa web development at taunang subscription. Standardized quotation template. " +
+        "Naka-set ang meeting sa anak ng kliyente. Mag-engage ng abogado para sa kontrata.",
+    };
+    expect(routeRecording(eceas, candidate).isAdvo).toBe(false);
+    expect(looksLikeClientMeeting(eceas)).toBe(true);
+  });
+
+  it("does not flag classes or meetings with no client words", () => {
+    const summary = "The client pays the contract price; quotation, subscription and budget examples.";
+    expect(looksLikeClientMeeting({ title: "10-19 Lektura: Batas sa Kontrata", summary })).toBe(false);
+    expect(looksLikeClientMeeting({ title: "10-20 Lecture: LAW 111 – Contract Law", summary })).toBe(false);
+    expect(looksLikeClientMeeting({ title: "10-19 Meeting: LAS 50 – Bazaar Booth Planning", summary })).toBe(false);
+    expect(
+      looksLikeClientMeeting({ title: "10-19 Weekly Meeting: Event Sponsorships", summary: "Venue, speakers, budget and website." }),
+    ).toBe(false);
   });
 
   it("routes a clinic-billing meeting to VBE without the name", () => {

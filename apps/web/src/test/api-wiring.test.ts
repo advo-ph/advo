@@ -1526,6 +1526,109 @@ describe("Chat", () => {
     expect(second.status).toBe(409);
   });
 
+  /** The newest bot message on Updates, as the owner would see it next. */
+  async function latestBot(sql: NonNullable<typeof chatSql>) {
+    const [row] = await sql`
+      select chat_message_id, body, input_mode, options, context from chat_message
+      where channel = 'updates' and sender = 'bot' order by chat_message_id desc limit 1
+    `;
+    seededId.push(row.chat_message_id);
+    return row;
+  }
+
+  it("files an unsure meeting under a brand-new client and project typed in the chat", async () => {
+    if (!chatSql) return;
+    const company = `Wiring Co ${Date.now()}`;
+    const [m] = await chatSql`
+      insert into meeting (title, recorded_at, transcript) values ('Wiring new-client meeting', now(), 'x')
+      returning meeting_id
+    `;
+    try {
+      const [question] = await chatSql`
+        insert into chat_message (channel, sender, body, input_mode, options, context)
+        values ('updates', 'bot', 'Which project?', 'buttons',
+          ${chatSql.json([{ id: "new_project", label: "New project" }])},
+          ${chatSql.json({ type: "meeting_match", meetingId: m.meeting_id, candidateProjectIds: [] })})
+        returning chat_message_id
+      `;
+      seededId.push(question.chat_message_id);
+
+      expect((await apiPost(`/api/chat/messages/${question.chat_message_id}/answer`, { optionId: "new_project" }, adminToken)).status).toBe(200);
+      expect((await latestBot(chatSql)).body).toBe("Name?");
+
+      const named = await apiPost("/api/chat/messages", { channel: "updates", body: "Wiring Website" }, adminToken);
+      seededId.push(named.body.data.chatMessageId);
+      const clientPick = await latestBot(chatSql);
+      expect(clientPick.options.map((o: { id: string }) => o.id)).toContain("new_client");
+
+      expect((await apiPost(`/api/chat/messages/${clientPick.chat_message_id}/answer`, { optionId: "new_client" }, adminToken)).status).toBe(200);
+      expect((await latestBot(chatSql)).body).toBe("Company name?");
+
+      const typed = await apiPost("/api/chat/messages", { channel: "updates", body: company }, adminToken);
+      seededId.push(typed.body.data.chatMessageId);
+      expect((await latestBot(chatSql)).body).toBe("Done. Added to Wiring Website.");
+
+      const [filed] = await chatSql`
+        select p.title, c.company_name from meeting m join project p on p.project_id = m.project_id
+        join client c on c.client_id = p.client_id where m.meeting_id = ${m.meeting_id}
+      `;
+      expect(filed).toEqual({ title: "Wiring Website", company_name: company });
+    } finally {
+      const [p] = await chatSql`select project_id from meeting where meeting_id = ${m.meeting_id}`;
+      await chatSql`delete from meeting where meeting_id = ${m.meeting_id}`;
+      if (p?.project_id) await chatSql`delete from project where project_id = ${p.project_id}`;
+      await chatSql`delete from client where company_name = ${company}`;
+    }
+  });
+
+  it("a recording question takes 'Company / Project' in one line and offers a retry when Plaud fails", async () => {
+    if (!chatSql) return;
+    const company = `Wiring Rec ${Date.now()}`;
+    const [question] = await chatSql`
+      insert into chat_message (channel, sender, body, input_mode, options, context)
+      values ('updates', 'bot', 'New meeting in Plaud', 'buttons',
+        ${chatSql.json([{ id: "type", label: "New client" }, { id: "skip", label: "Not ADVO" }])},
+        ${chatSql.json({ type: "recording_check", fileId: "wiringfile", grant: "/not/a/linked/grant.json", title: "t", guess: null })})
+      returning chat_message_id
+    `;
+    seededId.push(question.chat_message_id);
+    try {
+      expect((await apiPost(`/api/chat/messages/${question.chat_message_id}/answer`, { optionId: "type" }, adminToken)).status).toBe(200);
+      expect((await latestBot(chatSql)).body).toBe("Company name?");
+
+      const typed = await apiPost("/api/chat/messages", { channel: "updates", body: `${company} / Wiring App` }, adminToken);
+      seededId.push(typed.body.data.chatMessageId);
+      // The grant is not linked on this box, so the import refuses and the chat offers a retry.
+      const retry = await latestBot(chatSql);
+      expect(retry.body).toBe("Wiring App is saved, but Plaud did not send the meeting.");
+      expect(retry.context).toMatchObject({ type: "recording_project", fileId: "wiringfile" });
+
+      const [made] = await chatSql`
+        select p.title from project p join client c on c.client_id = p.client_id where c.company_name = ${company}
+      `;
+      expect(made.title).toBe("Wiring App");
+    } finally {
+      await chatSql`delete from project where client_id in (select client_id from client where company_name = ${company})`;
+      await chatSql`delete from client where company_name = ${company}`;
+    }
+  });
+
+  it("'Not ADVO' on a recording question imports nothing", async () => {
+    if (!chatSql) return;
+    const [question] = await chatSql`
+      insert into chat_message (channel, sender, body, input_mode, options, context)
+      values ('updates', 'bot', 'New meeting in Plaud', 'buttons',
+        ${chatSql.json([{ id: "skip", label: "Not ADVO" }])},
+        ${chatSql.json({ type: "recording_check", fileId: "wiringskip", grant: "/x.json", title: "t", guess: null })})
+      returning chat_message_id
+    `;
+    seededId.push(question.chat_message_id);
+    expect((await apiPost(`/api/chat/messages/${question.chat_message_id}/answer`, { optionId: "skip" }, adminToken)).status).toBe(200);
+    expect((await latestBot(chatSql)).body).toBe("OK, not added.");
+    const [none] = await chatSql`select count(*)::int as n from meeting where plaud_file_id = 'wiringskip'`;
+    expect(none.n).toBe(0);
+  });
+
   it("GET /messages exposes askAvailable so the UI knows before the owner types", async () => {
     const { status, body } = await apiGet("/api/chat/messages?channel=ask", adminToken);
     expect(status).toBe(200);

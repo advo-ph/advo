@@ -137,6 +137,35 @@ export function routeRecording(
   return { projectId: null, isAdvo, score: best?.score ?? 0, matched: best?.matched ?? [] };
 }
 
+/** A course code in a title ("LAS 50", "HISTO 12", "PHILO 11.03"): a class, not a client. */
+const COURSE_CODE = /\b[A-Z]{2,6}\s?\d{1,3}(?:\.\d+)?\b/;
+
+/** Words only client work uses: a quote, a contract, a fee. English and Filipino. */
+const CLIENT_TERM = [
+  "client", "kliyente", "quotation", "contract", "kontrata", "proposal", "invoice",
+  "subscription", "downpayment", "down payment", "professional fee", "retainer",
+];
+/** Words client work shares with everything else; they only add weight. */
+const WORK_TERM = [
+  "pricing", "presyo", "website", "web development", "app", "platform", "deliverable",
+  "payment", "bayad", "budget", "scope", "milestone", "maintenance", "hosting", "demo",
+];
+
+/**
+ * A recording that names no ADVO project but reads like client work — a new lead
+ * such as ECEAS, whose name Plaud garbles ("exce"). It is never imported on this
+ * alone; the owner is asked in the chat. So this errs toward asking: one client
+ * word plus two more work words, not a lecture and not a class.
+ */
+export function looksLikeClientMeeting(text: { title: string; summary?: string | null }): boolean {
+  const title = text.title ?? "";
+  if (LECTURE_TITLE.test(title) || COURSE_CODE.test(title)) return false;
+  const haystack = `${title}\n${text.summary ?? ""}`;
+  const client = CLIENT_TERM.filter((k) => countOf(haystack, k) > 0).length;
+  const work = WORK_TERM.filter((k) => countOf(haystack, k) > 0).length;
+  return client >= 1 && client + work >= 3;
+}
+
 export type RankedCandidate = { projectId: number; title: string; score: number };
 
 /**

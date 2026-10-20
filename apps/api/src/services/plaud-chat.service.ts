@@ -10,9 +10,9 @@
  * (sideProjectId, primaryMeetingId) pair.
  */
 import Anthropic from "@anthropic-ai/sdk";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "../db/connection.js";
-import { meeting, project } from "../db/schema.js";
+import { chatMessage, meeting, project } from "../db/schema.js";
 import { logActivity } from "./activity.service.js";
 import { ADVO_AI_MODEL } from "../utils/ai-model.js";
 import {
@@ -189,6 +189,76 @@ function excerptHeuristic(transcript: string, sideProjectTitle: string): Excerpt
 
 async function excerptFor(transcript: string, sideProjectTitle: string): Promise<ExcerptResult> {
   return (await excerptWithAI(transcript, sideProjectTitle)) ?? excerptHeuristic(transcript, sideProjectTitle);
+}
+
+export type ClientGuess = { company: string; project: string };
+
+const GUESS_SYSTEM = `ADVO is a Philippine web and app agency. From one meeting's title and summary, name the client company being discussed and a short project name for the work. Return ONLY JSON: {"company": string | null, "project": string | null}. Use null when the text does not make it clear. Never invent a name that is not in the text.`;
+
+/** The client a recording seems to be about. Null without a key, on any failure, or when unclear. */
+export async function guessClient(title: string, summary: string | null): Promise<ClientGuess | null> {
+  if (!process.env.ANTHROPIC_API_KEY) return null;
+  try {
+    const res = await new Anthropic().messages.create({
+      model: ADVO_AI_MODEL,
+      max_tokens: 200,
+      system: GUESS_SYSTEM,
+      // Untrusted recording text is the user turn, never folded into the system prompt.
+      messages: [{ role: "user", content: `${title}\n\n${(summary ?? "").slice(0, 20_000)}` }],
+    });
+    const block = res.content.find((b) => b.type === "text");
+    if (!block || block.type !== "text") return null;
+    const raw = block.text.trim().replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
+    const parsed = JSON.parse(raw) as { company?: unknown; project?: unknown };
+    if (typeof parsed.company !== "string" || !parsed.company.trim()) return null;
+    const company = parsed.company.trim().slice(0, 255);
+    const projectName = typeof parsed.project === "string" && parsed.project.trim() ? parsed.project.trim() : company;
+    return { company, project: projectName.slice(0, 255) };
+  } catch (err) {
+    console.error("[plaud-chat] client guess failed; asking without one:", err);
+    return null;
+  }
+}
+
+/** True once any chat message has asked about this Plaud file — the poller's do-not-ask-twice check. */
+export async function hasAskedAboutFile(fileId: string): Promise<boolean> {
+  const [row] = await db()
+    .select({ id: chatMessage.chatMessageId })
+    .from(chatMessage)
+    .where(sql`${chatMessage.context}->>'fileId' = ${fileId}`)
+    .limit(1);
+  return Boolean(row);
+}
+
+/**
+ * A recording that names no project but reads like client work. Nothing is
+ * imported yet: the owner says whether it is a new client (and its names), an
+ * existing project, or not ADVO at all. Asked once per file, ever.
+ */
+export async function postRecordingQuestion(input: {
+  fileId: string;
+  grant: string;
+  title: string;
+  summary: string | null;
+}): Promise<boolean> {
+  if (await hasAskedAboutFile(input.fileId)) return false;
+  const guess = await guessClient(input.title, input.summary);
+  const lead = `New meeting in Plaud: ${shortTitle(input.title)}.`;
+  await postBotMessage({
+    channel: "updates",
+    body: guess
+      ? `${lead} Looks like a new client: ${guess.company} (project: ${guess.project}). Correct?`
+      : `${lead} It names no ADVO project. Is it a new client?`,
+    inputMode: "buttons",
+    options: [
+      ...(guess ? [{ id: "yes", label: "Yes, add it", style: "primary" as const }] : []),
+      { id: "type", label: guess ? "Type names" : "New client" },
+      { id: "existing", label: "Existing project" },
+      { id: "skip", label: "Not ADVO" },
+    ],
+    context: { type: "recording_check", fileId: input.fileId, grant: input.grant, title: input.title, guess },
+  });
+  return true;
 }
 
 export async function onPlaudMeetingImported(input: {
