@@ -15,7 +15,6 @@ import { db } from "../db/connection.js";
 import { bid, bidMember, bidSync, bidUpdate } from "../db/schema.js";
 import { requireAuth } from "../middleware/auth.js";
 import { requireAdmin } from "../middleware/rbac.js";
-import { canRate } from "../services/bid-rate.service.js";
 import { isSyncRunning, startBidSyncNow } from "../services/bid-sync.service.js";
 import type { Variables } from "../types/context.js";
 import { plainBuyer, plainTitle } from "../utils/bid-text.js";
@@ -116,7 +115,6 @@ bids.get("/", async (c) => {
       bids: rows.map(view),
       sync: {
         isRunning: await isSyncRunning(),
-        canRate: canRate(),
         last: last && { status: last.status, startedAt: last.startedAt, finishedAt: last.finishedAt, error: last.error },
         lastGood: lastGood && {
           startedAt: lastGood.startedAt,

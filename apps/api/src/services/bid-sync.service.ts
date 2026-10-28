@@ -6,8 +6,9 @@
  *   1. List every open notice (philgeps.service.ts walks all ~600 pages).
  *   2. Read in full every notice not read before, every bid that fits (so a moved
  *      date or a new bid bulletin is caught), and any whose closing date moved.
- *   3. Keyword rules decide what is worth rating (bid-fit.service.ts); the model rates
- *      new or changed candidates (bid-rate.service.ts); a team rating always wins.
+ *   3. Keyword rules decide what is worth rating (bid-fit.service.ts). No model runs
+ *      here, so a check costs no AI credits: ratings are written from the terminal
+ *      (scripts/bid-rate.ts) and kept until the notice changes. A team rating always wins.
  *   4. Write the feed (`bid_update`): new fits, changes to a fit, pre-bid tomorrow,
  *      bids due within three days, and a bid PhilGEPS took down.
  *   5. Email each member who has not turned it off — only when the feed grew.
@@ -26,7 +27,7 @@ import { db } from "../db/connection.js";
 import { bid, bidMember, bidSync, bidUpdate, user } from "../db/schema.js";
 import { TEAM_NOT_FIT, TEAM_RATING } from "../data/bid-team-rating.js";
 import { UNCLEAR_REASON, classifyBid, hasSoftwareSignal } from "./bid-fit.service.js";
-import { canRate, rateBids, type RateInput } from "./bid-rate.service.js";
+import type { BidRating, RateInput } from "./bid-rate.service.js";
 import { sendBidDigestEmail } from "./email.service.js";
 import { listOpenNotices, readNotices, type ListedNotice, type Notice } from "./philgeps.service.js";
 import { plainBuyer, plainTitle } from "../utils/bid-text.js";
@@ -302,17 +303,36 @@ async function reclassify(now: Date) {
   }
 }
 
-/** Decide fit and rating for every open candidate whose notice changed since its last rating. */
-async function rate(now: Date): Promise<{ ratedCount: number }> {
-  const d = db();
-  await reclassify(now);
-  const open = await d
+/** Open bids the keyword rules kept, read in full. */
+async function openCandidates(): Promise<BidRow[]> {
+  return db()
     .select()
     .from(bid)
-    .where(and(eq(bid.status, "open"), eq(bid.isCandidate, true), sql`${bid.readAt} IS NOT NULL`));
+    .where(and(eq(bid.status, "open"), eq(bid.isCandidate, true), isNotNull(bid.readAt)));
+}
 
-  const toRate: RateInput[] = [];
-  for (const row of open) {
+const isPastDue = (row: BidRow, now: Date) => {
+  const due = row.dueAt ?? row.closingAt;
+  return !!due && due < now;
+};
+
+/** Not rated by a member or the rules, and no rating yet for this version of the notice. */
+const needsRating = (row: BidRow, now: Date) =>
+  row.ratedBy !== "team" &&
+  !classifyBid({ title: row.title, description: row.description, abc: toNumber(row.abc) }).ruleNotFit &&
+  !isPastDue(row, now) &&
+  !(row.ratedBy === "ai" && row.ratedHash === row.contentHash);
+
+/**
+ * Rules only: a sync never calls a model (ratings come from scripts/bid-rate.ts).
+ * A bid the model rated keeps that rating when its notice changes, so a refresh never
+ * drops it from the list; it waits in `pending` for a fresh rating. A bid never rated
+ * shows on the rules' word: a fit only when its title names software or a system.
+ */
+async function rate(now: Date) {
+  const d = db();
+  await reclassify(now);
+  for (const row of await openCandidates()) {
     if (row.ratedBy === "team") continue;
     const verdict = classifyBid({ title: row.title, description: row.description, abc: toNumber(row.abc) });
     if (verdict.ruleNotFit) {
@@ -324,9 +344,19 @@ async function rate(now: Date): Promise<{ ratedCount: number }> {
       }
       continue;
     }
-    if ((row.dueAt ?? row.closingAt) && (row.dueAt ?? row.closingAt)! < now) continue;
-    if (row.ratedHash === row.contentHash && row.ratedBy === "ai") continue;
-    toRate.push({
+    if (isPastDue(row, now) || row.ratedBy === "ai") continue;
+    const isFit = hasSoftwareSignal(row.title);
+    const fitReason = isFit ? null : UNCLEAR_REASON;
+    if (row.isFit === isFit && row.fitReason === fitReason && row.ratedBy === "rule" && row.ratedHash === null) continue;
+    await d.update(bid).set({ isFit, fitReason, ratedBy: "rule", ratedHash: null, updatedAt: now }).where(eq(bid.bidId, row.bidId));
+  }
+}
+
+/** What scripts/bid-rate.ts hands to Claude: every open bid still waiting for a rating. */
+export async function pendingRatings(now = new Date()): Promise<RateInput[]> {
+  return (await openCandidates())
+    .filter((row) => needsRating(row, now))
+    .map((row) => ({
       ref: row.ref,
       title: row.title,
       buyer: row.buyer,
@@ -336,29 +366,19 @@ async function rate(now: Date): Promise<{ ratedCount: number }> {
       category: row.category,
       closingAt: row.closingAt ? day(row.closingAt) : null,
       preBid: row.preBidAt ? `${day(row.preBidAt)} at ${row.preBidPlace ?? "venue not printed"}` : null,
-      description: row.description,
-    });
-  }
+      description: row.description?.slice(0, 3000) ?? null,
+    }));
+}
 
-  const ratings = await rateBids(toRate);
-  const byRef = new Map(open.map((r) => [r.ref, r]));
-  for (const input of toRate) {
-    const row = byRef.get(input.ref)!;
-    const r = ratings.get(input.ref);
-    if (!r) {
-      // Not rated (no key, or the batch failed): the rules' word stands, with no odds,
-      // and only a title that names software or a system counts as a fit.
-      const isFit = hasSoftwareSignal(row.title);
-      await d
-        .update(bid)
-        .set({
-          isFit,
-          fitReason: isFit ? null : UNCLEAR_REASON,
-          ratedBy: "rule",
-          ratedHash: canRate() ? null : row.contentHash,
-          updatedAt: now,
-        })
-        .where(eq(bid.bidId, row.bidId));
+/** Save ratings written in the terminal. A member's rating is never overwritten. */
+export async function applyRatings(ratings: BidRating[], now = new Date()): Promise<{ applied: number; skipped: string[] }> {
+  const d = db();
+  const skipped: string[] = [];
+  let applied = 0;
+  for (const r of ratings) {
+    const [row] = await d.select().from(bid).where(eq(bid.ref, r.ref)).limit(1);
+    if (!row || row.ratedBy === "team") {
+      skipped.push(r.ref);
       continue;
     }
     const due = r.bidsDue ? manilaInstant(r.bidsDue.date, r.bidsDue.time) : null;
@@ -383,8 +403,9 @@ async function rate(now: Date): Promise<{ ratedCount: number }> {
         updatedAt: now,
       })
       .where(eq(bid.bidId, row.bidId));
+    applied++;
   }
-  return { ratedCount: ratings.size };
+  return { applied, skipped };
 }
 
 /** The team's hand ratings (data/bid-team-rating.ts), applied once per bid. */
@@ -610,7 +631,7 @@ export async function runBidSync(trigger: SyncTrigger): Promise<SyncSummary> {
 
     await writeListed(list.rows, notices, existing, now);
     await applyTeamRatings(now);
-    const { ratedCount } = await rate(now);
+    await rate(now);
     if (changed.length) await d.insert(bidUpdate).values(changed.map((c) => ({ ...c, kind: "changed" })));
     await settleMissing(runStart, now, isComplete);
     await writeFeed(now, isBaseline);
@@ -638,13 +659,12 @@ export async function runBidSync(trigger: SyncTrigger): Promise<SyncSummary> {
         readCount: notices.size,
         readFailedCount: toRead.length - notices.size,
         unreadCount: unread,
-        ratedCount,
         fitCount: fit,
         updateCount: updates,
         emailedCount,
       })
       .where(eq(bidSync.bidSyncId, runId));
-    log.info({ status, listed: list.rows.length, read: notices.size, rated: ratedCount, fit, updates, emailedCount }, "Bid sync done");
+    log.info({ status, listed: list.rows.length, read: notices.size, fit, updates, emailedCount }, "Bid sync done");
     return { runId, status, listedCount: list.rows.length, fitCount: fit, updateCount: updates };
   } catch (err) {
     recordError("bid-sync", err);

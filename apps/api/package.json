@@ -12,7 +12,8 @@
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx src/db/seed.ts",
     "test": "vitest run",
-    "bids:sync": "tsx scripts/bid-sync.ts"
+    "bids:sync": "tsx scripts/bid-sync.ts",
+    "bids:rate": "tsx scripts/bid-rate.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",
