@@ -181,7 +181,7 @@ const Admin = () => {
 
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <span className="hidden md:inline text-sm text-muted-foreground truncate max-w-[180px]">
-              {user?.email}
+              {user?.displayName}
             </span>
             <Button
               variant="ghost"
