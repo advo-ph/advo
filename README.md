@@ -52,6 +52,7 @@ Measured by `npm run bench:paymongo` (**7/7** — a business phone is optional w
 - **Clients** — Client management with invite flow (creates auth account + sends welcome email)
 - **Team** — Team member profiles (bio, LinkedIn, avatar upload)
 - **Deliverables** — Schedule with status tracking and assignment
+- **Bids** (`/admin/bids`) — every open PhilGEPS government bid ADVO could join. The API walks the whole open list (~12,000 notices, ~600 pages) and reads every new notice in full each day at 06:00 Manila (`bid-sync.service.ts`; `npm --workspace apps/api run bids:sync` runs it now). Keyword rules pick candidates, the model rates them (good / fair / low is a judgement, never a measured chance), and a member's rating always wins. The page never scrolls, only its lists do. Four views: All bids (pre-bid and deadline per row; a "Passed" toggle hides bids whose pre-bid has been held), Calendar, Updates (new bids, changed dates, bid bulletins, pre-bid and deadline reminders) and More (partners, papers and how bids are won side by side, and one "where the big money is" list: open bids of ₱20M+ we can join and the biggest past wins). Members get a sidebar badge and a daily email when something changed; each can turn the email off. Migration `061_bid.sql`
 - **Meetings** — automatic Plaud import (routed to the project its title/summary names), manual import, Ask Plaud → preview → confirm deliverable; each meeting links its Drive audio and Plaud page
 - **Availability** — Team capacity management
 - **Social** — Social media post management

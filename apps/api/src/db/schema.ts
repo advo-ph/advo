@@ -2022,3 +2022,126 @@ export const chatMessage = pgTable(
     index("idx_chat_message_channel_created").on(t.channel, t.createdAt),
   ]
 );
+
+// ─── Government bids (migration 061) ──────────────────
+
+/**
+ * Open PhilGEPS notices, refreshed once a day by services/bid-sync.service.ts. Most
+ * rows are slim (the list row only); rows that might fit ADVO are read in full and
+ * rated. `win` and `whyNote` are a judgement — `ratedBy` says whose — never a chance.
+ */
+export const bid = pgTable(
+  "bid",
+  {
+    bidId: bigserial("bid_id", { mode: "number" }).primaryKey(),
+    ref: varchar("ref", { length: 20 }).notNull().unique(),
+    title: text("title").notNull(),
+    buyer: text("buyer").notNull(),
+    businessCategory: text("business_category"),
+    area: text("area"),
+    solicitation: text("solicitation"),
+    mode: text("mode"),
+    classification: text("classification"),
+    category: text("category"),
+    /** Pesos as a numeric string (drizzle 0.38 has no number mode); null when not printed. */
+    abc: numeric("abc", { precision: 16, scale: 2 }),
+    deliveryPeriod: text("delivery_period"),
+    contactName: text("contact_name"),
+    contactPhone: text("contact_phone"),
+    contactEmail: text("contact_email"),
+    contactText: text("contact_text"),
+    supplementCount: integer("supplement_count").notNull().default(0),
+    publishedOn: date("published_on"),
+    closingAt: timestamp("closing_at", { withTimezone: true }),
+    preBidAt: timestamp("pre_bid_at", { withTimezone: true }),
+    preBidTime: text("pre_bid_time"),
+    preBidPlace: text("pre_bid_place"),
+    /** The pre-bid came from the notice text, not its pre-bid table; an empty table keeps it. */
+    preBidFromText: boolean("pre_bid_from_text").notNull().default(false),
+    description: text("description"),
+    /** 'open' | 'closed' | 'withdrawn'. */
+    status: varchar("status", { length: 12 }).notNull().default("open"),
+    missingRunCount: integer("missing_run_count").notNull().default(0),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    topic: varchar("topic", { length: 20 }),
+    isCandidate: boolean("is_candidate").notNull().default(false),
+    isFit: boolean("is_fit").notNull().default(false),
+    fitReason: text("fit_reason"),
+    fitAt: timestamp("fit_at", { withTimezone: true }),
+    /** 'good' | 'fair' | 'low'. */
+    win: varchar("win", { length: 8 }),
+    /** 'product' | 'software' | 'hardware'. */
+    kind: varchar("kind", { length: 10 }),
+    shortTitle: text("short_title"),
+    shortBuyer: text("short_buyer"),
+    place: text("place"),
+    joinNote: text("join_note"),
+    whyNote: text("why_note"),
+    note: text("note"),
+    dueAt: timestamp("due_at", { withTimezone: true }),
+    dueTime: text("due_time"),
+    /** 'team' | 'ai' | 'rule'. A team rating is never overwritten by the sync. */
+    ratedBy: varchar("rated_by", { length: 8 }),
+    ratedHash: varchar("rated_hash", { length: 64 }),
+    contentHash: varchar("content_hash", { length: 64 }),
+    isHidden: boolean("is_hidden").notNull().default(false),
+    firstSeenAt: timestamp("first_seen_at", { withTimezone: true }).notNull().defaultNow(),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_bid_open_fit").on(t.status, t.isFit),
+    index("idx_bid_closing").on(t.closingAt),
+  ]
+);
+
+/** What changed on a bid that fits — the feed members are notified from. */
+export const bidUpdate = pgTable(
+  "bid_update",
+  {
+    bidUpdateId: bigserial("bid_update_id", { mode: "number" }).primaryKey(),
+    bidId: bigint("bid_id", { mode: "number" })
+      .notNull()
+      .references(() => bid.bidId, { onDelete: "cascade" }),
+    /** 'new' | 'changed' | 'pre_bid_soon' | 'due_soon' | 'withdrawn'. */
+    kind: varchar("kind", { length: 16 }).notNull(),
+    summary: text("summary").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_bid_update_created").on(t.createdAt),
+    index("idx_bid_update_bid").on(t.bidId, t.kind),
+  ]
+);
+
+/** One row per sync run: when, how much of the list came back, what it found. */
+export const bidSync = pgTable("bid_sync", {
+  bidSyncId: bigserial("bid_sync_id", { mode: "number" }).primaryKey(),
+  /** 'schedule' | 'manual' | 'script'. */
+  trigger: varchar("trigger", { length: 10 }).notNull(),
+  /** 'running' | 'ok' | 'partial' | 'failed'. */
+  status: varchar("status", { length: 10 }).notNull().default("running"),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+  finishedAt: timestamp("finished_at", { withTimezone: true }),
+  listedCount: integer("listed_count").notNull().default(0),
+  pageCount: integer("page_count").notNull().default(0),
+  failedPageCount: integer("failed_page_count").notNull().default(0),
+  readCount: integer("read_count").notNull().default(0),
+  readFailedCount: integer("read_failed_count").notNull().default(0),
+  unreadCount: integer("unread_count").notNull().default(0),
+  ratedCount: integer("rated_count").notNull().default(0),
+  fitCount: integer("fit_count").notNull().default(0),
+  updateCount: integer("update_count").notNull().default(0),
+  emailedCount: integer("emailed_count").notNull().default(0),
+  error: text("error"),
+});
+
+/** Each member's last look at the bid feed, and whether they get the daily email. */
+export const bidMember = pgTable("bid_member", {
+  userId: integer("user_id")
+    .primaryKey()
+    .references(() => user.userId, { onDelete: "cascade" }),
+  seenAt: timestamp("seen_at", { withTimezone: true }),
+  isEmail: boolean("is_email").notNull().default(true),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});

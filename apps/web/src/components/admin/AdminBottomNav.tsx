@@ -12,6 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useDrawerLock } from "@/hooks/useDrawerLock";
 import { topItem, useVisibleNavGroups, type AdminSection } from "@/components/admin/AdminSidebar";
+import { useBidUnseen } from "@/hooks/useBids";
 
 export const ADMIN_MORE_SHEET_ID = "admin-more-sheet";
 
@@ -34,8 +35,10 @@ const MAIN_IDS: readonly AdminSection[] = MAIN_ITEMS.map((i) => i.id);
 const AdminBottomNav = ({ activeSection, onSectionChange }: AdminBottomNavProps) => {
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const reduceMotion = useReducedMotion();
-  const { visibleGroups } = useVisibleNavGroups();
+  const { visibleGroups, hidden } = useVisibleNavGroups();
   const close = () => setIsMoreOpen(false);
+  const bidUnseen = useBidUnseen(!hidden.includes("bids")).data?.count ?? 0;
+  const badgeFor = (id: AdminSection) => (id === "bids" && activeSection !== "bids" ? bidUnseen : 0);
 
   // Escape, scroll lock, focus trap, and focus back to "More" on close.
   useDrawerLock(isMoreOpen, close, ADMIN_MORE_SHEET_ID);
@@ -47,6 +50,7 @@ const AdminBottomNav = ({ activeSection, onSectionChange }: AdminBottomNavProps)
     visibleGroups.flatMap((g) => g.items).find((i) => i.id === id);
   const moreItems = [
     topItem,
+    visibleItem("bids"),
     visibleItem("meetings"),
     visibleItem("team"),
     { id: "settings" as AdminSection, label: "Settings", icon: Settings },
@@ -120,7 +124,14 @@ const AdminBottomNav = ({ activeSection, onSectionChange }: AdminBottomNavProps)
                             : "text-muted-foreground hover:text-foreground hover:bg-foreground/5",
                         )}
                       >
-                        <Icon className="h-5 w-5" />
+                        <span className="relative">
+                          <Icon className="h-5 w-5" />
+                          {badgeFor(id) > 0 && (
+                            <span className="absolute -right-2.5 -top-1.5 min-w-[16px] h-4 px-1 rounded-full bg-accent text-accent-foreground text-[10px] leading-4 text-center tabular-nums">
+                              {badgeFor(id)}
+                            </span>
+                          )}
+                        </span>
                         <span className="text-[11px] font-medium text-center leading-tight">{label}</span>
                       </button>
                     );
@@ -159,7 +170,12 @@ const AdminBottomNav = ({ activeSection, onSectionChange }: AdminBottomNavProps)
             aria-expanded={isMoreOpen}
             className={itemClass(isMoreOpen || !isMainSection)}
           >
-            <MoreHorizontal className="h-5 w-5" />
+            <span className="relative">
+              <MoreHorizontal className="h-5 w-5" />
+              {bidUnseen > 0 && activeSection !== "bids" && !isMoreOpen && (
+                <span className="absolute -right-1 -top-0.5 h-2 w-2 rounded-full bg-accent" aria-hidden />
+              )}
+            </span>
             <span className="text-[10px] font-medium">More</span>
           </button>
         </div>

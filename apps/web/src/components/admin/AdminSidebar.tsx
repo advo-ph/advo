@@ -30,11 +30,13 @@ import {
   ShieldCheck,
   Server,
   BarChart3,
+  Landmark,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDrawerLock } from "@/hooks/useDrawerLock";
 import { useRoles } from "@/hooks/useRoles";
 import { useNavHidden } from "@/hooks/useNavHidden";
+import { useBidUnseen } from "@/hooks/useBids";
 
 /** Shared with the hamburger's aria-controls so focus returns to it on close. */
 export const ADMIN_DRAWER_ID = "admin-navigation-drawer";
@@ -46,6 +48,7 @@ const versionLabel = `v${appVersion} · ${appCommit}`;
 export type AdminSection =
   | "dashboard"
   | "projects"
+  | "bids"
   | "clients"
   | "engagement"
   | "team"
@@ -121,6 +124,8 @@ export const navGroups: NavGroup[] = [
       // First in Operations: this is the daily-driver screen.
       { id: "tasks", label: "Tasks", icon: ListChecks },
       { id: "projects", label: "Projects", icon: FolderKanban },
+      // Open PhilGEPS bids, refreshed every morning; the badge counts unseen changes.
+      { id: "bids", label: "Bids", icon: Landmark },
       // Which clients have gone quiet — reads consented, signed-in analytics only.
       { id: "engagement", label: "Engagement", icon: Activity },
       { id: "calendar", label: "Calendar", icon: CalendarDays },
@@ -203,6 +208,9 @@ const AdminSidebar = ({
     setExpandedGroups((prev) => ({ ...prev, [label]: !prev[label] }));
 
   const { isOwner, hidden, visibleGroups } = useVisibleNavGroups();
+  // Unseen bid changes. A number on the nav item, never a toast: the feed is daily.
+  const bidUnseen = useBidUnseen(!hidden.includes("bids")).data?.count ?? 0;
+  const badgeFor = (id: AdminSection) => (id === "bids" && activeSection !== "bids" ? bidUnseen : 0);
 
   // The nav list is taller than a laptop viewport, so the last group can sit
   // below the fold with nothing to hint at it. A group heading stranded at the
@@ -304,6 +312,7 @@ const AdminSidebar = ({
           {(() => {
             const renderItem = (item: NavItem) => {
               const isActive = activeSection === item.id;
+              const badge = badgeFor(item.id);
               return (
                 <button
                   key={item.id}
@@ -329,6 +338,14 @@ const AdminSidebar = ({
                       {item.label}
                     </span>
                   )}
+                  {badge > 0 &&
+                    (isCollapsed ? (
+                      <span className="absolute right-3 top-1.5 h-2 w-2 rounded-full bg-accent" aria-hidden />
+                    ) : (
+                      <span className="ml-auto min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-accent-foreground text-[11px] leading-[18px] text-center tabular-nums">
+                        {badge}
+                      </span>
+                    ))}
                 </button>
               );
             };

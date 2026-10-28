@@ -63,6 +63,8 @@ import eventRoutes from "./routes/event.routes.js";
 import visitorStatsRoutes from "./routes/visitor-stats.routes.js";
 import vpsMonitorRoutes from "./routes/vps-monitor.routes.js";
 import chatRoutes from "./routes/chat.routes.js";
+import bidRoutes from "./routes/bids.routes.js";
+import { startBidSync, stopBidSync } from "./services/bid-sync.service.js";
 import { startVpsMonitor, stopVpsMonitor } from "./services/vps-monitor.service.js";
 import mcpRoutes from "./routes/mcp.routes.js";
 import botKeyRoutes from "./routes/bot-keys.routes.js";
@@ -338,6 +340,9 @@ app.route("/api/scrape", fbScrapeRoutes);
 // Owner-only chat widget (Updates + Ask tabs, migration 057).
 app.route("/api/chat", chatRoutes);
 
+// Government bids from PhilGEPS: read once a day at 06:00 Manila (bid-sync.service.ts).
+app.route("/api/bids", bidRoutes);
+
 // ─── Global Error Handler ─────────────────────────────
 
 app.onError((err, c) => {
@@ -396,6 +401,7 @@ serve({ fetch: app.fetch, port }, () => {
   crashRecovery().catch((err) => log.error({ err }, "Crash recovery failed"));
   startRunner();
   startWebhookPoll();
+  startBidSync();
 });
 
 // ─── Periodic Cleanup ─────────────────────────────────
@@ -418,6 +424,7 @@ async function shutdown(signal: string) {
   stopVpsMonitor();
   stopRunner();
   stopWebhookPoll();
+  stopBidSync();
   await closeDb();
   process.exit(0);
 }

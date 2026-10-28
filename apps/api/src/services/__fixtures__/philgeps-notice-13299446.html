@@ -1,0 +1,379 @@
+<SCRIPT LANGUAGE="JavaScript">var WinObj =null;var o=window.open;window.open=launchCenter;function launchCenter(url,name,features){features=features+',';var width=features.substring((features.indexOf('width=')+6));width=width.substring(0,width.indexOf(','));var height=features.substring((features.indexOf('height=')+7));height=height.substring(0,height.indexOf(','));features+=',innerHeight='+height;features+=',innerWidth='+width;if (window.screen) {     features += ',top='+(screen.availHeight- height)*0.5+',left='+(screen.availWidth-width)*0.5;}if(name=='helpWin'){o(url,'helpWin',features);}else{if (null != WinObj)WinObj.close();WinObj = o(url,'a',features);}}</script><link rel='stylesheet' type='text/css' href='/GEPSNONPILOT/common/Styles.css'><div id="ctl01_helpDIV" style="POSITION:absolute; RIGHT:0px; TOP:0px; padding: 8px 4px 0px 0px; width: auto;">
+	<a id="ctl01_HelpLink" class="a" href="javascript:void(window.open(&#39;/GEPSNONPILOT/helppages/public/help_PrintableBidNoticeAbstractUI.htm&#39;, &#39;helpWin&#39;, &#39;resizable=yes,toolbar=no,menubar=no,directories=no,status=no,width=480,height=480,scrollbars=yes&#39;));">Help</a></div>
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+	<HEAD>
+		<title>printableBidNoticeAbstract</title>
+		<meta content="Microsoft FrontPage 4.0" name="GENERATOR">
+		<meta content="Visual Basic .NET 7.1" name="CODE_LANGUAGE">
+		<meta content="JavaScript" name="vs_defaultClientScript">
+		<meta content="http://schemas.microsoft.com/intellisense/ie5" name="vs_targetSchema">
+		<LINK href="../Common/Styles.css" type="text/css" rel="stylesheet">
+		<style> @media Print { INPUT { DISPLAY: none }}
+		</style>
+		<script language="javascript">
+		
+			function PassValue(refID)
+			{	window.location='BidNoticeAbstractUI.aspx?refid=' + refID;
+				window.open('PrintableBidNoticeAbstractUI.aspx?refid=' + refID ,'','toolbar=no,location=no,scrollbars=yes,resizable=yes,width=800,height=400,left=100,top=100');
+			}
+			
+			function showConfirmation(str, refID)
+			{
+				var oStatus;
+				if (confirm(str))
+				{
+				//document.BidNoticeAbstractUI.txtHidden.value='True'; 
+				oStatus='True'
+				window.location='BidNoticeAbstractUI.aspx?directOrder=OrderLink&refid=' + refID + '&Status=' + oStatus;
+				
+				}
+			}
+			function showAlert(str, refID)
+			{
+				alert(str)
+				window.location='BidNoticeAbstractUI.aspx?directOrder=OrderLink&refid=' + refID;
+			}
+				function showAlertPost(str, refID)
+			{
+				alert(str)
+				window.location='BidNoticeAbstractUI.aspx?refid=' + refID;
+			}
+			
+		</script>
+	</HEAD>
+	<body MS_POSITIONING="FlowLayout">
+		<form name="Form1" method="post" action="./PrintableBidNoticeAbstractUI.aspx?refid=13299446" id="Form1">
+<div>
+
+</div>
+
+			<TABLE id="Table1" style="WIDTH: 664px" cellSpacing="1" cellPadding="4" width="664" align="center"
+				border="0">
+				<TR>
+					<TD align="center" colSpan="2"><img id="Image1" src="../img/PrintableGEPSLogo.jpg" align="middle" style="width:664px;border-width:0px;" /></TD>
+				</TR>
+				<TR>
+					<TD><span id="lblPgTitleBidNoticeAbstract" class="PageTitle" style="font-weight:bold;">Bid Notice Abstract</span></TD>
+				</TR>
+				<TR>
+					<TD class="infobackground"></TD>
+				</TR>
+				<TR>
+					<TD align="center"><span id="lblHeader" class="DisplayText6">Invitation to Bid (ITB)</span></TD>
+				</TR>
+				<TR>
+					<TD vAlign="top">
+						<TABLE class="Table" id="Table2" cellSpacing="1" cellPadding="4" width="100%" align="center"
+							border="0">
+							<TR>
+								<TD class="DisplayTextBackground" style="WIDTH: 20%"><span id="lblReferenceNo" class="DisplayText4" style="display:inline-block;width:128px;">Reference Number</span></TD>
+								<TD colSpan="2"><span id="lblDisplayReferenceNo" class="DisplayText5">13299446</span></TD>
+							</TR>
+							<TR>
+								<TD class="DisplayTextBackground" style="WIDTH: 20%"><span id="lblProcuringEntity" class="DisplayText4" style="display:inline-block;width:112px;">Procuring Entity</span></TD>
+								<TD colSpan="2"><span id="lblDisplayProcuringEntity" class="DisplayText5">PROVINCE OF SOUTHERN LEYTE</span></TD>
+							</TR>
+							<TR>
+								<TD class="DisplayTextBackground" style="WIDTH: 20%"><span id="lblTitle" class="DisplayText4">Title</span></TD>
+								<TD colSpan="2"><span id="lblDisplayTitle" class="DisplayText5">Supply, Delivery, Installation and Commissioning of Emergency ICS & EOC Platform Software with Environmental Monitoring and Forecasting Capabilities - PDRRMO</span></TD>
+							</TR>
+							<TR>
+								<TD class="DisplayTextBackground" style="WIDTH: 20%"><span id="lblAOD" class="DisplayText4" style="display:inline-block;width:112px;">Area of Delivery</span></TD>
+								<TD colSpan="2"><span id="lblDisplayAOD" class="DisplayText5">Southern Leyte</span></TD>
+							</TR>
+							<TR>
+								<TD vAlign="top" width="100%" colSpan="3">
+									<P>
+										<TABLE class="Table" id="Table7" style="WIDTH: 100%; BORDER-COLLAPSE: collapse" cellSpacing="0"
+											cellPadding="0" width="100%" border="1">
+											<TBODY>
+												<TR>
+													<TD style="WIDTH: 50%" vAlign="top" width="50%" rowSpan="7">
+														<TABLE id="Table14" style="WIDTH: 100%" cellSpacing="1" cellPadding="4" border="0">
+															<TR>
+																<TD vAlign="top" width="50%"><span id="Label45" class="DisplayText2">Solicitation Number:</span></TD>
+																<TD vAlign="top" width="50%"><span id="lblDisplaySolNumber" class="DisplayText5">2026-11-12-248PG</span></TD>
+															</TR>
+															<TR>
+																<TD vAlign="top" width="50%"><span id="Label43" class="DisplayText2">Trade Agreement:</span></TD>
+																<TD vAlign="top" width="50%"><span id="lblDisplayTradeAgree" class="DisplayText5">Implementing Rules and Regulations</span></TD>
+															</TR>
+															<TR>
+																<TD vAlign="top" width="50%"><span id="Label41" class="DisplayText2">Procurement Mode:</span></TD>
+																<TD vAlign="top" width="50%"><span id="lblDisplayProcureMode" class="DisplayText5">Public Bidding</span></TD>
+															</TR>
+															<TR>
+																<TD vAlign="top" width="50%"><span id="Label39" class="DisplayText2">Classification:</span></TD>
+																<TD vAlign="top" width="50%"><span id="lblDisplayClass" class="DisplayText5">Goods</span></TD>
+															</TR>
+															<TR>
+																<TD vAlign="top" width="50%"><span id="Label37" class="DisplayText2">Category:</span></TD>
+																<TD vAlign="top" width="50%"><span id="lblDisplayCategory" class="DisplayText5">Information Technology</span></TD>
+															</TR>
+															<TR>
+																<TD vAlign="top" width="50%"><span id="Label35" class="DisplayText2">Approved Budget for the Contract:</span></TD>
+																<TD vAlign="top" width="50%"><span id="Label34" class="DisplayText5">PHP</span>&nbsp;<span id="lblDisplayBudget" class="DisplayText5">14,500,000.00</span>&nbsp;
+																</TD>
+															</TR>
+															<TR>
+																<TD vAlign="top" width="50%"><span id="Label32" class="DisplayText2">Delivery Period:</span></TD>
+																<TD vAlign="top" width="50%"><span id="lblDisplayPeriod" class="DisplayText5">30 Day/s</span></TD>
+															</TR>
+															<TR>
+																<TD vAlign="top" width="50%"><span id="Label30" class="DisplayText2">Client Agency:</span></TD>
+																<TD vAlign="top" width="50%"><span id="lblDisplayClient" class="DisplayText5"></span></TD>
+															</TR>
+															<tr>
+																<td width="50%" colSpan="2">
+																	<hr width="100%" style="BORDER-COLLAPSE: collapse">
+																</td>
+															</tr>
+															<TR>
+																<TD vAlign="top" width="50%"><span id="Label1" class="DisplayText2">Contact Person:</span></TD>
+																<TD vAlign="middle" width="50%"><span id="lblDisplayContactPerson" class="DisplayText5">Jay O. Rodriguez<BR>Head, BAC Secretariat<BR>BAC Office, Capitol Building<BR>Maasin City<BR>Southern Leyte<BR>Philippines 6600<BR>63-053-5707107<BR><BR>bacsouthernleyte@gmail.com</span></TD>
+															</TR>
+														</TABLE>
+													</TD>
+													<TD class="DisplayTextBackground" vAlign="top" width="25%"><span id="Label28" class="DisplayText4">Status</span></TD>
+													<TD vAlign="top" align="center" width="25%"><span id="lblDisplayStatus" class="DisplayText2">Active</span></TD>
+												</TR>
+												<TR>
+													<TD class="DisplayTextBackground" vAlign="top" width="25%"><span id="Label26" class="DisplayText4" style="display:inline-block;width:165px;">Associated Components</span></TD>
+													<TD vAlign="top" align="right" width="25%"><span id="lblDisplayAssocComp" class="DisplayText5">1</span></TD>
+												</TR>
+												<TR>
+													<TD class="DisplayTextBackground" vAlign="top" width="25%"><span id="Label24" class="DisplayText4">Bid Supplements</span></TD>
+													<TD vAlign="top" align="right" width="25%"><span id="lblDisplayBidSupplements" class="DisplayText5">0</span></TD>
+												</TR>
+												<TR>
+													<TD class="DisplayTextBackground" vAlign="top" width="25%"><span id="Label22" class="DisplayText4">Document Request List</span></TD>
+													<TD vAlign="top" align="right" width="25%"><span id="lblDisplayDocReqList" class="DisplayText5">10</span></TD>
+												</TR>
+												<TR>
+													<TD class="DisplayTextBackground" vAlign="top" width="25%"><span id="Label20" class="DisplayText4">Date Published</span></TD>
+													<TD vAlign="top" align="right" width="25%"><span id="lblDisplayDatePublish" class="DisplayText5">22/10/2026</span></TD>
+												</TR>
+												<TR>
+													<TD class="DisplayTextBackground" vAlign="top" width="25%"><span id="Label18" class="DisplayText4">Last Updated / Time</span></TD>
+													<TD vAlign="top" align="right" width="25%"><span id="lblDisplayLastUpdateTime" class="DisplayText5">22/10/2026 00:00 AM</span></TD>
+												</TR>
+												<TR>
+													<TD class="DisplayTextBackground" vAlign="top" align="left" width="25%"><span id="Label14" class="DisplayText4">Closing Date / Time</span></TD>
+													<TD vAlign="top" align="right" width="25%"><span id="lblDisplayCloseDateTime" class="DisplayText5">12/11/2026 10:00 AM</span></TD>
+												</TR>
+								</TD>
+							</TR>
+							<TR>
+								<TD width="25%" colSpan="3">
+									<TABLE class="Table" id="Table16" cellSpacing="0" cellPadding="0" width="100%" border="0">
+										<TR>
+											<TD width="100%" colSpan="3">
+												<P><div id="PanelDesc" style="width:100%;">
+	
+														<TABLE id="Table8" cellSpacing="0" cellPadding="0" width="100%" border="0">
+															<TR>
+																<TD>
+																	<span id="lblDesc" class="DisplayText2">Description</span></TD>
+															</TR>
+															<TR>
+																<TD>&nbsp;</TD>
+															</TR>
+															<TR>
+																<TD>
+																	<span id="lblAbstractText" class="DisplayText5">Republic of the Philippines<Br>PROVINCE OF SOUTHERN LEYTE<Br>Maasin City<Br><Br>INVITATION TO BID FOR <Br><Br>Supply, Delivery, Installation and Commissioning of Emergency ICS & EOC Platform Software with Environmental Monitoring and Forecasting Capabilities - PDRRMO <Br><Br>ID-Contract Number - 2026-11-12-248PG<Br><Br>1)	The Provincial Government of Southern Leyte, through the 5% LDRRM Fund 2026  intends to apply the sum of Fourteen Million Five Hundred Thousand Pesos (PhP 14,500,000.00) being the Approved Budget for the Contract (ABC) to payments under the contract for Supply, Delivery, Installation and Commissioning of Emergency ICS & EOC Platform Software with Environmental Monitoring and Forecasting Capabilities - PDRRMO. Bids received in excess of the ABC shall be automatically rejected at bid opening. <Br><Br>2)	The Provincial Government of Southern Leyte now invites bids for Supply, Delivery, Installation and Commissioning of Emergency ICS & EOC Platform Software with Environmental Monitoring and Forecasting Capabilities - PDRRMO. Delivery of the Goods is Thirty (30) calendar days. Bidders should have completed, at least Ten (10) years from the date of submission and receipt of bids, contracts similar to the Project. The description of an eligible bidder is contained in the Bidding Documents, particularly, in Section II. Instructions to Bidders.<Br><Br>3)	Bidding will be conducted through competitive bidding procedures using a non-discretionary “pass/fail” criterion as specified in the IRR of RA No. 12009.<Br><Br>Bidding is restricted to Filipino citizens/sole proprietorships, partnerships, or organizations with at least sixty percent (60%) interest or outstanding capital stock belonging to citizens of the Philippines, and to citizens or organizations of a country the laws or regulations of which grant similar rights or privileges to Filipino citizens, pursuant to RA No. 5183. <Br><Br>4)	Interested Bidders may obtain further information from Provincial Government of Southern Leyte at the BAC Office, 3rd Floor, Provincial Capitol Building and inspect the Bidding Documents at the address given below from 8:00 AM to 5:00 PM office hours.<Br><Br>5)	A complete set of Bidding Documents may be acquired by interested Bidders on October 22, 2026 from the address given below upon payment of the applicable fee for the Bidding Documents, pursuant to the latest Guidelines issued by the GPPB, in the amount of Twenty - Five Thousand Pesos (PhP 25,000.00).<Br><Br>It may also be downloaded free of charge from the website of the Philippine Government Electronic Procurement System (PhilGEPS) and the website of the Procuring Entity, provided that Bidders shall pay the applicable fee for the Bidding Documents not later than the submission of their bids.<Br><Br>6)	The Provincial Government of Southern Leyte will hold a Pre-Bid Conference on October 30, 2026 10:00AM at BAC Office, 3rd Floor, Provincial Capitol Building, Brgy. Asuncion, Maasin City, Southern Leyte and/or through video conferencing via [insert website, application or technology to be used], which shall be open to prospective Bidders.<Br> <Br>7)	Bids must be duly received by the Bids and Awards Committee (BAC) Secretariat through manual submission at the office address indicated below on or before November 12, 2026 10:00 AM. Late bids shall not be accepted.<Br><Br>8)	All Bids must be accompanied by a Bid Security in any of the acceptable forms and in the amount stated in ITB Clause 16.1.<Br><Br>9)	Bid opening shall be on 10:00 AM, November 12, 2026 at BAC Office, 3rd Floor, Provincial Capitol Building, Brgy. Asuncion, Maasin City, Southern Leyte and/or via [insert website, application, or technology to be used].  Bids will be opened in the presence of the Bidders’ representatives who choose to attend the activity.<Br><Br>10)	The Provincial Government of Southern Leyte reserves the right to reject any and all bids, declare a failure of bidding, or not award the contract at any time prior to contract award in accordance with Section 70  of R.A. No. 12009, without incurring any liability to the affected Bidder or Bidders.<Br><Br>11)	For further information, please refer to:<Br><Br>ATTY. ABELARDO C. ALMARIO<Br>Bac – Chairman/Provincial Legal Officer<Br>Provincial Capitol, Asuncion, 6600 Maasin City, Southern Leyte<Br>Tel.No. +63 63 5702389<Br>bacsouthernleyte@gmail.com<Br><Br>12)	You may visit the following websites:<Br><Br>For downloading of Bidding Documents:  www.southernleyte.gov.ph<Br><Br>For electronic bid submission: [PhilGEPS’ website]<Br><Br>October 22, 2026<Br><Br>                                                                                 (Sgd.)ATTY. ABELARDO C. ALMARIO<Br>             BAC - Chairman</span></TD>
+															</TR>
+														</TABLE>
+													
+</div></P>
+											</TD>
+										</TR>
+										<TR>
+											<TD width="25%" colSpan="3">
+												
+												<TABLE id="Table10" cellSpacing="1" cellPadding="4" width="100%" border="0">
+													<TR>
+														<TD id="preBidTD"><span id="Label12" class="DisplayText2">Pre-bid Conference </span></TD>
+													</TR>
+													<TR>
+														<TD id="dgPreBidTD" width="100%">
+															<TABLE class="GridTable" id="Table18" cellSpacing="1" cellPadding="4" width="100%">
+																<TR class="GridHeader">
+																	<TD class="GridHeader" style="WIDTH: 29.47%"><span id="Label11" class="DisplayText2" style="color:White;">Date</span></TD>
+																	<TD class="GridHeader" style="WIDTH: 31.33%"><span id="Label10" class="DisplayText2" style="color:White;">Time</span></TD>
+																	<TD class="GridHeader"><span id="Label9" class="DisplayText2" style="color:White;">Venue</span></TD>
+																</TR>
+																<TR>
+																	<TD class="GridItemTD" style="WIDTH: 29.47%"><span id="lblPreBidDate" class="DisplayText5">30/10/2026</span></TD>
+																	<TD class="GridItemTD" style="WIDTH: 31.33%"><span id="lblPreBidTime" class="DisplayText5">10:00:00 AM</span></TD>
+																	<TD class="GridItemTD"><span id="lblPreBidVenue" class="DisplayText5">BAC Office, 3rd Floor Capitol Building, Asuncion, Maasin City Southern Leyte</span></TD>
+																</TR>
+															</TABLE>
+														</TD>
+													</TR>
+												</TABLE>
+												
+											</TD>
+										</TR>
+										<TR>
+											<TD width="25%" colSpan="3">
+												
+												<P></P>
+											</TD>
+										</TR>
+									</TABLE>
+									<P></P>
+								</TD>
+							</TR>
+							
+						</TABLE>
+						<p></p>
+						<TABLE id="Table5" style="WIDTH: 100%" cellSpacing="1" cellPadding="4" width="598" align="center"
+							border="0">
+							<TR>
+								<TD class="DisplayTextBackground" style="HEIGHT: 15px"><span id="lblCreatedBy" class="DisplayText4">Created by</span></TD>
+								<TD class="DisplayTextBackground" style="HEIGHT: 15px"><span id="lblDisplayCreatedBy" class="DisplayText7">Jay O. Rodriguez</span></TD>
+							</TR>
+							<TR>
+								<TD class="DisplayTextBackground" width="20%"><span id="lblDateCreated" class="DisplayText4">Date Created</span></TD>
+								<TD class="DisplayTextBackground"><span id="lblDisplayDateCreated" class="DisplayText7">20/10/2026</span></TD>
+							</TR>
+							<TR>
+								<TD>&nbsp;</TD>
+								<TD>&nbsp;</TD>
+							</TR>
+						</TABLE>
+						<TABLE id="Table6" style="WIDTH: 100%" cellSpacing="1" cellPadding="1" width="598" align="center"
+							border="0">
+							<TR>
+								<TD>
+									<P><span id="lblFooter" class="DisplayText5">The PhilGEPS team is not responsible for any typographical errors or misinformation presented in the system. PhilGEPS only displays information provided for by its clients, and any queries regarding the postings should be directed to the contact person/s of the concerned party.</span></P>
+								</TD>
+							</TR>
+							<TR>
+								<TD colSpan="2"><span id="lblDisclaimerText" class="DisplayText5"></span></TD>
+							</TR>
+						</TABLE>
+					</TD>
+				</TR>
+				<tr width="100%" align="center">
+					<td colSpan="3"><input id="printbutton" type="button" value="Print" class="Button" onClick="window.print();"></td>
+				</tr>
+			</TABLE>
+			</TD></TR>
+<div>
+
+	<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="C3DBAE86" />
+</div><input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="/wEPDwULLTE2ODMzNDg5NzkPZBYGZg9kFgJmD2QWAgIBDw8WAh4LTmF2aWdhdGVVcmwF1AFqYXZhc2NyaXB0OnZvaWQod2luZG93Lm9wZW4oJy9HRVBTTk9OUElMT1QvaGVscHBhZ2VzL3B1YmxpYy9oZWxwX1ByaW50YWJsZUJpZE5vdGljZUFic3RyYWN0VUkuaHRtJywgJ2hlbHBXaW4nLCAncmVzaXphYmxlPXllcyx0b29sYmFyPW5vLG1lbnViYXI9bm8sZGlyZWN0b3JpZXM9bm8sc3RhdHVzPW5vLHdpZHRoPTQ4MCxoZWlnaHQ9NDgwLHNjcm9sbGJhcnM9eWVzJykpO2RkAgIPZBZAAgIPDxYCHgRUZXh0BRdJbnZpdGF0aW9uIHRvIEJpZCAoSVRCKWRkAgQPDxYCHwEFCDEzMjk5NDQ2ZGQCBg8PFgIfAQUaUFJPVklOQ0UgT0YgU09VVEhFUk4gTEVZVEVkZAIIDw8WAh8BBZ0BU3VwcGx5LCBEZWxpdmVyeSwgSW5zdGFsbGF0aW9uIGFuZCBDb21taXNzaW9uaW5nIG9mIEVtZXJnZW5jeSBJQ1MgJiBFT0MgUGxhdGZvcm0gU29mdHdhcmUgd2l0aCBFbnZpcm9ubWVudGFsIE1vbml0b3JpbmcgYW5kIEZvcmVjYXN0aW5nIENhcGFiaWxpdGllcyAtIFBEUlJNT2RkAgoPDxYCHwEFDlNvdXRoZXJuIExleXRlZGQCDA8PFgIfAQUQMjAyNi0xMS0xMi0yNDhQR2RkAg4PDxYCHwEFIkltcGxlbWVudGluZyBSdWxlcyBhbmQgUmVndWxhdGlvbnNkZAIQDw8WAh8BBQ5QdWJsaWMgQmlkZGluZ2RkAhIPDxYCHwEFBUdvb2RzZGQCFA8PFgIfAQUWSW5mb3JtYXRpb24gVGVjaG5vbG9neWRkAhUPDxYCHwEFIUFwcHJvdmVkIEJ1ZGdldCBmb3IgdGhlIENvbnRyYWN0OmRkAhcPDxYCHwEFDTE0LDUwMCwwMDAuMDBkZAIZDw8WAh8BBQgzMCBEYXkvc2RkAhsPDxYCHwFlZGQCHQ8PFgIfAQWyAUpheSBPLiBSb2RyaWd1ZXo8QlI+SGVhZCwgQkFDIFNlY3JldGFyaWF0PEJSPkJBQyBPZmZpY2UsIENhcGl0b2wgQnVpbGRpbmc8QlI+TWFhc2luIENpdHk8QlI+U291dGhlcm4gTGV5dGU8QlI+UGhpbGlwcGluZXMgNjYwMDxCUj42My0wNTMtNTcwNzEwNzxCUj48QlI+YmFjc291dGhlcm5sZXl0ZUBnbWFpbC5jb21kZAIfDw8WAh8BBQZBY3RpdmVkZAIhDw8WAh8BBQExZGQCIw8PFgIfAQUBMGRkAiUPDxYCHwEFAjEwZGQCJw8PFgIfAQUKMjIvMTAvMjAyNmRkAikPDxYCHwEFEzIyLzEwLzIwMjYgMDA6MDAgQU1kZAIrDw8WAh8BBRMxMi8xMS8yMDI2IDEwOjAwIEFNZGQCLA9kFgICAw8PFgIfAQWWJVJlcHVibGljIG9mIHRoZSBQaGlsaXBwaW5lczxCcj5QUk9WSU5DRSBPRiBTT1VUSEVSTiBMRVlURTxCcj5NYWFzaW4gQ2l0eTxCcj48QnI+SU5WSVRBVElPTiBUTyBCSUQgRk9SIDxCcj48QnI+U3VwcGx5LCBEZWxpdmVyeSwgSW5zdGFsbGF0aW9uIGFuZCBDb21taXNzaW9uaW5nIG9mIEVtZXJnZW5jeSBJQ1MgJiBFT0MgUGxhdGZvcm0gU29mdHdhcmUgd2l0aCBFbnZpcm9ubWVudGFsIE1vbml0b3JpbmcgYW5kIEZvcmVjYXN0aW5nIENhcGFiaWxpdGllcyAtIFBEUlJNTyA8QnI+PEJyPklELUNvbnRyYWN0IE51bWJlciAtIDIwMjYtMTEtMTItMjQ4UEc8QnI+PEJyPjEpCVRoZSBQcm92aW5jaWFsIEdvdmVybm1lbnQgb2YgU291dGhlcm4gTGV5dGUsIHRocm91Z2ggdGhlIDUlIExEUlJNIEZ1bmQgMjAyNiAgaW50ZW5kcyB0byBhcHBseSB0aGUgc3VtIG9mIEZvdXJ0ZWVuIE1pbGxpb24gRml2ZSBIdW5kcmVkIFRob3VzYW5kIFBlc29zIChQaFAgMTQsNTAwLDAwMC4wMCkgYmVpbmcgdGhlIEFwcHJvdmVkIEJ1ZGdldCBmb3IgdGhlIENvbnRyYWN0IChBQkMpIHRvIHBheW1lbnRzIHVuZGVyIHRoZSBjb250cmFjdCBmb3IgU3VwcGx5LCBEZWxpdmVyeSwgSW5zdGFsbGF0aW9uIGFuZCBDb21taXNzaW9uaW5nIG9mIEVtZXJnZW5jeSBJQ1MgJiBFT0MgUGxhdGZvcm0gU29mdHdhcmUgd2l0aCBFbnZpcm9ubWVudGFsIE1vbml0b3JpbmcgYW5kIEZvcmVjYXN0aW5nIENhcGFiaWxpdGllcyAtIFBEUlJNTy4gQmlkcyByZWNlaXZlZCBpbiBleGNlc3Mgb2YgdGhlIEFCQyBzaGFsbCBiZSBhdXRvbWF0aWNhbGx5IHJlamVjdGVkIGF0IGJpZCBvcGVuaW5nLiA8QnI+PEJyPjIpCVRoZSBQcm92aW5jaWFsIEdvdmVybm1lbnQgb2YgU291dGhlcm4gTGV5dGUgbm93IGludml0ZXMgYmlkcyBmb3IgU3VwcGx5LCBEZWxpdmVyeSwgSW5zdGFsbGF0aW9uIGFuZCBDb21taXNzaW9uaW5nIG9mIEVtZXJnZW5jeSBJQ1MgJiBFT0MgUGxhdGZvcm0gU29mdHdhcmUgd2l0aCBFbnZpcm9ubWVudGFsIE1vbml0b3JpbmcgYW5kIEZvcmVjYXN0aW5nIENhcGFiaWxpdGllcyAtIFBEUlJNTy4gRGVsaXZlcnkgb2YgdGhlIEdvb2RzIGlzIFRoaXJ0eSAoMzApIGNhbGVuZGFyIGRheXMuIEJpZGRlcnMgc2hvdWxkIGhhdmUgY29tcGxldGVkLCBhdCBsZWFzdCBUZW4gKDEwKSB5ZWFycyBmcm9tIHRoZSBkYXRlIG9mIHN1Ym1pc3Npb24gYW5kIHJlY2VpcHQgb2YgYmlkcywgY29udHJhY3RzIHNpbWlsYXIgdG8gdGhlIFByb2plY3QuIFRoZSBkZXNjcmlwdGlvbiBvZiBhbiBlbGlnaWJsZSBiaWRkZXIgaXMgY29udGFpbmVkIGluIHRoZSBCaWRkaW5nIERvY3VtZW50cywgcGFydGljdWxhcmx5LCBpbiBTZWN0aW9uIElJLiBJbnN0cnVjdGlvbnMgdG8gQmlkZGVycy48QnI+PEJyPjMpCUJpZGRpbmcgd2lsbCBiZSBjb25kdWN0ZWQgdGhyb3VnaCBjb21wZXRpdGl2ZSBiaWRkaW5nIHByb2NlZHVyZXMgdXNpbmcgYSBub24tZGlzY3JldGlvbmFyeSDigJxwYXNzL2ZhaWzigJ0gY3JpdGVyaW9uIGFzIHNwZWNpZmllZCBpbiB0aGUgSVJSIG9mIFJBIE5vLiAxMjAwOS48QnI+PEJyPkJpZGRpbmcgaXMgcmVzdHJpY3RlZCB0byBGaWxpcGlubyBjaXRpemVucy9zb2xlIHByb3ByaWV0b3JzaGlwcywgcGFydG5lcnNoaXBzLCBvciBvcmdhbml6YXRpb25zIHdpdGggYXQgbGVhc3Qgc2l4dHkgcGVyY2VudCAoNjAlKSBpbnRlcmVzdCBvciBvdXRzdGFuZGluZyBjYXBpdGFsIHN0b2NrIGJlbG9uZ2luZyB0byBjaXRpemVucyBvZiB0aGUgUGhpbGlwcGluZXMsIGFuZCB0byBjaXRpemVucyBvciBvcmdhbml6YXRpb25zIG9mIGEgY291bnRyeSB0aGUgbGF3cyBvciByZWd1bGF0aW9ucyBvZiB3aGljaCBncmFudCBzaW1pbGFyIHJpZ2h0cyBvciBwcml2aWxlZ2VzIHRvIEZpbGlwaW5vIGNpdGl6ZW5zLCBwdXJzdWFudCB0byBSQSBOby4gNTE4My4gPEJyPjxCcj40KQlJbnRlcmVzdGVkIEJpZGRlcnMgbWF5IG9idGFpbiBmdXJ0aGVyIGluZm9ybWF0aW9uIGZyb20gUHJvdmluY2lhbCBHb3Zlcm5tZW50IG9mIFNvdXRoZXJuIExleXRlIGF0IHRoZSBCQUMgT2ZmaWNlLCAzcmQgRmxvb3IsIFByb3ZpbmNpYWwgQ2FwaXRvbCBCdWlsZGluZyBhbmQgaW5zcGVjdCB0aGUgQmlkZGluZyBEb2N1bWVudHMgYXQgdGhlIGFkZHJlc3MgZ2l2ZW4gYmVsb3cgZnJvbSA4OjAwIEFNIHRvIDU6MDAgUE0gb2ZmaWNlIGhvdXJzLjxCcj48QnI+NSkJQSBjb21wbGV0ZSBzZXQgb2YgQmlkZGluZyBEb2N1bWVudHMgbWF5IGJlIGFjcXVpcmVkIGJ5IGludGVyZXN0ZWQgQmlkZGVycyBvbiBPY3RvYmVyIDIyLCAyMDI2IGZyb20gdGhlIGFkZHJlc3MgZ2l2ZW4gYmVsb3cgdXBvbiBwYXltZW50IG9mIHRoZSBhcHBsaWNhYmxlIGZlZSBmb3IgdGhlIEJpZGRpbmcgRG9jdW1lbnRzLCBwdXJzdWFudCB0byB0aGUgbGF0ZXN0IEd1aWRlbGluZXMgaXNzdWVkIGJ5IHRoZSBHUFBCLCBpbiB0aGUgYW1vdW50IG9mIFR3ZW50eSAtIEZpdmUgVGhvdXNhbmQgUGVzb3MgKFBoUCAyNSwwMDAuMDApLjxCcj48QnI+SXQgbWF5IGFsc28gYmUgZG93bmxvYWRlZCBmcmVlIG9mIGNoYXJnZSBmcm9tIHRoZSB3ZWJzaXRlIG9mIHRoZSBQaGlsaXBwaW5lIEdvdmVybm1lbnQgRWxlY3Ryb25pYyBQcm9jdXJlbWVudCBTeXN0ZW0gKFBoaWxHRVBTKSBhbmQgdGhlIHdlYnNpdGUgb2YgdGhlIFByb2N1cmluZyBFbnRpdHksIHByb3ZpZGVkIHRoYXQgQmlkZGVycyBzaGFsbCBwYXkgdGhlIGFwcGxpY2FibGUgZmVlIGZvciB0aGUgQmlkZGluZyBEb2N1bWVudHMgbm90IGxhdGVyIHRoYW4gdGhlIHN1Ym1pc3Npb24gb2YgdGhlaXIgYmlkcy48QnI+PEJyPjYpCVRoZSBQcm92aW5jaWFsIEdvdmVybm1lbnQgb2YgU291dGhlcm4gTGV5dGUgd2lsbCBob2xkIGEgUHJlLUJpZCBDb25mZXJlbmNlIG9uIE9jdG9iZXIgMzAsIDIwMjYgMTA6MDBBTSBhdCBCQUMgT2ZmaWNlLCAzcmQgRmxvb3IsIFByb3ZpbmNpYWwgQ2FwaXRvbCBCdWlsZGluZywgQnJneS4gQXN1bmNpb24sIE1hYXNpbiBDaXR5LCBTb3V0aGVybiBMZXl0ZSBhbmQvb3IgdGhyb3VnaCB2aWRlbyBjb25mZXJlbmNpbmcgdmlhIFtpbnNlcnQgd2Vic2l0ZSwgYXBwbGljYXRpb24gb3IgdGVjaG5vbG9neSB0byBiZSB1c2VkXSwgd2hpY2ggc2hhbGwgYmUgb3BlbiB0byBwcm9zcGVjdGl2ZSBCaWRkZXJzLjxCcj4gPEJyPjcpCUJpZHMgbXVzdCBiZSBkdWx5IHJlY2VpdmVkIGJ5IHRoZSBCaWRzIGFuZCBBd2FyZHMgQ29tbWl0dGVlIChCQUMpIFNlY3JldGFyaWF0IHRocm91Z2ggbWFudWFsIHN1Ym1pc3Npb24gYXQgdGhlIG9mZmljZSBhZGRyZXNzIGluZGljYXRlZCBiZWxvdyBvbiBvciBiZWZvcmUgTm92ZW1iZXIgMTIsIDIwMjYgMTA6MDAgQU0uIExhdGUgYmlkcyBzaGFsbCBub3QgYmUgYWNjZXB0ZWQuPEJyPjxCcj44KQlBbGwgQmlkcyBtdXN0IGJlIGFjY29tcGFuaWVkIGJ5IGEgQmlkIFNlY3VyaXR5IGluIGFueSBvZiB0aGUgYWNjZXB0YWJsZSBmb3JtcyBhbmQgaW4gdGhlIGFtb3VudCBzdGF0ZWQgaW4gSVRCIENsYXVzZSAxNi4xLjxCcj48QnI+OSkJQmlkIG9wZW5pbmcgc2hhbGwgYmUgb24gMTA6MDAgQU0sIE5vdmVtYmVyIDEyLCAyMDI2IGF0IEJBQyBPZmZpY2UsIDNyZCBGbG9vciwgUHJvdmluY2lhbCBDYXBpdG9sIEJ1aWxkaW5nLCBCcmd5LiBBc3VuY2lvbiwgTWFhc2luIENpdHksIFNvdXRoZXJuIExleXRlIGFuZC9vciB2aWEgW2luc2VydCB3ZWJzaXRlLCBhcHBsaWNhdGlvbiwgb3IgdGVjaG5vbG9neSB0byBiZSB1c2VkXS4gIEJpZHMgd2lsbCBiZSBvcGVuZWQgaW4gdGhlIHByZXNlbmNlIG9mIHRoZSBCaWRkZXJz4oCZIHJlcHJlc2VudGF0aXZlcyB3aG8gY2hvb3NlIHRvIGF0dGVuZCB0aGUgYWN0aXZpdHkuPEJyPjxCcj4xMCkJVGhlIFByb3ZpbmNpYWwgR292ZXJubWVudCBvZiBTb3V0aGVybiBMZXl0ZSByZXNlcnZlcyB0aGUgcmlnaHQgdG8gcmVqZWN0IGFueSBhbmQgYWxsIGJpZHMsIGRlY2xhcmUgYSBmYWlsdXJlIG9mIGJpZGRpbmcsIG9yIG5vdCBhd2FyZCB0aGUgY29udHJhY3QgYXQgYW55IHRpbWUgcHJpb3IgdG8gY29udHJhY3QgYXdhcmQgaW4gYWNjb3JkYW5jZSB3aXRoIFNlY3Rpb24gNzAgIG9mIFIuQS4gTm8uIDEyMDA5LCB3aXRob3V0IGluY3VycmluZyBhbnkgbGlhYmlsaXR5IHRvIHRoZSBhZmZlY3RlZCBCaWRkZXIgb3IgQmlkZGVycy48QnI+PEJyPjExKQlGb3IgZnVydGhlciBpbmZvcm1hdGlvbiwgcGxlYXNlIHJlZmVyIHRvOjxCcj48QnI+QVRUWS4gQUJFTEFSRE8gQy4gQUxNQVJJTzxCcj5CYWMg4oCTIENoYWlybWFuL1Byb3ZpbmNpYWwgTGVnYWwgT2ZmaWNlcjxCcj5Qcm92aW5jaWFsIENhcGl0b2wsIEFzdW5jaW9uLCA2NjAwIE1hYXNpbiBDaXR5LCBTb3V0aGVybiBMZXl0ZTxCcj5UZWwuTm8uICs2MyA2MyA1NzAyMzg5PEJyPmJhY3NvdXRoZXJubGV5dGVAZ21haWwuY29tPEJyPjxCcj4xMikJWW91IG1heSB2aXNpdCB0aGUgZm9sbG93aW5nIHdlYnNpdGVzOjxCcj48QnI+Rm9yIGRvd25sb2FkaW5nIG9mIEJpZGRpbmcgRG9jdW1lbnRzOiAgd3d3LnNvdXRoZXJubGV5dGUuZ292LnBoPEJyPjxCcj5Gb3IgZWxlY3Ryb25pYyBiaWQgc3VibWlzc2lvbjogW1BoaWxHRVBT4oCZIHdlYnNpdGVdPEJyPjxCcj5PY3RvYmVyIDIyLCAyMDI2PEJyPjxCcj4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAoU2dkLilBVFRZLiBBQkVMQVJETyBDLiBBTE1BUklPPEJyPiAgICAgICAgICAgICBCQUMgLSBDaGFpcm1hbmRkAi0PDxYCHgdWaXNpYmxlaGQWAgIDDzwrAAsCAA8WCB4IRGF0YUtleXMWAB4LXyFJdGVtQ291bnRmHglQYWdlQ291bnQCAR4VXyFEYXRhU291cmNlSXRlbUNvdW50ZmQBPCsABgEEPCsABAEBFgQeD0hvcml6b250YWxBbGlnbgsqKVN5c3RlbS5XZWIuVUkuV2ViQ29udHJvbHMuSG9yaXpvbnRhbEFsaWduAx4EXyFTQgKAgARkAjIPDxYCHwEFCjMwLzEwLzIwMjZkZAIzDw8WAh8BBQsxMDowMDowMCBBTWRkAjQPDxYCHwEFTEJBQyBPZmZpY2UsIDNyZCBGbG9vciBDYXBpdG9sIEJ1aWxkaW5nLCBBc3VuY2lvbiwgTWFhc2luIENpdHkgU291dGhlcm4gTGV5dGVkZAI1Dw8WAh8CaGQWAgIDDw8WAh8BZGRkAjYPDxYCHwJoZBYCAgEPZBYCAgMPDxYCHwFkZGQCOA8PFgIfAQUQSmF5IE8uIFJvZHJpZ3VlemRkAjoPDxYCHwEFCjIwLzEwLzIwMjZkZAI7Dw8WAh8BBZYCVGhlIFBoaWxHRVBTIHRlYW0gaXMgbm90IHJlc3BvbnNpYmxlIGZvciBhbnkgdHlwb2dyYXBoaWNhbCBlcnJvcnMgb3IgbWlzaW5mb3JtYXRpb24gcHJlc2VudGVkIGluIHRoZSBzeXN0ZW0uIFBoaWxHRVBTIG9ubHkgZGlzcGxheXMgaW5mb3JtYXRpb24gcHJvdmlkZWQgZm9yIGJ5IGl0cyBjbGllbnRzLCBhbmQgYW55IHF1ZXJpZXMgcmVnYXJkaW5nIHRoZSBwb3N0aW5ncyBzaG91bGQgYmUgZGlyZWN0ZWQgdG8gdGhlIGNvbnRhY3QgcGVyc29uL3Mgb2YgdGhlIGNvbmNlcm5lZCBwYXJ0eS5kZAIED2QWCAIDDxYCHwJoZAIFDxYCHwJoZAIHDxYCHwJoZAIJD2QWBAIBD2QWAgIBDw8WAh8BBU0mY29weTsmbmJzcDIwMDQtMjAyNiZuYnNwOyZuYnNwO0RCTSBQcm9jdXJlbWVudCBTZXJ2aWNlLiBBbGwgcmlnaHRzIHJlc2VydmVkLmRkAgMPZBYCZg9kFgICAw8PFgIfAAXUAWphdmFzY3JpcHQ6dm9pZCh3aW5kb3cub3BlbignL0dFUFNOT05QSUxPVC9oZWxwcGFnZXMvcHVibGljL2hlbHBfUHJpbnRhYmxlQmlkTm90aWNlQWJzdHJhY3RVSS5odG0nLCAnaGVscFdpbicsICdyZXNpemFibGU9eWVzLHRvb2xiYXI9bm8sbWVudWJhcj1ubyxkaXJlY3Rvcmllcz1ubyxzdGF0dXM9bm8sd2lkdGg9NDgwLGhlaWdodD00ODAsc2Nyb2xsYmFycz15ZXMnKSk7ZGRkH0iShJilzU996WB4iYoOZnAueBA=" /></form>
+		</TBODY></TABLE></body>
+</HTML>
+
+<script language="javascript" type="text/Javascript">
+
+var aArray = document.getElementsByTagName("div");
+	for(var i = 0; i < aArray.length; i++) {
+		if(aArray[i].id.indexOf("HelpLinkDiv") > -1) {
+			aArray[i].style.display = "none";
+		}
+	}
+
+function getWindowHeight() {
+	var windowHeight = 0;
+	if(typeof window.innerHeight != 'undefined') {
+		windowHeight = window.innerHeight;		
+	}
+	else if (typeof document.documentElement != 'undefined' 
+		&& typeof document.documentElement.clientHeight != 'undefined'
+		&& document.documentElement.clientHeight != 0) {
+		windowHeight = document.documentElement.clientHeight;
+	} else {
+		windowHeight = document.getElementsByTagName('body')[0].clientHeight;
+		
+		//var isIE = (navigator.appName=="Microsoft Internet Explorer");
+		//if(isIE) windowHeight += 4;
+	}
+	return windowHeight;
+}
+
+function getDocHeight() {
+	var d = document;
+	return (navigator.appName=="Microsoft Internet Explorer") ? d.body.scrollHeight : d.documentElement.scrollHeight
+	/*
+	return Math.max(
+		Math.max(d.body.scrollHeight, d.documentElement.scrollHeight),
+		Math.max(d.body.offsetHeight, d.documentElement.offsetHeight),
+		Math.max(d.body.clientHeight, d.documentElement.clientHeight)
+	)
+	*/
+}
+
+function setFooter() {	
+	var windowHeight = getWindowHeight();
+	var docHeight = getDocHeight();
+	var footerElement = document.getElementById('TablePageFoot');	
+	if(windowHeight >= docHeight) {
+		footerElement.style.position = 'relative';		
+		footerElement.style.top = windowHeight - docHeight + 'px';
+	} else {
+		footerElement.style.position = 'static';
+	}
+		
+}
+
+function showSiteMap(path)
+{
+	window.open(path,"view1", "resizable=no,toolbar=no,menubar=no,directories=no,status=no,width=600,height=600,scrollbars=yes");
+	return false;
+}
+function showcontactus(path)
+{
+	window.open(path,"view1", "resizable=no,toolbar=no,menubar=no,directories=no,status=no,width=600,height=600,scrollbars=yes");
+	return false;
+}
+</script>
+<!--HEIGHT: expression(document.body.offsetHeight-this.offsetTop-5);"-->
+<TABLE id="TablePageFoot" class="TablePageFoot" style="WIDTH: 100%;"
+	cellSpacing="0" cellPadding="0" border="0" >	
+	<tr>
+	<TD valign="bottom" align="left"></TD>
+</tr>
+
+	<!--
+  
+   -->
+	<tr id="ctl00_TRCopyRight" bordercolor="#356aa0" bgcolor="#d5e2f2" height="25">
+	<TD width="20" background="/images/inside_nav_label_bg.gif">&nbsp;</TD>
+	<TD valign="middle" align="left" width="50%" background="/images/inside_nav_label_bg.gif">
+			<FONT style="FONT-SIZE: 8pt; COLOR: #000000"><span id="ctl00_copyLBL" class="DisplayText5">&copy;&nbsp2004-2026&nbsp;&nbsp;DBM Procurement Service. All rights reserved.</span></FONT>
+		</TD>
+	<TD valign="middle" align="right" background="/images/inside_nav_label_bg.gif">&nbsp;</TD>
+	<TD valign="middle" align="right" width="300" background="/images/inside_nav_label_bg.gif">
+		
+<!-- <div id="ctl00_Help2_helpDIV" style="PADDING-RIGHT:16px; DISPLAY:none; PADDING-LEFT:16px; RIGHT:0px; PADDING-BOTTOM:16px; PADDING-TOP:16px; POSITION:absolute; TOP:65px"> </div>-->
+<div id="helpDIV" style="DISPLAY: inline">
+	<a id="ctl00_Help2_HelpLink" tabindex="100" class="NavTxtLink" href="javascript:void(window.open(&#39;/GEPSNONPILOT/helppages/public/help_PrintableBidNoticeAbstractUI.htm&#39;, &#39;helpWin&#39;, &#39;resizable=yes,toolbar=no,menubar=no,directories=no,status=no,width=480,height=480,scrollbars=yes&#39;));">Help</a>&nbsp;<span class="ContextTXT">|</span>
+</div>
+
+		<A class="NavTxtLink" onclick="javascript:showcontactus('/GEPSNONPILOT/Contact/contactGEPS.aspx')" href="#" style="white-space: nowrap;">Contact Us</A>
+		<span class="ContextTXT">|</span>
+		<A class="NavTxtLink" href="/GEPSNONPILOT/Sitemap/Sitemap.aspx">Sitemap</A>
+		
+		</TD>
+	<TD width="20" background="/images/inside_nav_label_bg.gif">&nbsp;</TD>
+</tr>
+
+</TABLE>
+	<script language="javascript">
+	
+	var onloadfunc = window.onload || function(){};	
+	window.onload = function() {		
+		onloadfunc();
+		setFooter();
+	}
+	
+	var onresizefunc = window.onresize || function(){};	
+	window.onresize = function() {		
+		onresizefunc();
+		setFooter();
+	}
+	</script>

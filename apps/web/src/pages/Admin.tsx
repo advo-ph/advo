@@ -44,6 +44,7 @@ import AdminLibrary from "@/components/admin/AdminLibrary";
 import AdminEngagement from "@/components/admin/AdminEngagement";
 import AdminAccountability from "@/components/admin/AdminAccountability";
 import AdminWebStats from "@/components/admin/AdminWebStats";
+import AdminBids from "@/components/admin/AdminBids";
 import { ChatWidget } from "@/components/admin/ChatWidget";
 
 const AdminVpsMonitor = lazy(() => import("@/components/admin/AdminVpsMonitor"));
@@ -57,6 +58,7 @@ import { useStaffTelemetry } from "@/lib/staff-telemetry";
 const SECTION_LABEL: Record<AdminSection, string> = {
   dashboard: "Dashboard",
   projects: "Projects",
+  bids: "Bids",
   clients: "Clients",
   engagement: "Engagement",
   team: "Team",
@@ -91,7 +93,7 @@ const SECTION_LABEL: Record<AdminSection, string> = {
  * the header and the bottom bar, the section fills it (its grid takes what is left), and
  * the page scroll is switched off while the section is open.
  */
-const FIT_SCREEN_SECTIONS: ReadonlySet<AdminSection> = new Set<AdminSection>(["availability", "calendar"]);
+const FIT_SCREEN_SECTIONS: ReadonlySet<AdminSection> = new Set<AdminSection>(["availability", "calendar", "bids"]);
 
 /**
  * The URL is user input, so a path segment is only a section if it is one of the
@@ -280,6 +282,8 @@ const Admin = () => {
                 onRefresh={refetch}
               />
             )}
+
+            {activeSection === "bids" && <AdminBids />}
 
             {activeSection === "engagement" && <AdminEngagement />}
 

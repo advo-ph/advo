@@ -41,6 +41,7 @@ import {
   FolderKanban,
   Image,
   Instagram,
+  Landmark,
   LayoutDashboard,
   Mic,
   MessageSquare,
@@ -76,6 +77,7 @@ type Destination = {
 const DESTINATION: Destination[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, keyword: "overview home start" },
   { id: "projects", label: "Projects", icon: FolderKanban, keyword: "project work engagement build" },
+  { id: "bids", label: "Bids", icon: Landmark, keyword: "bid bids philgeps government tender procurement pre-bid" },
   { id: "clients", label: "Clients", icon: Users, keyword: "client customer company account" },
   { id: "library", label: "Library", icon: BookOpen, keyword: "library asset prompt module reuse" },
   { id: "team", label: "Team", icon: Users2, keyword: "team member dev staff people junior" },

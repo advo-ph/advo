@@ -240,6 +240,44 @@ export async function sendLeadNotificationEmail(
   );
 }
 
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+/**
+ * The daily bid digest (bid-sync.service.ts): one plain list of what changed since the
+ * last check. Sent only when something did; each member can turn it off on the page.
+ */
+export async function sendBidDigestEmail(
+  to: string,
+  subject: string,
+  items: { label: string; line: string; detail: string }[],
+) {
+  const rows = items
+    .map(
+      (i) => `<tr>
+        <td style="padding:10px 12px 10px 0;vertical-align:top;color:#999;font-size:12px;white-space:nowrap;">${escapeHtml(i.label)}</td>
+        <td style="padding:10px 0;border-bottom:1px solid #f0f0f0;">
+          <div style="color:#1a1a1a;font-size:14px;line-height:1.4;">${escapeHtml(i.line)}</div>
+          <div style="color:#777;font-size:12px;margin-top:2px;">${escapeHtml(i.detail)}</div>
+        </td>
+      </tr>`,
+    )
+    .join("");
+  await send(
+    to,
+    subject,
+    wrap(`
+      <h2 style="color:#1a1a1a;font-size:18px;margin:0 0 4px;">Government bids</h2>
+      <p style="color:#777;font-size:13px;margin:0 0 12px;">What changed on PhilGEPS since the last check.</p>
+      <table style="border-collapse:collapse;width:100%;">${rows}</table>
+      <a href="${env().FRONTEND_URL}/admin/bids" style="display:inline-block;background:#ea580c;color:white;padding:10px 20px;border-radius:8px;text-decoration:none;font-weight:600;margin-top:16px;">
+        Open Bids
+      </a>
+      <p style="color:#999;font-size:12px;margin-top:16px;">Turn these emails off on the Bids page, under Updates.</p>
+    `),
+  );
+}
+
 // ─── Outreach transport (mass send) ──────────────────
 //
 // DELIBERATELY SEPARATE from the transactional transport above.
