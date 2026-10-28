@@ -150,10 +150,18 @@ const AdminBids = () => {
             ]}
           />
         </div>
-        <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground" onClick={() => sync.mutate()} disabled={isRunning}>
-          <RefreshCw className={cn("h-3.5 w-3.5", isRunning && "animate-spin")} />
-          <span className="hidden sm:inline">{isRunning ? "Checking…" : checked}</span>
-        </Button>
+        {isRunning ? (
+          // While a check runs the button becomes plain text; the saved list stays below.
+          <span role="status" className="inline-flex h-8 shrink-0 items-center gap-1.5 px-3 text-sm text-muted-foreground">
+            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+            Checking…
+          </span>
+        ) : (
+          <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground" onClick={() => sync.mutate()}>
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">{checked}</span>
+          </Button>
+        )}
       </div>
 
       {bids.isLoading ? (
@@ -164,7 +172,7 @@ const AdminBids = () => {
             </div>
           ))}
         </List>
-      ) : bids.error ? (
+      ) : bids.error && !data ? (
         <Panel>
           <Empty text="Bids did not load. Refresh the page to try again." />
         </Panel>

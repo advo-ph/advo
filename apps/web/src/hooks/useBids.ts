@@ -47,7 +47,6 @@ export interface Bid {
 
 export interface BidSyncState {
   isRunning: boolean;
-  canRate: boolean;
   last: { status: string; startedAt: string; finishedAt: string | null; error: string | null } | null;
   lastGood: {
     startedAt: string;
@@ -115,7 +114,7 @@ export function useBids() {
     onSuccess: (data) => {
       toast({
         title: data.started ? "Checking PhilGEPS" : "A check is already running",
-        description: "Reading every open bid takes a few minutes. This page updates when it is done.",
+        description: "Your list stays here while it checks. It updates when the check is done.",
       });
       refreshAll();
     },
