@@ -2145,3 +2145,139 @@ export const bidMember = pgTable("bid_member", {
   isEmail: boolean("is_email").notNull().default(true),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ─── Facebook page scrape store (migration 062) ───────
+
+export const fbPage = pgTable(
+  "fb_page",
+  {
+    fbPageId: bigserial("fb_page_id", { mode: "number" }).primaryKey(),
+    /** Facebook's numeric page/profile id when known, else the URL slug. */
+    pageCode: varchar("page_code", { length: 120 }).notNull().unique(),
+    slug: varchar("slug", { length: 120 }),
+    name: varchar("name", { length: 255 }),
+    category: varchar("category", { length: 255 }),
+    description: text("description"),
+    bio: text("bio"),
+    vision: text("vision"),
+    mission: text("mission"),
+    website: varchar("website", { length: 500 }),
+    phone: varchar("phone", { length: 60 }),
+    email: varchar("email", { length: 255 }),
+    address: text("address"),
+    hour: text("hour"),
+    rating: varchar("rating", { length: 60 }),
+    creationDate: varchar("creation_date", { length: 40 }),
+    followerCount: integer("follower_count"),
+    likeCount: integer("like_count"),
+    followingCount: integer("following_count"),
+    isVerified: boolean("is_verified"),
+    profileImage: text("profile_image"),
+    coverImage: text("cover_image"),
+    clientId: integer("client_id").references(() => client.clientId, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("idx_fb_page_client").on(t.clientId)]
+);
+
+export const fbScrapeRun = pgTable(
+  "fb_scrape_run",
+  {
+    fbScrapeRunId: bigserial("fb_scrape_run_id", { mode: "number" }).primaryKey(),
+    fbPageId: integer("fb_page_id").notNull().references(() => fbPage.fbPageId, { onDelete: "cascade" }),
+    sourceUrl: varchar("source_url", { length: 2000 }).notNull(),
+    /** ok | partial | logged_out | rate_limited — app-validated, growable. */
+    status: varchar("status", { length: 20 }).notNull(),
+    stopReason: varchar("stop_reason", { length: 40 }),
+    isAuditOk: boolean("is_audit_ok").notNull(),
+    postCount: integer("post_count").notNull(),
+    commentCount: integer("comment_count").notNull(),
+    audit: jsonb("audit").notNull(),
+    stat: jsonb("stat").notNull(),
+    analysis: jsonb("analysis").notNull(),
+    scrapedBy: integer("scraped_by").references(() => user.userId, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_fb_scrape_run_page").on(t.fbPageId, t.createdAt),
+    index("idx_fb_scrape_run_scraped_by").on(t.scrapedBy),
+  ]
+);
+
+export const fbPost = pgTable(
+  "fb_post",
+  {
+    fbPostId: bigserial("fb_post_id", { mode: "number" }).primaryKey(),
+    fbPageId: integer("fb_page_id").notNull().references(() => fbPage.fbPageId, { onDelete: "cascade" }),
+    postCode: varchar("post_code", { length: 200 }).notNull(),
+    alias: jsonb("alias").notNull().default([]),
+    permalink: varchar("permalink", { length: 1000 }),
+    kind: varchar("kind", { length: 20 }).notNull(),
+    caption: text("caption").notNull().default(""),
+    postedAt: timestamp("posted_at", { withTimezone: true }),
+    authorCode: varchar("author_code", { length: 60 }),
+    authorName: varchar("author_name", { length: 255 }),
+    reactionCount: integer("reaction_count"),
+    reactionBreakdown: jsonb("reaction_breakdown").notNull().default({}),
+    commentCount: integer("comment_count"),
+    shareCount: integer("share_count"),
+    viewCount: integer("view_count"),
+    imageUrl: jsonb("image_url").notNull().default([]),
+    videoUrl: text("video_url"),
+    externalUrl: jsonb("external_url").notNull().default([]),
+    hashtag: jsonb("hashtag").notNull().default([]),
+    mention: jsonb("mention").notNull().default([]),
+    isSponsored: boolean("is_sponsored").notNull().default(false),
+    isPinned: boolean("is_pinned").notNull().default(false),
+    source: jsonb("source").notNull().default([]),
+    lastFbScrapeRunId: integer("last_fb_scrape_run_id").references(() => fbScrapeRun.fbScrapeRunId, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("fb_post_fb_page_id_post_code_key").on(t.fbPageId, t.postCode),
+    index("idx_fb_post_page_posted").on(t.fbPageId, t.postedAt),
+    index("idx_fb_post_last_run").on(t.lastFbScrapeRunId),
+  ]
+);
+
+export const fbPostSnapshot = pgTable(
+  "fb_post_snapshot",
+  {
+    fbPostSnapshotId: bigserial("fb_post_snapshot_id", { mode: "number" }).primaryKey(),
+    fbPostId: integer("fb_post_id").notNull().references(() => fbPost.fbPostId, { onDelete: "cascade" }),
+    fbScrapeRunId: integer("fb_scrape_run_id").notNull().references(() => fbScrapeRun.fbScrapeRunId, { onDelete: "cascade" }),
+    reactionCount: integer("reaction_count"),
+    commentCount: integer("comment_count"),
+    shareCount: integer("share_count"),
+    viewCount: integer("view_count"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("fb_post_snapshot_fb_post_id_fb_scrape_run_id_key").on(t.fbPostId, t.fbScrapeRunId),
+    index("idx_fb_post_snapshot_run").on(t.fbScrapeRunId),
+  ]
+);
+
+export const fbComment = pgTable(
+  "fb_comment",
+  {
+    fbCommentId: bigserial("fb_comment_id", { mode: "number" }).primaryKey(),
+    fbPostId: integer("fb_post_id").notNull().references(() => fbPost.fbPostId, { onDelete: "cascade" }),
+    commentCode: varchar("comment_code", { length: 60 }).notNull(),
+    parentCommentCode: varchar("parent_comment_code", { length: 60 }),
+    depth: integer("depth").notNull().default(0),
+    authorCode: varchar("author_code", { length: 60 }),
+    authorName: varchar("author_name", { length: 255 }),
+    isPageAuthor: boolean("is_page_author").notNull().default(false),
+    body: text("body").notNull(),
+    commentedAt: timestamp("commented_at", { withTimezone: true }),
+    reactionCount: integer("reaction_count"),
+    replyCount: integer("reply_count"),
+    permalink: varchar("permalink", { length: 1000 }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("fb_comment_fb_post_id_comment_code_key").on(t.fbPostId, t.commentCode)]
+);

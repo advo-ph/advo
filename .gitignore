@@ -58,3 +58,7 @@ apps/api/.data/
 # scripts/update-geo-db.sh) — never commit a binary this size, and it is
 # rebuilt on the box via cron, not via git.
 apps/api/data/geo/
+
+
+# Real captured Facebook SSR (third-party names) — repo is public
+apps/api/src/test/fixture/fb-page-*.json

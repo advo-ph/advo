@@ -29,6 +29,9 @@ const envSchema = z.object({
   /** Seconds between Plaud ADVO-folder probes. 0 disables. Default 60. */
   PLAUD_POLL_SECOND: z.string().optional(),
 
+  /** CDP URL of an already-signed-in Chrome for the Facebook page scraper (attach-only). Unset = POST /api/scrape/facebook-page returns 503. */
+  FB_CDP_URL: z.string().optional(),
+
   /** OpenAI key for Whisper audio transcription (meeting recordings). Optional — if absent the Transcribe job fails with a clear error. */
   OPENAI_API_KEY: z.string().optional(),
 
