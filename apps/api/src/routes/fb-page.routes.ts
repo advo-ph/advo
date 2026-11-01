@@ -25,6 +25,7 @@ import { debrief } from "../scrapers/fb-page/debrief.js";
 import { persistRun } from "../services/fb-page-store.service.js";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { db } from "../db/connection.js";
+import { env } from "../utils/env.js";
 import { fbComment, fbPage as fbPageTable, fbPost, fbScrapeRun } from "../db/schema.js";
 
 const fbPage = new Hono<{ Variables: Variables }>();
@@ -52,7 +53,7 @@ const body = z.object({
 });
 
 fbPage.post("/facebook-page", requireAuth, requireTeam, zValidator("json", body), async (c) => {
-  const cdp = process.env.FB_CDP_URL;
+  const cdp = env().FB_CDP_URL;
   if (!cdp) throw new HTTPException(503, { message: "FB_CDP_URL is not set: point it at a signed-in Chrome (attach-only)." });
   if (running) throw new HTTPException(409, { message: `A scrape is already running (job ${running}).` });
 
