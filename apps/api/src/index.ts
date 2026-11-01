@@ -38,6 +38,7 @@ import settingRoutes from "./routes/settings.routes.js";
 import healthRoutes from "./routes/health.routes.js";
 import scrapeRoutes from "./routes/scrape.routes.js";
 import fbScrapeRoutes from "./routes/fb-scrape.routes.js";
+import fbPageRoutes from "./routes/fb-page.routes.js";
 import availabilityRoutes from "./routes/availability.routes.js";
 import contractRoutes from "./routes/contracts.routes.js";
 import expenseRoutes from "./routes/expense.routes.js";
@@ -288,6 +289,7 @@ app.route("/api/connector", connectorRoutes);
 // reaches this router. Finalizing is an explicit admin POST, never automatic.
 app.route("/api/commission", commissionRoutes);
 
+
 // Meeting MoM records (Admin Meetings + Hub)
 app.route("/api/meeting", meetingRoutes);
 
@@ -336,6 +338,7 @@ app.route("/api/jobs", jobRoutes);
 // Scrapers
 app.route("/api/scrape", scrapeRoutes);
 app.route("/api/scrape", fbScrapeRoutes);
+app.route("/api/scrape", fbPageRoutes);
 
 // Owner-only chat widget (Updates + Ask tabs, migration 057).
 app.route("/api/chat", chatRoutes);
